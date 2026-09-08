@@ -103,7 +103,43 @@ Nama header HTTP tidak peka huruf besar/kecil, jadi bentuk `x-client` dan `X-CLI
 
 ## Partner auth (`POST /api/partner/auth`)
 
-Endpoint ini **tidak** memakai IV nol dari proses decode konfigurasi native. Payload memakai `AES-256-GCM/NoPadding` dengan:
+### Partner yang dikenali APK 2.48.8
+
+Factory partner lokal mengenali 14 marker pada `auth_payload.agent` dari respons `GET /partner/brand`:
+
+| Marker agent | Label/implementasi lokal |
+|---|---|
+| `akari` | Akari |
+| `aqua` | Aqua |
+| `changhong` | Changhong |
+| `coocaa` | Coocaa |
+| `eroc_android_tv` | EROC Android TV |
+| `firstmedia` | First Media |
+| `icon_tv` | Icon TV |
+| `indihome` | IndiHome |
+| `myrepublic` | MyRepublic |
+| `nex_parabola` | Nex Parabola |
+| `polytron` | Polytron |
+| `tcl` | TCL |
+| `vnt` | VNT |
+| `xlhome` | XL Home |
+
+Pencocokan dilakukan sebagai substring peka huruf besar/kecil terhadap nilai `auth_payload.agent`; kelas fallback generik dipakai bila tidak ada marker yang cocok. String tersebut adalah marker pemilihan implementasi, bukan daftar partner yang pasti masih diterima backend saat runtime.
+
+Untuk autentikasi, aplikasi mengirim **seluruh** nilai `data.attributes.auth_payload.agent` yang diperoleh dari `/partner/brand` sebagai `partner_agent`. Literal marker `polytron` maupun label lokal `Polytron` tidak boleh dianggap sebagai nilai kredensial yang berdiri sendiri. Adapter JSON versi ini membentuk raw payload berikut; `unique_id` adalah UUID acak baru untuk setiap request:
+
+```json
+{
+  "unique_id": "<uuid-baru>",
+  "partner_agent": "<auth_payload.agent-dari-partner-brand>"
+}
+```
+
+Field internal `additionalUniqueId` tidak diserialisasi oleh `PartnerIdentityRequestJsonAdapter` versi 2.48.8. Remote setting `disable_signing_encrypt_partnership` memilih overload endpoint: nilai string `"true"` memakai body polos, sedangkan nilai lain memakai body terenkripsi beserta header `Signature`.
+
+Karena itu, HTTP 400 pada percobaan Polytron paling mungkin berasal dari penggunaan literal `polytron`/`Polytron` alih-alih agent yang diterbitkan endpoint deteksi, agent yang sudah tidak berlaku atau tidak sesuai perangkat, mode plain/encrypted yang tidak cocok dengan konfigurasi aktif, UUID/body yang malformed, atau ketidaksesuaian nonce dan signature. APK memetakan error body ke field `error_code` dan `error_message`; keduanya perlu diperiksa untuk membedakan penyebab tanpa mencoba memalsukan identitas perangkat partner.
+
+Endpoint terenkripsi ini **tidak** memakai IV nol dari proses decode konfigurasi native. Payload memakai `AES-256-GCM/NoPadding` dengan:
 
 ```text
 Key Base64 = O8NAJlk7o7GNeNn01qUXxjezrD/Z2djOMjSizTRZt1U=
