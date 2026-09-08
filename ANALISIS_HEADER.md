@@ -74,6 +74,33 @@ X-SIGNATURE: b3b3a73d9df45fb67e459d9b45ca7808cb1e291abb3261e9e0746301c7246339
 
 Nilai tersebut persis dihasilkan oleh default key `V1d10D3v`.
 
+### Verifikasi contoh header baru
+
+Pasangan berikut juga valid:
+
+```text
+X-CLIENT: 1788880138
+X-SIGNATURE: da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4
+```
+
+`X-CLIENT` tersebut adalah Unix time `2026-09-08 15:08:58 UTC`. Dengan default key `V1d10D3v`, perhitungan HMAC APK menghasilkan `X-SIGNATURE` di atas secara identik. Hasil ini tetap bergantung pada nilai Remote Config aktif; server dapat mengganti default key APK.
+
+| Header pada contoh | Hasil untuk APK 2.48.8 |
+|---|---|
+| `X-CLIENT`, `X-SIGNATURE` | Ya, tetapi hanya parameter header method `GET /livestreamings/{liveStreamId}/stream`; pasangan contoh valid. Kedua literal masing-masing hanya muncul satu kali di enam DEX dan tidak muncul di 14 library native APK. |
+| `User-Agent` | Formatnya sama, tetapi APK ini membentuk `tv-android/2.48.8 (462)`, bukan `tv-android/2608.2.4 (1020)`. |
+| `Accept-Encoding` | `gzip` ditambahkan otomatis oleh OkHttp jika request belum memiliki `Accept-Encoding` dan tidak memakai `Range`. |
+| `Referer` | Ya: `androidtv-app://com.vidio.android.tc`. |
+| `X-API-Platform` | Ya: `tv-android`. |
+| `X-API-Auth` | Ya: hasil decode konfigurasi native adalah `laZOmogezono5ogekaso5oz4Mezimew1`. |
+| `X-API-App-Info` | Formatnya sama, tetapi APK ini membentuk `tv-android/<Build.VERSION.RELEASE>/2.48.8-462`; versi Android berasal dari perangkat saat runtime. |
+| `Accept-Language` | Dinamis dari locale perangkat; bernilai `id` untuk locale Indonesia (`in` lama juga dipetakan ke `id`). |
+| `X-USER-EMAIL`, `X-USER-TOKEN` | Request stream ditandai `Require-Authentication: true`, jadi keduanya ditambahkan jika objek autentikasi tersedia. Nilainya berasal dari sesi pengguna, bukan hardcoded. |
+| `X-VISITOR-ID` | Ditambahkan pada request stream dari penyimpanan visitor ID; nilainya dinamis. |
+| `Content-Type` | Ya: client JSON:API menambahkan `application/vnd.api+json`, termasuk pada GET stream. |
+
+Nama header HTTP tidak peka huruf besar/kecil, jadi bentuk `x-client` dan `X-CLIENT` setara. Transport juga menambahkan `Host` dan `Connection`, sedangkan method stream menambahkan query `initialize=true|false`.
+
 ## Partner auth (`POST /api/partner/auth`)
 
 Endpoint ini **tidak** memakai IV nol dari proses decode konfigurasi native. Payload memakai `AES-256-GCM/NoPadding` dengan:
