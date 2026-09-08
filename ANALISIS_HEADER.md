@@ -308,3 +308,39 @@ Contoh tersebut **tidak dibuat persis** oleh XAPK ini:
 | Gzip transport | Ktor OkHttp engine dan OkHttp bridge `yd0.a` |
 
 Kunci pembuka konfigurasi native dibentuk dari version code menjadi `3191921000000000`, memakai AES/CBC/PKCS5Padding dan IV nol. Disassembly ARM64 memetakan JNI production token ke `.rodata` offset `0x6e7`; hasil dekripsinya adalah nilai `X-API-Auth` di atas.
+
+### Key dan IV pada jalur yang dianalisis
+
+Tabel ini hanya mencakup material kriptografi yang relevan dengan header stream dan konfigurasi native aplikasi, bukan semua primitive kriptografi library pihak ketiga di APK.
+
+| Material | Nilai/sumber | IV | Fungsi |
+|---|---|---|---|
+| Default stream HMAC secret | `V1d10D3v` dari Remote Config default | Tidak ada | Membentuk HMAC key `secret:X-CLIENT` untuk menghasilkan `X-SIGNATURE`. Nilai aktif dapat diganti oleh Remote Config. |
+| Native AES wrapping key | ASCII `3191921000000000` (hex `33313931393231303030303030303030`) | 16 byte nol (hex `00000000000000000000000000000000`) | AES/CBC/PKCS5Padding untuk membuka empat payload Base64 di `libndkconfig.so`. Key berasal dari version code `3191921` yang di-right-pad nol sampai 16 karakter. |
+| Production API token | Payload native terdekripsi, fingerprint SHA-256 `9a917604720773931629f1af4014e59bbebe01ec19a448b548c28bc6e32bb294` | Bukan key/IV | Nilai header `X-API-Auth` pada production. |
+| Staging API token | Payload native terdekripsi, fingerprint SHA-256 `e82a3b36783cbeefb7c744431dc76834f4d1619b0edfdc6951db0fae90197191` | Bukan key/IV | Nilai API auth ketika environment aplikasi dialihkan ke staging. |
+| Google OAuth client ID | Payload native terdekripsi, fingerprint SHA-256 `919107ccd48f72a3b3e3624455d9c9a14d67fa6277d79f315c36cbe09db377e3` | Bukan key/IV | Client ID untuk alur Google Sign-In; identifier ini bukan client secret. |
+| `encryptedPreferenceKey` | Payload native terdekripsi, 50 karakter, fingerprint SHA-256 `31bf6a178a274fd06e2da88202c49870ad6de2e4e610869388ecaa149f959e61` | Tidak ditemukan IV kedua | Disimpan sebagai field `encryptedPreferenceKey` pada `AppEnvironmentConfig`. Tidak ada getter atau pemakaian downstream yang dapat dibuktikan pada hasil dekompilasi versi ini, sehingga algoritma/IV lanjutannya tidak boleh diasumsikan. |
+
+Empat payload terakhir semuanya dibuka oleh native AES wrapping key dan IV yang sama. Token API, Google client ID, dan hasil `encryptedPreferenceKey` adalah plaintext konfigurasi, bukan tambahan AES key/IV untuk pembentukan `X-SIGNATURE`.
+
+### PHP cURL
+
+`stream_headers.php` merekonstruksi HMAC dan susunan header mobile 2608.2.7 untuk pengujian endpoint yang Anda berwenang akses. Secret dan token tidak ditanam di source; semuanya wajib diberikan melalui environment.
+
+```bash
+php stream_headers.php --self-test
+
+TARGET_URL='https://api.example.test/livestreamings/123/stream?initialize=true' \
+STREAM_TOKEN_KEY='secret-yang-diizinkan' \
+API_AUTH='token-yang-diizinkan' \
+php stream_headers.php
+
+# Kirim request setelah dry-run diperiksa
+TARGET_URL='https://api.example.test/livestreamings/123/stream?initialize=true' \
+STREAM_TOKEN_KEY='secret-yang-diizinkan' \
+API_AUTH='token-yang-diizinkan' \
+php stream_headers.php --send
+```
+
+Mode default hanya menampilkan request dan menyamarkan signature/token. `--show-sensitive` menampilkan nilai penuh; `--send` benar-benar mengirim GET. Header sesi ditambahkan secara opsional melalui `USER_EMAIL`, `USER_TOKEN`, `VISITOR_ID`, `USER_ID`, dan `AUTHORIZATION`; `X_CLIENT` dapat diisi untuk reproduksi deterministik, jika tidak program memakai `time()`.
