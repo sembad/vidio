@@ -199,3 +199,112 @@ Jadi header tersebut berasal dari versi/aplikasi contoh 2.67.6 dan tidak boleh d
 - `libtool-checker.so` hanya implementasi RootBeer/root check dan tidak memuat header jaringan.
 - Native App Cloner/SandHook dalam APK tidak memuat literal header Vidio.
 - Entry APK `lib/x86_64/libndkconfig.so` sebenarnya ELF ARM 32-bit dengan namespace JNI lama `com.vidio.android.tv`, sehingga bukan implementasi yang cocok untuk class aktif `com.vidio.android.tc.config.NdkConfig`.
+
+## Verifikasi XAPK Vidio Android 2608.2.7
+
+### Artefak dan cakupan
+
+- XAPK: `Vidio_+Sports,+Movies,+Series_2608.2.7-73babcffa4_APKPure.xapk`
+- Package: `com.vidio.android` — aplikasi Android utama, **bukan** package TV `com.vidio.android.tc`
+- Version name/code: `2608.2.7-73babcffa4` / `3191921`
+- Base APK SHA-256: `e8718f60b29608421333a3adde460fc2b0691d703914e049a5685c990d2edba5`
+- Sertifikat SHA-256 seluruh split identik: `d22b61ab0391af0761866ae37f9213bd0ba9753eecd866f8718cf92377de6c7b`
+- Alat: JADX `1.5.6`, Androguard `4.1.3`, Capstone `5.0.6`, `strings`, `readelf`, dan `objdump`
+- Cakupan: 6 DEX, 38.825 source hasil JADX, resource, serta seluruh 8 library ARM64. JADX meninggalkan 198 marker method yang tidak berhasil direkonstruksi, sehingga literal dan xref DEX juga diperiksa langsung.
+
+### Kesimpulan `X-CLIENT` dan `X-SIGNATURE`
+
+Kedua header tetap khusus untuk request berikut:
+
+```text
+GET https://api.vidio.com/livestreamings/{liveStreamId}/stream?initialize={true|false}
+```
+
+Pada versi ini endpoint stream tidak lagi dideklarasikan sebagai method `LiveStreamingJSONApi`. Implementasi KMM `o40.a` merakit path melalui:
+
+```text
+RestAPI().d("livestreamings", liveStreamId, "stream")
+```
+
+Request bawaan `RestAPI` adalah GET. Encoder `o40.e` memasang `X-SIGNATURE` dan `X-CLIENT`; instance encoder tersebut hanya direferensikan oleh builder stream `o40.a`. Masing-masing literal hanya muncul satu kali di enam DEX, memiliki satu xref ke `o40.e.a`, dan tidak muncul pada delapan library native ARM64.
+
+Algoritmanya tidak berubah:
+
+```text
+X-CLIENT     = Unix time dalam detik
+HMAC key     = "<live_streaming_token_key>:<X-CLIENT>"
+HMAC data    = "<X-CLIENT>"
+X-SIGNATURE  = lowercase hex HMAC-SHA256
+```
+
+Default `live_streaming_token_key` masih `V1d10D3v` di Remote Config. Pasangan contoh tetap tervalidasi secara identik:
+
+```text
+X-CLIENT: 1788880138
+X-SIGNATURE: da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4
+```
+
+Nilai Remote Config aktif tetap dapat mengganti default APK.
+
+### Bentuk header request 2608.2.7
+
+Untuk perangkat berbahasa Indonesia, request stream dibentuk seperti berikut:
+
+```text
+User-Agent: vidioandroid/2608.2.7-73babcffa4 (3191921)
+Accept-Encoding: gzip
+X-CLIENT: <Unix time detik>
+X-SIGNATURE: <HMAC-SHA256 sesuai rumus di atas>
+Referer: android-app://com.vidio.android
+X-API-Platform: app-android
+X-API-Auth: laZOmogezono5ogekaso5oz4Mezimew1
+X-API-App-Info: android/<Build.VERSION.RELEASE>/2608.2.7-73babcffa4-3191921
+Accept-Language: id
+X-Device-Brand: <Build.BRAND>
+X-Device-Model: <Build.MODEL>
+X-Device-Form-Factor: <phone|tablet>
+X-Device-SOC: <manufacturer dan model SoC>
+X-Device-OS: Android <release> (API <SDK_INT>)
+X-Device-Android-MPC: <MEDIA_PERFORMANCE_CLASS>
+X-Device-CPU-Arch: <SUPPORTED_ABIS[0]>
+Content-Type: application/vnd.api+json
+```
+
+Header kondisional:
+
+- `X-USER-EMAIL` dan `X-USER-TOKEN` ditambahkan jika sesi email-token tersedia. Endpoint memakai mode auth `Optional`, jadi pengguna anonim tidak ditolak.
+- `X-VISITOR-ID` ditambahkan jika visitor ID tersedia.
+- `X-USER-ID` ditambahkan jika user ID tidak kosong.
+- `X-AUTHORIZATION` dapat ditambahkan jika access-token provider menghasilkan nilai.
+- `X-Partner-Id` dan `X-Partner-Signature` hanya ditambahkan bila objek partner tidak null; alur stream biasa yang ditelusuri mengirim null.
+- `Host` dan `Connection` dibentuk transport. Ktor memakai engine OkHttp `4.12.0`, yang menambahkan `Accept-Encoding: gzip` jika header belum ada dan request tidak memakai `Range`.
+
+### Perbandingan dengan contoh TV 2608.2.4
+
+Contoh tersebut **tidak dibuat persis** oleh XAPK ini:
+
+| Contoh TV | XAPK Android 2608.2.7 |
+|---|---|
+| `tv-android/2608.2.4 (1020)` | `vidioandroid/2608.2.7-73babcffa4 (3191921)` |
+| `androidtv-app://com.vidio.android.tc` | `android-app://com.vidio.android` |
+| `X-API-Platform: tv-android` | `X-API-Platform: app-android` |
+| `tv-android/16/2608.2.4-1020` | `android/16/2608.2.7-73babcffa4-3191921` pada Android 16 |
+| Tidak mencantumkan `X-Device-*` | Request stream menambahkan keluarga `X-Device-*` |
+
+`X-API-Auth` sama dan pasangan `X-CLIENT`/`X-SIGNATURE` valid pada kedua APK karena default secret serta algoritmanya sama. Versi `2608.2.4`, timestamp/signature contoh, email, user token, dan visitor ID contoh tidak tertanam di XAPK 2608.2.7; semuanya berasal dari APK lain atau state runtime.
+
+### Asal temuan 2608.2.7
+
+| Temuan | Class/resource hasil analisis |
+|---|---|
+| Builder endpoint stream | `o40.a` |
+| Encoder `X-CLIENT`/`X-SIGNATURE` | `o40.e` |
+| Timestamp dan HMAC-SHA256 | `h60.h2` |
+| Default stream key | `res/xml/remote_config_defaults.xml` |
+| Header aplikasi/perangkat | `q20.l`, `t20.e`, `t20.a`, `qr.l1`, `k20.c`, `uz.b`, `uz.d` |
+| Header sesi opsional | `w20.n` |
+| Media type JSON:API | `w20.p`, `x20.b`, `y20.c` |
+| API production token | `libndkconfig.so` → `AppNdkConfig_apiTokenProductionBase64`, didekripsi oleh `lz.a` |
+| Gzip transport | Ktor OkHttp engine dan OkHttp bridge `yd0.a` |
+
+Kunci pembuka konfigurasi native dibentuk dari version code menjadi `3191921000000000`, memakai AES/CBC/PKCS5Padding dan IV nol. Disassembly ARM64 memetakan JNI production token ke `.rodata` offset `0x6e7`; hasil dekripsinya adalah nilai `X-API-Auth` di atas.
