@@ -74,6 +74,54 @@ X-SIGNATURE: b3b3a73d9df45fb67e459d9b45ca7808cb1e291abb3261e9e0746301c7246339
 
 Nilai tersebut persis dihasilkan oleh default key `V1d10D3v`.
 
+## Partner auth (`POST /api/partner/auth`)
+
+Endpoint ini **tidak** memakai IV nol dari proses decode konfigurasi native. Payload memakai `AES-256-GCM/NoPadding` dengan:
+
+```text
+Key Base64 = O8NAJlk7o7GNeNn01qUXxjezrD/Z2djOMjSizTRZt1U=
+AES key    = Base64.decode(Key Base64), panjang 32 byte
+Nonce/IV   = 12 byte ASCII alfanumerik acak
+Tag GCM    = 128 bit (16 byte)
+AAD        = kosong
+Format data sebelum Base64 = ciphertext || tag || nonce
+```
+
+Nonce dibuat sekali secara lazy untuk setiap instance encryptor `us.C14690a`, lalu dipakai bersama oleh enkripsi payload dan pembuatan header `Signature`. Karena nonce ditempel pada 12 byte terakhir blob, nonce request dapat diambil tanpa key:
+
+```php
+$blob = base64_decode($data, true);
+$nonce = substr($blob, -12);
+$ciphertextAndTag = substr($blob, 0, -12);
+$tag = substr($ciphertextAndTag, -16);
+$ciphertext = substr($ciphertextAndTag, 0, -16);
+```
+
+Fixture HAR terlampir tervalidasi penuh:
+
+```text
+Nonce/IV ASCII = ue8X4YZ33YAt
+Nonce/IV hex   = 7565385834595a3333594174
+Nonce Base64   = dWU4WDRZWjMzWUF0
+GCM tag hex    = c09e3c6fd240dac0ae7e546792e42a29
+```
+
+Dekripsi fixture dengan key di atas berhasil dan autentikasi tag GCM valid. `keyId="ZXhDgP7RixaP"` hanya identifier key pada header, bukan AES key; `X-API-Auth: laZOmogezono5ogekaso5oz4Mezimew1` juga token API terpisah.
+
+Header `Signature` memakai raw JSON sebelum enkripsi:
+
+```text
+innerKey = HMAC-SHA256(key=AES key, data=nonce ASCII)
+payloadMac = HMAC-SHA256(key=innerKey, data=raw JSON UTF-8)
+nonceB64 = Base64(nonce)
+signature value = nonceB64[0..14] || Base64(payloadMac) || nonceB64[15]
+Signature = keyId="ZXhDgP7RixaP",signature="<signature value>"
+```
+
+Untuk fixture HAR, rumus tersebut menghasilkan persis `dWU4WDRZWjMzWUF5kODyICYGvxL40JRyc7YrNlKYbeIjdj+6Gx53f3DhrM=0`.
+
+Kunci `4620000000000000` dan IV `00` sebanyak 16 byte hanya dipakai oleh `AES/CBC/PKCS5Padding` untuk membuka konfigurasi dari `libndkconfig.so`; keduanya tidak dipakai untuk mengenkripsi body `/api/partner/auth`.
+
 ## Header khusus lainnya
 
 | Header | Nilai/pemakaian |
