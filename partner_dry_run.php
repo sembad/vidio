@@ -177,21 +177,25 @@ Pemakaian:
   php partner_dry_run.php akari
   php partner_dry_run.php --brand=tcl
   php partner_dry_run.php --self-test
+  php partner_dry_run.php --live-test
 
-Program ini hanya audit statik. Tidak ada mode kirim dan tidak ada koneksi jaringan.
+Default tetap audit statik. --live-test mengirim satu GET /partner/brand dengan
+profil perangkat non-partner dari HAR; tidak mengirim kredensial pengguna atau partner.
 TEXT;
 }
 
-/** @return array{help: bool, selfTest: bool, brand: ?string} */
+/** @return array{help: bool, selfTest: bool, liveTest: bool, brand: ?string} */
 function parseOptions(array $arguments): array
 {
-    $result = ['help' => false, 'selfTest' => false, 'brand' => null];
+    $result = ['help' => false, 'selfTest' => false, 'liveTest' => false, 'brand' => null];
 
     foreach (array_slice($arguments, 1) as $argument) {
         if ($argument === '--help') {
             $result['help'] = true;
         } elseif ($argument === '--self-test') {
             $result['selfTest'] = true;
+        } elseif ($argument === '--live-test') {
+            $result['liveTest'] = true;
         } elseif (str_starts_with($argument, '--brand=')) {
             setBrandFilter($result, substr($argument, 8));
         } elseif (!str_starts_with($argument, '-')) {
@@ -201,8 +205,11 @@ function parseOptions(array $arguments): array
         }
     }
 
-    if ($result['selfTest'] && $result['brand'] !== null) {
-        throw new InvalidArgumentException('--self-test tidak dapat digabung dengan filter brand.');
+    if ($result['selfTest'] && ($result['brand'] !== null || $result['liveTest'])) {
+        throw new InvalidArgumentException('--self-test tidak dapat digabung dengan opsi lain.');
+    }
+    if ($result['liveTest'] && $result['brand'] !== null) {
+        throw new InvalidArgumentException('--live-test tidak dapat digabung dengan filter brand.');
     }
 
     return $result;
@@ -219,6 +226,98 @@ function setBrandFilter(array &$options, string $brand): void
     }
 
     $options['brand'] = $brand;
+}
+
+/** @return array<string, string> */
+function liveDetectionValues(): array
+{
+    return [
+        'build_product' => 'a24xx',
+        'build_manufacturer' => 'samsung',
+        'build_brand' => 'samsung',
+        'build_model' => 'SM-A245F',
+        'build_device' => 'a24',
+        'indihome_id_exist' => 'false',
+        'vnt_id_exist' => 'false',
+        'first_media_id_exist' => 'false',
+        'sp_sky_config_brand' => '',
+        'sp_product_vendor' => 'samsung',
+        'os_version' => '16',
+        'build_id' => 'BP2A.250705.008',
+        'build_display' => 'BP2A.250705.008',
+        'build_board' => 'bengal',
+        'build_bootloader' => 'unknown',
+        'build_hardware' => 'qcom',
+        'sp_newlink_cusname' => '',
+        'moratel_id_exist' => 'false',
+        'vlepo_id_exist' => 'false',
+        'sp_global_device_name' => 'SM-A245F',
+        'sp_product_device' => 'a24',
+        'sso_src' => '',
+        'melvar_id_exist' => 'false',
+        'nontonplus_id_exist' => 'false',
+        'mandaya_id_exist' => 'false',
+        'hubmedia_id_exist' => 'false',
+        'tivinity_id_exist' => 'false',
+        'partner_name' => '',
+    ];
+}
+
+function runLiveTest(): int
+{
+    if (!extension_loaded('curl')) {
+        throw new RuntimeException('Ekstensi PHP cURL belum terpasang.');
+    }
+
+    $url = 'https://api.vidio.com/partner/brand?' . http_build_query(liveDetectionValues());
+    $headers = [
+        'User-Agent: vidioandroid/' . MOBILE_VERSION . ' (' . MOBILE_VERSION_CODE . ')',
+        'Referer: android-app://com.vidio.android',
+        'X-API-Platform: app-android',
+        'X-API-Auth: laZOmogezono5ogekaso5oz4Mezimew1',
+        'X-API-App-Info: android/16/' . MOBILE_VERSION . '-' . MOBILE_VERSION_CODE,
+        'Accept-Language: id',
+        'X-Device-Brand: samsung',
+        'X-Device-Model: SM-A245F',
+        'X-Device-Form-Factor: phone',
+        'X-Device-OS: Android 16 (API 36)',
+        'X-Device-CPU-Arch: arm64-v8a',
+        'Content-Type: application/vnd.api+json',
+    ];
+
+    $curl = curl_init($url);
+    if ($curl === false) {
+        throw new RuntimeException('Gagal menginisialisasi cURL.');
+    }
+    curl_setopt_array($curl, [
+        CURLOPT_HTTPGET => true,
+        CURLOPT_HTTPHEADER => $headers,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => false,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_ENCODING => '',
+        CURLOPT_PROTOCOLS => CURLPROTO_HTTPS,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+    ]);
+
+    $response = curl_exec($curl);
+    if ($response === false) {
+        throw new RuntimeException('cURL ' . curl_errno($curl) . ': ' . curl_error($curl));
+    }
+    $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+    $decoded = json_decode($response, true);
+    if (!is_array($decoded)) {
+        throw new RuntimeException("Respons HTTP {$status} bukan JSON valid.");
+    }
+
+    echo "LIVE TEST: GET /partner/brand\n";
+    echo "Profil: Samsung SM-A245F, Android 16, tanpa identifier partner\n";
+    echo "HTTP: {$status}\n";
+    echo 'Response: ' . json_encode($decoded, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
+
+    return $status >= 500 ? 22 : 0;
 }
 
 function printContract(): void
@@ -283,6 +382,12 @@ function runSelfTest(): void
     requireSame($expectedMarkers, array_keys(brandEvidence()), 'urutan 14 marker');
     requireSame($expectedQueries, detectionQueries(), 'urutan 28 query');
     requireSame($expectedQueries, array_keys(querySourceGroups()), 'sumber 28 query');
+    requireSame($expectedQueries, array_keys(liveDetectionValues()), 'nilai 28 query live');
+
+    $liveOptions = parseOptions(['partner_dry_run.php', '--live-test']);
+    if ($liveOptions['liveTest'] !== true) {
+        throw new RuntimeException('Self-test gagal: opsi live test tidak aktif.');
+    }
 
     try {
         parseOptions(['partner_dry_run.php', '--send']);
@@ -310,6 +415,9 @@ function main(array $arguments): int
     if ($options['selfTest']) {
         runSelfTest();
         return 0;
+    }
+    if ($options['liveTest']) {
+        return runLiveTest();
     }
 
     printContract();

@@ -366,7 +366,7 @@ Empat payload terakhir semuanya dibuka oleh native AES wrapping key dan IV yang 
 
 APK Mobile 2608.2.7 menyimpan deklarasi Retrofit lama untuk `GET /partner/brand` dan `POST /api/partner/auth`, tetapi tidak menyimpan factory 14 marker milik APK TV 2.48.8. Pencarian source JADX hanya menemukan nama interface, model, dan adapter-nya; pemeriksaan instruksi `invoke-*` langsung pada seluruh enam DEX menghasilkan **0 xref** ke `TvPartnerBrandApi.getTvBrand` dan **0 xref** ke `SeamlessLoginApi.seamlessLogin`.
 
-Artinya, kedua endpoint merupakan shared code yang masih terbawa di build mobile, bukan bukti bahwa alurnya dapat dijalankan dari APK ini. Analisis statik dapat memastikan kontrak method, tetapi tidak dapat memutuskan sebuah brand “work” tanpa request asli dan respons backend. Tidak ada request production yang dikirim dalam analisis ini.
+Artinya, kedua endpoint merupakan shared code yang masih terbawa di build mobile, bukan bukti bahwa alurnya dapat dijalankan dari APK ini. Analisis statik dapat memastikan kontrak method, tetapi tidak dapat memutuskan sebuah brand “work” tanpa request asli dan respons backend. Setelah analisis statik, satu probe production non-partner dikirim pada 9 September 2026 seperti dicatat di bawah; tidak ada percobaan seamless login.
 
 #### Kontrak `GET /partner/brand`
 
@@ -476,9 +476,20 @@ Kolom “caller mobile” merujuk khusus pada jalur `/partner/brand` → `/api/p
 
 Jadi hasil yang dapat dipertanggungjawabkan bukan “TCL pasti satu-satunya brand aktif”. Hasilnya adalah: TCL satu-satunya yang **dilaporkan** menerima HTTP 200; Akari mencapai error validasi serial; dua belas marker lain tidak memiliki bukti runtime yang dapat diperiksa. HTTP 200 sendiri juga perlu body sukses yang memuat `partner_id`, `auth`, `profile`, atau token untuk membuktikan seamless login benar-benar berhasil.
 
-#### Pemeriksaan HAR traffic APK
+#### Pemeriksaan HAR terlampir
 
-HAR terlampir berisi 275 entry traffic APK, termasuk 30 request ke `api.vidio.com`. Pencarian URL, request body, dan response body tidak menemukan `/partner/brand`, `/api/partner/auth`, `auth_payload`, `partner_agent`, `10032004`, atau pesan error serial. Karena itu HAR tersebut tetap berguna sebagai capture aplikasi, tetapi tidak dapat memverifikasi laporan Akari/TCL maupun 12 brand lain.
+HAR Reqable terlampir berisi 275 entry. User-Agent dan origin menunjukkan traffic Chrome Android untuk `m.vidio.com`/`quiz.vidio.com`, bukan capture native APK; tidak ada satu pun URL `/partner/brand` atau `/api/partner/auth`. Pencarian request/response juga tidak menemukan `auth_payload`, `partner_agent`, `10032004`, atau pesan error serial. HAR ini karena itu tidak dapat memverifikasi laporan Akari/TCL maupun 12 brand lain.
+
+#### Uji production non-partner — 9 September 2026
+
+Satu request nyata dikirim ke `GET https://api.vidio.com/partner/brand` dengan 28 query, header aplikasi Mobile 2608.2.7, dan profil Samsung `SM-A245F`/Android 16 yang tampak pada HAR. Semua flag identifier partner dibuat `false`; tidak ada serial, token pengguna, visitor ID, agent, atau kredensial partner yang dikirim.
+
+```text
+HTTP/2 404
+{"errors":[{"code":"10040002","message":"Brand integration not found"}]}
+```
+
+Respons memiliki `x-request-id` dan berasal dari node production Vidio, sehingga membuktikan endpoint masih hidup dan menerima bentuk request tersebut. Hasil ini hanya membuktikan perangkat non-partner tidak terdeteksi; tidak menguji keberhasilan satu pun dari 14 marker dan tidak membenarkan pembuatan identifier palsu. Web search juga tidak menemukan dokumentasi API partner Vidio yang publik, jadi sumber kontrak yang dapat diverifikasi tetap APK dan respons server langsung.
 
 #### Tingkat kepastian dan reproduksi
 
@@ -494,7 +505,7 @@ HAR terlampir berisi 275 entry traffic APK, termasuk 30 request ke `api.vidio.co
 
 JADX 1.5.6 menghasilkan 38.825 file Java dari enam DEX dan meninggalkan 198 marker method yang gagal direkonstruksi. Karena itu kesimpulan caller/literal juga diperiksa langsung dari string table, annotation directory, dan instruksi invoke DEX. APK serta source hasil dekompilasi hanya disimpan sementara dan tidak dimasukkan ke repository.
 
-`partner_dry_run.php` mencetak kontrak dan matriks yang sama tanpa memiliki mode kirim, tanpa membuka koneksi, dan tanpa membuat serial, agent, ciphertext, atau signature palsu.
+`partner_dry_run.php` tetap statik secara default. `--live-test` mereproduksi satu probe GET non-partner yang aman; script tidak membuat serial, agent, ciphertext, signature, atau request `POST /api/partner/auth`.
 
 ### PHP cURL
 
