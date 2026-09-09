@@ -1,4 +1,4 @@
-# Analisis Header Vidio Forumkt+ 2.48.8
+# Analisis Header Vidio TV 2.48.8 dan Mobile 2608.2.7
 
 ## Artefak dan metode
 
@@ -359,6 +359,142 @@ Tabel ini hanya mencakup material kriptografi yang relevan dengan header stream 
 | `encryptedPreferenceKey` | Payload native terdekripsi, 50 karakter, fingerprint SHA-256 `31bf6a178a274fd06e2da88202c49870ad6de2e4e610869388ecaa149f959e61` | Tidak ditemukan IV kedua | Disimpan sebagai field `encryptedPreferenceKey` pada `AppEnvironmentConfig`. Tidak ada getter atau pemakaian downstream yang dapat dibuktikan pada hasil dekompilasi versi ini, sehingga algoritma/IV lanjutannya tidak boleh diasumsikan. |
 
 Empat payload terakhir semuanya dibuka oleh native AES wrapping key dan IV yang sama. Token API, Google client ID, dan hasil `encryptedPreferenceKey` adalah plaintext konfigurasi, bukan tambahan AES key/IV untuk pembentukan `X-SIGNATURE`.
+
+### Partner pada Mobile 2608.2.7
+
+#### Kesimpulan utama
+
+APK Mobile 2608.2.7 menyimpan deklarasi Retrofit lama untuk `GET /partner/brand` dan `POST /api/partner/auth`, tetapi tidak menyimpan factory 14 marker milik APK TV 2.48.8. Pencarian source JADX hanya menemukan nama interface, model, dan adapter-nya; pemeriksaan instruksi `invoke-*` langsung pada seluruh enam DEX menghasilkan **0 xref** ke `TvPartnerBrandApi.getTvBrand` dan **0 xref** ke `SeamlessLoginApi.seamlessLogin`.
+
+Artinya, kedua endpoint merupakan shared code yang masih terbawa di build mobile, bukan bukti bahwa alurnya dapat dijalankan dari APK ini. Analisis statik dapat memastikan kontrak method, tetapi tidak dapat memutuskan sebuah brand “work” tanpa request asli dan respons backend. Tidak ada request production yang dikirim dalam analisis ini.
+
+#### Kontrak `GET /partner/brand`
+
+`TvPartnerBrandApi.getTvBrand` mendeklarasikan 28 **query parameter**, bukan header:
+
+```text
+ 1. build_product                 15. build_bootloader
+ 2. build_manufacturer            16. build_hardware
+ 3. build_brand                   17. sp_newlink_cusname
+ 4. build_model                   18. moratel_id_exist
+ 5. build_device                  19. vlepo_id_exist
+ 6. indihome_id_exist             20. sp_global_device_name
+ 7. vnt_id_exist                  21. sp_product_device
+ 8. first_media_id_exist          22. sso_src
+ 9. sp_sky_config_brand           23. melvar_id_exist
+10. sp_product_vendor             24. nontonplus_id_exist
+11. os_version                    25. mandaya_id_exist
+12. build_id                      26. hubmedia_id_exist
+13. build_display                 27. tivinity_id_exist
+14. build_board                   28. partner_name
+```
+
+Nama `build_*` menunjuk metadata build Android, nama `sp_*` menunjuk property vendor, dan nama `*_id_exist` menunjuk flag keberadaan identifier. Namun karena tidak ada caller mobile, DEX ini tidak membuktikan class pengambil nilai, format nilai, atau nilai aktual untuk satu pun parameter. Mengisi serial/MAC buatan hanya akan menguji data palsu, bukan dukungan brand.
+
+Method GET tersebut tidak memiliki annotation header khusus dan tidak diberi marker `Require-Authentication`. Profil interceptor Retrofit yang tersedia pada APK membentuk header umum berikut bila interface diikat ke client itu:
+
+```text
+User-Agent: vidioandroid/2608.2.7-73babcffa4 (3191921)
+Referer: android-app://com.vidio.android
+X-API-Platform: app-android
+X-API-Auth: <konfigurasi aplikasi>
+X-API-App-Info: android/<Build.VERSION.RELEASE>/2608.2.7-73babcffa4-3191921
+Accept-Language: <locale perangkat; in dipetakan ke id>
+Accept-Encoding: gzip  # otomatis oleh OkHttp bila syarat transport terpenuhi
+```
+
+Karena binding/caller endpoint tidak ada, daftar di atas adalah profil client yang tersedia, bukan capture request `/partner/brand` pada build ini. `f60.C10205i` tidak menambahkan `X-USER-*` atau `X-VISITOR-ID` untuk GET tanpa marker autentikasi.
+
+Model respons yang masih tersedia adalah:
+
+```json
+{
+  "data": {
+    "id": "<server>",
+    "type": "<server>",
+    "attributes": {
+      "name": "<server>",
+      "support_merge_to_vidio_account": false,
+      "support_payment_gpb": false,
+      "request_query_params": "<server-opsional>",
+      "auth_payload": {
+        "agent": "<server>",
+        "identification": "<server>",
+        "additional_identification": "<server-opsional>"
+      }
+    }
+  }
+}
+```
+
+Ketiga field `auth_payload` adalah output server. Keberadaan model itu tidak membuktikan bahwa mobile membentuk nilainya atau mengenali `agent` melalui factory lokal.
+
+#### Kontrak `POST /api/partner/auth`
+
+`SeamlessLoginApi.seamlessLogin` membuktikan kontrak method berikut:
+
+```text
+Header method: Signature: <nilai runtime yang sah>
+Marker internal: Require-Authentication: true
+Body Moshi: {"data":"<encrypted payload>"}
+```
+
+`Require-Authentication` adalah marker internal Retrofit. Interceptor menghapusnya sebelum request keluar; untuk POST, interceptor dapat menambahkan `X-USER-EMAIL`, `X-USER-TOKEN`, dan `X-USER-ID` jika sesi ada, serta `X-VISITOR-ID`. Header umum aplikasi tetap berasal dari interceptor terpisah. Annotation method tidak menetapkan `Content-Type`, sehingga media type konkret tidak boleh dipastikan tanpa binding Retrofit yang sudah hilang.
+
+Build mobile ini tidak mengandung literal key ID `ZXhDgP7RixaP`, key Base64 partner TV, atau setting `disable_signing_encrypt_partnership`. Tidak ditemukan caller yang membuat `EncryptedPartnerIdentityRequest`, nilai `Signature`, ataupun ciphertext `data`. Literal `partner_agent` yang tersisa adalah query parameter `ProductCatalogApiV1`, sedangkan `unique_id` dan `additional_unique_id` berada pada model telemetry `Description`; ketiganya bukan bukti adanya builder payload partner auth mobile.
+
+DEX mobile tidak mendeklarasikan kontrak per-brand untuk 14 marker TV tersebut. Jika marker dibandingkan terhadap dua endpoint shared yang tersisa, tidak ada bukti bahwa Akari, TCL, atau brand lain mengubah set header. Khususnya:
+
+| Bukan header partner auth | Alasan |
+|---|---|
+| 28 nama deteksi di atas | Semuanya annotation `@Query` untuk URL GET. |
+| `X-CLIENT` / `X-SIGNATURE` | Hanya jalur stream; berbeda dari header `Signature` tanpa awalan `X-`. |
+| `X-Device-*` | Dibentuk jalur KMM mobile, bukan annotation pada kedua method partner Retrofit. |
+| `X-Partner-Id` / `X-Partner-Signature` | Header kondisional untuk request KMM setelah objek partner tersedia, bukan input deteksi brand atau header eksplisit `seamlessLogin`. |
+| Literal marker seperti `akari` atau `tcl` | Marker factory TV, bukan nama header dan bukan kredensial mandiri. |
+
+#### Audit satu per satu atas 14 marker TV
+
+Kolom “caller mobile” merujuk khusus pada jalur `/partner/brand` → `/api/partner/auth`, bukan fitur lain yang kebetulan memakai nama operator sama.
+
+| Marker | Factory TV 2.48.8 | Bukti literal/fitur di Mobile 2608.2.7 | Caller mobile | Bukti runtime yang tersedia | Putusan |
+|---|---:|---|---:|---|---|
+| `akari` | Ya | Marker tidak ditemukan. | 0 | Laporan pengguna: non-200 dengan `error_code=10032004`, `error_message="Serial number gak valid"`, `partner_id=null`; tidak ada di HAR terlampir. | Auth gagal pada validasi identifier; **bukan** bukti Akari tidak didukung. |
+| `aqua` | Ya | String lowercase hanya nama warna pada parser CSS/SVG pihak ketiga. | 0 | Tidak ada. | Belum teruji. |
+| `changhong` | Ya | Marker tidak ditemukan. | 0 | Tidak ada. | Belum teruji. |
+| `coocaa` | Ya | Marker tidak ditemukan. | 0 | Tidak ada. | Belum teruji. |
+| `eroc_android_tv` | Ya | Marker tidak ditemukan. | 0 | Tidak ada. | Belum teruji. |
+| `firstmedia` | Ya | Marker lowercase tidak ditemukan; model pembayaran First Media terpisah masih ada. | 0 | Tidak ada respons partner yang dilampirkan. | Belum teruji. |
+| `icon_tv` | Ya | Marker tidak ditemukan. | 0 | Tidak ada. | Belum teruji. |
+| `indihome` | Ya | Marker lowercase tidak ditemukan; label sertifikat `INDIHOME`/`Indihome` dan model OTP/payment terpisah masih ada. | 0 | Tidak ada respons partner yang dilampirkan. | Belum teruji. |
+| `myrepublic` | Ya | Marker tidak ditemukan. | 0 | Tidak ada. | Belum teruji. |
+| `nex_parabola` | Ya | Marker tidak ditemukan. | 0 | Tidak ada. | Belum teruji. |
+| `polytron` | Ya | Marker tidak ditemukan. | 0 | Tidak ada. | Belum teruji. |
+| `tcl` | Ya | Marker lowercase tidak ditemukan; `TCL` hanya dipakai AndroidX CameraX untuk quirk exposure. | 0 | Laporan pengguna: HTTP 200; raw request/response tidak ada di HAR terlampir. | **200 dilaporkan**, tetapi sukses auth/`partner_id` belum dapat diverifikasi. |
+| `vnt` | Ya | Marker lowercase tidak ditemukan; `VntApi` terpisah mendeklarasikan `/vnt/session`. | 0 | Tidak ada respons partner yang dilampirkan. | Belum teruji. |
+| `xlhome` | Ya | Tidak ada literal marker; hanya class Parcelable lama `tvpartner.xlhome.Parameter`, tanpa import/caller di luar class itu sendiri. | 0 | Tidak ada respons partner yang dilampirkan. | Belum teruji. |
+
+Jadi hasil yang dapat dipertanggungjawabkan bukan “TCL pasti satu-satunya brand aktif”. Hasilnya adalah: TCL satu-satunya yang **dilaporkan** menerima HTTP 200; Akari mencapai error validasi serial; dua belas marker lain tidak memiliki bukti runtime yang dapat diperiksa. HTTP 200 sendiri juga perlu body sukses yang memuat `partner_id`, `auth`, `profile`, atau token untuk membuktikan seamless login benar-benar berhasil.
+
+#### Pemeriksaan HAR traffic APK
+
+HAR terlampir berisi 275 entry traffic APK, termasuk 30 request ke `api.vidio.com`. Pencarian URL, request body, dan response body tidak menemukan `/partner/brand`, `/api/partner/auth`, `auth_payload`, `partner_agent`, `10032004`, atau pesan error serial. Karena itu HAR tersebut tetap berguna sebagai capture aplikasi, tetapi tidak dapat memverifikasi laporan Akari/TCL maupun 12 brand lain.
+
+#### Tingkat kepastian dan reproduksi
+
+| Klaim | Tingkat bukti | Rujukan |
+|---|---|---|
+| Endpoint, 28 query, `Signature`, marker auth, dan body `data` | Tinggi: annotation DEX + source JADX | `TvPartnerBrandApi`, `SeamlessLoginApi`, `EncryptedPartnerIdentityRequestJsonAdapter` |
+| Field respons deteksi dan respons sukses/error | Tinggi: model + adapter Moshi | `TvPartnerBrandResponse*`, `SeamlessLoginResponse*`, `ErrorResponse*` |
+| Header umum dan aturan header sesi | Tinggi untuk interceptor; sedang untuk endpoint dormant karena binding tidak ada | `f60.C10200d`, `f60.C10205i`, `f60.C10201e`, `InterceptorConstantKt` |
+| Nol caller kedua endpoint | Tinggi: pencarian source dan xref instruksi keenam DEX | `classes6.dex`, `invoke-*` terhadap kedua method ID menghasilkan 0 |
+| Tidak ada factory 14 marker di mobile | Tinggi: exact string table + source search | Factory `uq.*` hanya ada di APK TV 2.48.8; pengecualian mobile yang tidak terkait dijelaskan per baris |
+| Akari error dan TCL HTTP 200 | Laporan pengguna, belum independen | Nilai tersebut tidak terdapat pada HAR yang dilampirkan |
+| Brand diterima backend saat ini | Belum terbukti | Memerlukan traffic perangkat sah dan respons backend asli |
+
+JADX 1.5.6 menghasilkan 38.825 file Java dari enam DEX dan meninggalkan 198 marker method yang gagal direkonstruksi. Karena itu kesimpulan caller/literal juga diperiksa langsung dari string table, annotation directory, dan instruksi invoke DEX. APK serta source hasil dekompilasi hanya disimpan sementara dan tidak dimasukkan ke repository.
+
+`partner_dry_run.php` mencetak kontrak dan matriks yang sama tanpa memiliki mode kirim, tanpa membuka koneksi, dan tanpa membuat serial, agent, ciphertext, atau signature palsu.
 
 ### PHP cURL
 
