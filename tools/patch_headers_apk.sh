@@ -57,8 +57,10 @@ export PATH="$JAVA_HOME/bin:$TOOLS_DIR/build-tools:$PATH"
 
 if [[ $PROFILE == mobile ]]; then
   SPLASH_REL="com/vidio/android/splash/SplashScreenActivity.smali"
+  MIN_API=32
 else
   SPLASH_REL="com/vidio/android/tv/splashscreen/SplashScreenActivity.smali"
+  MIN_API=23
 fi
 
 # Both profiles get the injected LoginGate dex: Mobile uses it for the email
@@ -68,7 +70,7 @@ mkdir -p "$WORK_DIR/login-gate-classes" "$WORK_DIR/login-gate-dex"
 javac --release 8 -d "$WORK_DIR/login-gate-classes" "$LOGIN_GATE_SOURCE"
 java -cp "$WORK_DIR/login-gate-classes" com.vidio.android.patch.LoginGate
 jar --create --file "$WORK_DIR/login-gate.jar" -C "$WORK_DIR/login-gate-classes" .
-d8 --min-api 32 --output "$WORK_DIR/login-gate-dex" "$WORK_DIR/login-gate.jar"
+d8 --min-api "$MIN_API" --output "$WORK_DIR/login-gate-dex" "$WORK_DIR/login-gate.jar"
 
 unzip -Z1 "$SOURCE" > "$WORK_DIR/source-entries.txt"
 if grep -Fxq "AndroidManifest.xml" "$WORK_DIR/source-entries.txt" && grep -Fxq "classes.dex" "$WORK_DIR/source-entries.txt"; then
@@ -269,39 +271,35 @@ if yml_target_count != 1:
 yml.write_text(yml_text)
 
 if profile == "mobile":
-    replacements = {
-        "android-app://com.vidio.android": "androidtv-app://com.vidio.android.tv",
-        "vidioandroid/2608.2.7-73babcffa4 (3191921)": "tv-android/2608.2.4 (1020)",
-    }
-    expected_replacements = {
-        "android-app://com.vidio.android": 2,
-        "vidioandroid/2608.2.7-73babcffa4 (3191921)": 9,
+    normalizations = {
+        "android-app://com.vidio.android": ("androidtv-app://com.vidio.android.tv", 2),
+        "tv-android/2608.2.4 (1020)": ("vidioandroid/2608.2.7-73babcffa4 (3191921)", 9),
     }
     smali_paths = list(root.glob("smali*/**/*.smali"))
-    original_counts = Counter()
-    replacement_counts = Counter()
+    current_counts = Counter()
+    desired_counts = Counter()
     for path in smali_paths:
         text = path.read_text()
-        for old, new in replacements.items():
-            original_counts[old] += text.count(f'"{old}"')
-            replacement_counts[old] += text.count(f'"{new}"')
+        for current, (desired, _) in normalizations.items():
+            current_counts[current] += text.count(f'"{current}"')
+            desired_counts[current] += text.count(f'"{desired}"')
 
-    pending_replacements = set()
-    for old, new in replacements.items():
-        expected = expected_replacements[old]
-        if original_counts[old] == expected and replacement_counts[old] == 0:
-            pending_replacements.add(old)
-        elif original_counts[old] != 0 or replacement_counts[old] != expected:
+    pending_normalizations = set()
+    for current, (desired, expected) in normalizations.items():
+        if current_counts[current] == expected and desired_counts[current] == 0:
+            pending_normalizations.add(current)
+        elif current_counts[current] != 0 or desired_counts[current] != expected:
             raise SystemExit(
-                f"Unexpected Mobile identity state for {old}: "
-                f"original={original_counts[old]}, replacement={replacement_counts[old]}, expected={expected}"
+                f"Unexpected Mobile identity state for {current}: "
+                f"current={current_counts[current]}, desired={desired_counts[current]}, expected={expected}"
             )
 
     for path in smali_paths:
         text = path.read_text()
         original = text
-        for old in pending_replacements:
-            text = text.replace(f'"{old}"', f'"{replacements[old]}"')
+        for current in pending_normalizations:
+            desired, _ = normalizations[current]
+            text = text.replace(f'"{current}"', f'"{desired}"')
         if text != original:
             path.write_text(text)
             changed_files.add(path.relative_to(root))
@@ -339,20 +337,11 @@ if profile == "mobile":
         raise SystemExit(f"Expected exactly one login gate request hook, found {hook_count}")
     login_gate_hooked = True
 
-# Stream User-Agent rewrite (Mobile and TV): in the shared OkHttp request
-# interceptor, hand the outbound request plus its URL string to LoginGate. It
-# returns the same request for everything except the livestream init call, where
-# it swaps in the User-Agent fetched once from etau.php?ua. All okhttp Builder
-# handling lives in Java (signature-based reflection), so the smali only needs
-# the already-known url() (j) and toString symbols.
-ua_hook_done = False
-ua_matches = list(root.glob("smali*/**/f60/d.smali"))
-if len(ua_matches) != 1:
-    raise SystemExit(f"Expected one common request interceptor for UA hook, found {len(ua_matches)}")
-ua_path = ua_matches[0]
-ua_text = ua_path.read_text()
-ua_marker = "Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"
-if ua_text.count(ua_marker) == 0:
+# Stream User-Agent rewrite (Mobile and TV): hand the outbound request plus its
+# URL string to LoginGate before the profile's normal header interceptor runs.
+# LoginGate returns the original request except for the exact livestream init URL.
+if profile == "mobile":
+    ua_suffix = "f60/d.smali"
     ua_request_pattern = re.compile(
         r"(?ms)(    invoke-virtual \{p1\}, Lyd0/g;->request\(\)Ltd0/f0;\n"
         r".*?    move-result-object v0\n)"
@@ -367,6 +356,31 @@ if ua_text.count(ua_marker) == 0:
         "    move-result-object v0\n\n"
         "    check-cast v0, Ltd0/f0;\n"
     )
+else:
+    ua_suffix = "l00/d.smali"
+    ua_request_pattern = re.compile(
+        r"(?ms)(    invoke-virtual \{p1\}, Lgb0/g;->request\(\)Lbb0/f0;\n"
+        r".*?    move-result-object v0\n)"
+    )
+    ua_block = (
+        "\n    invoke-virtual {v0}, Lbb0/f0;->j()Lbb0/y;\n\n"
+        "    move-result-object v2\n\n"
+        "    invoke-virtual {v2}, Lbb0/y;->toString()Ljava/lang/String;\n\n"
+        "    move-result-object v2\n\n"
+        "    invoke-static {v0, v2}, "
+        "Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;\n\n"
+        "    move-result-object v0\n\n"
+        "    check-cast v0, Lbb0/f0;\n"
+    )
+
+ua_hook_done = False
+ua_matches = list(root.glob(f"smali*/**/{ua_suffix}"))
+if len(ua_matches) != 1:
+    raise SystemExit(f"Expected one {profile} request interceptor for UA hook, found {len(ua_matches)}")
+ua_path = ua_matches[0]
+ua_text = ua_path.read_text()
+ua_marker = "Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"
+if ua_text.count(ua_marker) == 0:
     ua_text, ua_inserted = ua_request_pattern.subn(lambda match: match.group(1) + ua_block, ua_text, count=1)
     if ua_inserted != 1:
         raise SystemExit(f"Stream UA hook point not found in {ua_path}")

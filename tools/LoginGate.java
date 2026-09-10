@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
@@ -20,6 +21,7 @@ public final class LoginGate {
     private static final String DENIED_MESSAGE = "Email tidak diizinkan, silahkan beli di bot @vidiotvbot";
     private static final String ERROR_MESSAGE = "Tidak dapat memeriksa izin email, silakan coba lagi";
     private static final int MAX_RESPONSE_CHARS = 262144;
+    private static final int MAX_UA_CHARS = 1024;
     private static final String UA_PREFS = "v0_patch";
     private static final String UA_PREF_KEY = "stream_ua";
     private static final Set<String> BLOCKED_LOGIN_PATHS = new HashSet<>(Arrays.asList(
@@ -31,7 +33,7 @@ public final class LoginGate {
             "/api/tv/verify_code"
     ));
 
-    private static Object applicationContext;
+    private static volatile Object applicationContext;
     // Fetched once from UA_URL, then persisted; null-until-known. Cleared with app data.
     private static volatile String cachedUa;
 
@@ -101,7 +103,7 @@ public final class LoginGate {
                 return request;
             }
             String ua = getStreamUa();
-            if (ua == null || ua.isEmpty()) {
+            if (ua == null) {
                 return request;
             }
             Class<?> reqCls = request.getClass();
@@ -113,17 +115,22 @@ public final class LoginGate {
                 if (builderCls == reqCls || builderCls.isPrimitive() || builderCls == Void.TYPE) {
                     continue;
                 }
-                Method build = findBuild(builderCls, reqCls);
-                Method header = findHeader(builderCls);
-                if (build == null || header == null) {
-                    continue;
+                Object rewritten = buildWithUa(reqCls, builderCls, newBuilder.invoke(request), ua);
+                if (rewritten != null) {
+                    return rewritten;
                 }
-                Object builder = newBuilder.invoke(request);
-                // ponytail: at the app-interceptor stage OkHttp has not added a
-                // User-Agent yet, so header vs addHeader are equivalent here.
-                builder = header.invoke(builder, "User-Agent", ua);
-                Object rewritten = build.invoke(builder);
-                return rewritten != null ? rewritten : request;
+            }
+            for (Class<?> builderCls : reqCls.getDeclaredClasses()) {
+                for (Constructor<?> constructor : builderCls.getConstructors()) {
+                    Class<?>[] params = constructor.getParameterTypes();
+                    if (params.length != 1 || params[0] != reqCls) {
+                        continue;
+                    }
+                    Object rewritten = buildWithUa(reqCls, builderCls, constructor.newInstance(request), ua);
+                    if (rewritten != null) {
+                        return rewritten;
+                    }
+                }
             }
             return request;
         } catch (Throwable ignored) {
@@ -131,12 +138,56 @@ public final class LoginGate {
         }
     }
 
-    static boolean isStreamUrl(String url) {
-        return url != null
-                && url.contains("api.vidio.com")
-                && url.contains("/livestreamings/")
-                && url.contains("/stream")
-                && url.contains("initialize=true");
+    static boolean isStreamUrl(String value) {
+        if (value == null) {
+            return false;
+        }
+        try {
+            URL url = new URL(value);
+            int port = url.getPort();
+            if (!"https".equalsIgnoreCase(url.getProtocol())
+                    || !"api.vidio.com".equalsIgnoreCase(url.getHost())
+                    || (port != -1 && port != 443)
+                    || url.getUserInfo() != null) {
+                return false;
+            }
+
+            String path = url.getPath();
+            String prefix = "/livestreamings/";
+            String suffix = "/stream";
+            if (path == null || !path.startsWith(prefix) || !path.endsWith(suffix)) {
+                return false;
+            }
+            String streamId = path.substring(prefix.length(), path.length() - suffix.length());
+            if (streamId.isEmpty() || streamId.indexOf('/') >= 0) {
+                return false;
+            }
+
+            String query = url.getQuery();
+            if (query == null) {
+                return false;
+            }
+            for (String parameter : query.split("&")) {
+                if ("initialize=true".equals(parameter)) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (IOException | IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private static Object buildWithUa(Class<?> reqCls, Class<?> builderCls, Object builder, String ua)
+            throws ReflectiveOperationException {
+        Method build = findBuild(builderCls, reqCls);
+        Method header = findHeader(builderCls);
+        if (builder == null || build == null || header == null) {
+            return null;
+        }
+        builder = clearHeader(builder, builderCls, "User-Agent");
+        Object updated = header.invoke(builder, "User-Agent", ua);
+        return build.invoke(updated != null ? updated : builder);
     }
 
     private static Method findBuild(Class<?> builderCls, Class<?> reqCls) {
@@ -151,21 +202,41 @@ public final class LoginGate {
     private static Method findHeader(Class<?> builderCls) {
         for (Method method : builderCls.getMethods()) {
             Class<?>[] params = method.getParameterTypes();
+            Class<?> result = method.getReturnType();
             if (params.length == 2 && params[0] == String.class && params[1] == String.class
-                    && method.getReturnType() == builderCls) {
+                    && (result == builderCls || result == Void.TYPE)) {
                 return method;
             }
         }
         return null;
     }
 
-    private static String getStreamUa() {
-        String ua = cachedUa;
-        if (ua != null) {
-            return ua.isEmpty() ? null : ua;
+    private static Object clearHeader(Object builder, Class<?> builderCls, String name) {
+        for (Method method : builderCls.getMethods()) {
+            Class<?>[] params = method.getParameterTypes();
+            Class<?> result = method.getReturnType();
+            if (params.length != 1 || params[0] != String.class
+                    || (result != builderCls && result != Void.TYPE)) {
+                continue;
+            }
+            try {
+                Object updated = method.invoke(builder, name);
+                if (updated != null) {
+                    builder = updated;
+                }
+            } catch (ReflectiveOperationException | IllegalArgumentException ignored) {
+            }
         }
-        ua = prefsGetUa();
-        if (ua != null && !ua.isEmpty()) {
+        return builder;
+    }
+
+    private static synchronized String getStreamUa() {
+        String ua = normalizeUa(cachedUa);
+        if (ua != null) {
+            return ua;
+        }
+        ua = normalizeUa(prefsGetUa());
+        if (ua != null) {
             cachedUa = ua;
             return ua;
         }
@@ -174,11 +245,11 @@ public final class LoginGate {
         } catch (IOException exception) {
             return null; // keep default UA; retry on a later stream request
         }
-        if (ua == null || ua.isEmpty()) {
+        if (ua == null) {
             return null;
         }
-        cachedUa = ua;
         prefsPutUa(ua);
+        cachedUa = ua;
         return ua;
     }
 
@@ -204,20 +275,37 @@ public final class LoginGate {
 
     static String parseUa(BufferedReader reader) throws IOException {
         int responseChars = 0;
+        String ua = null;
         try (BufferedReader source = reader) {
             String line;
             while ((line = source.readLine()) != null) {
                 responseChars += line.length();
-                if (responseChars > MAX_RESPONSE_CHARS) {
+                if (responseChars > MAX_UA_CHARS) {
                     throw new IOException("UA response is too large");
                 }
-                String candidate = line.trim();
-                if (!candidate.isEmpty()) {
-                    return candidate;
+                if (ua == null) {
+                    ua = normalizeUa(line);
                 }
             }
         }
-        return null;
+        return ua;
+    }
+
+    static String normalizeUa(String value) {
+        if (value == null) {
+            return null;
+        }
+        String candidate = value.trim();
+        if (candidate.isEmpty() || candidate.length() > MAX_UA_CHARS) {
+            return null;
+        }
+        for (int index = 0; index < candidate.length(); index++) {
+            char character = candidate.charAt(index);
+            if (character < 0x20 || character > 0x7e) {
+                return null;
+            }
+        }
+        return candidate;
     }
 
     private static Object sharedPreferences() throws ReflectiveOperationException {
@@ -236,7 +324,8 @@ public final class LoginGate {
             if (prefs == null) {
                 return null;
             }
-            return (String) prefs.getClass().getMethod("getString", String.class, String.class)
+            Class<?> prefsClass = Class.forName("android.content.SharedPreferences");
+            return (String) prefsClass.getMethod("getString", String.class, String.class)
                     .invoke(prefs, UA_PREF_KEY, null);
         } catch (ReflectiveOperationException | ClassCastException ignored) {
             return null;
@@ -249,10 +338,12 @@ public final class LoginGate {
             if (prefs == null) {
                 return;
             }
-            Object editor = prefs.getClass().getMethod("edit").invoke(prefs);
-            editor = editor.getClass().getMethod("putString", String.class, String.class)
+            Class<?> prefsClass = Class.forName("android.content.SharedPreferences");
+            Class<?> editorClass = Class.forName("android.content.SharedPreferences$Editor");
+            Object editor = prefsClass.getMethod("edit").invoke(prefs);
+            editor = editorClass.getMethod("putString", String.class, String.class)
                     .invoke(editor, UA_PREF_KEY, ua);
-            editor.getClass().getMethod("apply").invoke(editor);
+            editorClass.getMethod("commit").invoke(editor);
         } catch (ReflectiveOperationException ignored) {
         }
     }
@@ -399,14 +490,31 @@ public final class LoginGate {
         if (parseUa(new BufferedReader(new java.io.StringReader("   \n  \n"))) != null) {
             throw new AssertionError("Blank UA response should parse to null");
         }
-        if (!isStreamUrl("https://api.vidio.com/livestreamings/12345/stream?initialize=true")) {
+        if (!isStreamUrl("https://api.vidio.com/livestreamings/12345/stream?foo=1&initialize=true")) {
             throw new AssertionError("Stream init URL should match");
         }
-        if (isStreamUrl("https://api.vidio.com/livestreamings/12345/stream")) {
-            throw new AssertionError("Stream URL without initialize must not match");
+        String[] nonStreamUrls = {
+                "https://api.vidio.com/livestreamings/12345/stream",
+                "https://api.vidio.com/livestreamings/12345/detail?initialize=true",
+                "https://api.vidio.com/livestreamings/12345/stream/extra?initialize=true",
+                "https://api.vidio.com/livestreamings/12345/stream?initialize=trueish",
+                "https://api.vidio.com.evil.test/livestreamings/12345/stream?initialize=true",
+                "http://api.vidio.com/livestreamings/12345/stream?initialize=true"
+        };
+        for (String nonStreamUrl : nonStreamUrls) {
+            if (isStreamUrl(nonStreamUrl)) {
+                throw new AssertionError("Non-target URL matched: " + nonStreamUrl);
+            }
         }
-        if (isStreamUrl("https://api.vidio.com/livestreamings/12345/detail?initialize=true")) {
-            throw new AssertionError("Non-stream endpoint must not match");
+        if (normalizeUa("bad\u0001ua") != null) {
+            throw new AssertionError("Control character was accepted in UA");
+        }
+        char[] oversized = new char[MAX_UA_CHARS + 1];
+        Arrays.fill(oversized, 'a');
+        try {
+            parseUa(new BufferedReader(new java.io.StringReader(new String(oversized))));
+            throw new AssertionError("Oversized UA response was accepted");
+        } catch (IOException expected) {
         }
         System.out.println("LoginGate self-test passed");
     }
