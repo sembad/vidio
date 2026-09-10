@@ -470,15 +470,32 @@ Kolom “caller mobile” merujuk khusus pada jalur `/partner/brand` → `/api/p
 | `myrepublic` | Ya | Marker tidak ditemukan. | 0 | Tidak ada. | Belum teruji. |
 | `nex_parabola` | Ya | Marker tidak ditemukan. | 0 | Tidak ada. | Belum teruji. |
 | `polytron` | Ya | Marker tidak ditemukan. | 0 | Tidak ada. | Belum teruji. |
-| `tcl` | Ya | Marker lowercase tidak ditemukan; `TCL` hanya dipakai AndroidX CameraX untuk quirk exposure. | 0 | Laporan pengguna: HTTP 200; raw request/response tidak ada di HAR terlampir. | **200 dilaporkan**, tetapi sukses auth/`partner_id` belum dapat diverifikasi. |
+| `tcl` | Ya | Marker lowercase tidak ditemukan; `TCL` hanya dipakai AndroidX CameraX untuk quirk exposure. | 0 | HAR native TV 2.48.8: `/partner/brand` dan `/api/partner/auth` sama-sama HTTP 200. | **Deteksi dan seamless auth terverifikasi untuk APK TV**, tetapi sesi hasil auth tidak dipakai request berikutnya dan playback belum tercapture. |
 | `vnt` | Ya | Marker lowercase tidak ditemukan; `VntApi` terpisah mendeklarasikan `/vnt/session`. | 0 | Tidak ada respons partner yang dilampirkan. | Belum teruji. |
 | `xlhome` | Ya | Tidak ada literal marker; hanya class Parcelable lama `tvpartner.xlhome.Parameter`, tanpa import/caller di luar class itu sendiri. | 0 | Tidak ada respons partner yang dilampirkan. | Belum teruji. |
 
-Jadi hasil yang dapat dipertanggungjawabkan bukan “TCL pasti satu-satunya brand aktif”. Hasilnya adalah: TCL satu-satunya yang **dilaporkan** menerima HTTP 200; Akari mencapai error validasi serial; dua belas marker lain tidak memiliki bukti runtime yang dapat diperiksa. HTTP 200 sendiri juga perlu body sukses yang memuat `partner_id`, `auth`, `profile`, atau token untuk membuktikan seamless login benar-benar berhasil.
+TCL kini memiliki bukti runtime asli untuk jalur **APK TV 2.48.8**: deteksi mengembalikan `TclTv`, lalu partner auth mengembalikan profil, `partner_id`, sesi baru, dan `subscription_created=true`. Bukti ini tidak berlaku untuk Mobile 2608.2.7 dan belum membuktikan entitlement atau playback berhasil.
 
-#### Pemeriksaan HAR terlampir
+#### Pemeriksaan HAR native TV terlampir — 8 September 2026
 
-HAR Reqable terlampir berisi 275 entry. User-Agent dan origin menunjukkan traffic Chrome Android untuk `m.vidio.com`/`quiz.vidio.com`, bukan capture native APK; tidak ada satu pun URL `/partner/brand` atau `/api/partner/auth`. Pencarian request/response juga tidak menemukan `auth_payload`, `partner_agent`, `10032004`, atau pesan error serial. HAR ini karena itu tidak dapat memverifikasi laporan Akari/TCL maupun 12 brand lain.
+HAR Reqable baru berisi 22 entry dan benar-benar berasal dari `com.vidio.android.tc` 2.48.8: `User-Agent` bernilai `tv-android/2.48.8 (462)` dan referer memakai `androidtv-app://com.vidio.android.tc`. Jadi HAR ini **bukan** traffic dari XAPK Mobile `com.vidio.android` 2608.2.7 yang turut dilampirkan.
+
+| Tahap | Hasil yang teramati |
+|---|---|
+| Deteksi partner | `GET /partner/brand` → HTTP 200, nama `TclTv`, agent `tcl`, identifikasi `android_id`. |
+| Partner auth | `POST /api/partner/auth` → HTTP 200, `subscription_created=true`, `allow_merge=true`, serta mengembalikan email/token legacy, access/refresh token, profil, dan `partner_id` baru. |
+| Handoff sesi | Kredensial dan UID pada respons partner auth berbeda dari kredensial dan UID yang tetap dipakai semua request berikutnya. Tidak ada nilai sesi hasil partner auth yang dipakai kembali. |
+| Cek paket | Dua `GET /api/users/has_active_subscription` sesudah partner auth → HTTP 401 `Authentication Error`. Request pertama dimulai sekitar 343 ms setelah respons auth selesai, jadi ini bukan request paralel yang telanjur dikirim sebelum auth selesai. |
+| Endpoint lain | Dengan sesi lama yang sama, `GET /users/{id}/segments` dan `GET /api/tokens/pns` tetap HTTP 200. Artinya format header secara umum diterima; kegagalannya spesifik pada sesi/entitlement yang diperiksa. |
+| Playback | Tidak ada request `/livestreamings/{id}/stream`, `/api/stream/v1/video_data/{id}`, manifest HLS/DASH, atau lisensi DRM. HAR berhenti sebelum server playback dapat menolak atau menerima pemutaran. |
+
+Temuan terkuat adalah **handoff/merge sesi partner yang tidak selesai**: backend membuat atau mengembalikan identitas TCL baru, tetapi aplikasi tetap berjalan memakai identitas lama, lalu preflight subscription gagal 401. Nilai `allow_merge=true` mendukung dugaan bahwa entitlement partner belum dipindahkan atau ditautkan ke sesi lama. Ini menjelaskan mengapa kredensial yang terlihat “akun sama” di UI belum tentu merupakan identitas backend yang sama.
+
+Profil perangkat HAR juga tidak konsisten: manufacturer/brand/model mengaku TCL C655, sedangkan product/device/build/bootloader berasal dari keluarga Samsung A24. Profil clone/spoof semacam ini cukup untuk memicu deteksi TCL, tetapi tidak membuktikan perangkat atau entitlement partner sah dan dapat mengacaukan alur merge/device gating.
+
+Tool PHP mengambil sesi langsung dari respons `/api/login`, memakai token yang baru diterima, dan langsung memanggil endpoint stream/video; tool tersebut tidak melewati deteksi partner, merge gating, atau `has_active_subscription` milik APK TV. Karena jalurnya berbeda, keberhasilan tool tidak membuktikan sesi APK identik.
+
+Kesimpulan ini belum boleh disebut kegagalan codec, CDN, Widevine, atau DRM karena tidak ada satu pun request playback pada HAR. Untuk memastikan titik akhir, capture berikutnya harus dimulai sebelum menekan Play dan berakhir setelah pesan error, serta memuat request stream/video, manifest, dan lisensi dengan seluruh token disamarkan.
 
 #### Uji production non-partner — 9 September 2026
 
@@ -500,8 +517,11 @@ Respons memiliki `x-request-id` dan berasal dari node production Vidio, sehingga
 | Header umum dan aturan header sesi | Tinggi untuk interceptor; sedang untuk endpoint dormant karena binding tidak ada | `f60.C10200d`, `f60.C10205i`, `f60.C10201e`, `InterceptorConstantKt` |
 | Nol caller kedua endpoint | Tinggi: pencarian source dan xref instruksi keenam DEX | `classes6.dex`, `invoke-*` terhadap kedua method ID menghasilkan 0 |
 | Tidak ada factory 14 marker di mobile | Tinggi: exact string table + source search | Factory `uq.*` hanya ada di APK TV 2.48.8; pengecualian mobile yang tidak terkait dijelaskan per baris |
-| Akari error dan TCL HTTP 200 | Laporan pengguna, belum independen | Nilai tersebut tidak terdapat pada HAR yang dilampirkan |
-| Brand diterima backend saat ini | Belum terbukti | Memerlukan traffic perangkat sah dan respons backend asli |
+| Akari error | Laporan pengguna, belum independen | Nilai Akari tidak terdapat pada HAR yang dilampirkan. |
+| Deteksi dan auth TCL pada APK TV 2.48.8 | Tinggi: request dan body respons HAR native | `/partner/brand` serta `/api/partner/auth` sama-sama 200 dan respons auth lengkap. |
+| Handoff sesi partner gagal | Tinggi: perbandingan kredensial dan UID tanpa mengekspos nilainya | Request sesudah auth tetap memakai sesi lama; dua preflight subscription berakhir 401. |
+| Dukungan partner pada Mobile 2608.2.7 | Belum terbukti | Endpoint dormant tanpa caller dan HAR berasal dari APK TV berbeda. |
+| Penyebab akhir di player/DRM | Belum terbukti | HAR tidak memuat request stream, manifest, segmen media, atau lisensi. |
 
 JADX 1.5.6 menghasilkan 38.825 file Java dari enam DEX dan meninggalkan 198 marker method yang gagal direkonstruksi. Karena itu kesimpulan caller/literal juga diperiksa langsung dari string table, annotation directory, dan instruksi invoke DEX. APK serta source hasil dekompilasi hanya disimpan sementara dan tidak dimasukkan ke repository.
 

@@ -151,8 +151,8 @@ function brandEvidence(): array
         'tcl' => [
             'label' => 'TCL',
             'mobile' => 'marker lowercase tidak ada; uppercase TCL hanya quirk CameraX',
-            'runtime' => 'laporan pengguna: HTTP 200; raw request/response tidak ada di HAR',
-            'verdict' => '200 dilaporkan, sukses auth belum dapat diverifikasi',
+            'runtime' => 'HAR native TV 2.48.8: deteksi dan partner auth 200; sesi hasil auth tidak dipakai request berikutnya',
+            'verdict' => 'auth TCL pada APK TV terverifikasi; handoff/merge sesi bermasalah, playback belum tercapture',
         ],
         'vnt' => [
             'label' => 'VNT',
