@@ -57,7 +57,7 @@ export PATH="$JAVA_HOME/bin:$TOOLS_DIR/build-tools:$PATH"
 
 if [[ $PROFILE == mobile ]]; then
   SPLASH_REL="com/vidio/android/splash/SplashScreenActivity.smali"
-  MIN_API=32
+  MIN_API=26
 else
   SPLASH_REL="com/vidio/android/tv/splashscreen/SplashScreenActivity.smali"
   MIN_API=23
@@ -132,7 +132,7 @@ if [[ $LOGIN_GATE_PRESENT == false ]]; then
   mv "${splash_sources[0]}" "$splash_target"
 fi
 
-python3 - "$WORK_DIR/decoded" "$PROFILE" <<'PY'
+python3 - "$WORK_DIR/decoded" "$PROFILE" "$MIN_API" <<'PY'
 from collections import Counter
 from pathlib import Path
 import re
@@ -140,6 +140,7 @@ import sys
 
 root = Path(sys.argv[1])
 profile = sys.argv[2]
+min_api = int(sys.argv[3])
 targets = {
     "X-API-Platform": 2,
     "X-API-App-Info": 2,
@@ -254,6 +255,11 @@ expected_package = "com.vidio.android" if profile == "mobile" else "com.vidio.an
 package_match = re.search(r'package="([^"]+)"', manifest_text)
 if package_match is None or package_match.group(1) != expected_package:
     raise SystemExit(f"Unexpected package for {profile}: {package_match.group(1) if package_match else 'missing'}")
+manifest_text, min_count = re.subn(
+    r'android:minSdkVersion="\d+"', f'android:minSdkVersion="{min_api}"', manifest_text
+)
+if min_count > 1:
+    raise SystemExit(f"Expected at most one manifest minSdkVersion, found {min_count}")
 manifest_text, target_count = re.subn(r'android:targetSdkVersion="\d+"', 'android:targetSdkVersion="37"', manifest_text)
 if target_count > 1:
     raise SystemExit(f"Expected at most one manifest targetSdkVersion, found {target_count}")
@@ -265,6 +271,11 @@ manifest.write_text(manifest_text)
 
 yml = root / "apktool.yml"
 yml_text = yml.read_text()
+yml_text, yml_min_count = re.subn(
+    r'(?m)^(\s*minSdkVersion:)\s*\d+\s*$', rf'\g<1> {min_api}', yml_text
+)
+if yml_min_count != 1:
+    raise SystemExit(f"Expected one apktool minSdkVersion, found {yml_min_count}")
 yml_text, yml_target_count = re.subn(r'(?m)^(\s*targetSdkVersion:)\s*\d+\s*$', r'\1 37', yml_text)
 if yml_target_count != 1:
     raise SystemExit(f"Expected one apktool targetSdkVersion, found {yml_target_count}")
@@ -549,7 +560,7 @@ if True:
         raise SystemExit("Expected exactly one login gate context initializer")
     login_gate_initialized = True
 
-print(f"Profile: {profile}; targetSdkVersion: 37")
+print(f"Profile: {profile}; minSdkVersion: {min_api}; targetSdkVersion: 37")
 print("Hidden ad and shopping entry points:")
 for label, count in ui_stub_counts.items():
     print(f"  {label}: {count}")

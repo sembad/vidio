@@ -1,9 +1,13 @@
 package com.vidio.android.patch;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -22,8 +26,7 @@ public final class LoginGate {
     private static final String ERROR_MESSAGE = "Tidak dapat memeriksa izin email, silakan coba lagi";
     private static final int MAX_RESPONSE_CHARS = 262144;
     private static final int MAX_UA_CHARS = 1024;
-    private static final String UA_PREFS = "v0_patch";
-    private static final String UA_PREF_KEY = "stream_ua";
+    private static final String UA_CACHE_FILE = "stream_ua.txt";
     private static final Set<String> BLOCKED_LOGIN_PATHS = new HashSet<>(Arrays.asList(
             "/api/googles/auth",
             "/api/otp/auth",
@@ -34,7 +37,7 @@ public final class LoginGate {
     ));
 
     private static volatile Object applicationContext;
-    // Fetched once from UA_URL, then persisted; null-until-known. Cleared with app data.
+    // Loaded once at an authorized login and kept until Android clears the app cache.
     private static volatile String cachedUa;
 
     private LoginGate() {}
@@ -83,15 +86,16 @@ public final class LoginGate {
         }
         if (!allowed) {
             deny(DENIED_MESSAGE);
+            return;
         }
+        cacheStreamUaAfterLogin();
     }
 
     /**
      * Called from the shared OkHttp request interceptor on every outbound request.
      * For the livestream init request only, swaps the User-Agent to the value from
-     * UA_URL (fetched once, cached). Every other request is returned untouched.
-     * Never throws: on any problem the original request is returned so the app
-     * keeps its default UA.
+     * the app cache populated at login. Every other request is returned untouched.
+     * Never throws: on any problem the original request is returned.
      *
      * @param request the OkHttp Request (obfuscated type), passed as Object
      * @param url     request.url().toString(), supplied by the smali hook
@@ -230,26 +234,30 @@ public final class LoginGate {
         return builder;
     }
 
-    private static synchronized String getStreamUa() {
-        String ua = normalizeUa(cachedUa);
+    private static synchronized void cacheStreamUaAfterLogin() {
+        File cacheFile = uaCacheFile();
+        String ua = readCachedUa(cacheFile);
+        cachedUa = ua;
         if (ua != null) {
-            return ua;
-        }
-        ua = normalizeUa(prefsGetUa());
-        if (ua != null) {
-            cachedUa = ua;
-            return ua;
+            return;
         }
         try {
             ua = fetchUa();
-        } catch (IOException exception) {
-            return null; // keep default UA; retry on a later stream request
+            if (ua != null && cacheFile != null) {
+                writeCachedUa(cacheFile, ua);
+                cachedUa = ua;
+            }
+        } catch (IOException ignored) {
+            // No failed value is stored; the next authorized login tries again.
         }
+    }
+
+    private static synchronized String getStreamUa() {
+        String ua = normalizeUa(cachedUa);
         if (ua == null) {
-            return null;
+            ua = readCachedUa(uaCacheFile());
+            cachedUa = ua;
         }
-        prefsPutUa(ua);
-        cachedUa = ua;
         return ua;
     }
 
@@ -308,44 +316,47 @@ public final class LoginGate {
         return candidate;
     }
 
-    private static Object sharedPreferences() throws ReflectiveOperationException {
+    private static File uaCacheFile() {
         Object context = applicationContext;
         if (context == null) {
             return null;
         }
-        Class<?> contextClass = Class.forName("android.content.Context");
-        return contextClass.getMethod("getSharedPreferences", String.class, int.class)
-                .invoke(context, UA_PREFS, 0);
-    }
-
-    private static String prefsGetUa() {
         try {
-            Object prefs = sharedPreferences();
-            if (prefs == null) {
-                return null;
-            }
-            Class<?> prefsClass = Class.forName("android.content.SharedPreferences");
-            return (String) prefsClass.getMethod("getString", String.class, String.class)
-                    .invoke(prefs, UA_PREF_KEY, null);
-        } catch (ReflectiveOperationException | ClassCastException ignored) {
+            Object cacheDir = context.getClass().getMethod("getCacheDir").invoke(context);
+            return cacheDir instanceof File ? new File((File) cacheDir, UA_CACHE_FILE) : null;
+        } catch (ReflectiveOperationException ignored) {
             return null;
         }
     }
 
-    private static void prefsPutUa(String ua) {
-        try {
-            Object prefs = sharedPreferences();
-            if (prefs == null) {
-                return;
-            }
-            Class<?> prefsClass = Class.forName("android.content.SharedPreferences");
-            Class<?> editorClass = Class.forName("android.content.SharedPreferences$Editor");
-            Object editor = prefsClass.getMethod("edit").invoke(prefs);
-            editor = editorClass.getMethod("putString", String.class, String.class)
-                    .invoke(editor, UA_PREF_KEY, ua);
-            editorClass.getMethod("commit").invoke(editor);
-        } catch (ReflectiveOperationException ignored) {
+    private static String readCachedUa(File file) {
+        if (file == null || !file.isFile()) {
+            return null;
         }
+        try {
+            return parseUa(new BufferedReader(new InputStreamReader(
+                    new FileInputStream(file), StandardCharsets.UTF_8)));
+        } catch (IOException ignored) {
+            return null;
+        }
+    }
+
+    private static void writeCachedUa(File file, String ua) throws IOException {
+        File parent = file.getParentFile();
+        if (parent == null || (!parent.isDirectory() && !parent.mkdirs())) {
+            throw new IOException("Cannot create UA cache directory");
+        }
+        File temporary = new File(parent, file.getName() + ".tmp");
+        try (OutputStreamWriter writer = new OutputStreamWriter(
+                new FileOutputStream(temporary), StandardCharsets.UTF_8)) {
+            writer.write(ua);
+            writer.write('\n');
+        }
+        if ((!file.exists() || file.delete()) && temporary.renameTo(file)) {
+            return;
+        }
+        temporary.delete();
+        throw new IOException("Cannot replace UA cache file");
     }
 
     private static String formValue(Object requestBody, String key) throws IOException {
@@ -489,6 +500,14 @@ public final class LoginGate {
         }
         if (parseUa(new BufferedReader(new java.io.StringReader("   \n  \n"))) != null) {
             throw new AssertionError("Blank UA response should parse to null");
+        }
+        File cacheTest = File.createTempFile("vidio-stream-ua", ".cache");
+        if (!cacheTest.delete() || readCachedUa(cacheTest) != null) {
+            throw new AssertionError("Missing cache should not provide a UA");
+        }
+        writeCachedUa(cacheTest, ua);
+        if (!ua.equals(readCachedUa(cacheTest)) || !cacheTest.delete()) {
+            throw new AssertionError("UA cache round trip failed");
         }
         if (!isStreamUrl("https://api.vidio.com/livestreamings/12345/stream?foo=1&initialize=true")) {
             throw new AssertionError("Stream init URL should match");
