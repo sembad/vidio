@@ -198,6 +198,129 @@ if playback_counts != expected_playback_counts:
         f"Unexpected playback patch counts: expected {dict(expected_playback_counts)}, got {dict(playback_counts)}"
     )
 
+def find_smali(suffix):
+    matches = list(root.glob(f"smali*/**/{suffix}"))
+    if len(matches) != 1:
+        raise SystemExit(f"Expected one Smali file ending in {suffix}, found {len(matches)}")
+    return matches[0]
+
+false_body = "    .locals 1\n\n    const/4 v0, 0x0\n\n    return v0\n"
+true_body = "    .locals 1\n\n    const/4 v0, 0x1\n\n    return v0\n"
+return_void_body = "    .locals 0\n\n    return-void\n"
+return_unit_body = (
+    "    .locals 1\n\n"
+    "    invoke-virtual {p0}, Lhp/b;->getAboveSeekbarMenuContainer()Landroid/view/ViewGroup;\n\n"
+    "    move-result-object v0\n\n"
+    "    invoke-virtual {v0}, Landroid/view/ViewGroup;->removeAllViews()V\n\n"
+    "    sget-object v0, Lkotlin/Unit;->a:Lkotlin/Unit;\n\n"
+    "    return-object v0\n"
+)
+ui_method_patches = {
+    "mobile": (
+        (
+            "j00/a$a.smali",
+            ".method public final d()Z",
+            false_body,
+            "pause ads",
+        ),
+        (
+            "t50/a$b.smali",
+            ".method public final a()Z",
+            true_body,
+            "overlay ads",
+        ),
+        (
+            "com/vidio/android/fluid/watchpage/presentation/component/ads/banner/b.smali",
+            ".method public static final a(Lcom/vidio/android/fluid/watchpage/domain/FluidComponent$a;Lcom/vidio/android/fluid/watchpage/presentation/component/ads/banner/BannerAdViewModel;Lsr/a;Ljava/lang/String;Ly3/k;Landroidx/compose/runtime/q;I)V",
+            return_void_body,
+            "watch-page banner ads",
+        ),
+        (
+            "ts/h.smali",
+            ".method public static final a(JLkotlin/jvm/functions/Function1;Ljava/lang/String;Ly3/k;Lts/k;Landroidx/compose/runtime/q;I)V",
+            return_void_body,
+            "shopping portrait banner",
+        ),
+        (
+            "ts/h.smali",
+            ".method public static final c(Lhp/b;Lv00/d1;Lvc0/i2;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;Lkotlin/coroutines/jvm/internal/j;)Ljava/lang/Object;",
+            return_unit_body,
+            "shopping cart button",
+        ),
+    ),
+    "tv": (
+        (
+            "lv/a$a.smali",
+            ".method public final d()Z",
+            false_body,
+            "pause ads",
+        ),
+        (
+            "a00/a$b.smali",
+            ".method public final a()Z",
+            true_body,
+            "overlay ads",
+        ),
+        (
+            "zs/g.smali",
+            ".method public final q()Z",
+            false_body,
+            "shopping cart button",
+        ),
+    ),
+}
+ui_patch_counts = Counter()
+
+for suffix, declaration, body, label in ui_method_patches[profile]:
+    path = find_smali(suffix)
+    text = path.read_text()
+    original = text
+    pattern = re.compile(rf"(?ms)^({re.escape(declaration)}\n).*?^\.end method$")
+    text, method_count = pattern.subn(
+        lambda match: f"{match.group(1)}{body}.end method",
+        text,
+    )
+    if method_count != 1:
+        raise SystemExit(f"Expected one {declaration} in {path}, found {method_count}")
+    ui_patch_counts[label] += method_count
+    if text != original:
+        path.write_text(text)
+        changed_files.add(path.relative_to(root))
+
+welcome_text = "salamat datang, terimakasih telah langganan semoga harimu bahagia"
+launcher_files = {
+    "mobile": (
+        "com/vidio/android/splash/SplashScreenActivity.smali",
+        "    invoke-super {p0, p1}, Lcom/vidio/android/splash/Hilt_SplashScreenActivity;->onCreate(Landroid/os/Bundle;)V",
+    ),
+    "tv": (
+        "com/vidio/android/tv/splashscreen/SplashScreenActivity.smali",
+        "    invoke-super {p0, p1}, Lcom/vidio/android/tv/splashscreen/Hilt_SplashScreenActivity;->onCreate(Landroid/os/Bundle;)V",
+    ),
+}
+launcher_suffix, super_call = launcher_files[profile]
+launcher_path = find_smali(launcher_suffix)
+launcher_text = launcher_path.read_text()
+welcome_count = launcher_text.count(f'"{welcome_text}"')
+welcome_inserted = False
+if welcome_count == 0:
+    toast_block = (
+        f'{super_call}\n\n'
+        f'    const-string v0, "{welcome_text}"\n\n'
+        "    const/4 v1, 0x1\n\n"
+        "    invoke-static {p0, v0, v1}, Landroid/widget/Toast;->makeText(Landroid/content/Context;Ljava/lang/CharSequence;I)Landroid/widget/Toast;\n\n"
+        "    move-result-object v0\n\n"
+        "    invoke-virtual {v0}, Landroid/widget/Toast;->show()V"
+    )
+    launcher_text, super_count = launcher_text.replace(super_call, toast_block, 1), launcher_text.count(super_call)
+    if super_count != 1:
+        raise SystemExit(f"Expected one launcher onCreate super call in {launcher_path}, found {super_count}")
+    launcher_path.write_text(launcher_text)
+    changed_files.add(launcher_path.relative_to(root))
+    welcome_inserted = True
+elif welcome_count != 1:
+    raise SystemExit(f"Expected at most one welcome message in {launcher_path}, found {welcome_count}")
+
 manifest = root / "AndroidManifest.xml"
 manifest_text = manifest.read_text()
 expected_package = "com.vidio.android" if profile == "mobile" else "com.vidio.android.tv"
@@ -265,6 +388,10 @@ for header in targets:
 print("Playback policy methods forced false:")
 for method_name in playback_methods:
     print(f"  {method_name}: {playback_counts[method_name]}")
+print("Disabled ad and shopping UI paths:")
+for label, count in ui_patch_counts.items():
+    print(f"  {label}: {count}")
+print(f"Welcome toast: {'inserted' if welcome_inserted else 'existing'}")
 print("Changed Smali files:")
 for path in sorted(changed_files):
     print(f"  {path}")
