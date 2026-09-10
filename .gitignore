@@ -1,0 +1,7 @@
+.apk-patch-tools/
+*.keystore
+*.jks
+*.pem
+*.pk8
+*.der
+*.idsig
