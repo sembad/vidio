@@ -258,7 +258,98 @@ if profile == "mobile":
             path.write_text(text)
             changed_files.add(path.relative_to(root))
 
+# Hide all display ads: stub the ad-view render entry points. We keep every
+# class, field and DI wiring intact (deleting them previously crashed startup
+# via interface dispatch) and only make the load/bind methods render nothing:
+# the FrameLayout hides itself and no ad is ever requested.
+ad_view_stubs = {
+    "mobile": [
+        (
+            "com/vidio/android/ad/view/BannerAdView.smali",
+            r"\.method public final f\(Lcom/vidio/android/ad/view/a;Ljava/lang/String;\)V",
+        ),
+        (
+            "com/vidio/android/watch/newplayer/vod/ads/view/BelowPlayerAdsView.smali",
+            r"\.method public final a\(Lcom/google/android/gms/ads/nativead/NativeAd;\)V",
+        ),
+    ],
+    "tv": [],
+}
+ad_stub_count = 0
+for suffix, method_sig in ad_view_stubs[profile]:
+    matches = list(root.glob(f"smali*/**/{suffix}"))
+    if len(matches) != 1:
+        raise SystemExit(f"Expected one ad-view file ending in {suffix}, found {len(matches)}")
+    path = matches[0]
+    text = path.read_text()
+    pattern = re.compile(rf"(?ms)^({method_sig})\n.*?^\.end method$")
+
+    def _stub(match):
+        return (
+            f"{match.group(1)}\n"
+            "    .locals 1\n\n"
+            "    const/16 v0, 0x8\n\n"
+            "    invoke-virtual {p0, v0}, Landroid/view/View;->setVisibility(I)V\n\n"
+            "    return-void\n"
+            ".end method"
+        )
+
+    new_text, count = pattern.subn(_stub, text)
+    if count != 1:
+        raise SystemExit(f"Expected one ad-view method in {path} matching {method_sig}, found {count}")
+    ad_stub_count += count
+    if new_text != text:
+        path.write_text(new_text)
+        changed_files.add(path.relative_to(root))
+
+# Welcome toast on app launch: inject a short Toast at the top of the splash
+# activity's onCreate, right after super.onCreate. Idempotent via the message guard.
+splash_files = {
+    "mobile": "com/vidio/android/splash/SplashScreenActivity.smali",
+    "tv": "com/vidio/android/tv/splashscreen/SplashScreenActivity.smali",
+}
+welcome_message = "Selamat datang, terima kasih telah langganan"
+suffix = splash_files[profile]
+matches = list(root.glob(f"smali*/**/{suffix}"))
+if len(matches) != 1:
+    raise SystemExit(f"Expected one splash file ending in {suffix}, found {len(matches)}")
+splash_path = matches[0]
+splash_text = splash_path.read_text()
+toast_injected = False
+if welcome_message in splash_text:
+    toast_injected = True
+else:
+    oncreate = re.compile(
+        r"(?ms)^\.method protected(?: final)? onCreate\(Landroid/os/Bundle;\)V\n.*?^\.end method$"
+    )
+    om = oncreate.search(splash_text)
+    if om is None:
+        raise SystemExit(f"onCreate(Bundle) not found in {splash_path}")
+    method_text = om.group(0)
+    method_bumped, loc_count = re.subn(r"(?m)^(    \.locals )\d+$", r"\g<1>8", method_text, count=1)
+    if loc_count != 1:
+        raise SystemExit(f"onCreate .locals directive not found in {splash_path}")
+    super_pat = re.compile(
+        r"(?m)^(    invoke-super \{p0, p1\}, L[^;]+;->onCreate\(Landroid/os/Bundle;\)V\n)"
+    )
+    toast_block = (
+        f'    const-string v6, "{welcome_message}"\n\n'
+        "    const/4 v7, 0x0\n\n"
+        "    invoke-static {p0, v6, v7}, Landroid/widget/Toast;->makeText(Landroid/content/Context;Ljava/lang/CharSequence;I)Landroid/widget/Toast;\n\n"
+        "    move-result-object v6\n\n"
+        "    invoke-virtual {v6}, Landroid/widget/Toast;->show()V\n\n"
+    )
+    method_final, ins_count = super_pat.subn(lambda mm: mm.group(1) + toast_block, method_bumped, count=1)
+    if ins_count != 1:
+        raise SystemExit(f"super.onCreate call not found in onCreate of {splash_path}")
+    splash_text = splash_text.replace(method_text, method_final, 1)
+    splash_path.write_text(splash_text)
+    changed_files.add(splash_path.relative_to(root))
+    toast_injected = True
+
 print(f"Profile: {profile}; targetSdkVersion: 37")
+print(f"Ad-view render methods stubbed: {ad_stub_count}")
+print(f"Welcome toast present in splash onCreate: {toast_injected}")
 print("Disabled header append calls (new/existing):")
 for header in targets:
     print(f"  {header}: {counts[header]}/{already_patched_counts[header]}")
