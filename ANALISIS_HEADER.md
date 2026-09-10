@@ -561,10 +561,10 @@ Pada kedua profil, 15 pemanggilan append header dinonaktifkan: dua `X-API-Platfo
 
 Gerbang `isInStreamAdsEnabled()` dan `isSurfaceViewSecure()` pada policy aplikasi aktif serta fallback `DefaultPlaybackPolicy` dipaksa mengembalikan `false`. Jalur iklan non-instream juga ditutup: konfigurasi pause ads dipaksa nonaktif, evaluator overlay selalu menandai perangkat tidak memenuhi syarat, dan renderer `BannerAdComponent` Mobile dibuat no-op. Library iklan tetap dipertahankan agar inisialisasi aplikasi tidak rusak.
 
-Seluruh permukaan shopping player disembunyikan. Mobile tidak merender shopping portrait banner dan selalu mengosongkan container tombol cart; TV memaksa `showShoppingButton` menjadi `false`. Launcher Mobile dan TV menampilkan Toast panjang `salamat datang, terimakasih telah langganan semoga harimu bahagia` setiap aplikasi dibuka.
+Seluruh permukaan shopping player disembunyikan. Mobile tidak merender shopping portrait banner dan selalu mengosongkan container tombol cart; TV memaksa `showShoppingButton` menjadi `false`. Launcher Mobile dan TV menampilkan Toast panjang `salamat datang, terimakasih telah langganan semoga harimu bahagia` setiap aplikasi dibuka. Build Mobile sebelumnya memakai opcode `invoke-virtual` yang salah untuk kontrak interface `Lhp/b;` pada pembersihan container cart dan dapat ditolak ART saat kelas dimuat; build recovery menggantinya dengan `invoke-interface` serta menambahkan guard tipe pada skrip build.
 
 ```text
-Mobile APK SHA-256:          6d4034d83d1538be8a0b9e888c70b8128862570a5668e4eedf1e3e3a3597d16b
+Mobile APK SHA-256:          0c9aa25cbde59e907152153ed901b5e401c41606b53d734a4b54a46791204b6b
 Mobile certificate SHA-256:  da72fd5008754108f089349028ea90a058284038b8f616ae7a6f2a9c53ef0b31
 Mobile size:                 26,707,710 bytes
 TV APK SHA-256:              8185e9c04184166897a40ca9a1ec54f94d16ba0623a6cedeb8ff2426fa8b999c
