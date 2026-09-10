@@ -2,7 +2,7 @@
 set -euo pipefail
 
 if [[ $# -ne 3 ]] || [[ $1 != "mobile" && $1 != "tv" ]]; then
-  echo "Usage: $0 mobile|tv SOURCE_XAPK_OR_ZIP OUTPUT_APK" >&2
+  echo "Usage: $0 mobile|tv SOURCE_XAPK_ZIP_OR_APK OUTPUT_APK" >&2
   exit 64
 fi
 
@@ -54,19 +54,33 @@ fi
 export JAVA_HOME="$TOOLS_DIR/jdk"
 export PATH="$JAVA_HOME/bin:$TOOLS_DIR/build-tools:$PATH"
 
-unzip -q "$SOURCE" -d "$WORK_DIR/input"
-mapfile -t APKS < <(find "$WORK_DIR/input" -type f -name '*.apk' -print)
-if [[ ${#APKS[@]} -eq 0 ]]; then
-  mapfile -t NESTED < <(find "$WORK_DIR/input" -type f \( -name '*.xapk' -o -name '*.apkm' -o -name '*.apks' -o -name '*.zip' \) -print)
-  [[ ${#NESTED[@]} -eq 1 ]] || { echo "Expected exactly one nested APK archive" >&2; exit 1; }
-  unzip -q "${NESTED[0]}" -d "$WORK_DIR/nested"
-  mapfile -t APKS < <(find "$WORK_DIR/nested" -type f -name '*.apk' -print)
+unzip -Z1 "$SOURCE" > "$WORK_DIR/source-entries.txt"
+if grep -Fxq "AndroidManifest.xml" "$WORK_DIR/source-entries.txt" && grep -Fxq "classes.dex" "$WORK_DIR/source-entries.txt"; then
+  cp "$SOURCE" "$WORK_DIR/universal.apk"
+else
+  unzip -q "$SOURCE" -d "$WORK_DIR/input"
+  mapfile -t APKS < <(find "$WORK_DIR/input" -type f -name '*.apk' -print)
+  if [[ ${#APKS[@]} -eq 0 ]]; then
+    mapfile -t NESTED < <(find "$WORK_DIR/input" -type f \( -name '*.xapk' -o -name '*.apkm' -o -name '*.apks' -o -name '*.zip' \) -print)
+    [[ ${#NESTED[@]} -eq 1 ]] || { echo "Expected exactly one nested APK archive" >&2; exit 1; }
+    unzip -q "${NESTED[0]}" -d "$WORK_DIR/nested"
+    mapfile -t APKS < <(find "$WORK_DIR/nested" -type f -name '*.apk' -print)
+  fi
+  [[ ${#APKS[@]} -ge 2 ]] || { echo "Split APK set not found" >&2; exit 1; }
+  for apk in "${APKS[@]}"; do cp "$apk" "$WORK_DIR/splits/$(basename "$apk")"; done
+  java -jar "$TOOLS_DIR/APKEditor.jar" m -f -validate-modules -i "$WORK_DIR/splits" -o "$WORK_DIR/universal.apk"
 fi
-[[ ${#APKS[@]} -ge 2 ]] || { echo "Split APK set not found" >&2; exit 1; }
-for apk in "${APKS[@]}"; do cp "$apk" "$WORK_DIR/splits/$(basename "$apk")"; done
 
-java -jar "$TOOLS_DIR/APKEditor.jar" m -f -validate-modules -i "$WORK_DIR/splits" -o "$WORK_DIR/universal.apk"
-java -jar "$TOOLS_DIR/apktool.jar" d -f "$WORK_DIR/universal.apk" -o "$WORK_DIR/decoded"
+unzip -Z1 "$WORK_DIR/universal.apk" > "$WORK_DIR/universal-entries.txt"
+HAS_AUDIENCE_NETWORK_ASSET=false
+if grep -Fxq "assets/audience_network.dex" "$WORK_DIR/universal-entries.txt"; then
+  HAS_AUDIENCE_NETWORK_ASSET=true
+  if grep -Fxq "assets.dex" "$WORK_DIR/universal-entries.txt"; then
+    zip -q -d "$WORK_DIR/universal.apk" "assets.dex"
+  fi
+fi
+
+java -jar "$TOOLS_DIR/apktool.jar" d -f --frame-path "$WORK_DIR/framework" "$WORK_DIR/universal.apk" -o "$WORK_DIR/decoded"
 
 python3 - "$WORK_DIR/decoded" "$PROFILE" <<'PY'
 from collections import Counter
@@ -99,6 +113,7 @@ append_pattern = re.compile(
     r'L[^;]+;->[^\(]+\(Ljava/lang/String;Ljava/lang/String;\)V\s*$'
 )
 counts = Counter()
+already_patched_counts = Counter()
 changed_files = set()
 
 for path in root.glob("smali*/**/*.smali"):
@@ -121,6 +136,9 @@ for path in root.glob("smali*/**/*.smali"):
             counts[header] += 1
             changed = True
             pending = None
+        elif re.match(r'^\s*nop\s*$', line):
+            already_patched_counts[header] += 1
+            pending = None
         elif re.match(r'^\s*const-string(?:/jumbo)?\s+' + re.escape(register) + r',', line):
             raise SystemExit(f"Header register overwritten before append: {header} in {path}")
     if pending is not None:
@@ -129,8 +147,56 @@ for path in root.glob("smali*/**/*.smali"):
         path.write_text("".join(lines))
         changed_files.add(path.relative_to(root))
 
-if counts != Counter(targets):
-    raise SystemExit(f"Unexpected patch counts: expected {targets}, got {dict(counts)}")
+combined_header_counts = counts + already_patched_counts
+if combined_header_counts != Counter(targets):
+    raise SystemExit(
+        f"Unexpected header patch counts: expected {targets}, "
+        f"new={dict(counts)}, existing={dict(already_patched_counts)}"
+    )
+
+policy_files = {
+    "mobile": (
+        "com/vidio/android/watch/newplayer/k.smali",
+        "com/kmklabs/vidioplayer/api/DefaultPlaybackPolicy.smali",
+    ),
+    "tv": (
+        "com/vidio/android/tv/watch/f0.smali",
+        "com/kmklabs/vidioplayer/api/DefaultPlaybackPolicy.smali",
+    ),
+}
+playback_methods = ("isInStreamAdsEnabled", "isSurfaceViewSecure")
+playback_counts = Counter()
+
+for suffix in policy_files[profile]:
+    matches = list(root.glob(f"smali*/**/{suffix}"))
+    if len(matches) != 1:
+        raise SystemExit(f"Expected one playback policy file ending in {suffix}, found {len(matches)}")
+    path = matches[0]
+    text = path.read_text()
+    original = text
+    for method_name in playback_methods:
+        pattern = re.compile(
+            rf"(?ms)^(\.method public(?: final)? {re.escape(method_name)}\(\)Z\n).*?^\.end method$"
+        )
+        replacement = (
+            rf"\1    .locals 1\n\n"
+            "    const/4 v0, 0x0\n\n"
+            "    return v0\n"
+            ".end method"
+        )
+        text, method_count = pattern.subn(replacement, text)
+        if method_count != 1:
+            raise SystemExit(f"Expected one {method_name} method in {path}, found {method_count}")
+        playback_counts[method_name] += method_count
+    if text != original:
+        path.write_text(text)
+        changed_files.add(path.relative_to(root))
+
+expected_playback_counts = Counter({method_name: 2 for method_name in playback_methods})
+if playback_counts != expected_playback_counts:
+    raise SystemExit(
+        f"Unexpected playback patch counts: expected {dict(expected_playback_counts)}, got {dict(playback_counts)}"
+    )
 
 manifest = root / "AndroidManifest.xml"
 manifest_text = manifest.read_text()
@@ -163,31 +229,54 @@ if profile == "mobile":
         "android-app://com.vidio.android": 2,
         "vidioandroid/2608.2.7-73babcffa4 (3191921)": 9,
     }
-    replaced = Counter()
-    for path in root.glob("smali*/**/*.smali"):
+    smali_paths = list(root.glob("smali*/**/*.smali"))
+    original_counts = Counter()
+    replacement_counts = Counter()
+    for path in smali_paths:
+        text = path.read_text()
+        for old, new in replacements.items():
+            original_counts[old] += text.count(f'"{old}"')
+            replacement_counts[old] += text.count(f'"{new}"')
+
+    pending_replacements = set()
+    for old, new in replacements.items():
+        expected = expected_replacements[old]
+        if original_counts[old] == expected and replacement_counts[old] == 0:
+            pending_replacements.add(old)
+        elif original_counts[old] != 0 or replacement_counts[old] != expected:
+            raise SystemExit(
+                f"Unexpected Mobile identity state for {old}: "
+                f"original={original_counts[old]}, replacement={replacement_counts[old]}, expected={expected}"
+            )
+
+    for path in smali_paths:
         text = path.read_text()
         original = text
-        for old, new in replacements.items():
-            count = text.count(f'"{old}"')
-            if count:
-                text = text.replace(f'"{old}"', f'"{new}"')
-                replaced[old] += count
+        for old in pending_replacements:
+            text = text.replace(f'"{old}"', f'"{replacements[old]}"')
         if text != original:
             path.write_text(text)
             changed_files.add(path.relative_to(root))
-    if replaced != Counter(expected_replacements):
-        raise SystemExit(f"Unexpected Mobile identity replacements: expected {expected_replacements}, got {dict(replaced)}")
 
 print(f"Profile: {profile}; targetSdkVersion: 37")
-print("Patched header append calls:")
+print("Disabled header append calls (new/existing):")
 for header in targets:
-    print(f"  {header}: {counts[header]}")
+    print(f"  {header}: {counts[header]}/{already_patched_counts[header]}")
+print("Playback policy methods forced false:")
+for method_name in playback_methods:
+    print(f"  {method_name}: {playback_counts[method_name]}")
 print("Changed Smali files:")
 for path in sorted(changed_files):
     print(f"  {path}")
 PY
 
-java -jar "$TOOLS_DIR/apktool.jar" b "$WORK_DIR/decoded" -o "$WORK_DIR/rebuilt.apk"
+java -jar "$TOOLS_DIR/apktool.jar" b --frame-path "$WORK_DIR/framework" "$WORK_DIR/decoded" -o "$WORK_DIR/rebuilt.apk"
+if [[ $HAS_AUDIENCE_NETWORK_ASSET == true ]]; then
+  unzip -Z1 "$WORK_DIR/rebuilt.apk" > "$WORK_DIR/rebuilt-entries.txt"
+  if grep -Fxq "assets.dex" "$WORK_DIR/rebuilt-entries.txt"; then
+    zip -q -d "$WORK_DIR/rebuilt.apk" "assets.dex"
+  fi
+fi
 zipalign -f -p 4 "$WORK_DIR/rebuilt.apk" "$WORK_DIR/aligned.apk"
 
 KEYSTORE=${APK_PATCH_KEYSTORE:-"$WORK_DIR/patch.keystore"}
