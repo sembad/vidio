@@ -204,20 +204,11 @@ def find_smali(suffix):
         raise SystemExit(f"Expected one Smali file ending in {suffix}, found {len(matches)}")
     return matches[0]
 
-if profile == "mobile":
-    player_contract_path = find_smali("hp/b.smali")
-    player_contract_text = player_contract_path.read_text()
-    if ".class public interface abstract Lhp/b;" not in player_contract_text:
-        raise SystemExit(f"Expected Lhp/b; to be an interface in {player_contract_path}")
-
 false_body = "    .locals 1\n\n    const/4 v0, 0x0\n\n    return v0\n"
 true_body = "    .locals 1\n\n    const/4 v0, 0x1\n\n    return v0\n"
 return_void_body = "    .locals 0\n\n    return-void\n"
 return_unit_body = (
     "    .locals 1\n\n"
-    "    invoke-interface {p0}, Lhp/b;->getAboveSeekbarMenuContainer()Landroid/view/ViewGroup;\n\n"
-    "    move-result-object v0\n\n"
-    "    invoke-virtual {v0}, Landroid/view/ViewGroup;->removeAllViews()V\n\n"
     "    sget-object v0, Lkotlin/Unit;->a:Lkotlin/Unit;\n\n"
     "    return-object v0\n"
 )

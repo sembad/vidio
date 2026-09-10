@@ -561,12 +561,12 @@ Pada kedua profil, 15 pemanggilan append header dinonaktifkan: dua `X-API-Platfo
 
 Gerbang `isInStreamAdsEnabled()` dan `isSurfaceViewSecure()` pada policy aplikasi aktif serta fallback `DefaultPlaybackPolicy` dipaksa mengembalikan `false`. Jalur iklan non-instream juga ditutup: konfigurasi pause ads dipaksa nonaktif, evaluator overlay selalu menandai perangkat tidak memenuhi syarat, dan renderer `BannerAdComponent` Mobile dibuat no-op. Library iklan tetap dipertahankan agar inisialisasi aplikasi tidak rusak.
 
-Seluruh permukaan shopping player disembunyikan. Mobile tidak merender shopping portrait banner dan selalu mengosongkan container tombol cart; TV memaksa `showShoppingButton` menjadi `false`. Launcher Mobile dan TV menampilkan Toast panjang `salamat datang, terimakasih telah langganan semoga harimu bahagia` setiap aplikasi dibuka. Build Mobile sebelumnya memakai opcode `invoke-virtual` yang salah untuk kontrak interface `Lhp/b;` pada pembersihan container cart dan dapat ditolak ART saat kelas dimuat; build recovery menggantinya dengan `invoke-interface` serta menambahkan guard tipe pada skrip build.
+Seluruh permukaan shopping player disembunyikan. Mobile tidak merender shopping portrait banner dan coroutine tombol cart langsung mengembalikan `kotlin.Unit` tanpa mengakses container atau lifecycle UI; TV memaksa `showShoppingButton` menjadi `false`. Launcher Mobile dan TV menampilkan Toast panjang `salamat datang, terimakasih telah langganan semoga harimu bahagia` setiap aplikasi dibuka. Build Mobile `020b27c` memakai opcode `invoke-virtual` yang salah untuk kontrak interface `Lhp/b;` dan dapat ditolak ART; `be97817` menggantinya dengan `invoke-interface`, tetapi masih dereference `ViewGroup` tanpa jaminan container sudah tersedia. Build koreksi dibuat ulang dari artefak normal `d61bda4` dan menghapus kedua jalur berisiko itu dengan no-op murni.
 
 ```text
-Mobile APK SHA-256:          0c9aa25cbde59e907152153ed901b5e401c41606b53d734a4b54a46791204b6b
-Mobile certificate SHA-256:  da72fd5008754108f089349028ea90a058284038b8f616ae7a6f2a9c53ef0b31
-Mobile size:                 26,707,710 bytes
+Mobile APK SHA-256:          b46040503bcffcca97361104e7d78903d57e6b2e2de2a2e5478827f4aa662c3b
+Mobile certificate SHA-256:  2e0f454e9a1c5061a728de7d88b8d052e56a10048d1eced2c38b8c3554a3238a
+Mobile size:                 26,724,094 bytes
 TV APK SHA-256:              8185e9c04184166897a40ca9a1ec54f94d16ba0623a6cedeb8ff2426fa8b999c
 TV certificate SHA-256:      da72fd5008754108f089349028ea90a058284038b8f616ae7a6f2a9c53ef0b31
 TV size:                     25,174,214 bytes
