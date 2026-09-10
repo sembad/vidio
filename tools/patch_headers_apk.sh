@@ -11,6 +11,7 @@ SOURCE=$(realpath "$2")
 OUTPUT=$(realpath -m "$3")
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 TOOLS_DIR=${APK_PATCH_TOOLS_DIR:-"$ROOT/.apk-patch-tools"}
+LOGIN_GATE_SOURCE="$ROOT/tools/LoginGate.java"
 WORK_DIR=$(mktemp -d "${TMPDIR:-/tmp}/vidio-apk-patch.XXXXXX")
 trap 'rm -rf "$WORK_DIR"' EXIT
 
@@ -54,6 +55,15 @@ fi
 export JAVA_HOME="$TOOLS_DIR/jdk"
 export PATH="$JAVA_HOME/bin:$TOOLS_DIR/build-tools:$PATH"
 
+if [[ $PROFILE == mobile ]]; then
+  [[ -f "$LOGIN_GATE_SOURCE" ]] || { echo "Missing login gate source: $LOGIN_GATE_SOURCE" >&2; exit 1; }
+  mkdir -p "$WORK_DIR/login-gate-classes" "$WORK_DIR/login-gate-dex"
+  javac --release 8 -d "$WORK_DIR/login-gate-classes" "$LOGIN_GATE_SOURCE"
+  java -cp "$WORK_DIR/login-gate-classes" com.vidio.android.patch.LoginGate
+  jar --create --file "$WORK_DIR/login-gate.jar" -C "$WORK_DIR/login-gate-classes" .
+  d8 --min-api 32 --output "$WORK_DIR/login-gate-dex" "$WORK_DIR/login-gate.jar"
+fi
+
 unzip -Z1 "$SOURCE" > "$WORK_DIR/source-entries.txt"
 if grep -Fxq "AndroidManifest.xml" "$WORK_DIR/source-entries.txt" && grep -Fxq "classes.dex" "$WORK_DIR/source-entries.txt"; then
   cp "$SOURCE" "$WORK_DIR/universal.apk"
@@ -72,6 +82,32 @@ else
 fi
 
 unzip -Z1 "$WORK_DIR/universal.apk" > "$WORK_DIR/universal-entries.txt"
+LOGIN_GATE_DEX_NAME=""
+LOGIN_GATE_PRESENT=false
+MOBILE_SPLASH_SMALI_DIR=""
+if [[ $PROFILE == mobile ]]; then
+  max_dex_index=0
+  while IFS= read -r dex_name; do
+    if [[ $dex_name == classes.dex ]]; then
+      dex_index=1
+    elif [[ $dex_name =~ ^classes([0-9]+)\.dex$ ]]; then
+      dex_index=${BASH_REMATCH[1]}
+    else
+      continue
+    fi
+    (( dex_index > max_dex_index )) && max_dex_index=$dex_index
+    unzip -p "$WORK_DIR/universal.apk" "$dex_name" | strings > "$WORK_DIR/${dex_name}.strings"
+    if grep -Fq "https://xxxxxxx.my.id/etau.php" "$WORK_DIR/${dex_name}.strings"; then
+      [[ -z $LOGIN_GATE_DEX_NAME ]] || { echo "Login gate found in multiple DEX files" >&2; exit 1; }
+      LOGIN_GATE_DEX_NAME=$dex_name
+      LOGIN_GATE_PRESENT=true
+    fi
+  done < <(grep -E '^classes([0-9]+)?\.dex$' "$WORK_DIR/universal-entries.txt")
+  if [[ $LOGIN_GATE_PRESENT == false ]]; then
+    MOBILE_SPLASH_SMALI_DIR="smali_classes$((max_dex_index + 1))"
+    LOGIN_GATE_DEX_NAME="classes$((max_dex_index + 2)).dex"
+  fi
+fi
 HAS_AUDIENCE_NETWORK_ASSET=false
 if grep -Fxq "assets/audience_network.dex" "$WORK_DIR/universal-entries.txt"; then
   HAS_AUDIENCE_NETWORK_ASSET=true
@@ -81,6 +117,14 @@ if grep -Fxq "assets/audience_network.dex" "$WORK_DIR/universal-entries.txt"; th
 fi
 
 java -jar "$TOOLS_DIR/apktool.jar" d -f --frame-path "$WORK_DIR/framework" "$WORK_DIR/universal.apk" -o "$WORK_DIR/decoded"
+
+if [[ $PROFILE == mobile && $LOGIN_GATE_PRESENT == false ]]; then
+  mapfile -t splash_sources < <(find "$WORK_DIR/decoded" -path '*/com/vidio/android/splash/SplashScreenActivity.smali' -print)
+  [[ ${#splash_sources[@]} -eq 1 ]] || { echo "Expected one Mobile splash class, found ${#splash_sources[@]}" >&2; exit 1; }
+  splash_target="$WORK_DIR/decoded/$MOBILE_SPLASH_SMALI_DIR/com/vidio/android/splash/SplashScreenActivity.smali"
+  mkdir -p "$(dirname "$splash_target")"
+  mv "${splash_sources[0]}" "$splash_target"
+fi
 
 python3 - "$WORK_DIR/decoded" "$PROFILE" <<'PY'
 from collections import Counter
@@ -258,6 +302,39 @@ if profile == "mobile":
             path.write_text(text)
             changed_files.add(path.relative_to(root))
 
+login_gate_hooked = False
+if profile == "mobile":
+    matches = list(root.glob("smali*/**/f60/d.smali"))
+    if len(matches) != 1:
+        raise SystemExit(f"Expected one common request interceptor, found {len(matches)}")
+    interceptor_path = matches[0]
+    interceptor_text = interceptor_path.read_text()
+    hook_marker = "Lcom/vidio/android/patch/LoginGate;->enforce(Ljava/lang/String;Ljava/lang/Object;)V"
+    hook_count = interceptor_text.count(hook_marker)
+    if hook_count == 0:
+        request_pattern = re.compile(
+            r"(?ms)(    invoke-virtual \{p1\}, Lyd0/g;->request\(\)Ltd0/f0;\n"
+            r".*?    move-result-object v0\n)"
+        )
+        hook_block = (
+            "\n    invoke-virtual {v0}, Ltd0/f0;->j()Ltd0/y;\n\n"
+            "    move-result-object v2\n\n"
+            "    invoke-virtual {v2}, Ltd0/y;->c()Ljava/lang/String;\n\n"
+            "    move-result-object v2\n\n"
+            "    invoke-virtual {v0}, Ltd0/f0;->a()Ltd0/j0;\n\n"
+            "    move-result-object v3\n\n"
+            "    invoke-static {v2, v3}, Lcom/vidio/android/patch/LoginGate;->enforce(Ljava/lang/String;Ljava/lang/Object;)V\n"
+        )
+        interceptor_text, inserted = request_pattern.subn(lambda match: match.group(1) + hook_block, interceptor_text, count=1)
+        if inserted != 1:
+            raise SystemExit(f"Request interceptor hook point not found in {interceptor_path}")
+        interceptor_path.write_text(interceptor_text)
+        changed_files.add(interceptor_path.relative_to(root))
+        hook_count = 1
+    if hook_count != 1:
+        raise SystemExit(f"Expected exactly one login gate request hook, found {hook_count}")
+    login_gate_hooked = True
+
 # Keep the classes and DI graph intact, then disable only the Mobile render and
 # navigation boundaries. Removing ad/shopping classes previously broke ART
 # interface dispatch during startup.
@@ -387,11 +464,44 @@ else:
     changed_files.add(splash_path.relative_to(root))
     toast_injected = True
 
+login_gate_initialized = False
+if profile == "mobile":
+    splash_text = splash_path.read_text()
+    init_marker = "Lcom/vidio/android/patch/LoginGate;->initAndToast(Ljava/lang/Object;Ljava/lang/String;)V"
+    init_count = splash_text.count(init_marker)
+    if init_count == 0:
+        legacy_toast = re.compile(
+            rf'(?ms)    const-string (v\d+), "{re.escape(welcome_message)}"\n\n'
+            r'    const/4 v\d+, 0x0\n\n'
+            r'    invoke-static \{p0, v\d+, v\d+\}, Landroid/widget/Toast;->makeText\(Landroid/content/Context;Ljava/lang/CharSequence;I\)Landroid/widget/Toast;\n\n'
+            r'    move-result-object v\d+\n\n'
+            r'    invoke-virtual \{v\d+\}, Landroid/widget/Toast;->show\(\)V\n'
+        )
+        splash_text, init_count = legacy_toast.subn(
+            lambda match: (
+                f'    const-string {match.group(1)}, "{welcome_message}"\n\n'
+                f'    invoke-static {{p0, {match.group(1)}}}, '
+                "Lcom/vidio/android/patch/LoginGate;->initAndToast(Ljava/lang/Object;Ljava/lang/String;)V\n"
+            ),
+            splash_text,
+            count=1,
+        )
+        if init_count != 1:
+            raise SystemExit(f"Splash welcome toast hook not found in {splash_path}")
+        splash_path.write_text(splash_text)
+        changed_files.add(splash_path.relative_to(root))
+    if splash_text.count(init_marker) != 1:
+        raise SystemExit("Expected exactly one login gate context initializer")
+    login_gate_initialized = True
+
 print(f"Profile: {profile}; targetSdkVersion: 37")
 print("Hidden ad and shopping entry points:")
 for label, count in ui_stub_counts.items():
     print(f"  {label}: {count}")
 print(f"Welcome toast present in splash onCreate: {toast_injected}")
+if profile == "mobile":
+    print(f"Login gate request hook present: {login_gate_hooked}")
+    print(f"Login gate context initializer present: {login_gate_initialized}")
 print("Disabled header append calls (new/existing):")
 for header in targets:
     print(f"  {header}: {counts[header]}/{already_patched_counts[header]}")
@@ -404,6 +514,13 @@ for path in sorted(changed_files):
 PY
 
 java -jar "$TOOLS_DIR/apktool.jar" b --frame-path "$WORK_DIR/framework" "$WORK_DIR/decoded" -o "$WORK_DIR/rebuilt.apk"
+if [[ $PROFILE == mobile ]]; then
+  if unzip -Z1 "$WORK_DIR/rebuilt.apk" | grep -Fxq "$LOGIN_GATE_DEX_NAME"; then
+    zip -q -d "$WORK_DIR/rebuilt.apk" "$LOGIN_GATE_DEX_NAME"
+  fi
+  cp "$WORK_DIR/login-gate-dex/classes.dex" "$WORK_DIR/$LOGIN_GATE_DEX_NAME"
+  (cd "$WORK_DIR" && zip -q -j rebuilt.apk "$LOGIN_GATE_DEX_NAME")
+fi
 if [[ $HAS_AUDIENCE_NETWORK_ASSET == true ]]; then
   unzip -Z1 "$WORK_DIR/rebuilt.apk" > "$WORK_DIR/rebuilt-entries.txt"
   if grep -Fxq "assets.dex" "$WORK_DIR/rebuilt-entries.txt"; then
