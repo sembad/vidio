@@ -550,6 +550,27 @@ JADX 1.5.6 menghasilkan 38.825 file Java dari enam DEX dan meninggalkan 198 mark
 
 `partner_dry_run.php` tetap statik secara default. `--live-test` mereproduksi satu probe GET non-partner yang aman; script tidak membuat serial, agent, ciphertext, signature, atau request `POST /api/partner/auth`.
 
+### APK standalone dengan header minimal
+
+Artefak `dist/vidio-2608.2.7-minimal-headers-universal.apk` dibuat dari base APK beserta split `arm64-v8a`, `en`, dan `mdpi` yang dilampirkan. Istilah `universal` di nama file berarti seluruh split yang tersedia sudah digabung sehingga instalasi tidak memerlukan XAPK; APK ini tetap **arm64-v8a saja**, karena attachment tidak menyediakan ABI lain. Package tetap `com.vidio.android`, version code `3191921`, version name `2608.2.7-73babcffa4`, dan minimum SDK `32`.
+
+Patch aktual:
+
+- `t20/e.invoke`: append `X-API-Platform` dan `X-API-App-Info` dinonaktifkan; `Referer`, `User-Agent`, dan visitor ID dipertahankan.
+- `qr/l1.invoke`: cabang encoder seluruh `X-Device-*` dilewati tanpa mengubah cabang synthetic lain.
+- `w20/k.invoke` dan `qw/r0.b`: append `X-AUTHORIZATION` dilewati; email, user token, user ID, serta visitor ID dipertahankan.
+- `t20/d.a`: encoder `X-Partner-Id` dan `X-Partner-Signature` mengembalikan set kosong.
+- `o40/e.a`, `X-CLIENT`, `X-SIGNATURE`, `X-API-Auth`, JSON:API media type, gzip transport, dan header cURL minimal lain tidak diubah.
+
+```text
+APK SHA-256:         56e34594beb762c24549fc7f1e213dca18b20cf443fdf3759808e19e5cbcaf2a
+Certificate SHA-256: ed6d5483506b40c77a000e61a9711c6dc954116796f9b7e1d4ca2b44b4105599
+Size:                28,330,586 bytes
+Signature:           APK Signature Scheme v3
+```
+
+`zipalign -c`, `apksigner verify`, manifest metadata, enam DEX, delapan native library arm64, dan control-flow Smali hasil rebuild telah diperiksa. Instalasi/runtime belum diuji karena tidak tersedia perangkat atau emulator Android. APK resmi harus dihapus lebih dahulu karena artefak patch ditandatangani sertifikat berbeda; data aplikasi dapat ikut terhapus. Skrip reproduksi ada di `tools/patch_headers_apk.sh`; keystore sementara, tool download, attachment asli, hasil decode, dan kredensial tidak disimpan di repository.
+
 ### PHP cURL
 
 `stream_headers.php` merekonstruksi HMAC dan susunan header mobile 2608.2.7 untuk pengujian endpoint yang Anda berwenang akses. Secret dan token tidak ditanam di source; semuanya wajib diberikan melalui environment.
