@@ -550,26 +550,25 @@ JADX 1.5.6 menghasilkan 38.825 file Java dari enam DEX dan meninggalkan 198 mark
 
 `partner_dry_run.php` tetap statik secara default. `--live-test` mereproduksi satu probe GET non-partner yang aman; script tidak membuat serial, agent, ciphertext, signature, atau request `POST /api/partner/auth`.
 
-### APK TV standalone dengan header minimal
+### Dua APK Android 17 dengan header TV minimal
 
-Artefak `dist/vidio-tv-2608.2.4-minimal-headers-universal.apk` dibuat dari attachment TV yang benar: base APK beserta split `armeabi-v7a`, `en`, `in`, dan `xhdpi`. Istilah `universal` berarti seluruh split yang tersedia sudah digabung sehingga instalasi tidak memerlukan XAPK; APK ini tetap **armeabi-v7a saja**, karena attachment tidak menyediakan ABI lain. Package tetap `com.vidio.android.tv`, version code `1020`, version name `2608.2.4`, dan minimum SDK `23`.
+Dua artefak standalone dipisah agar UI tetap sesuai perangkat yang dituju. APK Mobile mempertahankan package dan UI HP asli (termasuk portrait), sedangkan APK TV mempertahankan launcher, resource, dan UI TV asli. Keduanya memakai `targetSdkVersion 37`; ini adalah dua aplikasi yang dipilih saat instalasi, bukan satu APK yang mengganti UI secara otomatis.
 
-Patch aktual menonaktifkan 15 pemanggilan append header:
+- `dist/vidio-mobile-2608.2.7-tv-headers-android17.apk`: package `com.vidio.android`, version code `3191921`, version name `2608.2.7-73babcffa4`, minimum SDK `32`, target SDK `37`, ABI `arm64-v8a`, enam DEX. Nilai request API `User-Agent` diubah menjadi `tv-android/2608.2.4 (1020)` dan `Referer` menjadi `androidtv-app://com.vidio.android.tv`; package, deep link, analytics, dan UI Mobile tidak diubah.
+- `dist/vidio-tv-2608.2.4-minimal-headers-android17.apk`: package `com.vidio.android.tv`, version code `1020`, version name `2608.2.4`, minimum SDK `23`, target SDK `37`, ABI `armeabi-v7a`, lima DEX. Artefak menggabungkan base beserta split `armeabi-v7a`, `en`, `in`, dan `xhdpi`.
 
-- `mx/d.invoke` dan `l00/d.intercept`: `X-API-Platform` serta `X-API-App-Info`.
-- `fr/c.invoke`: ketujuh header `X-Device-*`.
-- `ox/k.invoke` dan `ms/f.b`: `X-AUTHORIZATION`.
-- `mx/c.a`: `X-Partner-Id` dan `X-Partner-Signature`.
-- `X-CLIENT`, `X-SIGNATURE`, `X-API-Auth`, `Referer`, `User-Agent`, email, user token, user ID, visitor ID, JSON:API media type, dan gzip transport tetap dipertahankan.
+Pada kedua profil, 15 pemanggilan append header dinonaktifkan: dua `X-API-Platform`, dua `X-API-App-Info`, tujuh `X-Device-*`, dua `X-AUTHORIZATION`, `X-Partner-Id`, dan `X-Partner-Signature`. `X-CLIENT`, `X-SIGNATURE`, `X-API-Auth`, `Referer`, `User-Agent`, email, user token, user ID, visitor ID, JSON:API media type, dan gzip transport tetap dipertahankan.
 
 ```text
-APK SHA-256:         fc4e408b645ed88f65f2e91c20814d28a99e3b2b635e5baa51ad652c06f103ef
-Certificate SHA-256: 134a07db85e34e5d920b47f5028a6a77f30e72345b27b635f51cc61d5c70cea0
-Size:                25,174,214 bytes
-Signature:           APK Signature Scheme v1 + v2 + v3
+Mobile APK SHA-256:          9468feb3e2ea06d13d36d4d47d291d2756bb882f47da684db00bbaa59b527544
+Mobile certificate SHA-256:  09a4e0cfd0bf144b4c9c4df8be38d45f8d734511f4e1157f96d41e6f05f573be
+Mobile size:                 28,330,586 bytes
+TV APK SHA-256:              249e2b919eeb6387ffe9b53b3fccd6d81298e879083ce0b53b1faf3f4cc5bfa7
+TV certificate SHA-256:      f60ed74d686ebd85594671b18a360fe38c631f3f8eca80b90dbe4f7fb2c0987e
+TV size:                     25,174,214 bytes
 ```
 
-`zipalign -c`, `apksigner verify`, manifest metadata, lima DEX, enam native library armeabi-v7a, jumlah patch per header, dan Smali hasil decode ulang telah diperiksa. Instalasi/runtime belum diuji karena tidak tersedia perangkat atau emulator Android. APK resmi harus dihapus lebih dahulu karena artefak patch ditandatangani sertifikat berbeda; data aplikasi dapat ikut terhapus. Skrip reproduksi ada di `tools/patch_headers_apk.sh`; keystore sementara, tool download, attachment asli, hasil decode, dan kredensial tidak disimpan di repository.
+`zipalign -c`, `apksigner verify`, manifest/package/version/SDK/ABI, jumlah DEX, jumlah patch per header, identitas API Mobile, dan Smali hasil decode ulang telah diperiksa. Instalasi/runtime belum diuji karena tidak tersedia perangkat atau emulator Android 17. APK Mobile sudah menyediakan `arm64-v8a`; APK TV sumber hanya menyediakan `armeabi-v7a`, sehingga menaikkan target ke 37 tidak dapat membuat library arm64 dan APK TV tetap tidak cocok untuk perangkat Android 64-bit-only yang menolak aplikasi 32-bit. APK resmi juga harus dihapus lebih dahulu karena artefak patch ditandatangani sertifikat berbeda; data aplikasi dapat ikut terhapus. Skrip reproduksi ada di `tools/patch_headers_apk.sh`; keystore sementara, tool download, attachment asli, hasil decode, dan kredensial tidak disimpan di repository.
 
 ### PHP cURL
 

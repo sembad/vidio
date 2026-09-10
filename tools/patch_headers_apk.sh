@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -ne 2 ]]; then
-  echo "Usage: $0 SOURCE_XAPK_OR_ZIP OUTPUT_APK" >&2
+if [[ $# -ne 3 ]] || [[ $1 != "mobile" && $1 != "tv" ]]; then
+  echo "Usage: $0 mobile|tv SOURCE_XAPK_OR_ZIP OUTPUT_APK" >&2
   exit 64
 fi
 
-SOURCE=$(realpath "$1")
-OUTPUT=$(realpath -m "$2")
+PROFILE=$1
+SOURCE=$(realpath "$2")
+OUTPUT=$(realpath -m "$3")
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 TOOLS_DIR=${APK_PATCH_TOOLS_DIR:-"$ROOT/.apk-patch-tools"}
 WORK_DIR=$(mktemp -d "${TMPDIR:-/tmp}/vidio-apk-patch.XXXXXX")
@@ -67,13 +68,14 @@ for apk in "${APKS[@]}"; do cp "$apk" "$WORK_DIR/splits/$(basename "$apk")"; don
 java -jar "$TOOLS_DIR/APKEditor.jar" m -f -validate-modules -i "$WORK_DIR/splits" -o "$WORK_DIR/universal.apk"
 java -jar "$TOOLS_DIR/apktool.jar" d -f "$WORK_DIR/universal.apk" -o "$WORK_DIR/decoded"
 
-python3 - "$WORK_DIR/decoded" <<'PY'
+python3 - "$WORK_DIR/decoded" "$PROFILE" <<'PY'
 from collections import Counter
 from pathlib import Path
 import re
 import sys
 
 root = Path(sys.argv[1])
+profile = sys.argv[2]
 targets = {
     "X-API-Platform": 2,
     "X-API-App-Info": 2,
@@ -130,6 +132,53 @@ for path in root.glob("smali*/**/*.smali"):
 if counts != Counter(targets):
     raise SystemExit(f"Unexpected patch counts: expected {targets}, got {dict(counts)}")
 
+manifest = root / "AndroidManifest.xml"
+manifest_text = manifest.read_text()
+expected_package = "com.vidio.android" if profile == "mobile" else "com.vidio.android.tv"
+package_match = re.search(r'package="([^"]+)"', manifest_text)
+if package_match is None or package_match.group(1) != expected_package:
+    raise SystemExit(f"Unexpected package for {profile}: {package_match.group(1) if package_match else 'missing'}")
+manifest_text, target_count = re.subn(r'android:targetSdkVersion="\d+"', 'android:targetSdkVersion="37"', manifest_text)
+if target_count > 1:
+    raise SystemExit(f"Expected at most one manifest targetSdkVersion, found {target_count}")
+manifest_text, compile_count = re.subn(r'android:compileSdkVersion="\d+"', 'android:compileSdkVersion="37"', manifest_text)
+manifest_text, platform_count = re.subn(r'platformBuildVersionCode="\d+"', 'platformBuildVersionCode="37"', manifest_text)
+if compile_count != 1 or platform_count != 1:
+    raise SystemExit(f"Unexpected compile metadata: compile={compile_count}, platform={platform_count}")
+manifest.write_text(manifest_text)
+
+yml = root / "apktool.yml"
+yml_text = yml.read_text()
+yml_text, yml_target_count = re.subn(r'(?m)^(\s*targetSdkVersion:)\s*\d+\s*$', r'\1 37', yml_text)
+if yml_target_count != 1:
+    raise SystemExit(f"Expected one apktool targetSdkVersion, found {yml_target_count}")
+yml.write_text(yml_text)
+
+if profile == "mobile":
+    replacements = {
+        "android-app://com.vidio.android": "androidtv-app://com.vidio.android.tv",
+        "vidioandroid/2608.2.7-73babcffa4 (3191921)": "tv-android/2608.2.4 (1020)",
+    }
+    expected_replacements = {
+        "android-app://com.vidio.android": 2,
+        "vidioandroid/2608.2.7-73babcffa4 (3191921)": 9,
+    }
+    replaced = Counter()
+    for path in root.glob("smali*/**/*.smali"):
+        text = path.read_text()
+        original = text
+        for old, new in replacements.items():
+            count = text.count(f'"{old}"')
+            if count:
+                text = text.replace(f'"{old}"', f'"{new}"')
+                replaced[old] += count
+        if text != original:
+            path.write_text(text)
+            changed_files.add(path.relative_to(root))
+    if replaced != Counter(expected_replacements):
+        raise SystemExit(f"Unexpected Mobile identity replacements: expected {expected_replacements}, got {dict(replaced)}")
+
+print(f"Profile: {profile}; targetSdkVersion: 37")
 print("Patched header append calls:")
 for header in targets:
     print(f"  {header}: {counts[header]}")
