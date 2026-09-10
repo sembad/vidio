@@ -317,31 +317,54 @@ Header kondisional:
 
 ### Perbandingan dengan contoh TV 2608.2.4
 
-Contoh tersebut **tidak dibuat persis** oleh XAPK ini:
+Contoh cURL yang diterima pada 10 September 2026 **tidak dibuat persis** oleh XAPK ini. Ia mencampur identitas aplikasi TV 2608.2.4, keluarga header perangkat yang memang ada pada Mobile 2608.2.7, dan nilai sesi/runtime:
 
 | Contoh TV | XAPK Android 2608.2.7 |
 |---|---|
 | `tv-android/2608.2.4 (1020)` | `vidioandroid/2608.2.7-73babcffa4 (3191921)` |
-| `androidtv-app://com.vidio.android.tc` | `android-app://com.vidio.android` |
+| `androidtv-app://com.vidio.android.tv` | `android-app://com.vidio.android` |
 | `X-API-Platform: tv-android` | `X-API-Platform: app-android` |
-| `tv-android/16/2608.2.4-1020` | `android/16/2608.2.7-73babcffa4-3191921` pada Android 16 |
-| Tidak mencantumkan `X-Device-*` | Request stream menambahkan keluarga `X-Device-*` |
+| `tv-android/10/2608.2.4-1020` | `android/10/2608.2.7-73babcffa4-3191921` pada Android 10 |
+| `X-Device-Form-Factor: TV` | Builder mobile hanya menghasilkan klasifikasi `phone` atau `tablet` |
 
-`X-API-Auth` sama dan pasangan `X-CLIENT`/`X-SIGNATURE` valid pada kedua APK karena default secret serta algoritmanya sama. Versi `2608.2.4`, timestamp/signature contoh, email, user token, dan visitor ID contoh tidak tertanam di XAPK 2608.2.7; semuanya berasal dari APK lain atau state runtime.
+`X-API-Auth` sama dan pasangan `X-CLIENT`/`X-SIGNATURE` valid karena default secret serta algoritmanya sama. Versi TV `2608.2.4`, email, token pengguna, authorization, visitor ID, dan user ID tidak tertanam di XAPK 2608.2.7; semuanya berasal dari APK lain atau state runtime.
+
+#### Audit contoh cURL yang diterima
+
+Nilai sesi sensitif tidak disalin ke repository. Contoh yang dikirim memuat email, token pengguna, visitor ID, user ID, dan authorization; token yang masih aktif sebaiknya dicabut atau dirotasi karena telah dibagikan dalam teks biasa.
+
+| Bagian request | Pembuat pada Mobile 2608.2.7 | Putusan terhadap contoh |
+|---|---|---|
+| Path `/livestreamings/205/stream?initialize=true` | `o40.a` | Cocok dengan builder endpoint stream; ID dan `initialize` adalah input runtime. |
+| `X-CLIENT` dan `X-SIGNATURE` | `o40.e.a`, dibantu `h60.h2` | Cocok. `1789013342` adalah `2026-09-10 04:09:02 UTC`; default key `V1d10D3v` menghasilkan signature contoh secara identik. |
+| `User-Agent` | konfigurasi aplikasi di `q20.l`/`t20.e` | Tidak cocok dengan XAPK mobile; nilainya mengaku client TV 2608.2.4 build 1020. |
+| `Referer`, `X-API-Platform`, `X-API-App-Info` | `t20.e.invoke`, dengan nilai dari `q20.l` | Nama header cocok, tetapi ketiga nilai contoh adalah identitas TV, bukan identitas package mobile ini. |
+| `X-Device-*` | `qr.l1.invoke`, memakai `k20.c`, `uz.b`, dan `uz.d` | Nama header cocok. Brand, model, SoC, OS, MPC, dan ABI adalah data runtime; nilai `TV` tidak dihasilkan klasifikasi form-factor mobile versi ini. |
+| `X-USER-EMAIL`, `X-USER-TOKEN`, `X-USER-ID`, `X-VISITOR-ID` | `w20.k.invoke`/`qw.r0.b` pada jalur KMM; interceptor Retrofit lama juga memiliki padanan | Kondisional dan berasal dari sesi/penyimpanan, bukan constant APK. |
+| `X-AUTHORIZATION` | `w20.k.invoke`/`qw.r0.b` | Kondisional dari access-token provider. Nilai contoh disamarkan sehingga format isinya tidak dapat diverifikasi. |
+| `X-Partner-Id`, `X-Partner-Signature` | `t20.d.a` | Encoder hanya dipasang bila objek partner tersedia; jalur stream biasa yang ditelusuri memberikan `null`. Header kosong pada contoh tidak membuktikan partner aktif. |
+| `Accept-Encoding: gzip` | OkHttp bridge `yd0.a` | Ditambahkan transport bila request belum memiliki `Accept-Encoding` dan tidak memakai `Range`. |
+| `Content-Type: application/vnd.api+json` | `w20.p`, `x20.b`, `y20.c` | Cocok dengan client JSON:API. |
+
+Kesimpulannya, pembentuk inti header stream adalah rangkaian `o40.a` → `o40.e` untuk signature, lalu encoder global/sesi/perangkat `t20.e`, `w20.k`, `qr.l1`, dan encoder partner `t20.d`. Contoh cURL bukan bukti bahwa XAPK Mobile 2608.2.7 sedang berjalan sebagai TV; justru kombinasi identitas TV, form-factor `TV`, dan header mobile menunjukkan request campuran atau nilai yang dioverride.
 
 ### Asal temuan 2608.2.7
 
 | Temuan | Class/resource hasil analisis |
 |---|---|
 | Builder endpoint stream | `o40.a` |
-| Encoder `X-CLIENT`/`X-SIGNATURE` | `o40.e` |
+| Encoder `X-CLIENT`/`X-SIGNATURE` | `o40.e.a` — satu-satunya xref kedua literal |
 | Timestamp dan HMAC-SHA256 | `h60.h2` |
 | Default stream key | `res/xml/remote_config_defaults.xml` |
-| Header aplikasi/perangkat | `q20.l`, `t20.e`, `t20.a`, `qr.l1`, `k20.c`, `uz.b`, `uz.d` |
-| Header sesi opsional | `w20.n` |
+| Header aplikasi global | `t20.e.invoke`, dengan konfigurasi dari `q20.l` |
+| Header perangkat | `qr.l1.invoke`, dibantu `k20.c`, `uz.b`, dan `uz.d` |
+| Header sesi opsional | `w20.k.invoke` dan `qw.r0.b` |
+| Header partner opsional | `t20.d.a` |
 | Media type JSON:API | `w20.p`, `x20.b`, `y20.c` |
 | API production token | `libndkconfig.so` → `AppNdkConfig_apiTokenProductionBase64`, didekripsi oleh `lz.a` |
 | Gzip transport | Ktor OkHttp engine dan OkHttp bridge `yd0.a` |
+
+Pemeriksaan ulang memakai Androguard 4.1.4 terhadap base APK SHA-256 `e8718f60b29608421333a3adde460fc2b0691d703914e049a5685c990d2edba5`. Xref DEX langsung menempatkan `X-CLIENT`/`X-SIGNATURE` di `o40.e.a`, seluruh tujuh literal `X-Device-*` di `qr.l1.invoke`, header partner di `t20.d.a`, dan header authorization/sesi di `w20.k.invoke` serta `qw.r0.b`; ini menguatkan hasil JADX, bukan hanya pencarian string.
 
 Kunci pembuka konfigurasi native dibentuk dari version code menjadi `3191921000000000`, memakai AES/CBC/PKCS5Padding dan IV nol. Disassembly ARM64 memetakan JNI production token ke `.rodata` offset `0x6e7`; hasil dekripsinya adalah nilai `X-API-Auth` di atas.
 
