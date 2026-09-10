@@ -550,29 +550,27 @@ JADX 1.5.6 menghasilkan 38.825 file Java dari enam DEX dan meninggalkan 198 mark
 
 `partner_dry_run.php` tetap statik secara default. `--live-test` mereproduksi satu probe GET non-partner yang aman; script tidak membuat serial, agent, ciphertext, signature, atau request `POST /api/partner/auth`.
 
-### Dua APK Android 17 dengan header TV minimal, tanpa iklan dan shopping, serta screenshot aktif
+### Dua APK Android 17 dengan header TV minimal, tanpa instream ads, dan screenshot aktif
 
 Dua artefak standalone dipisah agar UI tetap sesuai perangkat yang dituju. APK Mobile mempertahankan package dan UI HP asli (termasuk portrait), sedangkan APK TV mempertahankan launcher, resource, dan UI TV asli. Keduanya memakai `targetSdkVersion 37`; ini adalah dua aplikasi yang dipilih saat instalasi, bukan satu APK yang mengganti UI secara otomatis.
 
-- `dist/vidio-mobile-2608.2.7-tv-headers-android17.apk`: package `com.vidio.android`, version code `3191921`, version name `2608.2.7-73babcffa4`, minimum SDK `32`, target SDK `37`, ABI `arm64-v8a`, enam DEX utama. Nilai request API `User-Agent` diubah menjadi `tv-android/2608.2.4 (1020)` dan `Referer` menjadi `androidtv-app://com.vidio.android.tv`; package, deep link, analytics, dan UI Mobile selain elemen yang disebut di bawah tidak diubah. DEX Audience Network hanya dipertahankan pada lokasi assets yang dicari loader, tanpa salinan root duplikat.
+- `dist/vidio-mobile-2608.2.7-tv-headers-android17.apk`: package `com.vidio.android`, version code `3191921`, version name `2608.2.7-73babcffa4`, minimum SDK `32`, target SDK `37`, ABI `arm64-v8a`, enam DEX utama. Nilai request API `User-Agent` diubah menjadi `tv-android/2608.2.4 (1020)` dan `Referer` menjadi `androidtv-app://com.vidio.android.tv`; package, deep link, analytics, dan UI Mobile tidak diubah. DEX Audience Network hanya dipertahankan pada lokasi assets yang dicari loader, tanpa salinan root duplikat.
 - `dist/vidio-tv-2608.2.4-minimal-headers-android17.apk`: package `com.vidio.android.tv`, version code `1020`, version name `2608.2.4`, minimum SDK `23`, target SDK `37`, ABI `armeabi-v7a`, lima DEX. Artefak menggabungkan base beserta split `armeabi-v7a`, `en`, `in`, dan `xhdpi`.
 
 Pada kedua profil, 15 pemanggilan append header dinonaktifkan: dua `X-API-Platform`, dua `X-API-App-Info`, tujuh `X-Device-*`, dua `X-AUTHORIZATION`, `X-Partner-Id`, dan `X-Partner-Signature`. `X-CLIENT`, `X-SIGNATURE`, `X-API-Auth`, `Referer`, `User-Agent`, email, user token, user ID, visitor ID, JSON:API media type, dan gzip transport tetap dipertahankan.
 
-Gerbang `isInStreamAdsEnabled()` dan `isSurfaceViewSecure()` pada policy aplikasi aktif serta fallback `DefaultPlaybackPolicy` dipaksa mengembalikan `false`. Jalur iklan non-instream juga ditutup: konfigurasi pause ads dipaksa nonaktif, evaluator overlay selalu menandai perangkat tidak memenuhi syarat, dan renderer `BannerAdComponent` Mobile dibuat no-op. Library iklan tetap dipertahankan agar inisialisasi aplikasi tidak rusak.
-
-Seluruh permukaan shopping player disembunyikan. Mobile tidak merender shopping portrait banner dan coroutine tombol cart langsung mengembalikan `kotlin.Unit` tanpa mengakses container atau lifecycle UI; TV memaksa `showShoppingButton` menjadi `false`. Launcher Mobile dan TV menampilkan Toast panjang `salamat datang, terimakasih telah langganan semoga harimu bahagia` setiap aplikasi dibuka. Build Mobile `020b27c` memakai opcode `invoke-virtual` yang salah untuk kontrak interface `Lhp/b;` dan dapat ditolak ART; `be97817` menggantinya dengan `invoke-interface`, tetapi masih dereference `ViewGroup` tanpa jaminan container sudah tersedia. Build koreksi dibuat ulang dari artefak normal `d61bda4` dan menghapus kedua jalur berisiko itu dengan no-op murni.
+Gerbang `isInStreamAdsEnabled()` dan `isSurfaceViewSecure()` pada policy aplikasi aktif serta fallback `DefaultPlaybackPolicy` dipaksa mengembalikan `false`. Ini mencegah player membuat media source/IMA loader untuk instream ads dan mencegah player meminta `SurfaceView` secure; library iklan tetap dipertahankan agar inisialisasi aplikasi tidak rusak. Konten yang memaksa secure output dari DRM/perangkat masih dapat menghasilkan screenshot hitam dan perlu diuji langsung pada perangkat.
 
 ```text
-Mobile APK SHA-256:          b46040503bcffcca97361104e7d78903d57e6b2e2de2a2e5478827f4aa662c3b
-Mobile certificate SHA-256:  2e0f454e9a1c5061a728de7d88b8d052e56a10048d1eced2c38b8c3554a3238a
+Mobile APK SHA-256:          b464f13a694669070cac5cd836f44a133bef58baf2ea0fda9ea1bc8d038a2a45
+Mobile certificate SHA-256:  da72fd5008754108f089349028ea90a058284038b8f616ae7a6f2a9c53ef0b31
 Mobile size:                 26,724,094 bytes
-TV APK SHA-256:              8185e9c04184166897a40ca9a1ec54f94d16ba0623a6cedeb8ff2426fa8b999c
+TV APK SHA-256:              0a111b72c8b83e041758b9ec56215eec8d7152e5f915a9bb56f9a8ea63b91fb9
 TV certificate SHA-256:      da72fd5008754108f089349028ea90a058284038b8f616ae7a6f2a9c53ef0b31
 TV size:                     25,174,214 bytes
 ```
 
-`zipalign -c`, `apksigner verify`, manifest/package/version/SDK/ABI, jumlah DEX, lokasi DEX assets, jumlah patch per header, identitas API Mobile, serta instruksi DEX untuk policy playback, banner, pause/overlay ads, shopping, dan Toast hasil sign telah diperiksa. Instalasi/runtime belum diuji karena tidak tersedia perangkat atau emulator Android 17. Konten yang memaksa secure output dari DRM/perangkat masih dapat menghasilkan screenshot hitam dan perlu diuji langsung pada perangkat. APK Mobile sudah menyediakan `arm64-v8a`; APK TV sumber hanya menyediakan `armeabi-v7a`, sehingga menaikkan target ke 37 tidak dapat membuat library arm64 dan APK TV tetap tidak cocok untuk perangkat Android 64-bit-only yang menolak aplikasi 32-bit. APK resmi juga harus dihapus lebih dahulu karena artefak patch ditandatangani sertifikat berbeda; data aplikasi dapat ikut terhapus. Skrip reproduksi ada di `tools/patch_headers_apk.sh`; keystore sementara, tool download, attachment asli, hasil decode, dan kredensial tidak disimpan di repository.
+`zipalign -c`, `apksigner verify`, manifest/package/version/SDK/ABI, jumlah DEX, lokasi DEX assets, jumlah patch per header, identitas API Mobile, serta delapan implementasi method policy pada DEX hasil sign telah diperiksa. Instalasi/runtime belum diuji karena tidak tersedia perangkat atau emulator Android 17. APK Mobile sudah menyediakan `arm64-v8a`; APK TV sumber hanya menyediakan `armeabi-v7a`, sehingga menaikkan target ke 37 tidak dapat membuat library arm64 dan APK TV tetap tidak cocok untuk perangkat Android 64-bit-only yang menolak aplikasi 32-bit. APK resmi juga harus dihapus lebih dahulu karena artefak patch ditandatangani sertifikat berbeda; data aplikasi dapat ikut terhapus. Skrip reproduksi ada di `tools/patch_headers_apk.sh`; keystore sementara, tool download, attachment asli, hasil decode, dan kredensial tidak disimpan di repository.
 
 ### PHP cURL
 
