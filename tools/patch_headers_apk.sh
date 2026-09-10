@@ -68,93 +68,74 @@ java -jar "$TOOLS_DIR/APKEditor.jar" m -f -validate-modules -i "$WORK_DIR/splits
 java -jar "$TOOLS_DIR/apktool.jar" d -f "$WORK_DIR/universal.apk" -o "$WORK_DIR/decoded"
 
 python3 - "$WORK_DIR/decoded" <<'PY'
+from collections import Counter
 from pathlib import Path
+import re
 import sys
 
 root = Path(sys.argv[1])
+targets = {
+    "X-API-Platform": 2,
+    "X-API-App-Info": 2,
+    "X-AUTHORIZATION": 2,
+    "X-Partner-Id": 1,
+    "X-Partner-Signature": 1,
+    "X-Device-Brand": 1,
+    "X-Device-Model": 1,
+    "X-Device-Form-Factor": 1,
+    "X-Device-SOC": 1,
+    "X-Device-OS": 1,
+    "X-Device-Android-MPC": 1,
+    "X-Device-CPU-Arch": 1,
+}
+const_pattern = re.compile(
+    r'^\s*const-string(?:/jumbo)?\s+([vp]\d+),\s+"(' +
+    "|".join(re.escape(name) for name in targets) + r')"\s*$'
+)
+append_pattern = re.compile(
+    r'^\s*invoke-(?:virtual|interface)(?:/range)?\s+\{([^}]*)\},\s+'
+    r'L[^;]+;->[^\(]+\(Ljava/lang/String;Ljava/lang/String;\)V\s*$'
+)
+counts = Counter()
+changed_files = set()
 
-def one(pattern: str) -> Path:
-    matches = list(root.glob(pattern))
-    if len(matches) != 1:
-        raise SystemExit(f"Expected one {pattern}, found {len(matches)}")
-    return matches[0]
+for path in root.glob("smali*/**/*.smali"):
+    lines = path.read_text().splitlines(keepends=True)
+    pending = None
+    changed = False
+    for index, line in enumerate(lines):
+        match = const_pattern.match(line)
+        if match:
+            pending = (match.group(1), match.group(2))
+            continue
+        if pending is None:
+            continue
+        register, header = pending
+        append = append_pattern.match(line)
+        if append and register in {part.strip() for part in append.group(1).split(",")}:
+            indentation = line[:len(line) - len(line.lstrip())]
+            newline = "\n" if line.endswith("\n") else ""
+            lines[index] = f"{indentation}nop{newline}"
+            counts[header] += 1
+            changed = True
+            pending = None
+        elif re.match(r'^\s*const-string(?:/jumbo)?\s+' + re.escape(register) + r',', line):
+            raise SystemExit(f"Header register overwritten before append: {header} in {path}")
+    if pending is not None:
+        raise SystemExit(f"Header append not found: {pending[1]} in {path}")
+    if changed:
+        path.write_text("".join(lines))
+        changed_files.add(path.relative_to(root))
 
-def replace_once(path: Path, old: str, new: str, label: str) -> None:
-    text = path.read_text()
-    count = text.count(old)
-    if count != 1:
-        raise SystemExit(f"Expected one {label} pattern in {path}, found {count}")
-    path.write_text(text.replace(old, new, 1))
+if counts != Counter(targets):
+    raise SystemExit(f"Unexpected patch counts: expected {targets}, got {dict(counts)}")
 
-def replace_first(path: Path, old: str, new: str, label: str, expected: int) -> None:
-    text = path.read_text()
-    count = text.count(old)
-    if count != expected:
-        raise SystemExit(f"Expected {expected} {label} patterns in {path}, found {count}")
-    path.write_text(text.replace(old, new, 1))
-
-# Keep Referer/User-Agent/visitor ID, but skip the two extra global append calls.
-global_headers = one("smali*/t20/e.smali")
-replace_once(global_headers,
-'''    const-string v1, "X-API-Platform"
-
-    .line 38
-    .line 39
-    const-string v2, "app-android"
-
-    .line 40
-    .line 41
-    invoke-virtual {p1, v1, v2}, Lx20/d;->b(Ljava/lang/String;Ljava/lang/String;)V''',
-'''    const-string v1, "X-API-Platform"
-
-    .line 38
-    .line 39
-    const-string v2, "app-android"
-
-    .line 40
-    .line 41
-    nop''', "X-API-Platform")
-replace_once(global_headers,
-'''    const-string v2, "X-API-App-Info"
-
-    .line 55
-    .line 56
-    invoke-virtual {p1, v2, v1}, Lx20/d;->b(Ljava/lang/String;Ljava/lang/String;)V''',
-'''    const-string v2, "X-API-App-Info"
-
-    .line 55
-    .line 56
-    nop''', "X-API-App-Info")
-
-# Preserve the unrelated synthetic switch branch; only skip the device-header branch.
-device_headers = one("smali*/qr/l1.smali")
-replace_first(device_headers, "    if-eqz v0, :cond_2", "    goto :cond_2", "device encoder branch", 2)
-
-# Skip Ktor authorization while retaining email and user token.
-session_headers = one("smali*/w20/k.smali")
-replace_once(session_headers, "    if-eqz v0, :cond_1", "    goto :cond_1", "Ktor authorization")
-
-# Skip the legacy OkHttp authorization path while retaining user/session identifiers.
-legacy_headers = one("smali*/qw/r0.smali")
-replace_once(legacy_headers,
-'''    if-eqz v1, :cond_3
-
-    .line 156
-    .line 157
-    const-string v2, "X-AUTHORIZATION"''',
-'''    goto :cond_3
-
-    .line 156
-    .line 157
-    const-string v2, "X-AUTHORIZATION"''', "OkHttp authorization")
-
-# Return an empty partner header set without touching unrelated encoders.
-partner_headers = one("smali*/t20/d.smali")
-replace_once(partner_headers, "    if-eqz p1, :cond_0", "    goto :cond_0", "partner encoder")
-
-print("Patched:")
-for path in (global_headers, device_headers, session_headers, legacy_headers, partner_headers):
-    print(f"  {path.relative_to(root)}")
+print("Patched header append calls:")
+for header in targets:
+    print(f"  {header}: {counts[header]}")
+print("Changed Smali files:")
+for path in sorted(changed_files):
+    print(f"  {path}")
 PY
 
 java -jar "$TOOLS_DIR/apktool.jar" b "$WORK_DIR/decoded" -o "$WORK_DIR/rebuilt.apk"
