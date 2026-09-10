@@ -258,46 +258,86 @@ if profile == "mobile":
             path.write_text(text)
             changed_files.add(path.relative_to(root))
 
-# Hide all display ads: stub the ad-view render entry points. We keep every
-# class, field and DI wiring intact (deleting them previously crashed startup
-# via interface dispatch) and only make the load/bind methods render nothing:
-# the FrameLayout hides itself and no ad is ever requested.
-ad_view_stubs = {
+# Keep the classes and DI graph intact, then disable only the Mobile render and
+# navigation boundaries. Removing ad/shopping classes previously broke ART
+# interface dispatch during startup.
+hide_view_body = (
+    "    .locals 1\n\n"
+    "    const/16 v0, 0x8\n\n"
+    "    invoke-virtual {p0, v0}, Landroid/view/View;->setVisibility(I)V\n\n"
+    "    return-void\n"
+)
+return_void_body = "    .locals 0\n\n    return-void\n"
+hidden_shopping_state_body = (
+    "    .locals 2\n\n"
+    "    invoke-static {p1}, Lpb0/s;->b(Ljava/lang/Object;)V\n\n"
+    "    new-instance v0, Lts/n;\n\n"
+    "    const/4 v1, 0x0\n\n"
+    "    invoke-direct {v0, v1, v1}, Lts/n;-><init>(ZZ)V\n\n"
+    "    return-object v0\n"
+)
+ui_method_stubs = {
     "mobile": [
         (
             "com/vidio/android/ad/view/BannerAdView.smali",
             r"\.method public final f\(Lcom/vidio/android/ad/view/a;Ljava/lang/String;\)V",
+            hide_view_body,
+            "legacy banner ad load",
+        ),
+        (
+            "com/vidio/android/ad/view/BannerAdView.smali",
+            r"\.method public final h\(\)V",
+            hide_view_body,
+            "legacy banner ad resume",
         ),
         (
             "com/vidio/android/watch/newplayer/vod/ads/view/BelowPlayerAdsView.smali",
             r"\.method public final a\(Lcom/google/android/gms/ads/nativead/NativeAd;\)V",
+            hide_view_body,
+            "below-player native ad",
+        ),
+        (
+            "com/vidio/android/fluid/watchpage/presentation/component/ads/banner/b.smali",
+            r"\.method public static final a\(Lcom/vidio/android/fluid/watchpage/domain/FluidComponent\$a;Lcom/vidio/android/fluid/watchpage/presentation/component/ads/banner/BannerAdViewModel;Lsr/a;Ljava/lang/String;Ly3/k;Landroidx/compose/runtime/q;I\)V",
+            return_void_body,
+            "fluid watch-page banner ad",
+        ),
+        (
+            "ts/h.smali",
+            r"\.method public static final a\(JLkotlin/jvm/functions/Function1;Ljava/lang/String;Ly3/k;Lts/k;Landroidx/compose/runtime/q;I\)V",
+            return_void_body,
+            "shopping portrait banner",
+        ),
+        (
+            "ts/o.smali",
+            r"\.method public final invokeSuspend\(Ljava/lang/Object;\)Ljava/lang/Object;",
+            hidden_shopping_state_body,
+            "shopping button visibility",
+        ),
+        (
+            "zs/f.smali",
+            r"\.method public final A\(Lv00/e;Lcom/vidio/android/games/capsule/EngagementEntryPoint;\)V",
+            return_void_body,
+            "shopping route",
         ),
     ],
     "tv": [],
 }
-ad_stub_count = 0
-for suffix, method_sig in ad_view_stubs[profile]:
+ui_stub_counts = Counter()
+for suffix, method_sig, body, label in ui_method_stubs[profile]:
     matches = list(root.glob(f"smali*/**/{suffix}"))
     if len(matches) != 1:
-        raise SystemExit(f"Expected one ad-view file ending in {suffix}, found {len(matches)}")
+        raise SystemExit(f"Expected one UI file ending in {suffix}, found {len(matches)}")
     path = matches[0]
     text = path.read_text()
     pattern = re.compile(rf"(?ms)^({method_sig})\n.*?^\.end method$")
-
-    def _stub(match):
-        return (
-            f"{match.group(1)}\n"
-            "    .locals 1\n\n"
-            "    const/16 v0, 0x8\n\n"
-            "    invoke-virtual {p0, v0}, Landroid/view/View;->setVisibility(I)V\n\n"
-            "    return-void\n"
-            ".end method"
-        )
-
-    new_text, count = pattern.subn(_stub, text)
+    new_text, count = pattern.subn(
+        lambda match: f"{match.group(1)}\n{body}.end method",
+        text,
+    )
     if count != 1:
-        raise SystemExit(f"Expected one ad-view method in {path} matching {method_sig}, found {count}")
-    ad_stub_count += count
+        raise SystemExit(f"Expected one {label} method in {path}, found {count}")
+    ui_stub_counts[label] += count
     if new_text != text:
         path.write_text(new_text)
         changed_files.add(path.relative_to(root))
@@ -348,7 +388,9 @@ else:
     toast_injected = True
 
 print(f"Profile: {profile}; targetSdkVersion: 37")
-print(f"Ad-view render methods stubbed: {ad_stub_count}")
+print("Hidden ad and shopping entry points:")
+for label, count in ui_stub_counts.items():
+    print(f"  {label}: {count}")
 print(f"Welcome toast present in splash onCreate: {toast_injected}")
 print("Disabled header append calls (new/existing):")
 for header in targets:
