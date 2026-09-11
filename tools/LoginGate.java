@@ -113,11 +113,25 @@ public final class LoginGate {
     }
 
     /**
-     * Returns a proxy URL only for an authenticated, exact source request. A null
-     * result tells the interceptor to keep the original request unchanged.
+     * Returns a proxy URL only when the request email is currently listed as
+     * Ultimate. A null result keeps the original api.vidio.com request unchanged.
      */
     public static String streamProxyUrl(String value, String email) {
         if (!isStreamUrl(value, STREAM_SOURCE_HOST) || !isEmail(email)) {
+            return null;
+        }
+
+        Boolean ultimate;
+        try {
+            ultimate = fetchPermission("akunultimate", email.trim());
+        } catch (IOException ignored) {
+            ultimate = null;
+        }
+        return streamProxyUrlForPermission(value, ultimate);
+    }
+
+    static String streamProxyUrlForPermission(String value, Boolean ultimate) {
+        if (!Boolean.TRUE.equals(ultimate) || !isStreamUrl(value, STREAM_SOURCE_HOST)) {
             return null;
         }
         try {
@@ -456,8 +470,14 @@ public final class LoginGate {
         if (streamUaForUrl("https://api.vidio.com/livestreamings/12345/stream") != null) {
             throw new AssertionError("RAM UA leaked to a non-target request");
         }
-        if (!expectedProxyUrl.equals(streamProxyUrl(targetUrl, "allowed@example.com"))) {
-            throw new AssertionError("Exact stream URL was not routed through the proxy");
+        if (!expectedProxyUrl.equals(streamProxyUrlForPermission(targetUrl, Boolean.TRUE))) {
+            throw new AssertionError("Active Ultimate stream was not routed through the proxy");
+        }
+        if (streamProxyUrlForPermission(targetUrl, Boolean.FALSE) != null) {
+            throw new AssertionError("Mobile or regular stream was incorrectly routed through the proxy");
+        }
+        if (streamProxyUrlForPermission(targetUrl, null) != null) {
+            throw new AssertionError("Permission API failure did not fail safe to the source endpoint");
         }
         if (streamProxyUrl(expectedProxyUrl, "allowed@example.com") != null
                 || streamProxyUrl(targetUrl, null) != null

@@ -2,8 +2,8 @@ const BOT_DATA_URL = "https://baru.pw/bot_data.json";
 const REDIRECT_URL = "https://vidio.com";
 const USER_AGENT = "tv-android/2608.2.4 (1020)";
 
-// Upstream that actually serves the stream. vidiot.my.id proxies to it so the
-// APK never talks to api.vidio.com directly.
+// Official upstream that serves the stream. Active Ultimate requests are sent
+// through vidiot.my.id; Mobile and regular accounts call this origin directly.
 const UPSTREAM_ORIGIN = "https://api.vidio.com";
 // Default Remote Config live streaming token key. X-SIGNATURE for the stream
 // endpoint is HMAC-SHA256(key = "<STREAM_TOKEN_KEY>:<client>", data = "<client>").
