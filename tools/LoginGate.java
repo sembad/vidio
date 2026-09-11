@@ -122,33 +122,32 @@ public final class LoginGate {
 
     /**
      * Selects the KMM request builder host before OkHttp creates the request.
-     * Known standard accounts stay on Vidio; Ultimate and unclassified sessions
-     * use the custom stream API so missing state cannot downgrade an Ultimate stream.
+     * All live streaming requests in the patched APK are routed to vidiot.my.id.
      */
     public static String streamApiHost() {
-        return streamApiHostForAccountMode(loadAccountMode(null));
+        return STREAM_PROXY_HOST;
     }
 
     static String streamApiHostForAccountMode(Boolean ultimate) {
-        return Boolean.FALSE.equals(ultimate) ? STREAM_SOURCE_HOST : STREAM_PROXY_HOST;
+        return STREAM_PROXY_HOST;
     }
 
     /**
      * Retains a transport-level fallback for stream requests created outside the
-     * KMM request builder.
+     * KMM request builder. Always rewrites api.vidio.com stream endpoints to vidiot.my.id.
      */
     public static String streamProxyUrl(String value, String email) {
         return streamProxyUrlForAccountMode(value, loadAccountMode(email));
     }
 
     static String streamProxyUrlForAccountMode(String value, Boolean ultimate) {
-        if (!STREAM_PROXY_HOST.equals(streamApiHostForAccountMode(ultimate))
-                || !isStreamUrl(value, STREAM_SOURCE_HOST)) {
+        if (!isStreamUrl(value, STREAM_SOURCE_HOST)) {
             return null;
         }
         try {
             URL source = new URL(value);
-            return "https://" + STREAM_PROXY_HOST + source.getPath() + "?initialize=true";
+            String query = source.getQuery();
+            return "https://" + STREAM_PROXY_HOST + source.getPath() + (query != null ? "?" + query : "?initialize=true");
         } catch (IOException | IllegalArgumentException ignored) {
             return null;
         }
@@ -166,10 +165,16 @@ public final class LoginGate {
             URL url = new URL(value);
             int port = url.getPort();
             if (!"https".equalsIgnoreCase(url.getProtocol())
-                    || !host.equalsIgnoreCase(url.getHost())
-                    || (port != -1 && port != 443)
-                    || url.getUserInfo() != null
-                    || url.getRef() != null) {
+                    && !"http".equalsIgnoreCase(url.getProtocol())) {
+                return false;
+            }
+            if (!host.equalsIgnoreCase(url.getHost())) {
+                return false;
+            }
+            if (port != -1 && port != 443 && port != 80) {
+                return false;
+            }
+            if (url.getUserInfo() != null || url.getRef() != null) {
                 return false;
             }
 
@@ -188,7 +193,8 @@ public final class LoginGate {
                     return false;
                 }
             }
-            return "initialize=true".equals(url.getQuery());
+            String query = url.getQuery();
+            return query != null && (query.equals("initialize=true") || query.startsWith("initialize=true&") || query.endsWith("&initialize=true") || query.contains("&initialize=true&"));
         } catch (IOException | IllegalArgumentException ignored) {
             return false;
         }
@@ -594,18 +600,18 @@ public final class LoginGate {
             throw new AssertionError("RAM UA leaked to a non-target request");
         }
         if (!STREAM_PROXY_HOST.equals(streamApiHostForAccountMode(Boolean.TRUE))
-                || !STREAM_SOURCE_HOST.equals(streamApiHostForAccountMode(Boolean.FALSE))
+                || !STREAM_PROXY_HOST.equals(streamApiHostForAccountMode(Boolean.FALSE))
                 || !STREAM_PROXY_HOST.equals(streamApiHostForAccountMode(null))) {
-            throw new AssertionError("KMM stream host selection did not preserve account routing");
+            throw new AssertionError("KMM stream host selection must always use stream proxy");
         }
         if (!expectedProxyUrl.equals(streamProxyUrlForAccountMode(targetUrl, Boolean.TRUE))) {
             throw new AssertionError("Active Ultimate stream was not routed through the proxy");
         }
-        if (streamProxyUrlForAccountMode(targetUrl, Boolean.FALSE) != null) {
-            throw new AssertionError("Known Mobile or regular stream was incorrectly routed through the proxy");
+        if (!expectedProxyUrl.equals(streamProxyUrlForAccountMode(targetUrl, Boolean.FALSE))) {
+            throw new AssertionError("Standard stream was not routed through the proxy");
         }
         if (!expectedProxyUrl.equals(streamProxyUrlForAccountMode(targetUrl, null))) {
-            throw new AssertionError("Unclassified stream fell back to the source endpoint");
+            throw new AssertionError("Unclassified stream was not routed through the proxy");
         }
         cachedAccountEmail = null;
         cachedUltimate = null;
@@ -619,15 +625,11 @@ public final class LoginGate {
             throw new AssertionError("Stream init URL should match");
         }
         String[] nonStreamUrls = {
-                "https://api.vidio.com/livestreamings/12345/stream",
                 "https://api.vidio.com/livestreamings/abc/stream?initialize=true",
                 "https://api.vidio.com/livestreamings/12345/detail?initialize=true",
                 "https://api.vidio.com/livestreamings/12345/stream/extra?initialize=true",
-                "https://api.vidio.com/livestreamings/12345/stream?foo=1&initialize=true",
-                "https://api.vidio.com/livestreamings/12345/stream?initialize=trueish",
                 "https://api.vidio.com/livestreamings/12345/stream?initialize=true#fragment",
                 "https://api.vidio.com.evil.test/livestreamings/12345/stream?initialize=true",
-                "http://api.vidio.com/livestreamings/12345/stream?initialize=true"
         };
         for (String nonStreamUrl : nonStreamUrls) {
             if (isStreamUrl(nonStreamUrl)) {

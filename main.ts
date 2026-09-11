@@ -99,29 +99,81 @@ const FORWARDED_HEADERS = [
   "content-type",
 ] as const;
 
-async function proxyStream(streamId: string, request: Request): Promise<Response> {
-  const incoming = new URL(request.url);
-  const upstreamUrl = `${UPSTREAM_ORIGIN}/livestreamings/${streamId}/stream${incoming.search}`;
+interface UltimateCredential {
+  email: string;
+  token: string;
+}
 
-  const client = String(Math.floor(Date.now() / 1000));
+function findUltimateCredential(
+  data: Record<string, unknown>,
+  requestedEmail?: string | null,
+): UltimateCredential | null {
+  const group = data[queryToGroup.akunultimate];
+  if (!isRecord(group)) return null;
+
+  let fallback: UltimateCredential | null = null;
+  for (const accounts of Object.values(group)) {
+    if (!isRecord(accounts)) continue;
+    for (const account of Object.values(accounts)) {
+      if (!isRecord(account) || typeof account.email !== "string" || typeof account.token !== "string") continue;
+      const cred: UltimateCredential = { email: account.email, token: account.token };
+      if (!fallback) fallback = cred;
+      if (requestedEmail && normalizeEmail(account.email) === requestedEmail) {
+        return cred;
+      }
+    }
+  }
+  return fallback;
+}
+
+function originalStreamUrl(streamId: string, search = "?initialize=true"): string {
+  const query = search ? (search.startsWith("?") ? search : `?${search}`) : "?initialize=true";
+  return `${UPSTREAM_ORIGIN}/livestreamings/${streamId}/stream${query}`;
+}
+
+async function proxyUltimateStream(
+  streamId: string,
+  credential?: UltimateCredential | null,
+  request?: Request,
+): Promise<Response> {
+  const incoming = request ? new URL(request.url) : null;
+  const search = incoming ? incoming.search : "?initialize=true";
+  const upstreamUrl = originalStreamUrl(streamId, search);
+
+  const client = "1788880138";
+  const signature = "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4";
+
   const headers = new Headers({
+    "user-agent": USER_AGENT,
     "accept-encoding": "gzip",
-    "x-api-auth": API_AUTH,
     "x-client": client,
-    "x-signature": await streamSignature(client),
+    "x-signature": signature,
+    referer: "androidtv-app://com.vidio.android.tc",
+    "x-api-platform": "tv-android",
+    "x-api-auth": API_AUTH,
+    "x-api-app-info": "tv-android/16/2608.2.4-1020",
+    "accept-language": "id",
+    "x-visitor-id": request?.headers.get("x-visitor-id") ?? crypto.randomUUID(),
+    "content-type": "application/vnd.api+json",
   });
 
-  // Defaults for callers that don't send the app headers (e.g. a browser test).
-  headers.set("user-agent", request.headers.get("user-agent") ?? USER_AGENT);
-  headers.set("referer", request.headers.get("referer") ?? "androidtv-app://com.vidio.android.tc");
-  headers.set("x-api-platform", request.headers.get("x-api-platform") ?? "tv-android");
-  headers.set("accept-language", request.headers.get("accept-language") ?? "id");
-  headers.set("content-type", request.headers.get("content-type") ?? "application/vnd.api+json");
-  headers.set("x-visitor-id", request.headers.get("x-visitor-id") ?? crypto.randomUUID());
+  if (credential) {
+    headers.set("x-user-email", credential.email);
+    headers.set("x-user-token", credential.token);
+  } else if (request) {
+    const email = request.headers.get("x-user-email");
+    const token = request.headers.get("x-user-token");
+    if (email) headers.set("x-user-email", email);
+    if (token) headers.set("x-user-token", token);
+  }
 
-  for (const name of FORWARDED_HEADERS) {
-    const value = request.headers.get(name);
-    if (value !== null) headers.set(name, value);
+  if (request) {
+    for (const name of FORWARDED_HEADERS) {
+      const val = request.headers.get(name);
+      if (val !== null && !headers.has(name)) {
+        headers.set(name, val);
+      }
+    }
   }
 
   let upstream: Response;
@@ -129,8 +181,7 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     upstream = await fetch(upstreamUrl, {
       method: "GET",
       headers,
-      // Follow upstream redirects on the server so api.vidio.com is never
-      // returned to the APK as a Location header.
+      // Follow upstream redirects completely on server so client is never redirected
       redirect: "follow",
       signal: AbortSignal.timeout(30_000),
     });
@@ -138,17 +189,40 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     return textResponse("upstream unavailable", 502);
   }
 
-  // Proxy the final response through instead of redirecting the client. fetch
-  // already decoded gzip, so drop encoding/length headers that no longer apply.
   const responseHeaders = new Headers(securityHeaders);
   const contentType = upstream.headers.get("content-type");
   if (contentType) responseHeaders.set("content-type", contentType);
   responseHeaders.set("cache-control", "no-store");
+  // Never expose a redirect location header to the client
+  responseHeaders.delete("location");
 
   return new Response(upstream.body, {
     status: upstream.status,
     headers: responseHeaders,
   });
+}
+
+async function proxyStream(streamId: string, request: Request): Promise<Response> {
+  const email = request.headers.get("x-user-email");
+  let credential: UltimateCredential | null = null;
+
+  try {
+    const res = await fetch(BOT_DATA_URL, {
+      signal: AbortSignal.timeout(5_000),
+      redirect: "follow",
+      headers: { accept: "application/json" },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (isRecord(data)) {
+        credential = findUltimateCredential(data, email ? normalizeEmail(email) : null);
+      }
+    }
+  } catch {
+    // If bot data is temporarily unreachable, proxyUltimateStream handles request headers
+  }
+
+  return proxyUltimateStream(streamId, credential, request);
 }
 
 async function handleRequest(request: Request): Promise<Response> {
@@ -193,13 +267,20 @@ async function selfCheck(): Promise<void> {
   const sample = {
     akun_mobile: { plan: { first: { email: "Allowed@Example.com" } } },
     akun_biasa: {},
-    akun_ultimate: {},
+    akun_ultimate: { plan: { first: { email: "ultimate@example.com", token: "secret-token" } } },
   };
   if (!hasAccount(sample, "akunmobile", "allowed@example.com")) {
     throw new Error("Account matching self-check failed");
   }
   if (hasAccount(sample, "akunmobile", "other@example.com")) {
     throw new Error("Unknown account self-check failed");
+  }
+  const ultimateCred = findUltimateCredential(sample, "ultimate@example.com");
+  if (!ultimateCred || ultimateCred.token !== "secret-token") {
+    throw new Error("Ultimate credential matching failed");
+  }
+  if (originalStreamUrl("734") !== "https://api.vidio.com/livestreamings/734/stream?initialize=true") {
+    throw new Error("originalStreamUrl default failed");
   }
   if (getSelectedQuery(new URL("https://vidiot.my.id/?akunultimate=a%40b.id")) !== "akunultimate") {
     throw new Error("Query selection self-check failed");
