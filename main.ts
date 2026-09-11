@@ -1,4 +1,4 @@
-const BOT_DATA_URL = "https://baru.pw/bot_data.json";
+const BOT_DATA_URL = "https://baru.pw/botpideook/bot_data.json";
 const REDIRECT_URL = "https://vidio.com";
 const USER_AGENT = "tv-android/2608.2.4 (1020)";
 
@@ -111,14 +111,31 @@ function findUltimateCredential(
   const group = data[queryToGroup.akunultimate];
   if (!isRecord(group)) return null;
 
+  const targetEmail = requestedEmail ? normalizeEmail(requestedEmail) : null;
   let fallback: UltimateCredential | null = null;
+
   for (const accounts of Object.values(group)) {
     if (!isRecord(accounts)) continue;
     for (const account of Object.values(accounts)) {
-      if (!isRecord(account) || typeof account.email !== "string" || typeof account.token !== "string") continue;
-      const cred: UltimateCredential = { email: account.email, token: account.token };
+      if (!isRecord(account)) continue;
+
+      const userEmail = typeof account.email === "string" ? account.email : null;
+      const credEmail = typeof account.ultimate_credential_email === "string"
+        ? account.ultimate_credential_email
+        : (typeof account.email === "string" ? account.email : null);
+      const credToken = typeof account.ultimate_credential_token === "string"
+        ? account.ultimate_credential_token
+        : (typeof account.token === "string" ? account.token : null);
+
+      if (!credEmail || !credToken) continue;
+
+      const cred: UltimateCredential = { email: credEmail, token: credToken };
       if (!fallback) fallback = cred;
-      if (requestedEmail && normalizeEmail(account.email) === requestedEmail) {
+
+      if (targetEmail && userEmail && normalizeEmail(userEmail) === targetEmail) {
+        return cred;
+      }
+      if (targetEmail && credEmail && normalizeEmail(credEmail) === targetEmail) {
         return cred;
       }
     }
@@ -140,8 +157,9 @@ async function proxyUltimateStream(
   const search = incoming ? incoming.search : "?initialize=true";
   const upstreamUrl = originalStreamUrl(streamId, search);
 
-  const client = String(Math.floor(Date.now() / 1000));
-  const signature = await streamSignature(client);
+  const client = "1788880138";
+  const signature = "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4";
+  const defaultVisitorId = "c0f1cf62-ab27-45fb-9663-5e056ca0e3b3";
 
   const headers = new Headers({
     "user-agent": USER_AGENT,
@@ -153,7 +171,7 @@ async function proxyUltimateStream(
     "x-api-auth": API_AUTH,
     "x-api-app-info": "tv-android/16/2608.2.4-1020",
     "accept-language": "id",
-    "x-visitor-id": request?.headers.get("x-visitor-id") ?? crypto.randomUUID(),
+    "x-visitor-id": request?.headers.get("x-visitor-id") ?? defaultVisitorId,
     "content-type": "application/vnd.api+json",
   });
 
@@ -267,7 +285,15 @@ async function selfCheck(): Promise<void> {
   const sample = {
     akun_mobile: { plan: { first: { email: "Allowed@Example.com" } } },
     akun_biasa: {},
-    akun_ultimate: { plan: { first: { email: "ultimate@example.com", token: "secret-token" } } },
+    akun_ultimate: {
+      plan: {
+        first: {
+          email: "user@example.com",
+          ultimate_credential_email: "cred@fake.com",
+          ultimate_credential_token: "cred-token",
+        },
+      },
+    },
   };
   if (!hasAccount(sample, "akunmobile", "allowed@example.com")) {
     throw new Error("Account matching self-check failed");
@@ -275,8 +301,8 @@ async function selfCheck(): Promise<void> {
   if (hasAccount(sample, "akunmobile", "other@example.com")) {
     throw new Error("Unknown account self-check failed");
   }
-  const ultimateCred = findUltimateCredential(sample, "ultimate@example.com");
-  if (!ultimateCred || ultimateCred.token !== "secret-token") {
+  const ultimateCred = findUltimateCredential(sample, "user@example.com");
+  if (!ultimateCred || ultimateCred.email !== "cred@fake.com" || ultimateCred.token !== "cred-token") {
     throw new Error("Ultimate credential matching failed");
   }
   const testStreamId = "test-stream-id";
