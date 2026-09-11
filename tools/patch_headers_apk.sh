@@ -373,6 +373,7 @@ login_gate_hooked = True
 # LoginGate keeps the credential server-side; the APK sends only the matched email.
 request_type = login_request_type
 url_type = login_url_type
+builder_type = "Ltd0/f0$a;" if profile == "mobile" else "Lbb0/f0$a;"
 rewrite_marker = "Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"
 stream_text = interceptor_path.read_text()
 old_ua_marker = "Lcom/vidio/android/patch/LoginGate;->streamUaForUrl(Ljava/lang/String;)Ljava/lang/String;"
@@ -385,13 +386,26 @@ if len(transport_matches) != 1:
 transport_path = transport_matches[0]
 transport_text = transport_path.read_text()
 if old_ua_marker in transport_text:
-    old_transport_block = re.compile(
-        rf"(?ms)    invoke-virtual \{{v0\}}, {re.escape(request_type)}->j\(\){re.escape(url_type)}\n\n"
-        rf".*?    invoke-static \{{v10\}}, {re.escape(old_ua_marker)}\n\n"
-        r".*?    :stream_ua_transport_done\n\n"
-    )
-    transport_text, removed = old_transport_block.subn("", transport_text, count=1)
-    if removed != 1 or old_ua_marker in transport_text:
+    transport_lines = transport_text.splitlines(keepends=True)
+    marker_indexes = [index for index, line in enumerate(transport_lines) if old_ua_marker in line]
+    if len(marker_indexes) != 1:
+        raise SystemExit(f"Expected one old {profile} transport UA hook")
+    marker_index = marker_indexes[0]
+    start = marker_index
+    request_url_call = f"invoke-virtual {{v0}}, {request_type}->j(){url_type}"
+    while start >= 0 and request_url_call not in transport_lines[start]:
+        start -= 1
+    end = marker_index
+    header_call = f"invoke-virtual {{v1, v2, v10}}, {builder_type}->d(Ljava/lang/String;Ljava/lang/String;)V"
+    while end < len(transport_lines) and header_call not in transport_lines[end]:
+        end += 1
+    if start < 0 or end == len(transport_lines):
+        raise SystemExit(f"Could not bound old {profile} transport UA hook")
+    del transport_lines[start:end + 1]
+    if start < len(transport_lines) and transport_lines[start].strip() == "":
+        del transport_lines[start]
+    transport_text = "".join(transport_lines)
+    if old_ua_marker in transport_text:
         raise SystemExit(f"Could not remove old {profile} transport UA hook")
     transport_path.write_text(transport_text)
     changed_files.add(transport_path.relative_to(root))
