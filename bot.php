@@ -3554,6 +3554,7 @@ function saveCreatedAccount($chat_id, $email, $password, $status, $created_at = 
         if ($package === 'ultimate' && is_array($ultimate_credential)) {
             $ultimate_started_at = time();
             $record['ultimate_credential_number'] = (int)$ultimate_credential['nomor'];
+            $record['ultimate_credential_email'] = (string)$ultimate_credential['email'];
             $record['ultimate_credential_token'] = (string)$ultimate_credential['token'];
             $record['ultimate_started_at'] = $ultimate_started_at;
             $record['ultimate_expires_at'] = $ultimate_started_at + ULTIMATE_DURATION;
@@ -3703,6 +3704,7 @@ function processAccountPackageUpgrade($chat_id, $account_id, $target_package) {
     $account['chat_id'] = (int)$chat_id;
     if ($target_package === 'ultimate') {
         $account['ultimate_credential_number'] = (int)$ultimate_credential['nomor'];
+        $account['ultimate_credential_email'] = (string)$ultimate_credential['email'];
         $account['ultimate_credential_token'] = (string)$ultimate_credential['token'];
         $account['ultimate_started_at'] = $account['upgraded_at'];
         $account['ultimate_expires_at'] = $account['upgraded_at'] + ULTIMATE_DURATION;

@@ -3,6 +3,21 @@ const REDIRECT_URL = "https://vidio.com";
 const VIDIO_STREAM_ORIGIN = "https://api.vidio.com";
 const USER_AGENT = "tv-android/2608.2.4 (1020)";
 
+const streamProxyUrl = new URL(Deno.env.get("VIDIO_STREAM_PROXY") ?? "");
+const streamProxyUsername = decodeURIComponent(streamProxyUrl.username);
+const streamProxyPassword = decodeURIComponent(streamProxyUrl.password);
+streamProxyUrl.username = "";
+streamProxyUrl.password = "";
+const vidioStreamClient = Deno.createHttpClient({
+  proxy: {
+    url: streamProxyUrl.toString(),
+    basicAuth: {
+      username: streamProxyUsername,
+      password: streamProxyPassword,
+    },
+  },
+});
+
 const queryToGroup = {
   akunbiasa: "akun_biasa",
   akunmobile: "akun_mobile",
@@ -162,6 +177,7 @@ async function proxyUltimateStream(
   credential: UltimateCredential,
 ): Promise<Response> {
   const upstream = await fetch(originalStreamUrl(streamId), {
+    client: vidioStreamClient,
     redirect: "manual",
     headers: {
       "user-agent": USER_AGENT,
