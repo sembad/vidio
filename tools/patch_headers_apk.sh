@@ -63,11 +63,12 @@ else
   MIN_API=23
 fi
 
-# Both profiles get the injected LoginGate dex: Mobile uses it for the email
-# login gate and the stream User-Agent rewrite, TV only for the UA rewrite.
+# Both profiles get a profile-specific LoginGate for email checks and stream UA.
 [[ -f "$LOGIN_GATE_SOURCE" ]] || { echo "Missing login gate source: $LOGIN_GATE_SOURCE" >&2; exit 1; }
-mkdir -p "$WORK_DIR/login-gate-classes" "$WORK_DIR/login-gate-dex"
-javac --release 8 -d "$WORK_DIR/login-gate-classes" "$LOGIN_GATE_SOURCE"
+mkdir -p "$WORK_DIR/login-gate-source/com/vidio/android/patch" "$WORK_DIR/login-gate-classes" "$WORK_DIR/login-gate-dex"
+sed "s/private static final String PROFILE = \"mobile\";/private static final String PROFILE = \"$PROFILE\";/" \
+  "$LOGIN_GATE_SOURCE" > "$WORK_DIR/login-gate-source/com/vidio/android/patch/LoginGate.java"
+javac --release 8 -d "$WORK_DIR/login-gate-classes" "$WORK_DIR/login-gate-source/com/vidio/android/patch/LoginGate.java"
 java -cp "$WORK_DIR/login-gate-classes" com.vidio.android.patch.LoginGate
 jar --create --file "$WORK_DIR/login-gate.jar" -C "$WORK_DIR/login-gate-classes" .
 d8 --min-api "$MIN_API" --output "$WORK_DIR/login-gate-dex" "$WORK_DIR/login-gate.jar"
@@ -111,7 +112,7 @@ while IFS= read -r dex_name; do
   fi
   (( dex_index > max_dex_index )) && max_dex_index=$dex_index
   unzip -p "$WORK_DIR/universal.apk" "$dex_name" | strings > "$WORK_DIR/${dex_name}.strings"
-  if grep -Fq "https://xxxxxxx.my.id/etau.php" "$WORK_DIR/${dex_name}.strings"; then
+  if grep -Eq "https://(xxxxxxx|vidiot)\.my\.id" "$WORK_DIR/${dex_name}.strings"; then
     [[ -z $LOGIN_GATE_DEX_NAME ]] || { echo "Login gate found in multiple DEX files" >&2; exit 1; }
     LOGIN_GATE_DEX_NAME=$dex_name
     LOGIN_GATE_PRESENT=true
@@ -332,37 +333,41 @@ if profile == "mobile":
             changed_files.add(path.relative_to(root))
 
 login_gate_hooked = False
-if profile == "mobile":
-    matches = list(root.glob("smali*/**/f60/d.smali"))
-    if len(matches) != 1:
-        raise SystemExit(f"Expected one common request interceptor, found {len(matches)}")
-    interceptor_path = matches[0]
-    interceptor_text = interceptor_path.read_text()
-    hook_marker = "Lcom/vidio/android/patch/LoginGate;->enforce(Ljava/lang/String;Ljava/lang/Object;)V"
-    hook_count = interceptor_text.count(hook_marker)
-    if hook_count == 0:
-        request_pattern = re.compile(
-            r"(?ms)(    invoke-virtual \{p1\}, Lyd0/g;->request\(\)Ltd0/f0;\n"
-            r".*?    move-result-object v0\n)"
-        )
-        hook_block = (
-            "\n    invoke-virtual {v0}, Ltd0/f0;->j()Ltd0/y;\n\n"
-            "    move-result-object v2\n\n"
-            "    invoke-virtual {v2}, Ltd0/y;->c()Ljava/lang/String;\n\n"
-            "    move-result-object v2\n\n"
-            "    invoke-virtual {v0}, Ltd0/f0;->a()Ltd0/j0;\n\n"
-            "    move-result-object v3\n\n"
-            "    invoke-static {v2, v3}, Lcom/vidio/android/patch/LoginGate;->enforce(Ljava/lang/String;Ljava/lang/Object;)V\n"
-        )
-        interceptor_text, inserted = request_pattern.subn(lambda match: match.group(1) + hook_block, interceptor_text, count=1)
-        if inserted != 1:
-            raise SystemExit(f"Request interceptor hook point not found in {interceptor_path}")
-        interceptor_path.write_text(interceptor_text)
-        changed_files.add(interceptor_path.relative_to(root))
-        hook_count = 1
-    if hook_count != 1:
-        raise SystemExit(f"Expected exactly one login gate request hook, found {hook_count}")
-    login_gate_hooked = True
+login_types = {
+    "mobile": ("f60/d.smali", "Lyd0/g;", "Ltd0/f0;", "Ltd0/y;", "Ltd0/j0;"),
+    "tv": ("l00/d.smali", "Lgb0/g;", "Lbb0/f0;", "Lbb0/y;", "Lbb0/j0;"),
+}
+interceptor_suffix, chain_type, login_request_type, login_url_type, body_type = login_types[profile]
+matches = list(root.glob(f"smali*/**/{interceptor_suffix}"))
+if len(matches) != 1:
+    raise SystemExit(f"Expected one {profile} request interceptor, found {len(matches)}")
+interceptor_path = matches[0]
+interceptor_text = interceptor_path.read_text()
+hook_marker = "Lcom/vidio/android/patch/LoginGate;->enforce(Ljava/lang/String;Ljava/lang/Object;)V"
+hook_count = interceptor_text.count(hook_marker)
+if hook_count == 0:
+    request_pattern = re.compile(
+        rf"(?ms)(    invoke-virtual \{{p1\}}, {re.escape(chain_type)}->request\(\){re.escape(login_request_type)}\n"
+        r".*?    move-result-object v0\n)"
+    )
+    hook_block = (
+        f"\n    invoke-virtual {{v0}}, {login_request_type}->j(){login_url_type}\n\n"
+        "    move-result-object v2\n\n"
+        f"    invoke-virtual {{v2}}, {login_url_type}->c()Ljava/lang/String;\n\n"
+        "    move-result-object v2\n\n"
+        f"    invoke-virtual {{v0}}, {login_request_type}->a(){body_type}\n\n"
+        "    move-result-object v3\n\n"
+        "    invoke-static {v2, v3}, Lcom/vidio/android/patch/LoginGate;->enforce(Ljava/lang/String;Ljava/lang/Object;)V\n"
+    )
+    interceptor_text, inserted = request_pattern.subn(lambda match: match.group(1) + hook_block, interceptor_text, count=1)
+    if inserted != 1:
+        raise SystemExit(f"Request interceptor hook point not found in {interceptor_path}")
+    interceptor_path.write_text(interceptor_text)
+    changed_files.add(interceptor_path.relative_to(root))
+    hook_count = 1
+if hook_count != 1:
+    raise SystemExit(f"Expected exactly one login gate request hook, found {hook_count}")
+login_gate_hooked = True
 
 # Rewrite the stream UA inside OkHttp's transport interceptor, after all app
 # interceptors and immediately before the final request is built and sent.
@@ -613,8 +618,7 @@ for label, count in ui_stub_counts.items():
 print(f"Welcome toast present in splash onCreate: {toast_injected}")
 print(f"Stream UA rewrite hook present: {ua_hook_done}")
 print(f"Login gate context initializer present: {login_gate_initialized}")
-if profile == "mobile":
-    print(f"Login gate request hook present: {login_gate_hooked}")
+print(f"Login gate request hook present: {login_gate_hooked}")
 print("Disabled header append calls (new/existing):")
 for header in targets:
     print(f"  {header}: {counts[header]}/{already_patched_counts[header]}")

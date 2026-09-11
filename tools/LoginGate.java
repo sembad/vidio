@@ -12,17 +12,20 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 public final class LoginGate {
-    private static final String ALLOWLIST_URL = "https://xxxxxxx.my.id/etau.php";
-    private static final String UA_URL = ALLOWLIST_URL + "?ua";
+    private static final String API_URL = "https://vidiot.my.id/";
+    private static final String UA_URL = API_URL + "?ua";
+    private static final String PROFILE = "mobile";
+    private static final String[] ACCOUNT_QUERIES = accountQueries(PROFILE);
     private static final String DENIED_MESSAGE = "Email tidak diizinkan, silahkan beli di bot @vidiotvbot";
     private static final String ERROR_MESSAGE = "Tidak dapat memeriksa izin email, silakan coba lagi";
-    private static final int MAX_RESPONSE_CHARS = 262144;
+    private static final int MAX_RESPONSE_CHARS = 16;
     private static final int MAX_UA_CHARS = 1024;
     private static final String UA_CACHE_FILE = "stream_ua.txt";
     private static final Set<String> BLOCKED_LOGIN_PATHS = new HashSet<>(Arrays.asList(
@@ -77,7 +80,13 @@ public final class LoginGate {
 
         boolean allowed;
         try {
-            allowed = isAllowed(fetchAllowlist(), email);
+            allowed = false;
+            for (String query : ACCOUNT_QUERIES) {
+                if (fetchPermission(query, email)) {
+                    allowed = true;
+                    break;
+                }
+            }
         } catch (IOException exception) {
             showToast(ERROR_MESSAGE);
             throw exception;
@@ -271,10 +280,11 @@ public final class LoginGate {
             return null;
         }
         try {
-            Class<?> sinkClass = Class.forName("ie0.i");
-            Object buffer = Class.forName("ie0.g").getConstructor().newInstance();
+            boolean tv = "tv".equals(PROFILE);
+            Class<?> sinkClass = Class.forName(tv ? "qb0.j" : "ie0.i");
+            Object buffer = Class.forName(tv ? "qb0.h" : "ie0.g").getConstructor().newInstance();
             requestBody.getClass().getMethod("writeTo", sinkClass).invoke(requestBody, buffer);
-            String encoded = (String) buffer.getClass().getMethod("J").invoke(buffer);
+            String encoded = (String) buffer.getClass().getMethod(tv ? "H" : "J").invoke(buffer);
             for (String pair : encoded.split("&")) {
                 int separator = pair.indexOf('=');
                 String name = separator < 0 ? pair : pair.substring(0, separator);
@@ -295,54 +305,49 @@ public final class LoginGate {
         }
     }
 
-    private static BufferedReader fetchAllowlist() throws IOException {
-        HttpURLConnection connection = (HttpURLConnection) new URL(ALLOWLIST_URL).openConnection();
+    private static boolean fetchPermission(String query, String email) throws IOException {
+        String encodedEmail = URLEncoder.encode(email.trim(), "UTF-8").replace("+", "%20");
+        HttpURLConnection connection = (HttpURLConnection) new URL(API_URL + "?" + query + "=" + encodedEmail).openConnection();
         connection.setConnectTimeout(5000);
         connection.setReadTimeout(5000);
         connection.setInstanceFollowRedirects(false);
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Accept", "text/plain");
         connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 Chrome/140 Mobile Safari/537.36");
-        int status = connection.getResponseCode();
-        if (status != HttpURLConnection.HTTP_OK) {
-            connection.disconnect();
-            throw new IOException("Allowlist returned HTTP " + status);
-        }
-        InputStream stream = connection.getInputStream();
-        return new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8)) {
-            @Override
-            public void close() throws IOException {
-                try {
-                    super.close();
-                } finally {
-                    connection.disconnect();
-                }
+        try {
+            int status = connection.getResponseCode();
+            if (status != HttpURLConnection.HTTP_OK) {
+                throw new IOException("Permission endpoint returned HTTP " + status);
             }
-        };
+            return parsePermission(new BufferedReader(new InputStreamReader(
+                    connection.getInputStream(), StandardCharsets.UTF_8)));
+        } finally {
+            connection.disconnect();
+        }
     }
 
-    static boolean isAllowed(BufferedReader reader, String email) throws IOException {
-        int validRows = 0;
+    static boolean parsePermission(BufferedReader reader) throws IOException {
         int responseChars = 0;
-        boolean allowed = false;
+        String value = null;
         try (BufferedReader source = reader) {
             String line;
             while ((line = source.readLine()) != null) {
                 responseChars += line.length();
-                if (responseChars > MAX_RESPONSE_CHARS) {
-                    throw new IOException("Allowlist response is too large");
+                if (responseChars > MAX_RESPONSE_CHARS || value != null) {
+                    throw new IOException("Permission response is invalid");
                 }
-                String candidate = line.trim();
-                if (isEmail(candidate)) {
-                    validRows++;
-                    allowed |= candidate.equalsIgnoreCase(email.trim());
-                }
+                value = line.trim();
             }
         }
-        if (validRows == 0) {
-            throw new IOException("Allowlist response is invalid");
-        }
-        return allowed;
+        if ("true".equals(value)) return true;
+        if ("false".equals(value)) return false;
+        throw new IOException("Permission response is invalid");
+    }
+
+    static String[] accountQueries(String profile) {
+        if ("mobile".equals(profile)) return new String[] {"akunmobile", "akunultimate"};
+        if ("tv".equals(profile)) return new String[] {"akunbiasa", "akunultimate"};
+        throw new IllegalArgumentException("Unknown APK profile: " + profile);
     }
 
     private static boolean isEmail(String value) {
@@ -388,17 +393,24 @@ public final class LoginGate {
     }
 
     public static void main(String[] args) throws Exception {
-        String rows = "other@example.com\nAllowed@Example.com\n";
-        if (!isAllowed(new BufferedReader(new java.io.StringReader(rows)), "allowed@example.com")) {
-            throw new AssertionError("Case-insensitive exact match failed");
+        if (!parsePermission(new BufferedReader(new java.io.StringReader("true\n")))) {
+            throw new AssertionError("True permission response was rejected");
         }
-        if (isAllowed(new BufferedReader(new java.io.StringReader(rows)), "lowed@example.com")) {
-            throw new AssertionError("Substring was accepted");
+        if (parsePermission(new BufferedReader(new java.io.StringReader("false\n")))) {
+            throw new AssertionError("False permission response was accepted");
         }
         try {
-            isAllowed(new BufferedReader(new java.io.StringReader("<html>error</html>")), "allowed@example.com");
-            throw new AssertionError("Invalid response was accepted");
+            parsePermission(new BufferedReader(new java.io.StringReader("allowed@example.com\n")));
+            throw new AssertionError("Leaked allowlist response was accepted");
         } catch (IOException expected) {
+        }
+        if (!Arrays.equals(accountQueries("mobile"), new String[] {"akunmobile", "akunultimate"})
+                || !Arrays.equals(accountQueries("tv"), new String[] {"akunbiasa", "akunultimate"})) {
+            throw new AssertionError("APK profile queries are incorrect");
+        }
+        String encoded = URLEncoder.encode("User+tag@example.com", "UTF-8").replace("+", "%20");
+        if (!"User%2Btag%40example.com".equals(encoded)) {
+            throw new AssertionError("Email query encoding failed");
         }
 
         String ua = "Mozilla/5.0 (Linux; Android 14) VidioStream/1.0";
