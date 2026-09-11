@@ -140,15 +140,18 @@ function originalStreamUrl(streamId: string): string {
   return `${VIDIO_STREAM_ORIGIN}/livestreamings/${streamId}/stream?initialize=true`;
 }
 
-function originalStreamRedirect(streamId: string): Response {
-  return new Response(null, {
-    status: 307,
-    headers: {
-      ...securityHeaders,
-      location: originalStreamUrl(streamId),
-      "cache-control": "no-store",
+function streamError(message: string, status: number): Response {
+  return new Response(
+    JSON.stringify({ errors: [{ status: String(status), detail: message }] }),
+    {
+      status,
+      headers: {
+        ...securityHeaders,
+        "content-type": "application/vnd.api+json",
+        "cache-control": "no-store",
+      },
     },
-  });
+  );
 }
 
 async function fetchBotData(): Promise<JsonRecord | null> {
@@ -168,7 +171,8 @@ async function proxyUltimateStream(
 ): Promise<Response> {
   const upstream = await fetch(originalStreamUrl(streamId), {
     client: vidioStreamClient,
-    redirect: "manual",
+    redirect: "follow",
+    signal: AbortSignal.timeout(30_000),
     headers: {
       "user-agent": USER_AGENT,
       "accept-encoding": "gzip",
@@ -202,15 +206,17 @@ async function handleRequest(request: Request): Promise<Response> {
   const streamId = streamIdFromRequest(request, url);
   if (streamId !== null) {
     const requestedEmail = normalizeEmail(request.headers.get("x-user-email"));
-    if (!requestedEmail) return originalStreamRedirect(streamId);
+    if (!requestedEmail) {
+      return streamError("Header x-user-email tidak valid", 400);
+    }
     try {
       const data = await fetchBotData();
-      if (!data) return originalStreamRedirect(streamId);
+      if (!data) return streamError("Data akun Ultimate tidak tersedia", 502);
       const credential = findUltimateCredential(data, requestedEmail);
-      if (!credential) return originalStreamRedirect(streamId);
+      if (!credential) return streamError("Akun Ultimate tidak diizinkan", 403);
       return await proxyUltimateStream(streamId, credential);
     } catch {
-      return originalStreamRedirect(streamId);
+      return streamError("Proxy stream Ultimate gagal", 502);
     }
   }
 
