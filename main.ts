@@ -79,10 +79,17 @@ function findUltimateCredential(
     if (
       parseFutureUnixTimestamp(account.ultimate_expires_at, nowSeconds) === null
     ) continue;
+    const credentialEmail = normalizeEmail(
+      typeof account.ultimate_credential_email === "string"
+        ? account.ultimate_credential_email
+        : null,
+    );
     const token = typeof account.ultimate_credential_token === "string"
       ? account.ultimate_credential_token.trim()
       : "";
-    if (token) return { email: requestedEmail, token };
+    if (credentialEmail === requestedEmail && token) {
+      return { email: credentialEmail, token };
+    }
   }
   return null;
 }
@@ -152,7 +159,6 @@ async function fetchBotData(): Promise<JsonRecord | null> {
 
 async function proxyUltimateStream(
   streamId: string,
-  requestedEmail: string,
   credential: UltimateCredential,
 ): Promise<Response> {
   const upstream = await fetch(originalStreamUrl(streamId), {
@@ -168,7 +174,7 @@ async function proxyUltimateStream(
       "x-api-auth": "laZOmogezono5ogekaso5oz4Mezimew1",
       "x-api-app-info": "tv-android/16/2608.2.4-1020",
       "accept-language": "id",
-      "x-user-email": requestedEmail,
+      "x-user-email": credential.email,
       "x-user-token": credential.token,
       "x-visitor-id": crypto.randomUUID(),
       "content-type": "application/vnd.api+json",
@@ -201,7 +207,7 @@ async function handleRequest(request: Request): Promise<Response> {
       ) {
         return originalStreamRedirect(streamId);
       }
-      return await proxyUltimateStream(streamId, requestedEmail, credential);
+      return await proxyUltimateStream(streamId, credential);
     } catch {
       return originalStreamRedirect(streamId);
     }
