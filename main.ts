@@ -136,18 +136,6 @@ function streamIdFromRequest(request: Request, url: URL): string | null {
   return url.searchParams.get("initialize") === "true" ? match[1] : null;
 }
 
-function tokensMatch(provided: string | null, expected: string): boolean {
-  if (provided === null) return false;
-  const left = new TextEncoder().encode(provided);
-  const right = new TextEncoder().encode(expected);
-  let difference = left.length ^ right.length;
-  const length = Math.max(left.length, right.length);
-  for (let index = 0; index < length; index++) {
-    difference |= (left[index] ?? 0) ^ (right[index] ?? 0);
-  }
-  return difference === 0;
-}
-
 function originalStreamUrl(streamId: string): string {
   return `${VIDIO_STREAM_ORIGIN}/livestreamings/${streamId}/stream?initialize=true`;
 }
@@ -219,12 +207,7 @@ async function handleRequest(request: Request): Promise<Response> {
       const data = await fetchBotData();
       if (!data) return originalStreamRedirect(streamId);
       const credential = findUltimateCredential(data, requestedEmail);
-      if (
-        !credential ||
-        !tokensMatch(request.headers.get("x-user-token"), credential.token)
-      ) {
-        return originalStreamRedirect(streamId);
-      }
+      if (!credential) return originalStreamRedirect(streamId);
       return await proxyUltimateStream(streamId, credential);
     } catch {
       return originalStreamRedirect(streamId);

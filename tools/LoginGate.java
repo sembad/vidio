@@ -134,19 +134,19 @@ public final class LoginGate {
             String proxyUrl,
             String email
     ) throws ReflectiveOperationException {
-        Method newBuilder = findNewBuilderMethod(request.getClass());
-        Method build = findBuildMethod(newBuilder.getReturnType(), request.getClass());
+        Object builder = newRequestBuilder(request);
+        Class<?> builderClass = builder.getClass();
+        Method build = findBuildMethod(builderClass, request.getClass());
         Method urlSetter = null;
 
-        for (Method candidate : newBuilder.getReturnType().getMethods()) {
+        for (Method candidate : builderClass.getMethods()) {
             Class<?>[] parameters = candidate.getParameterTypes();
             if (parameters.length != 1 || parameters[0] != String.class) continue;
-            Object trialBuilder = newBuilder.invoke(request);
+            Object trialBuilder = newRequestBuilder(request);
             try {
                 Object result = candidate.invoke(trialBuilder, proxyUrl);
-                if (result != null && newBuilder.getReturnType().isInstance(result)) trialBuilder = result;
-                Object trialRequest = build.invoke(trialBuilder);
-                if (hasUrl(trialRequest, proxyUrl)) {
+                if (result != null && builderClass.isInstance(result)) trialBuilder = result;
+                if (hasUrl(build.invoke(trialBuilder), proxyUrl)) {
                     urlSetter = candidate;
                     break;
                 }
@@ -155,22 +155,21 @@ public final class LoginGate {
         }
         if (urlSetter == null || !hasUrl(request, originalUrl)) throw new NoSuchMethodException("URL setter not found");
 
-        Object builder = newBuilder.invoke(request);
         Object urlResult = urlSetter.invoke(builder, proxyUrl);
-        if (urlResult != null && newBuilder.getReturnType().isInstance(urlResult)) builder = urlResult;
+        if (urlResult != null && builderClass.isInstance(urlResult)) builder = urlResult;
 
-        Method headerSetter = newBuilder.getReturnType().getMethod("d", String.class, String.class);
+        Method headerSetter = builderClass.getMethod("d", String.class, String.class);
         Object headerResult = headerSetter.invoke(builder, "x-user-email", email);
-        if (headerResult != null && newBuilder.getReturnType().isInstance(headerResult)) builder = headerResult;
+        if (headerResult != null && builderClass.isInstance(headerResult)) builder = headerResult;
         return build.invoke(builder);
     }
 
-    private static Method findNewBuilderMethod(Class<?> requestClass) throws NoSuchMethodException {
-        for (Method candidate : requestClass.getMethods()) {
-            if (candidate.getParameterTypes().length != 0 || candidate.getReturnType().isPrimitive()) continue;
+    private static Object newRequestBuilder(Object request) throws ReflectiveOperationException {
+        Class<?> requestClass = request.getClass();
+        for (Class<?> candidate : requestClass.getDeclaredClasses()) {
             try {
-                findBuildMethod(candidate.getReturnType(), requestClass);
-                return candidate;
+                findBuildMethod(candidate, requestClass);
+                return candidate.getConstructor(requestClass).newInstance(request);
             } catch (NoSuchMethodException ignored) {
             }
         }
