@@ -83,22 +83,6 @@ async function streamSignature(client: string): Promise<string> {
   return hex(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(client)));
 }
 
-// Headers copied straight from the app request. They are already correct per
-// profile (mobile vs tv), so forwarding them keeps the upstream call authentic.
-const FORWARDED_HEADERS = [
-  "user-agent",
-  "referer",
-  "accept-language",
-  "x-api-platform",
-  "x-api-app-info",
-  "x-visitor-id",
-  "x-user-email",
-  "x-user-token",
-  "x-user-id",
-  "x-authorization",
-  "content-type",
-] as const;
-
 interface UltimateCredential {
   email: string;
   token: string;
@@ -171,7 +155,7 @@ async function proxyUltimateStream(
     "x-api-auth": API_AUTH,
     "x-api-app-info": "tv-android/16/2608.2.4-1020",
     "accept-language": "id",
-    "x-visitor-id": request?.headers.get("x-visitor-id") ?? defaultVisitorId,
+    "x-visitor-id": defaultVisitorId,
     "content-type": "application/vnd.api+json",
   });
 
@@ -183,15 +167,6 @@ async function proxyUltimateStream(
     const token = request.headers.get("x-user-token");
     if (email) headers.set("x-user-email", email);
     if (token) headers.set("x-user-token", token);
-  }
-
-  if (request) {
-    for (const name of FORWARDED_HEADERS) {
-      const val = request.headers.get(name);
-      if (val !== null && !headers.has(name)) {
-        headers.set(name, val);
-      }
-    }
   }
 
   let upstream: Response;
