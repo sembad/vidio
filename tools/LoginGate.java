@@ -89,13 +89,19 @@ public final class LoginGate {
         }
     }
 
-    public static String streamEmail(String url) {
-        String email = authorizedEmail;
-        return email != null && authorizedUltimate && isStreamUrl(url) ? email : null;
+    public static String streamEmail(String url, String requestEmail) {
+        if (!isStreamUrl(url)) return null;
+        String email = normalizeEmail(requestEmail);
+        if (email == null) return null;
+        try {
+            return fetchPermission("akunultimate", email) ? email : null;
+        } catch (IOException ignored) {
+            return null;
+        }
     }
 
     public static String rewriteStreamUrl(String url) {
-        if (streamEmail(url) == null) return url;
+        if (!isStreamUrl(url)) return url;
         try {
             URL source = new URL(url);
             return API_URL.substring(0, API_URL.length() - 1)

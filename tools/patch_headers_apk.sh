@@ -375,7 +375,9 @@ url_type = login_url_type
 builder_type = "Ltd0/f0$a;" if profile == "mobile" else "Lbb0/f0$a;"
 url_setter = "i" if profile == "mobile" else "j"
 rewrite_marker = "Lcom/vidio/android/patch/LoginGate;->rewriteStreamUrl(Ljava/lang/String;)Ljava/lang/String;"
+stream_email_marker = "Lcom/vidio/android/patch/LoginGate;->streamEmail(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
 legacy_rewrite_marker = "Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"
+legacy_stream_email_marker = "Lcom/vidio/android/patch/LoginGate;->streamEmail(Ljava/lang/String;)Ljava/lang/String;"
 stream_text = interceptor_path.read_text()
 old_ua_marker = "Lcom/vidio/android/patch/LoginGate;->streamUaForUrl(Ljava/lang/String;)Ljava/lang/String;"
 
@@ -413,6 +415,16 @@ if old_ua_marker in transport_text:
 
 if old_ua_marker in stream_text:
     raise SystemExit(f"Unexpected old app-level stream UA hook in {interceptor_path}")
+if legacy_stream_email_marker in stream_text:
+    old_concrete_block = re.compile(
+        rf"(    invoke-static \{{v2, v3\}}, Lcom/vidio/android/patch/LoginGate;->enforce\(Ljava/lang/String;Ljava/lang/Object;\)V\n)"
+        rf"\n    invoke-virtual \{{v0\}}, {re.escape(request_type)}->j\(\){re.escape(url_type)}\n\n"
+        rf".*?{re.escape(legacy_stream_email_marker)}.*?    move-result-object v0\n",
+        re.DOTALL,
+    )
+    stream_text, removed = old_concrete_block.subn(lambda match: match.group(1), stream_text, count=1)
+    if removed != 1 or legacy_stream_email_marker in stream_text:
+        raise SystemExit(f"Could not remove old concrete Ultimate hook from {interceptor_path}")
 if legacy_rewrite_marker in stream_text:
     legacy_block = re.compile(
         rf"\n    invoke-virtual \{{v0\}}, {re.escape(request_type)}->j\(\){re.escape(url_type)}\n\n"
@@ -437,7 +449,10 @@ if stream_text.count(rewrite_marker) == 0:
         "    move-result-object v2\n\n"
         "    invoke-virtual {v2}, " + url_type + "->toString()Ljava/lang/String;\n\n"
         "    move-result-object v2\n\n"
-        "    invoke-static {v2}, Lcom/vidio/android/patch/LoginGate;->streamEmail(Ljava/lang/String;)Ljava/lang/String;\n\n"
+        "    const-string v3, \"x-user-email\"\n\n"
+        "    invoke-virtual {v0, v3}, " + request_type + "->d(Ljava/lang/String;)Ljava/lang/String;\n\n"
+        "    move-result-object v3\n\n"
+        "    invoke-static {v2, v3}, " + stream_email_marker + "\n\n"
         "    move-result-object v3\n\n"
         "    if-eqz v3, :v0_ultimate_stream_done\n\n"
         "    new-instance v1, " + builder_type + "\n\n"
@@ -456,8 +471,9 @@ if stream_text.count(rewrite_marker) == 0:
     stream_text = stream_text.replace(enforce_call, enforce_call + rewrite_block, 1)
     interceptor_path.write_text(stream_text)
     changed_files.add(interceptor_path.relative_to(root))
-if stream_text.count(rewrite_marker) != 1 or legacy_rewrite_marker in stream_text:
-    raise SystemExit("Expected exactly one concrete Ultimate stream request hook")
+if (stream_text.count(rewrite_marker) != 1 or stream_text.count(stream_email_marker) != 1
+        or legacy_rewrite_marker in stream_text or legacy_stream_email_marker in stream_text):
+    raise SystemExit("Expected exactly one request-email Ultimate stream hook")
 stream_hook_done = True
 
 # Keep the classes and DI graph intact, then disable only the Mobile render and
