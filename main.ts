@@ -3,7 +3,9 @@ const REDIRECT_URL = "https://vidio.com";
 const VIDIO_STREAM_ORIGIN = "https://api.vidio.com";
 const USER_AGENT = "tv-android/2608.2.4 (1020)";
 
-const streamProxyUrl = new URL(Deno.env.get("VIDIO_STREAM_PROXY") ?? "");
+const streamProxyUrl = new URL(
+  "http://54e00827b371c0c310a2__cr.id:817df9dc4f7bfe33@gw.dataimpulse.com:823",
+);
 const streamProxyUsername = decodeURIComponent(streamProxyUrl.username);
 const streamProxyPassword = decodeURIComponent(streamProxyUrl.password);
 streamProxyUrl.username = "";
