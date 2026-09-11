@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -90,16 +89,19 @@ public final class LoginGate {
         }
     }
 
-    public static Object rewriteStreamRequest(Object request, String url) {
+    public static String streamEmail(String url) {
         String email = authorizedEmail;
-        if (request == null || email == null || !authorizedUltimate || !isStreamUrl(url)) return request;
+        return email != null && authorizedUltimate && isStreamUrl(url) ? email : null;
+    }
+
+    public static String rewriteStreamUrl(String url) {
+        if (streamEmail(url) == null) return url;
         try {
             URL source = new URL(url);
-            String proxyUrl = API_URL.substring(0, API_URL.length() - 1)
+            return API_URL.substring(0, API_URL.length() - 1)
                     + source.getPath() + "?initialize=true";
-            return rebuildRequest(request, url, proxyUrl, email);
-        } catch (ReflectiveOperationException | IOException | RuntimeException ignored) {
-            return request;
+        } catch (IOException | RuntimeException ignored) {
+            return url;
         }
     }
 
@@ -126,75 +128,6 @@ public final class LoginGate {
         } catch (IOException | IllegalArgumentException ignored) {
             return false;
         }
-    }
-
-    private static Object rebuildRequest(
-            Object request,
-            String originalUrl,
-            String proxyUrl,
-            String email
-    ) throws ReflectiveOperationException {
-        Object builder = newRequestBuilder(request);
-        Class<?> builderClass = builder.getClass();
-        Method build = findBuildMethod(builderClass, request.getClass());
-        Method urlSetter = null;
-
-        for (Method candidate : builderClass.getMethods()) {
-            Class<?>[] parameters = candidate.getParameterTypes();
-            if (parameters.length != 1 || parameters[0] != String.class) continue;
-            Object trialBuilder = newRequestBuilder(request);
-            try {
-                Object result = candidate.invoke(trialBuilder, proxyUrl);
-                if (result != null && builderClass.isInstance(result)) trialBuilder = result;
-                if (hasUrl(build.invoke(trialBuilder), proxyUrl)) {
-                    urlSetter = candidate;
-                    break;
-                }
-            } catch (ReflectiveOperationException | RuntimeException ignored) {
-            }
-        }
-        if (urlSetter == null || !hasUrl(request, originalUrl)) throw new NoSuchMethodException("URL setter not found");
-
-        Object urlResult = urlSetter.invoke(builder, proxyUrl);
-        if (urlResult != null && builderClass.isInstance(urlResult)) builder = urlResult;
-
-        Method headerSetter = builderClass.getMethod("d", String.class, String.class);
-        Object headerResult = headerSetter.invoke(builder, "x-user-email", email);
-        if (headerResult != null && builderClass.isInstance(headerResult)) builder = headerResult;
-        return build.invoke(builder);
-    }
-
-    private static Object newRequestBuilder(Object request) throws ReflectiveOperationException {
-        Class<?> requestClass = request.getClass();
-        for (Class<?> candidate : requestClass.getDeclaredClasses()) {
-            try {
-                findBuildMethod(candidate, requestClass);
-                return candidate.getConstructor(requestClass).newInstance(request);
-            } catch (NoSuchMethodException ignored) {
-            }
-        }
-        throw new NoSuchMethodException("Request builder not found");
-    }
-
-    private static Method findBuildMethod(Class<?> builderClass, Class<?> requestClass) throws NoSuchMethodException {
-        for (Method candidate : builderClass.getMethods()) {
-            if (candidate.getParameterTypes().length == 0 && requestClass.isAssignableFrom(candidate.getReturnType())) {
-                return candidate;
-            }
-        }
-        throw new NoSuchMethodException("Request build method not found");
-    }
-
-    private static boolean hasUrl(Object request, String expected) {
-        for (Method candidate : request.getClass().getMethods()) {
-            if (candidate.getParameterTypes().length != 0 || candidate.getReturnType().isPrimitive()) continue;
-            try {
-                Object value = candidate.invoke(request);
-                if (value != null && expected.equals(value.toString())) return true;
-            } catch (ReflectiveOperationException | RuntimeException ignored) {
-            }
-        }
-        return false;
     }
 
     private static String formValue(Object requestBody, String key) throws IOException {

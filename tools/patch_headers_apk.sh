@@ -369,11 +369,13 @@ if hook_count != 1:
 login_gate_hooked = True
 
 # Rewrite only exact active-Ultimate stream requests in the app interceptor.
-# LoginGate keeps the credential server-side; the APK sends only the matched email.
+# Use each APK's concrete request builder; reflection previously failed silently.
 request_type = login_request_type
 url_type = login_url_type
 builder_type = "Ltd0/f0$a;" if profile == "mobile" else "Lbb0/f0$a;"
-rewrite_marker = "Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"
+url_setter = "i" if profile == "mobile" else "j"
+rewrite_marker = "Lcom/vidio/android/patch/LoginGate;->rewriteStreamUrl(Ljava/lang/String;)Ljava/lang/String;"
+legacy_rewrite_marker = "Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"
 stream_text = interceptor_path.read_text()
 old_ua_marker = "Lcom/vidio/android/patch/LoginGate;->streamUaForUrl(Ljava/lang/String;)Ljava/lang/String;"
 
@@ -411,6 +413,20 @@ if old_ua_marker in transport_text:
 
 if old_ua_marker in stream_text:
     raise SystemExit(f"Unexpected old app-level stream UA hook in {interceptor_path}")
+if legacy_rewrite_marker in stream_text:
+    legacy_block = re.compile(
+        rf"\n    invoke-virtual \{{v0\}}, {re.escape(request_type)}->j\(\){re.escape(url_type)}\n\n"
+        rf"    move-result-object v2\n\n"
+        rf"    invoke-virtual \{{v2\}}, {re.escape(url_type)}->toString\(\)Ljava/lang/String;\n\n"
+        rf"    move-result-object v2\n\n"
+        rf"    invoke-static \{{v0, v2\}}, {re.escape(legacy_rewrite_marker)}\n\n"
+        rf"    move-result-object v0\n\n"
+        rf"    check-cast v0, {re.escape(request_type)}\n"
+    )
+    stream_text, removed = legacy_block.subn("", stream_text, count=1)
+    if removed != 1 or legacy_rewrite_marker in stream_text:
+        raise SystemExit(f"Could not remove legacy Ultimate stream hook from {interceptor_path}")
+
 if stream_text.count(rewrite_marker) == 0:
     enforce_call = (
         "    invoke-static {v2, v3}, "
@@ -421,17 +437,27 @@ if stream_text.count(rewrite_marker) == 0:
         "    move-result-object v2\n\n"
         "    invoke-virtual {v2}, " + url_type + "->toString()Ljava/lang/String;\n\n"
         "    move-result-object v2\n\n"
-        "    invoke-static {v0, v2}, " + rewrite_marker + "\n\n"
+        "    invoke-static {v2}, Lcom/vidio/android/patch/LoginGate;->streamEmail(Ljava/lang/String;)Ljava/lang/String;\n\n"
+        "    move-result-object v3\n\n"
+        "    if-eqz v3, :v0_ultimate_stream_done\n\n"
+        "    new-instance v1, " + builder_type + "\n\n"
+        "    invoke-direct {v1, v0}, " + builder_type + "-><init>(" + request_type + ")V\n\n"
+        "    invoke-static {v2}, " + rewrite_marker + "\n\n"
+        "    move-result-object v2\n\n"
+        "    invoke-virtual {v1, v2}, " + builder_type + "->" + url_setter + "(Ljava/lang/String;)V\n\n"
+        "    const-string v2, \"x-user-email\"\n\n"
+        "    invoke-virtual {v1, v2, v3}, " + builder_type + "->d(Ljava/lang/String;Ljava/lang/String;)V\n\n"
+        "    invoke-virtual {v1}, " + builder_type + "->b()" + request_type + "\n\n"
         "    move-result-object v0\n\n"
-        "    check-cast v0, " + request_type + "\n"
+        "    :v0_ultimate_stream_done\n"
     )
     if stream_text.count(enforce_call) != 1:
         raise SystemExit(f"Expected one login enforce call in {interceptor_path}")
     stream_text = stream_text.replace(enforce_call, enforce_call + rewrite_block, 1)
     interceptor_path.write_text(stream_text)
     changed_files.add(interceptor_path.relative_to(root))
-if stream_text.count(rewrite_marker) != 1:
-    raise SystemExit("Expected exactly one Ultimate stream request hook")
+if stream_text.count(rewrite_marker) != 1 or legacy_rewrite_marker in stream_text:
+    raise SystemExit("Expected exactly one concrete Ultimate stream request hook")
 stream_hook_done = True
 
 # Keep the classes and DI graph intact, then disable only the Mobile render and
