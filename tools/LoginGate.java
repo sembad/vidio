@@ -21,7 +21,7 @@ import java.util.Set;
 public final class LoginGate {
     private static final String API_URL = "https://vidiot.my.id/";
     private static final String UA_URL = API_URL + "?ua";
-    private static final String STREAM_PROXY_ORIGIN = "https://vidiot.my.id";
+    private static final String STREAM_SOURCE_HOST = "api.vidio.com";
     private static final String STREAM_PROXY_HOST = "vidiot.my.id";
     private static final String PROFILE = "mobile";
     private static final String[] ACCOUNT_QUERIES = accountQueries(PROFILE);
@@ -101,12 +101,11 @@ public final class LoginGate {
     }
 
     /**
-     * Returns the cached API User-Agent only for the exact livestream initialize
-     * request. The smali hook applies it to the final OkHttp request with the
-     * profile-specific replace-header method.
+     * Returns the cached API User-Agent only for an exact source or proxy
+     * livestream initialize request.
      */
     public static String streamUaForUrl(String url) {
-        if (!isStreamUrl(url)) {
+        if (!isStreamUrl(url, STREAM_SOURCE_HOST) && !isStreamUrl(url, STREAM_PROXY_HOST)) {
             return null;
         }
         String ua = normalizeUa(cachedUa);
@@ -114,26 +113,26 @@ public final class LoginGate {
     }
 
     /**
-     * Returns a proxy URL only for an authenticated, exact stream initialize
-     * request. A null result tells the transport hook to leave the request alone.
+     * Returns a proxy URL only for an authenticated, exact source request. A null
+     * result tells the interceptor to keep the original request unchanged.
      */
     public static String streamProxyUrl(String value, String email) {
-        if (!isStreamUrl(value) || !isEmail(email)) {
+        if (!isStreamUrl(value, STREAM_SOURCE_HOST) || !isEmail(email)) {
             return null;
         }
         try {
             URL source = new URL(value);
-            return STREAM_PROXY_ORIGIN + source.getPath() + "?initialize=true";
+            return "https://" + STREAM_PROXY_HOST + source.getPath() + "?initialize=true";
         } catch (IOException | IllegalArgumentException ignored) {
             return null;
         }
     }
 
-    public static String streamProxyHost() {
-        return STREAM_PROXY_HOST;
+    static boolean isStreamUrl(String value) {
+        return isStreamUrl(value, STREAM_SOURCE_HOST);
     }
 
-    static boolean isStreamUrl(String value) {
+    private static boolean isStreamUrl(String value, String host) {
         if (value == null) {
             return false;
         }
@@ -141,7 +140,7 @@ public final class LoginGate {
             URL url = new URL(value);
             int port = url.getPort();
             if (!"https".equalsIgnoreCase(url.getProtocol())
-                    || !"api.vidio.com".equalsIgnoreCase(url.getHost())
+                    || !host.equalsIgnoreCase(url.getHost())
                     || (port != -1 && port != 443)
                     || url.getUserInfo() != null
                     || url.getRef() != null) {
@@ -448,20 +447,22 @@ public final class LoginGate {
         }
         cachedUa = ua;
         String targetUrl = "https://api.vidio.com/livestreamings/12345/stream?initialize=true";
-        if (!ua.equals(streamUaForUrl(targetUrl)) || cachedUa != ua) {
-            throw new AssertionError("RAM cache fast path failed");
+        String expectedProxyUrl = "https://vidiot.my.id/livestreamings/12345/stream?initialize=true";
+        if (!ua.equals(streamUaForUrl(targetUrl))
+                || !ua.equals(streamUaForUrl(expectedProxyUrl))
+                || cachedUa != ua) {
+            throw new AssertionError("RAM cache fast path failed for source or proxy URL");
         }
         if (streamUaForUrl("https://api.vidio.com/livestreamings/12345/stream") != null) {
             throw new AssertionError("RAM UA leaked to a non-target request");
         }
-        String expectedProxyUrl = "https://vidiot.my.id/livestreamings/12345/stream?initialize=true";
         if (!expectedProxyUrl.equals(streamProxyUrl(targetUrl, "allowed@example.com"))) {
             throw new AssertionError("Exact stream URL was not routed through the proxy");
         }
-        if (streamProxyUrl(targetUrl, null) != null
-                || streamProxyUrl(targetUrl, "not-an-email") != null
-                || !"vidiot.my.id".equals(streamProxyHost())) {
-            throw new AssertionError("Stream proxy authentication or host validation failed");
+        if (streamProxyUrl(expectedProxyUrl, "allowed@example.com") != null
+                || streamProxyUrl(targetUrl, null) != null
+                || streamProxyUrl(targetUrl, "not-an-email") != null) {
+            throw new AssertionError("Stream proxy validation or loop prevention failed");
         }
         cachedUa = null;
         if (!isStreamUrl(targetUrl)) {

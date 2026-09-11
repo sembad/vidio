@@ -369,9 +369,10 @@ if hook_count != 1:
     raise SystemExit(f"Expected exactly one login gate request hook, found {hook_count}")
 login_gate_hooked = True
 
-# Rewrite both the stream UA and destination inside OkHttp's final transport
-# interceptor. KMM constructs the livestream request outside the app interceptor
-# that was patched previously, so routing here guarantees both APKs use the proxy.
+# Rewrite the stream destination as soon as the transport interceptor receives the
+# original request. BridgeInterceptor then derives Host and all transport headers
+# from the proxy URL itself instead of receiving a late, internally inconsistent
+# Request.Builder mutation.
 if profile == "mobile":
     app_ua_suffix = "f60/d.smali"
     transport_ua_suffix = "yd0/a.smali"
@@ -389,7 +390,6 @@ else:
 
 ua_marker = "Lcom/vidio/android/patch/LoginGate;->streamUaForUrl(Ljava/lang/String;)Ljava/lang/String;"
 proxy_marker = "Lcom/vidio/android/patch/LoginGate;->streamProxyUrl(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
-proxy_host_marker = "Lcom/vidio/android/patch/LoginGate;->streamProxyHost()Ljava/lang/String;"
 app_ua_matches = list(root.glob(f"smali*/**/{app_ua_suffix}"))
 if len(app_ua_matches) != 1:
     raise SystemExit(f"Expected one {profile} app interceptor, found {len(app_ua_matches)}")
@@ -456,10 +456,12 @@ if ua_text.count(ua_marker) != 1:
 
 if ua_text.count(proxy_marker) == 0:
     transport_proxy_pattern = re.compile(
-        rf"(    (?::stream_ua_transport_done|:cond_\d+)\n(?:\n|    \.line \d+\n)*)"
-        rf"(    invoke-virtual \{{v1\}}, {re.escape(builder_type)}->b\(\){re.escape(request_type)}\n)"
+        rf"(    invoke-(?:interface|virtual) \{{p1\}}, [^\n]+->(?:request|a)\(\){re.escape(request_type)}\n"
+        rf"(?:\n|    \.line \d+\n)*"
+        rf"    move-result-object v0\n)"
     )
     transport_proxy_block = (
+        "\n    :try_start_stream_proxy\n"
         "    invoke-virtual {v0}, " + request_type + "->j()" + url_type + "\n\n"
         "    move-result-object v10\n\n"
         "    invoke-virtual {v10}, " + url_type + "->toString()Ljava/lang/String;\n\n"
@@ -469,21 +471,34 @@ if ua_text.count(proxy_marker) == 0:
         "    move-result-object v2\n\n"
         "    invoke-static {v10, v2}, " + proxy_marker + "\n\n"
         "    move-result-object v10\n\n"
-        "    if-eqz v10, :stream_proxy_transport_done\n\n"
-        "    invoke-virtual {v1, v10}, " + builder_type + "->" + url_setter + "(Ljava/lang/String;)V\n\n"
-        "    const-string v10, \"Host\"\n\n"
-        "    invoke-static {}, " + proxy_host_marker + "\n\n"
+        "    if-eqz v10, :stream_proxy_early_done\n\n"
+        "    invoke-virtual {v0}, " + request_type + "->g()" + builder_type + "\n\n"
         "    move-result-object v2\n\n"
-        "    invoke-virtual {v1, v10, v2}, " + builder_type + "->d(Ljava/lang/String;Ljava/lang/String;)V\n\n"
-        "    :stream_proxy_transport_done\n"
+        "    invoke-virtual {v2, v10}, " + builder_type + "->" + url_setter + "(Ljava/lang/String;)V\n\n"
+        "    invoke-virtual {v2}, " + builder_type + "->b()" + request_type + "\n\n"
+        "    move-result-object v0\n\n"
+        "    :stream_proxy_early_done\n"
+        "    :try_end_stream_proxy\n"
+        "    .catch Ljava/lang/Throwable; {:try_start_stream_proxy .. :try_end_stream_proxy} :stream_proxy_early_failed\n\n"
+        "    goto :stream_proxy_early_continue\n\n"
+        "    :stream_proxy_early_failed\n"
+        "    move-exception v2\n\n"
+        "    :stream_proxy_early_continue\n"
     )
     ua_text, proxy_inserted = transport_proxy_pattern.subn(
-        lambda match: match.group(1) + transport_proxy_block + "\n" + match.group(2), ua_text, count=1
+        lambda match: match.group(1) + transport_proxy_block, ua_text, count=1
     )
     if proxy_inserted != 1:
-        raise SystemExit(f"Transport stream proxy hook point not found in {ua_path}")
-if ua_text.count(proxy_marker) != 1 or ua_text.count(proxy_host_marker) != 1:
-    raise SystemExit("Expected exactly one transport stream proxy hook")
+        raise SystemExit(f"Early transport stream proxy hook point not found in {ua_path}")
+if ua_text.count(proxy_marker) != 1:
+    raise SystemExit("Expected exactly one early transport stream proxy hook")
+if "stream_proxy_transport_done" in ua_text or "->streamProxyHost()Ljava/lang/String;" in ua_text:
+    raise SystemExit("Late stream proxy hook or manual Host override is still present")
+proxy_index = ua_text.index(proxy_marker)
+ua_index = ua_text.index(ua_marker)
+first_builder_index = ua_text.index(f"{builder_type}->b(){request_type}")
+if proxy_index > first_builder_index or proxy_index > ua_index:
+    raise SystemExit("Stream proxy hook must run before BridgeInterceptor builds headers")
 ua_path.write_text(ua_text)
 changed_files.add(ua_path.relative_to(root))
 ua_hook_done = True
