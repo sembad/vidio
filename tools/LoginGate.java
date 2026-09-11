@@ -121,16 +121,29 @@ public final class LoginGate {
     }
 
     /**
-     * Keeps a known standard account on api.vidio.com. Ultimate and unclassified
-     * sessions always use the proxy, so a missing state can never downgrade an
-     * Ultimate stream back to the source endpoint.
+     * Selects the KMM request builder host before OkHttp creates the request.
+     * Known standard accounts stay on Vidio; Ultimate and unclassified sessions
+     * use the custom stream API so missing state cannot downgrade an Ultimate stream.
+     */
+    public static String streamApiHost() {
+        return streamApiHostForAccountMode(loadAccountMode(null));
+    }
+
+    static String streamApiHostForAccountMode(Boolean ultimate) {
+        return Boolean.FALSE.equals(ultimate) ? STREAM_SOURCE_HOST : STREAM_PROXY_HOST;
+    }
+
+    /**
+     * Retains a transport-level fallback for stream requests created outside the
+     * KMM request builder.
      */
     public static String streamProxyUrl(String value, String email) {
         return streamProxyUrlForAccountMode(value, loadAccountMode(email));
     }
 
     static String streamProxyUrlForAccountMode(String value, Boolean ultimate) {
-        if (Boolean.FALSE.equals(ultimate) || !isStreamUrl(value, STREAM_SOURCE_HOST)) {
+        if (!STREAM_PROXY_HOST.equals(streamApiHostForAccountMode(ultimate))
+                || !isStreamUrl(value, STREAM_SOURCE_HOST)) {
             return null;
         }
         try {
@@ -579,6 +592,11 @@ public final class LoginGate {
         }
         if (streamUaForUrl("https://api.vidio.com/livestreamings/12345/stream") != null) {
             throw new AssertionError("RAM UA leaked to a non-target request");
+        }
+        if (!STREAM_PROXY_HOST.equals(streamApiHostForAccountMode(Boolean.TRUE))
+                || !STREAM_SOURCE_HOST.equals(streamApiHostForAccountMode(Boolean.FALSE))
+                || !STREAM_PROXY_HOST.equals(streamApiHostForAccountMode(null))) {
+            throw new AssertionError("KMM stream host selection did not preserve account routing");
         }
         if (!expectedProxyUrl.equals(streamProxyUrlForAccountMode(targetUrl, Boolean.TRUE))) {
             throw new AssertionError("Active Ultimate stream was not routed through the proxy");

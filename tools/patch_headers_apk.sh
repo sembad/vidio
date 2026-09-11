@@ -369,10 +369,61 @@ if hook_count != 1:
     raise SystemExit(f"Expected exactly one login gate request hook, found {hook_count}")
 login_gate_hooked = True
 
-# Rewrite the stream destination as soon as the transport interceptor receives the
-# original request. BridgeInterceptor then derives Host and all transport headers
-# from the proxy URL itself instead of receiving a late, internally inconsistent
-# Request.Builder mutation.
+# Set the stream API host in the KMM request builder itself. This is the primary
+# route selection and ensures the request is born with the proxy URL before any
+# OkHttp application or network interceptor can observe it.
+stream_builder_types = {
+    "mobile": ("o40/a.smali", "Lw20/a;", "j"),
+    "tv": ("ez/a.smali", "Lox/a;", "i"),
+}
+stream_builder_suffix, stream_request_builder_type, stream_host_setter = stream_builder_types[profile]
+stream_builder_matches = list(root.glob(f"smali*/**/{stream_builder_suffix}"))
+if len(stream_builder_matches) != 1:
+    raise SystemExit(
+        f"Expected one {profile} KMM stream request builder, found {len(stream_builder_matches)}"
+    )
+stream_builder_path = stream_builder_matches[0]
+stream_builder_text = stream_builder_path.read_text()
+stream_host_marker = "Lcom/vidio/android/patch/LoginGate;->streamApiHost()Ljava/lang/String;"
+stream_host_hook_count = stream_builder_text.count(stream_host_marker)
+if stream_host_hook_count == 0:
+    stream_builder_pattern = re.compile(
+        rf"(    invoke-virtual \{{v0, [vp]\d+\}}, "
+        rf"Lcom/vidio/kmm/api/restapi/RestAPI;->d\(\[Ljava/lang/String;\)"
+        rf"{re.escape(stream_request_builder_type)}\n"
+        rf"(?:\n|    \.line \d+\n)*"
+        rf"    move-result-object (?P<builder>[vp]\d+)\n)"
+    )
+
+    def inject_stream_host(match):
+        builder_register = match.group("builder")
+        if builder_register == "v0":
+            raise SystemExit("KMM stream builder unexpectedly occupies the host scratch register")
+        stream_host_block = (
+            "\n    invoke-static {}, " + stream_host_marker + "\n\n"
+            "    move-result-object v0\n\n"
+            "    invoke-virtual {" + builder_register + ", v0}, "
+            + stream_request_builder_type + "->" + stream_host_setter
+            + "(Ljava/lang/String;)" + stream_request_builder_type + "\n\n"
+            "    move-result-object " + builder_register + "\n"
+        )
+        return match.group(1) + stream_host_block
+
+    stream_builder_text, inserted = stream_builder_pattern.subn(
+        inject_stream_host,
+        stream_builder_text,
+        count=1,
+    )
+    if inserted != 1:
+        raise SystemExit(f"KMM stream host hook point not found in {stream_builder_path}")
+    stream_builder_path.write_text(stream_builder_text)
+    changed_files.add(stream_builder_path.relative_to(root))
+    stream_host_hook_count = 1
+if stream_host_hook_count != 1:
+    raise SystemExit(f"Expected exactly one KMM stream host hook, found {stream_host_hook_count}")
+stream_builder_hook_done = True
+
+# Keep an OkHttp transport fallback for any stream request built outside KMM.
 if profile == "mobile":
     app_ua_suffix = "f60/d.smali"
     transport_ua_suffix = "yd0/a.smali"
@@ -668,8 +719,9 @@ print("Hidden ad and shopping entry points:")
 for label, count in ui_stub_counts.items():
     print(f"  {label}: {count}")
 print(f"Welcome toast present in splash onCreate: {toast_injected}")
+print(f"KMM stream host hook present: {stream_builder_hook_done}")
 print(f"Stream UA rewrite hook present: {ua_hook_done}")
-print(f"Stream proxy rewrite hook present: {stream_proxy_hook_done}")
+print(f"Stream proxy fallback hook present: {stream_proxy_hook_done}")
 print(f"Login gate context initializer present: {login_gate_initialized}")
 print(f"Login gate request hook present: {login_gate_hooked}")
 print("Disabled header append calls (new/existing):")

@@ -550,31 +550,37 @@ JADX 1.5.6 menghasilkan 38.825 file Java dari enam DEX dan meninggalkan 198 mark
 
 `partner_dry_run.php` tetap statik secara default. `--live-test` mereproduksi satu probe GET non-partner yang aman; script tidak membuat serial, agent, ciphertext, signature, atau request `POST /api/partner/auth`.
 
-### Dua APK Android 17 dengan UA stream tersimpan; Mobile tanpa iklan dan shopping
+### Dua APK Android 17 dengan host stream dipilih di builder KMM
 
-Dua artefak standalone dipisah agar UI tetap sesuai perangkat yang dituju. APK Mobile mempertahankan package dan UI HP asli (termasuk portrait), sedangkan APK TV mempertahankan launcher, resource, dan UI TV asli. Keduanya memakai `targetSdkVersion 37`; ini adalah dua aplikasi yang dipilih saat instalasi, bukan satu APK yang mengganti UI secara otomatis.
+Dua artefak standalone dipisah agar UI tetap sesuai perangkat yang dituju. APK Mobile mempertahankan package dan UI HP asli (termasuk portrait), sedangkan APK TV mempertahankan launcher, resource, dan UI TV asli. Keduanya memakai minimum SDK `23` dan target SDK `37`.
 
-- `dist/vidio-mobile-2608.2.7-tv-headers-android17.apk`: package `com.vidio.android`, version code `3191921`, version name `2608.2.7-73babcffa4`, minimum SDK `32`, target SDK `37`, ABI `arm64-v8a`, delapan DEX utama. UA non-stream tetap bawaan APK, `vidioandroid/2608.2.7-73babcffa4 (3191921)`; `Referer` API tetap `androidtv-app://com.vidio.android.tv`. Package, deep link, analytics, serta UI Mobile selain permukaan iklan, shopping, dan gerbang login tidak diubah. DEX Audience Network hanya dipertahankan pada lokasi assets yang dicari loader, tanpa salinan root duplikat.
-- `dist/vidio-tv-2608.2.4-minimal-headers-android17.apk`: package `com.vidio.android.tv`, version code `1020`, version name `2608.2.4`, minimum SDK `23`, target SDK `37`, ABI `armeabi-v7a`, tujuh DEX termasuk initializer konteks dan helper cache UA. Artefak menggabungkan base beserta split `armeabi-v7a`, `en`, `in`, dan `xhdpi`; UA non-stream tetap bawaan TV `tv-android/2608.2.4 (1020)`.
+- `dist/vidio-mobile-2608.2.7-ultimate-per-user.apk`: package `com.vidio.android`, version code `3191921`, version name `2608.2.7-73babcffa4`, ABI `arm64-v8a`, dan delapan DEX utama. UA non-stream tetap `vidioandroid/2608.2.7-73babcffa4 (3191921)`.
+- `dist/vidio-tv-2608.2.4-ultimate-per-user.apk`: package `com.vidio.android.tv`, version code `1020`, version name `2608.2.4`, ABI `armeabi-v7a`, dan tujuh DEX. UA non-stream tetap `tv-android/2608.2.4 (1020)`.
 
-Pada kedua profil, 15 pemanggilan append header dinonaktifkan: dua `X-API-Platform`, dua `X-API-App-Info`, tujuh `X-Device-*`, dua `X-AUTHORIZATION`, `X-Partner-Id`, dan `X-Partner-Signature`. `X-CLIENT`, `X-SIGNATURE`, `X-API-Auth`, `Referer`, email, user token, user ID, visitor ID, JSON:API media type, gzip transport, dan UA bawaan APK tetap dipertahankan.
-
-Khusus request `https://api.vidio.com/livestreamings/{id}/stream` yang memiliki query tepat `initialize=true`, Mobile dan TV mengganti `User-Agent` dengan baris pertama yang valid dari `https://xxxxxxx.my.id/etau.php?ua`. GET hanya dilakukan secara tersinkron ketika cache memori dan `SharedPreferences` belum berisi UA; hasil HTTP 200 berupa teks ASCII maksimum 1 KiB disimpan dengan `commit()` pada preferences `v0_patch`, key `stream_ua`. Login, logout, dan restart aplikasi tidak mengambil ulang UA; cache baru hilang saat data aplikasi dibersihkan atau aplikasi dihapus. Scheme/host/port/path/query diperiksa ketat dan semua request non-target dikembalikan tanpa perubahan. Jika endpoint UA gagal, non-200, kosong, terlalu besar, atau invalid, request memakai UA bawaan APK dan percobaan dapat dilakukan lagi pada request stream berikutnya.
-
-Gerbang `isInStreamAdsEnabled()` dan `isSurfaceViewSecure()` pada policy aplikasi aktif serta fallback `DefaultPlaybackPolicy` dipaksa mengembalikan `false`. Pada Mobile, renderer banner iklan legacy, native ad bawah player, dan banner Fluid Watch Page selalu disembunyikan. Shopping juga ditutup pada tiga batas aman: banner portrait tidak dirender, state tombol selalu `false/false`, dan route panel shopping menjadi no-op; class serta DI tetap dipertahankan agar tidak mengulangi crash startup dari patch yang menghapus kontrak UI.
-
-Khusus Mobile, interceptor request menahan `/api/login` dan `/api/facebook/auth` sampai email ditemukan sebagai baris utuh pada allowlist `https://xxxxxxx.my.id/etau.php`; pencocokan mengabaikan kapital dan spasi tepi. Google, OTP/nomor HP, HE, Apple, serta verifikasi kode TV diblokir karena tidak menyediakan email sebelum autentikasi. Email yang tidak terdaftar menampilkan Toast `Email tidak diizinkan, silahkan beli di bot @vidiotvbot`; timeout, offline, status non-200, respons kosong/invalid, atau respons di atas 256 KiB ditolak tertutup dengan Toast gangguan pemeriksaan. Pemeriksaan berjalan sebelum request autentikasi Vidio diteruskan, tetapi tetap merupakan kontrol sisi client yang dapat dilewati oleh APK hasil modifikasi ulang.
+Pada kedua profil, builder endpoint stream KMM sekarang memilih host sebelum OkHttp membuat request. Mobile memasang `Request.BaseUrl.Host` langsung di `o40.a` melalui `w20.a.j(host)`, sedangkan TV memasangnya di `ez.a` melalui `ox.a.i(host)`. Akun yang terklasifikasi Ultimate dan sesi yang belum terklasifikasi memakai `vidiot.my.id`; hanya akun yang pasti standard memakai `api.vidio.com`. Path dan query tetap `/livestreamings/{id}/stream?initialize=true`, sehingga HAR sisi aplikasi untuk akun Ultimate harus menunjukkan:
 
 ```text
-Mobile APK SHA-256:          6e3f0c5d663a79234944ccd0f95f3d89acf3ac1c84c99280861f399ced800284
-Mobile certificate SHA-256:  cf8ed60231a014b4bf7b270b3439ed33543a450d6547ec18cc9106699b93b3a8
-Mobile size:                 26,724,255 bytes
-TV APK SHA-256:              36ae0ff04028b64536a779740c735b1e2273e5871904cd2a095205ba46432ba9
-TV certificate SHA-256:      693365c7314ba4cb429d7ed033b00136cbccd1ab79a18011112346b8df66e568
+https://vidiot.my.id/livestreamings/{id}/stream?initialize=true
+```
+
+Hook transport OkHttp dipertahankan hanya sebagai fallback untuk request stream yang mungkin dibuat di luar builder KMM. Pemanggilan upstream `https://api.vidio.com/...` di `main.ts` terjadi dari server proxy setelah aplikasi menghubungi `vidiot.my.id`; itu bukan tujuan request client Android.
+
+Khusus kedua host stream tersebut, Mobile dan TV mengganti `User-Agent` dengan baris ASCII valid pertama dari `https://vidiot.my.id/?ua`. Nilai maksimum 1 KiB disimpan di memori dan file cache aplikasi. Jika endpoint UA gagal atau nilainya invalid, request memakai UA bawaan tanpa mengubah request non-stream.
+
+Gerbang `isInStreamAdsEnabled()` dan `isSurfaceViewSecure()` pada policy aplikasi aktif serta fallback `DefaultPlaybackPolicy` dipaksa mengembalikan `false`. Pada Mobile, renderer banner iklan legacy, native ad bawah player, banner Fluid Watch Page, dan tiga batas UI shopping tetap dinonaktifkan tanpa menghapus class atau graph DI.
+
+Gerbang login memeriksa `akunultimate` terlebih dahulu, lalu `akunmobile` untuk Mobile atau `akunbiasa` untuk TV. Hasil klasifikasi per email disimpan di file internal dan digunakan oleh builder stream; respons harus tepat `true` atau `false`. Login yang tidak diizinkan ditolak sebelum request autentikasi Vidio diteruskan.
+
+```text
+Mobile APK SHA-256:          e07946d56a4f02a5c04befdb8546515db8372051084a348cc060be88ad25dec7
+Mobile certificate SHA-256:  59e19839d0b310edda7a47e50a617193d659222a25e62500b5b2dcfb8e1b9bc0
+Mobile size:                 29,532,776 bytes
+TV APK SHA-256:              91316111ba21d5c4e70c7b407778c5be1e98f7d784c1bb8075f77ab92455cbcc
+TV certificate SHA-256:      d30ea566d04f9dfd0ac71d6ff6bccc7e100c64fc280887eefb914ef3f7b217a1
 TV size:                     25,133,415 bytes
 ```
 
-`zipalign -c`, `apksigner verify`, manifest/package/version/SDK/ABI, delapan DEX Mobile, tujuh DEX TV, lokasi DEX assets, jumlah patch per header, identitas API Mobile, bytecode hasil sign untuk policy playback dan tujuh batas UI iklan/shopping, hook interceptor login, satu hook UA per profil, initializer konteks, DEX helper kompatibel minimum SDK, serta idempotensi patch telah diperiksa. Self-test helper mencakup exact-line, case-insensitive, penolakan substring, validasi URL target/non-target, validasi UA, batas respons, dan builder OkHttp void-return yang dipakai kedua APK. Instalasi/runtime dan tampilan Toast belum diuji karena tidak tersedia perangkat atau emulator Android 17. Konten DRM yang memaksa secure output masih dapat menghasilkan screenshot hitam. APK resmi atau build dengan sertifikat berbeda harus dihapus lebih dahulu sebelum instalasi; data aplikasi dapat ikut terhapus. Skrip reproduksi ada di `tools/patch_headers_apk.sh`; keystore sementara, tool download, attachment asli, hasil decode, dan kredensial tidak disimpan di repository.
+`zipalign -c` dan `apksigner verify` lulus untuk kedua APK. Pemeriksaan DEX hasil sign memastikan tepat satu pemanggilan langsung `LoginGate.streamApiHost()` pada masing-masing builder stream, diikuti setter host profil yang benar; kedua literal host juga tersedia di helper. Self-test helper mencakup klasifikasi host Ultimate/standard/unknown, validasi URL target/non-target, routing fallback, cache mode akun, dan validasi UA. Runtime Android belum dapat diuji tanpa perangkat, dan APK bertanda tangan berbeda harus dihapus sebelum instalasi ulang. Skrip reproduksi ada di `tools/patch_headers_apk.sh`; kredensial dan HAR tidak disimpan di repository.
 
 ### PHP cURL
 
