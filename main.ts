@@ -5,6 +5,7 @@ const USER_AGENT = "tv-android/2608.2.4 (1020)";
 // Official upstream that serves the stream. Active Ultimate requests are sent
 // through vidiot.my.id; Mobile and regular accounts call this origin directly.
 const UPSTREAM_ORIGIN = "https://api.vidio.com";
+const UPSTREAM_PROXY_URL = "http://54e00827b371c0c310a2__cr.id:817df9dc4f7bfe33@gw.dataimpulse.com:823";
 // Default Remote Config live streaming token key. X-SIGNATURE for the stream
 // endpoint is HMAC-SHA256(key = "<STREAM_TOKEN_KEY>:<client>", data = "<client>").
 const STREAM_TOKEN_KEY = "V1d10D3v";
@@ -171,13 +172,20 @@ async function proxyUltimateStream(
 
   let upstream: Response;
   try {
-    upstream = await fetch(upstreamUrl, {
+    const fetchOptions: RequestInit & { client?: unknown } = {
       method: "GET",
       headers,
-      // Follow upstream redirects completely on server so client is never redirected
       redirect: "follow",
       signal: AbortSignal.timeout(30_000),
-    });
+    };
+
+    // If running in Deno with proxy client support
+    const denoObj = (globalThis as unknown as { Deno?: { createHttpClient?: (opts: { proxy: { url: string } }) => unknown } }).Deno;
+    if (denoObj?.createHttpClient) {
+      fetchOptions.client = denoObj.createHttpClient({ proxy: { url: UPSTREAM_PROXY_URL } });
+    }
+
+    upstream = await fetch(upstreamUrl, fetchOptions);
   } catch {
     return textResponse("upstream unavailable", 502);
   }
@@ -298,5 +306,8 @@ async function selfCheck(): Promise<void> {
 
 if (import.meta.main) {
   await selfCheck();
-  Deno.serve(handleRequest);
+  const denoObj = (globalThis as unknown as { Deno?: { serve: (handler: (req: Request) => Promise<Response>) => void } }).Deno;
+  if (denoObj?.serve) {
+    denoObj.serve(handleRequest);
+  }
 }
