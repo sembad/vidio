@@ -277,17 +277,21 @@ function selfCheck(): void {
   ) {
     throw new Error("Per-user token binding failed");
   }
-  const exactRequest = new Request(
-    "https://vidiot.my.id/livestreamings/9183/stream?initialize=true",
-  );
-  if (streamIdFromRequest(exactRequest, new URL(exactRequest.url)) !== "9183") {
-    throw new Error("Stream route failed");
+  for (const streamId of ["1", "42", "123456789"]) {
+    const request = new Request(
+      `https://vidiot.my.id/livestreamings/${streamId}/stream?initialize=true`,
+    );
+    if (streamIdFromRequest(request, new URL(request.url)) !== streamId) {
+      throw new Error(`Dynamic stream route failed: ${streamId}`);
+    }
   }
+  const validUrl =
+    "https://vidiot.my.id/livestreamings/42/stream?initialize=true";
   for (
     const invalid of [
       "https://vidiot.my.id/livestreamings/not-a-number/stream?initialize=true",
-      "https://vidiot.my.id/livestreamings/9183/stream?initialize=true&extra=1",
-      "https://vidiot.my.id/livestreamings/9183/stream?initialize=false",
+      `${validUrl}&extra=1`,
+      validUrl.replace("initialize=true", "initialize=false"),
     ]
   ) {
     const request = new Request(invalid);
@@ -297,8 +301,8 @@ function selfCheck(): void {
   }
   if (
     streamIdFromRequest(
-      new Request(exactRequest.url, { method: "POST" }),
-      new URL(exactRequest.url),
+      new Request(validUrl, { method: "POST" }),
+      new URL(validUrl),
     ) !== null
   ) {
     throw new Error("Non-GET stream route accepted");

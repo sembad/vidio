@@ -354,13 +354,16 @@ public final class LoginGate {
         }
         if (!"user@example.com".equals(normalizeEmail(" User@Example.com "))) throw new AssertionError("Email normalization failed");
 
-        String target = "https://api.vidio.com/livestreamings/9183/stream?initialize=true";
         rememberAuthorization("ultimate@example.com", true);
-        FakeRequest rewritten = (FakeRequest) rewriteStreamRequest(new FakeRequest(target, null), target);
-        if (!"https://vidiot.my.id/livestreamings/9183/stream?initialize=true".equals(rewritten.url)
-                || !"ultimate@example.com".equals(rewritten.email)) {
-            throw new AssertionError("Ultimate request rewrite failed");
+        for (String streamId : new String[] {"1", "42", "123456789"}) {
+            String target = "https://api.vidio.com/livestreamings/" + streamId + "/stream?initialize=true";
+            FakeRequest rewritten = (FakeRequest) rewriteStreamRequest(new FakeRequest(target, null), target);
+            String expected = "https://vidiot.my.id/livestreamings/" + streamId + "/stream?initialize=true";
+            if (!expected.equals(rewritten.url) || !"ultimate@example.com".equals(rewritten.email)) {
+                throw new AssertionError("Dynamic Ultimate request rewrite failed: " + streamId);
+            }
         }
+        String target = "https://api.vidio.com/livestreamings/42/stream?initialize=true";
         rememberAuthorization("mobile@example.com", false);
         FakeRequest original = new FakeRequest(target, null);
         if (rewriteStreamRequest(original, target) != original) throw new AssertionError("Non-Ultimate request was rewritten");
@@ -368,11 +371,11 @@ public final class LoginGate {
         if (rewriteStreamRequest(original, target) != original) throw new AssertionError("Missing login state was rewritten");
 
         String[] rejected = {
-                "https://api.vidio.com/livestreamings/9183/stream",
+                "https://api.vidio.com/livestreamings/42/stream",
                 "https://api.vidio.com/livestreamings/id/stream?initialize=true",
-                "https://api.vidio.com/livestreamings/9183/stream?initialize=true&extra=1",
-                "https://api.vidio.com.evil.test/livestreamings/9183/stream?initialize=true",
-                "http://api.vidio.com/livestreamings/9183/stream?initialize=true"
+                target + "&extra=1",
+                "https://api.vidio.com.evil.test/livestreamings/42/stream?initialize=true",
+                "http://api.vidio.com/livestreamings/42/stream?initialize=true"
         };
         for (String value : rejected) if (isStreamUrl(value)) throw new AssertionError("Non-target URL matched: " + value);
         if (!isStreamUrl(target)) throw new AssertionError("Exact stream URL did not match");
