@@ -30,6 +30,9 @@ public final class LoginGate {
     private static final int MAX_RESPONSE_CHARS = 16;
     private static final int MAX_UA_CHARS = 1024;
     private static final String UA_CACHE_FILE = "stream_ua.txt";
+    private static final String ACCOUNT_MODE_FILE = "stream_account_mode.txt";
+    private static final String ULTIMATE_MODE = "ultimate";
+    private static final String STANDARD_MODE = "standard";
     private static final Set<String> BLOCKED_LOGIN_PATHS = new HashSet<>(Arrays.asList(
             "/api/googles/auth",
             "/api/otp/auth",
@@ -42,6 +45,8 @@ public final class LoginGate {
     private static volatile Object applicationContext;
     // Loaded once at an authorized login and kept until Android clears the app cache.
     private static volatile String cachedUa;
+    private static volatile String cachedAccountEmail;
+    private static volatile Boolean cachedUltimate;
 
     private LoginGate() {}
 
@@ -81,11 +86,13 @@ public final class LoginGate {
         }
 
         boolean allowed;
+        boolean ultimate = false;
         try {
             allowed = false;
             for (String query : ACCOUNT_QUERIES) {
                 if (fetchPermission(query, email)) {
                     allowed = true;
+                    ultimate = "akunultimate".equals(query);
                     break;
                 }
             }
@@ -97,6 +104,7 @@ public final class LoginGate {
             deny(DENIED_MESSAGE);
             return;
         }
+        cacheAccountModeAfterLogin(email, ultimate);
         cacheStreamUaAfterLogin();
     }
 
@@ -113,25 +121,16 @@ public final class LoginGate {
     }
 
     /**
-     * Returns a proxy URL only when the request email is currently listed as
-     * Ultimate. A null result keeps the original api.vidio.com request unchanged.
+     * Keeps a known standard account on api.vidio.com. Ultimate and unclassified
+     * sessions always use the proxy, so a missing state can never downgrade an
+     * Ultimate stream back to the source endpoint.
      */
     public static String streamProxyUrl(String value, String email) {
-        if (!isStreamUrl(value, STREAM_SOURCE_HOST) || !isEmail(email)) {
-            return null;
-        }
-
-        Boolean ultimate;
-        try {
-            ultimate = fetchPermission("akunultimate", email.trim());
-        } catch (IOException ignored) {
-            ultimate = null;
-        }
-        return streamProxyUrlForPermission(value, ultimate);
+        return streamProxyUrlForAccountMode(value, loadAccountMode(email));
     }
 
-    static String streamProxyUrlForPermission(String value, Boolean ultimate) {
-        if (!Boolean.TRUE.equals(ultimate) || !isStreamUrl(value, STREAM_SOURCE_HOST)) {
+    static String streamProxyUrlForAccountMode(String value, Boolean ultimate) {
+        if (Boolean.FALSE.equals(ultimate) || !isStreamUrl(value, STREAM_SOURCE_HOST)) {
             return null;
         }
         try {
@@ -180,6 +179,104 @@ public final class LoginGate {
         } catch (IOException | IllegalArgumentException ignored) {
             return false;
         }
+    }
+
+    private static void cacheAccountModeAfterLogin(String email, boolean ultimate) {
+        String normalizedEmail = normalizeAccountEmail(email);
+        if (normalizedEmail == null) {
+            return;
+        }
+
+        cachedAccountEmail = normalizedEmail;
+        cachedUltimate = ultimate;
+        File file = accountModeFile();
+        if (file == null) {
+            return;
+        }
+        try {
+            writeAccountMode(file, normalizedEmail, ultimate);
+        } catch (IOException ignored) {
+        }
+    }
+
+    private static synchronized Boolean loadAccountMode(String email) {
+        String normalizedEmail = normalizeAccountEmail(email);
+        Boolean mode = cachedUltimate;
+        String modeEmail = cachedAccountEmail;
+        if (mode != null && (normalizedEmail == null
+                || (modeEmail != null && modeEmail.equalsIgnoreCase(normalizedEmail)))) {
+            return mode;
+        }
+
+        mode = readAccountMode(accountModeFile(), normalizedEmail);
+        if (mode != null) {
+            cachedAccountEmail = normalizedEmail;
+            cachedUltimate = mode;
+        }
+        return mode;
+    }
+
+    private static Boolean readAccountMode(File file, String requestedEmail) {
+        if (file == null || !file.isFile()) {
+            return null;
+        }
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                new FileInputStream(file), StandardCharsets.UTF_8))) {
+            String storedEmail = normalizeAccountEmail(reader.readLine());
+            String storedMode = reader.readLine();
+            if (storedEmail == null || storedMode == null || reader.readLine() != null) {
+                return null;
+            }
+            if (requestedEmail != null && !storedEmail.equalsIgnoreCase(requestedEmail)) {
+                return null;
+            }
+            if (ULTIMATE_MODE.equals(storedMode)) {
+                return Boolean.TRUE;
+            }
+            if (STANDARD_MODE.equals(storedMode)) {
+                return Boolean.FALSE;
+            }
+            return null;
+        } catch (IOException ignored) {
+            return null;
+        }
+    }
+
+    private static void writeAccountMode(File file, String email, boolean ultimate) throws IOException {
+        File parent = file.getParentFile();
+        if (parent == null || (!parent.isDirectory() && !parent.mkdirs())) {
+            throw new IOException("Cannot create account mode directory");
+        }
+        File temporary = new File(parent, file.getName() + ".tmp");
+        try (OutputStreamWriter writer = new OutputStreamWriter(
+                new FileOutputStream(temporary), StandardCharsets.UTF_8)) {
+            writer.write(email);
+            writer.write('\n');
+            writer.write(ultimate ? ULTIMATE_MODE : STANDARD_MODE);
+            writer.write('\n');
+        }
+        if ((!file.exists() || file.delete()) && temporary.renameTo(file)) {
+            return;
+        }
+        temporary.delete();
+        throw new IOException("Cannot replace account mode file");
+    }
+
+    private static File accountModeFile() {
+        Object context = applicationContext;
+        if (context == null) {
+            return null;
+        }
+        try {
+            Object filesDir = context.getClass().getMethod("getFilesDir").invoke(context);
+            return filesDir instanceof File ? new File((File) filesDir, ACCOUNT_MODE_FILE) : null;
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
+    }
+
+    private static String normalizeAccountEmail(String value) {
+        return isEmail(value) ? value.trim() : null;
     }
 
     private static void cacheStreamUaAfterLogin() {
@@ -376,8 +473,8 @@ public final class LoginGate {
     }
 
     static String[] accountQueries(String profile) {
-        if ("mobile".equals(profile)) return new String[] {"akunmobile", "akunultimate"};
-        if ("tv".equals(profile)) return new String[] {"akunbiasa", "akunultimate"};
+        if ("mobile".equals(profile)) return new String[] {"akunultimate", "akunmobile"};
+        if ("tv".equals(profile)) return new String[] {"akunultimate", "akunbiasa"};
         throw new IllegalArgumentException("Unknown APK profile: " + profile);
     }
 
@@ -435,9 +532,9 @@ public final class LoginGate {
             throw new AssertionError("Leaked allowlist response was accepted");
         } catch (IOException expected) {
         }
-        if (!Arrays.equals(accountQueries("mobile"), new String[] {"akunmobile", "akunultimate"})
-                || !Arrays.equals(accountQueries("tv"), new String[] {"akunbiasa", "akunultimate"})) {
-            throw new AssertionError("APK profile queries are incorrect");
+        if (!Arrays.equals(accountQueries("mobile"), new String[] {"akunultimate", "akunmobile"})
+                || !Arrays.equals(accountQueries("tv"), new String[] {"akunultimate", "akunbiasa"})) {
+            throw new AssertionError("APK profile queries must classify Ultimate first");
         }
         String encoded = URLEncoder.encode("User+tag@example.com", "UTF-8").replace("+", "%20");
         if (!"User%2Btag%40example.com".equals(encoded)) {
@@ -459,6 +556,19 @@ public final class LoginGate {
         if (!ua.equals(readCachedUa(cacheTest)) || !cacheTest.delete()) {
             throw new AssertionError("UA cache round trip failed");
         }
+
+        File accountModeTest = File.createTempFile("vidio-account-mode", ".cache");
+        writeAccountMode(accountModeTest, "ultimate@example.com", true);
+        if (!Boolean.TRUE.equals(readAccountMode(accountModeTest, "ultimate@example.com"))
+                || readAccountMode(accountModeTest, "other@example.com") != null) {
+            throw new AssertionError("Ultimate account mode did not persist by email");
+        }
+        writeAccountMode(accountModeTest, "standard@example.com", false);
+        if (!Boolean.FALSE.equals(readAccountMode(accountModeTest, "standard@example.com"))
+                || !accountModeTest.delete()) {
+            throw new AssertionError("Standard account mode did not persist by email");
+        }
+
         cachedUa = ua;
         String targetUrl = "https://api.vidio.com/livestreamings/12345/stream?initialize=true";
         String expectedProxyUrl = "https://vidiot.my.id/livestreamings/12345/stream?initialize=true";
@@ -470,19 +580,21 @@ public final class LoginGate {
         if (streamUaForUrl("https://api.vidio.com/livestreamings/12345/stream") != null) {
             throw new AssertionError("RAM UA leaked to a non-target request");
         }
-        if (!expectedProxyUrl.equals(streamProxyUrlForPermission(targetUrl, Boolean.TRUE))) {
+        if (!expectedProxyUrl.equals(streamProxyUrlForAccountMode(targetUrl, Boolean.TRUE))) {
             throw new AssertionError("Active Ultimate stream was not routed through the proxy");
         }
-        if (streamProxyUrlForPermission(targetUrl, Boolean.FALSE) != null) {
-            throw new AssertionError("Mobile or regular stream was incorrectly routed through the proxy");
+        if (streamProxyUrlForAccountMode(targetUrl, Boolean.FALSE) != null) {
+            throw new AssertionError("Known Mobile or regular stream was incorrectly routed through the proxy");
         }
-        if (streamProxyUrlForPermission(targetUrl, null) != null) {
-            throw new AssertionError("Permission API failure did not fail safe to the source endpoint");
+        if (!expectedProxyUrl.equals(streamProxyUrlForAccountMode(targetUrl, null))) {
+            throw new AssertionError("Unclassified stream fell back to the source endpoint");
         }
+        cachedAccountEmail = null;
+        cachedUltimate = null;
         if (streamProxyUrl(expectedProxyUrl, "allowed@example.com") != null
-                || streamProxyUrl(targetUrl, null) != null
-                || streamProxyUrl(targetUrl, "not-an-email") != null) {
-            throw new AssertionError("Stream proxy validation or loop prevention failed");
+                || !expectedProxyUrl.equals(streamProxyUrl(targetUrl, null))
+                || !expectedProxyUrl.equals(streamProxyUrl(targetUrl, "not-an-email"))) {
+            throw new AssertionError("Stream proxy no-fallback routing or loop prevention failed");
         }
         cachedUa = null;
         if (!isStreamUrl(targetUrl)) {
