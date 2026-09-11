@@ -254,10 +254,21 @@ public final class LoginGate {
 
     private static synchronized String getStreamUa() {
         String ua = normalizeUa(cachedUa);
+        File cacheFile = uaCacheFile();
         if (ua == null) {
-            ua = readCachedUa(uaCacheFile());
-            cachedUa = ua;
+            ua = readCachedUa(cacheFile);
         }
+        if (ua == null && cacheFile != null) {
+            try {
+                ua = fetchUa();
+                if (ua != null) {
+                    writeCachedUa(cacheFile, ua);
+                }
+            } catch (IOException ignored) {
+                return null;
+            }
+        }
+        cachedUa = ua;
         return ua;
     }
 

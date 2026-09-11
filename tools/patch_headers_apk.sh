@@ -124,6 +124,20 @@ fi
 
 java -jar "$TOOLS_DIR/apktool.jar" d -f --frame-path "$WORK_DIR/framework" "$WORK_DIR/universal.apk" -o "$WORK_DIR/decoded"
 
+if [[ $PROFILE == mobile && -n ${APK_PATCH_32BIT_LIB_SOURCE:-} ]]; then
+  [[ -f $APK_PATCH_32BIT_LIB_SOURCE ]] || { echo "32-bit library source not found: $APK_PATCH_32BIT_LIB_SOURCE" >&2; exit 1; }
+  mkdir -p "$WORK_DIR/abi32"
+  unzip -q "$APK_PATCH_32BIT_LIB_SOURCE" 'lib/armeabi-v7a/*.so' -d "$WORK_DIR/abi32"
+  mkdir -p "$WORK_DIR/decoded/lib/armeabi-v7a"
+  for lib64 in "$WORK_DIR/decoded/lib/arm64-v8a/"*.so; do
+    lib_name=$(basename "$lib64")
+    lib32="$WORK_DIR/abi32/lib/armeabi-v7a/$lib_name"
+    [[ -f $lib32 ]] || continue
+    cp "$lib32" "$WORK_DIR/decoded/lib/armeabi-v7a/$lib_name"
+  done
+  [[ -n $(find "$WORK_DIR/decoded/lib/armeabi-v7a" -type f -name '*.so' -print -quit) ]] || { echo "No matching 32-bit libraries found" >&2; exit 1; }
+fi
+
 if [[ $LOGIN_GATE_PRESENT == false ]]; then
   mapfile -t splash_sources < <(find "$WORK_DIR/decoded" -path "*/$SPLASH_REL" -print)
   [[ ${#splash_sources[@]} -eq 1 ]] || { echo "Expected one $PROFILE splash class, found ${#splash_sources[@]}" >&2; exit 1; }
@@ -602,7 +616,7 @@ if [[ ! -f "$KEYSTORE" ]]; then
   keytool -genkeypair -noprompt -keystore "$KEYSTORE" -storepass "$STORE_PASS" -keypass "$KEY_PASS" -alias "$KEY_ALIAS" -keyalg RSA -keysize 3072 -validity 10000 -dname "CN=Vidio Header Patch,OU=Local Build,O=v0,C=ID"
 fi
 
-apksigner sign --v4-signing-enabled false --ks "$KEYSTORE" --ks-key-alias "$KEY_ALIAS" --ks-pass "pass:$STORE_PASS" --key-pass "pass:$KEY_PASS" --out "$OUTPUT" "$WORK_DIR/aligned.apk"
+apksigner sign --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --v4-signing-enabled false --ks "$KEYSTORE" --ks-key-alias "$KEY_ALIAS" --ks-pass "pass:$STORE_PASS" --key-pass "pass:$KEY_PASS" --out "$OUTPUT" "$WORK_DIR/aligned.apk"
 zipalign -c -p 4 "$OUTPUT"
 apksigner verify --verbose --print-certs "$OUTPUT"
 sha256sum "$OUTPUT"
