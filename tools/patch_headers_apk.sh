@@ -86,6 +86,13 @@ else
   fi
   [[ ${#APKS[@]} -ge 2 ]] || { echo "Split APK set not found" >&2; exit 1; }
   for apk in "${APKS[@]}"; do cp "$apk" "$WORK_DIR/splits/$(basename "$apk")"; done
+  if [[ $PROFILE == mobile && -n ${APK_PATCH_EXTRA_ABI_XAPK:-} ]]; then
+    [[ -f $APK_PATCH_EXTRA_ABI_XAPK ]] || { echo "Extra Mobile ABI XAPK not found: $APK_PATCH_EXTRA_ABI_XAPK" >&2; exit 1; }
+    unzip -q "$APK_PATCH_EXTRA_ABI_XAPK" -d "$WORK_DIR/extra-abi"
+    mapfile -t EXTRA_ABI_APKS < <(find "$WORK_DIR/extra-abi" -type f \( -name 'config.arm64_v8a.apk' -o -name 'config.armeabi_v7a.apk' \) -print)
+    [[ ${#EXTRA_ABI_APKS[@]} -ge 1 ]] || { echo "No ABI split found in extra Mobile XAPK" >&2; exit 1; }
+    for apk in "${EXTRA_ABI_APKS[@]}"; do cp "$apk" "$WORK_DIR/splits/$(basename "$apk")"; done
+  fi
   java -jar "$TOOLS_DIR/APKEditor.jar" m -f -validate-modules -i "$WORK_DIR/splits" -o "$WORK_DIR/universal.apk"
 fi
 
