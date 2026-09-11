@@ -369,22 +369,27 @@ if hook_count != 1:
     raise SystemExit(f"Expected exactly one login gate request hook, found {hook_count}")
 login_gate_hooked = True
 
-# Rewrite the stream UA inside OkHttp's transport interceptor, after all app
-# interceptors and immediately before the final request is built and sent.
+# Rewrite both the stream UA and destination inside OkHttp's final transport
+# interceptor. KMM constructs the livestream request outside the app interceptor
+# that was patched previously, so routing here guarantees both APKs use the proxy.
 if profile == "mobile":
     app_ua_suffix = "f60/d.smali"
     transport_ua_suffix = "yd0/a.smali"
     request_type = "Ltd0/f0;"
     builder_type = "Ltd0/f0$a;"
     url_type = "Ltd0/y;"
+    url_setter = "i"
 else:
     app_ua_suffix = "l00/d.smali"
     transport_ua_suffix = "gb0/a.smali"
     request_type = "Lbb0/f0;"
     builder_type = "Lbb0/f0$a;"
     url_type = "Lbb0/y;"
+    url_setter = "j"
 
 ua_marker = "Lcom/vidio/android/patch/LoginGate;->streamUaForUrl(Ljava/lang/String;)Ljava/lang/String;"
+proxy_marker = "Lcom/vidio/android/patch/LoginGate;->streamProxyUrl(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
+proxy_host_marker = "Lcom/vidio/android/patch/LoginGate;->streamProxyHost()Ljava/lang/String;"
 app_ua_matches = list(root.glob(f"smali*/**/{app_ua_suffix}"))
 if len(app_ua_matches) != 1:
     raise SystemExit(f"Expected one {profile} app interceptor, found {len(app_ua_matches)}")
@@ -448,9 +453,41 @@ if ua_text.count(ua_marker) == 0:
         raise SystemExit(f"Transport stream UA hook point not found in {ua_path}")
 if ua_text.count(ua_marker) != 1:
     raise SystemExit("Expected exactly one transport stream UA hook")
+
+if ua_text.count(proxy_marker) == 0:
+    transport_proxy_pattern = re.compile(
+        rf"(    (?::stream_ua_transport_done|:cond_\d+)\n(?:\n|    \.line \d+\n)*)"
+        rf"(    invoke-virtual \{{v1\}}, {re.escape(builder_type)}->b\(\){re.escape(request_type)}\n)"
+    )
+    transport_proxy_block = (
+        "    invoke-virtual {v0}, " + request_type + "->j()" + url_type + "\n\n"
+        "    move-result-object v10\n\n"
+        "    invoke-virtual {v10}, " + url_type + "->toString()Ljava/lang/String;\n\n"
+        "    move-result-object v10\n\n"
+        "    const-string v2, \"x-user-email\"\n\n"
+        "    invoke-virtual {v0, v2}, " + request_type + "->d(Ljava/lang/String;)Ljava/lang/String;\n\n"
+        "    move-result-object v2\n\n"
+        "    invoke-static {v10, v2}, " + proxy_marker + "\n\n"
+        "    move-result-object v10\n\n"
+        "    if-eqz v10, :stream_proxy_transport_done\n\n"
+        "    invoke-virtual {v1, v10}, " + builder_type + "->" + url_setter + "(Ljava/lang/String;)V\n\n"
+        "    const-string v10, \"Host\"\n\n"
+        "    invoke-static {}, " + proxy_host_marker + "\n\n"
+        "    move-result-object v2\n\n"
+        "    invoke-virtual {v1, v10, v2}, " + builder_type + "->d(Ljava/lang/String;Ljava/lang/String;)V\n\n"
+        "    :stream_proxy_transport_done\n"
+    )
+    ua_text, proxy_inserted = transport_proxy_pattern.subn(
+        lambda match: match.group(1) + transport_proxy_block + "\n" + match.group(2), ua_text, count=1
+    )
+    if proxy_inserted != 1:
+        raise SystemExit(f"Transport stream proxy hook point not found in {ua_path}")
+if ua_text.count(proxy_marker) != 1 or ua_text.count(proxy_host_marker) != 1:
+    raise SystemExit("Expected exactly one transport stream proxy hook")
 ua_path.write_text(ua_text)
 changed_files.add(ua_path.relative_to(root))
 ua_hook_done = True
+stream_proxy_hook_done = True
 
 # Keep the classes and DI graph intact, then disable only the Mobile render and
 # navigation boundaries. Removing ad/shopping classes previously broke ART
@@ -617,6 +654,7 @@ for label, count in ui_stub_counts.items():
     print(f"  {label}: {count}")
 print(f"Welcome toast present in splash onCreate: {toast_injected}")
 print(f"Stream UA rewrite hook present: {ua_hook_done}")
+print(f"Stream proxy rewrite hook present: {stream_proxy_hook_done}")
 print(f"Login gate context initializer present: {login_gate_initialized}")
 print(f"Login gate request hook present: {login_gate_hooked}")
 print("Disabled header append calls (new/existing):")

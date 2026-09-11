@@ -129,20 +129,20 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     upstream = await fetch(upstreamUrl, {
       method: "GET",
       headers,
-      redirect: "manual",
+      // Follow upstream redirects on the server so api.vidio.com is never
+      // returned to the APK as a Location header.
+      redirect: "follow",
       signal: AbortSignal.timeout(30_000),
     });
   } catch {
     return textResponse("upstream unavailable", 502);
   }
 
-  // Proxy the response through instead of redirecting the client. fetch already
-  // decoded gzip, so drop encoding/length headers that no longer apply.
+  // Proxy the final response through instead of redirecting the client. fetch
+  // already decoded gzip, so drop encoding/length headers that no longer apply.
   const responseHeaders = new Headers(securityHeaders);
   const contentType = upstream.headers.get("content-type");
   if (contentType) responseHeaders.set("content-type", contentType);
-  const location = upstream.headers.get("location");
-  if (location) responseHeaders.set("location", location);
   responseHeaders.set("cache-control", "no-store");
 
   return new Response(upstream.body, {

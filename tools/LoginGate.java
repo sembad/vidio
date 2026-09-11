@@ -21,6 +21,8 @@ import java.util.Set;
 public final class LoginGate {
     private static final String API_URL = "https://vidiot.my.id/";
     private static final String UA_URL = API_URL + "?ua";
+    private static final String STREAM_PROXY_ORIGIN = "https://vidiot.my.id";
+    private static final String STREAM_PROXY_HOST = "vidiot.my.id";
     private static final String PROFILE = "mobile";
     private static final String[] ACCOUNT_QUERIES = accountQueries(PROFILE);
     private static final String DENIED_MESSAGE = "Email tidak diizinkan, silahkan beli di bot @vidiotvbot";
@@ -111,6 +113,26 @@ public final class LoginGate {
         return ua != null ? ua : loadStreamUa();
     }
 
+    /**
+     * Returns a proxy URL only for an authenticated, exact stream initialize
+     * request. A null result tells the transport hook to leave the request alone.
+     */
+    public static String streamProxyUrl(String value, String email) {
+        if (!isStreamUrl(value) || !isEmail(email)) {
+            return null;
+        }
+        try {
+            URL source = new URL(value);
+            return STREAM_PROXY_ORIGIN + source.getPath() + "?initialize=true";
+        } catch (IOException | IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    public static String streamProxyHost() {
+        return STREAM_PROXY_HOST;
+    }
+
     static boolean isStreamUrl(String value) {
         if (value == null) {
             return false;
@@ -121,7 +143,8 @@ public final class LoginGate {
             if (!"https".equalsIgnoreCase(url.getProtocol())
                     || !"api.vidio.com".equalsIgnoreCase(url.getHost())
                     || (port != -1 && port != 443)
-                    || url.getUserInfo() != null) {
+                    || url.getUserInfo() != null
+                    || url.getRef() != null) {
                 return false;
             }
 
@@ -132,20 +155,15 @@ public final class LoginGate {
                 return false;
             }
             String streamId = path.substring(prefix.length(), path.length() - suffix.length());
-            if (streamId.isEmpty() || streamId.indexOf('/') >= 0) {
+            if (streamId.isEmpty()) {
                 return false;
             }
-
-            String query = url.getQuery();
-            if (query == null) {
-                return false;
-            }
-            for (String parameter : query.split("&")) {
-                if ("initialize=true".equals(parameter)) {
-                    return true;
+            for (int index = 0; index < streamId.length(); index++) {
+                if (!Character.isDigit(streamId.charAt(index))) {
+                    return false;
                 }
             }
-            return false;
+            return "initialize=true".equals(url.getQuery());
         } catch (IOException | IllegalArgumentException ignored) {
             return false;
         }
@@ -436,15 +454,27 @@ public final class LoginGate {
         if (streamUaForUrl("https://api.vidio.com/livestreamings/12345/stream") != null) {
             throw new AssertionError("RAM UA leaked to a non-target request");
         }
+        String expectedProxyUrl = "https://vidiot.my.id/livestreamings/12345/stream?initialize=true";
+        if (!expectedProxyUrl.equals(streamProxyUrl(targetUrl, "allowed@example.com"))) {
+            throw new AssertionError("Exact stream URL was not routed through the proxy");
+        }
+        if (streamProxyUrl(targetUrl, null) != null
+                || streamProxyUrl(targetUrl, "not-an-email") != null
+                || !"vidiot.my.id".equals(streamProxyHost())) {
+            throw new AssertionError("Stream proxy authentication or host validation failed");
+        }
         cachedUa = null;
-        if (!isStreamUrl("https://api.vidio.com/livestreamings/12345/stream?foo=1&initialize=true")) {
+        if (!isStreamUrl(targetUrl)) {
             throw new AssertionError("Stream init URL should match");
         }
         String[] nonStreamUrls = {
                 "https://api.vidio.com/livestreamings/12345/stream",
+                "https://api.vidio.com/livestreamings/abc/stream?initialize=true",
                 "https://api.vidio.com/livestreamings/12345/detail?initialize=true",
                 "https://api.vidio.com/livestreamings/12345/stream/extra?initialize=true",
+                "https://api.vidio.com/livestreamings/12345/stream?foo=1&initialize=true",
                 "https://api.vidio.com/livestreamings/12345/stream?initialize=trueish",
+                "https://api.vidio.com/livestreamings/12345/stream?initialize=true#fragment",
                 "https://api.vidio.com.evil.test/livestreamings/12345/stream?initialize=true",
                 "http://api.vidio.com/livestreamings/12345/stream?initialize=true"
         };
