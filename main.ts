@@ -140,8 +140,8 @@ async function proxyUltimateStream(
   const search = incoming ? incoming.search : "?initialize=true";
   const upstreamUrl = originalStreamUrl(streamId, search);
 
-  const client = "1788880138";
-  const signature = "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4";
+  const client = String(Math.floor(Date.now() / 1000));
+  const signature = await streamSignature(client);
 
   const headers = new Headers({
     "user-agent": USER_AGENT,
@@ -279,13 +279,14 @@ async function selfCheck(): Promise<void> {
   if (!ultimateCred || ultimateCred.token !== "secret-token") {
     throw new Error("Ultimate credential matching failed");
   }
-  if (originalStreamUrl("734") !== "https://api.vidio.com/livestreamings/734/stream?initialize=true") {
+  const testStreamId = "test-stream-id";
+  if (originalStreamUrl(testStreamId) !== `https://api.vidio.com/livestreamings/${testStreamId}/stream?initialize=true`) {
     throw new Error("originalStreamUrl default failed");
   }
   if (getSelectedQuery(new URL("https://vidiot.my.id/?akunultimate=a%40b.id")) !== "akunultimate") {
     throw new Error("Query selection self-check failed");
   }
-  if (!STREAM_PATH.test("/livestreamings/9183/stream")) {
+  if (!STREAM_PATH.test(`/livestreamings/${testStreamId}/stream`)) {
     throw new Error("Stream path self-check failed");
   }
   const signature = await streamSignature("1788880138");
