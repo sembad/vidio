@@ -57,7 +57,7 @@ export PATH="$JAVA_HOME/bin:$TOOLS_DIR/build-tools:$PATH"
 
 if [[ $PROFILE == mobile ]]; then
   SPLASH_REL="com/vidio/android/splash/SplashScreenActivity.smali"
-  MIN_API=${APK_PATCH_MIN_API:-32}
+  MIN_API=${APK_PATCH_MIN_API:-23}
 else
   SPLASH_REL="com/vidio/android/tv/splashscreen/SplashScreenActivity.smali"
   MIN_API=23
@@ -287,6 +287,15 @@ yml_text, yml_target_count = re.subn(r'(?m)^(\s*targetSdkVersion:)\s*\d+\s*$', r
 if yml_target_count != 1:
     raise SystemExit(f"Expected one apktool targetSdkVersion, found {yml_target_count}")
 yml.write_text(yml_text)
+
+if min_api < 26:
+    adaptive_dir = root / "res/mipmap-anydpi"
+    adaptive_v26_dir = root / "res/mipmap-anydpi-v26"
+    for icon in ("ic_launcher.xml", "ic_launcher_round.xml"):
+        source = adaptive_dir / icon
+        if source.exists() and "<adaptive-icon" in source.read_text():
+            adaptive_v26_dir.mkdir(parents=True, exist_ok=True)
+            source.replace(adaptive_v26_dir / icon)
 
 if profile == "mobile":
     normalizations = {
