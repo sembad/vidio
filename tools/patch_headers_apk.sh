@@ -63,7 +63,7 @@ else
   MIN_API=23
 fi
 
-# Both profiles get a profile-specific LoginGate for email checks and stream UA.
+# Both profiles get a profile-specific LoginGate for email checks and Ultimate stream routing.
 [[ -f "$LOGIN_GATE_SOURCE" ]] || { echo "Missing login gate source: $LOGIN_GATE_SOURCE" >&2; exit 1; }
 mkdir -p "$WORK_DIR/login-gate-source/com/vidio/android/patch" "$WORK_DIR/login-gate-classes" "$WORK_DIR/login-gate-dex"
 sed "s/private static final String PROFILE = \"mobile\";/private static final String PROFILE = \"$PROFILE\";/" \
@@ -369,88 +369,57 @@ if hook_count != 1:
     raise SystemExit(f"Expected exactly one login gate request hook, found {hook_count}")
 login_gate_hooked = True
 
-# Rewrite the stream UA inside OkHttp's transport interceptor, after all app
-# interceptors and immediately before the final request is built and sent.
-if profile == "mobile":
-    app_ua_suffix = "f60/d.smali"
-    transport_ua_suffix = "yd0/a.smali"
-    request_type = "Ltd0/f0;"
-    builder_type = "Ltd0/f0$a;"
-    url_type = "Ltd0/y;"
-else:
-    app_ua_suffix = "l00/d.smali"
-    transport_ua_suffix = "gb0/a.smali"
-    request_type = "Lbb0/f0;"
-    builder_type = "Lbb0/f0$a;"
-    url_type = "Lbb0/y;"
+# Rewrite only exact active-Ultimate stream requests in the app interceptor.
+# LoginGate keeps the credential server-side; the APK sends only the matched email.
+request_type = login_request_type
+url_type = login_url_type
+rewrite_marker = "Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"
+stream_text = interceptor_path.read_text()
+old_ua_marker = "Lcom/vidio/android/patch/LoginGate;->streamUaForUrl(Ljava/lang/String;)Ljava/lang/String;"
 
-ua_marker = "Lcom/vidio/android/patch/LoginGate;->streamUaForUrl(Ljava/lang/String;)Ljava/lang/String;"
-app_ua_matches = list(root.glob(f"smali*/**/{app_ua_suffix}"))
-if len(app_ua_matches) != 1:
-    raise SystemExit(f"Expected one {profile} app interceptor, found {len(app_ua_matches)}")
-app_ua_path = app_ua_matches[0]
-app_ua_text = app_ua_path.read_text()
-legacy_marker = "Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"
-app_ua_lines = app_ua_text.splitlines(keepends=True)
-removed_app_hooks = 0
-for marker, end_marker in ((legacy_marker, f"check-cast v0, {request_type}"),
-                           (ua_marker, "move-result-object v0")):
-    marker_indexes = [index for index, line in enumerate(app_ua_lines) if marker in line]
-    if len(marker_indexes) > 1:
-        raise SystemExit(f"Expected at most one old {profile} app-level UA hook for {marker}")
-    if not marker_indexes:
-        continue
-    marker_index = marker_indexes[0]
-    start = marker_index
-    while start >= 0 and f"invoke-virtual {{v0}}, {request_type}->j(){url_type}" not in app_ua_lines[start]:
-        start -= 1
-    end = marker_index
-    while end < len(app_ua_lines) and end_marker not in app_ua_lines[end]:
-        end += 1
-    if start < 0 or end == len(app_ua_lines):
-        raise SystemExit(f"Could not bound old {profile} app-level UA hook")
-    del app_ua_lines[start:end + 1]
-    if start < len(app_ua_lines) and app_ua_lines[start].strip() == "":
-        del app_ua_lines[start]
-    removed_app_hooks += 1
-app_ua_text = "".join(app_ua_lines)
-if ua_marker in app_ua_text or legacy_marker in app_ua_text:
-    raise SystemExit(f"Could not remove the old {profile} app-level UA hook cleanly")
-if removed_app_hooks:
-    app_ua_path.write_text(app_ua_text)
-    changed_files.add(app_ua_path.relative_to(root))
-
-transport_matches = list(root.glob(f"smali*/**/{transport_ua_suffix}"))
+# Remove the previous transport-level UA block when migrating an already-patched APK.
+transport_suffix = "yd0/a.smali" if profile == "mobile" else "gb0/a.smali"
+transport_matches = list(root.glob(f"smali*/**/{transport_suffix}"))
 if len(transport_matches) != 1:
     raise SystemExit(f"Expected one {profile} transport interceptor, found {len(transport_matches)}")
-ua_path = transport_matches[0]
-ua_text = ua_path.read_text()
-if ua_text.count(ua_marker) == 0:
-    transport_build_pattern = re.compile(
-        rf"(    :cond_6\n(?:\n|    \.line \d+\n)*)"
-        rf"(    invoke-virtual \{{v1\}}, {re.escape(builder_type)}->b\(\){re.escape(request_type)}\n)"
+transport_path = transport_matches[0]
+transport_text = transport_path.read_text()
+if old_ua_marker in transport_text:
+    old_transport_block = re.compile(
+        rf"(?ms)    invoke-virtual \{{v0\}}, {re.escape(request_type)}->j\(\){re.escape(url_type)}\n\n"
+        rf".*?    invoke-static \{{v10\}}, {re.escape(old_ua_marker)}\n\n"
+        r".*?    :stream_ua_transport_done\n\n"
     )
-    transport_ua_block = (
-        "    invoke-virtual {v0}, " + request_type + "->j()" + url_type + "\n\n"
-        "    move-result-object v10\n\n"
-        "    invoke-virtual {v10}, " + url_type + "->toString()Ljava/lang/String;\n\n"
-        "    move-result-object v10\n\n"
-        "    invoke-static {v10}, " + ua_marker + "\n\n"
-        "    move-result-object v10\n\n"
-        "    if-eqz v10, :stream_ua_transport_done\n\n"
-        "    invoke-virtual {v1, v2, v10}, " + builder_type + "->d(Ljava/lang/String;Ljava/lang/String;)V\n\n"
-        "    :stream_ua_transport_done\n"
+    transport_text, removed = old_transport_block.subn("", transport_text, count=1)
+    if removed != 1 or old_ua_marker in transport_text:
+        raise SystemExit(f"Could not remove old {profile} transport UA hook")
+    transport_path.write_text(transport_text)
+    changed_files.add(transport_path.relative_to(root))
+
+if old_ua_marker in stream_text:
+    raise SystemExit(f"Unexpected old app-level stream UA hook in {interceptor_path}")
+if stream_text.count(rewrite_marker) == 0:
+    enforce_call = (
+        "    invoke-static {v2, v3}, "
+        "Lcom/vidio/android/patch/LoginGate;->enforce(Ljava/lang/String;Ljava/lang/Object;)V\n"
     )
-    ua_text, ua_inserted = transport_build_pattern.subn(
-        lambda match: match.group(1) + transport_ua_block + "\n" + match.group(2), ua_text, count=1
+    rewrite_block = (
+        "\n    invoke-virtual {v0}, " + request_type + "->j()" + url_type + "\n\n"
+        "    move-result-object v2\n\n"
+        "    invoke-virtual {v2}, " + url_type + "->toString()Ljava/lang/String;\n\n"
+        "    move-result-object v2\n\n"
+        "    invoke-static {v0, v2}, " + rewrite_marker + "\n\n"
+        "    move-result-object v0\n\n"
+        "    check-cast v0, " + request_type + "\n"
     )
-    if ua_inserted != 1:
-        raise SystemExit(f"Transport stream UA hook point not found in {ua_path}")
-if ua_text.count(ua_marker) != 1:
-    raise SystemExit("Expected exactly one transport stream UA hook")
-ua_path.write_text(ua_text)
-changed_files.add(ua_path.relative_to(root))
-ua_hook_done = True
+    if stream_text.count(enforce_call) != 1:
+        raise SystemExit(f"Expected one login enforce call in {interceptor_path}")
+    stream_text = stream_text.replace(enforce_call, enforce_call + rewrite_block, 1)
+    interceptor_path.write_text(stream_text)
+    changed_files.add(interceptor_path.relative_to(root))
+if stream_text.count(rewrite_marker) != 1:
+    raise SystemExit("Expected exactly one Ultimate stream request hook")
+stream_hook_done = True
 
 # Keep the classes and DI graph intact, then disable only the Mobile render and
 # navigation boundaries. Removing ad/shopping classes previously broke ART
@@ -616,7 +585,7 @@ print("Hidden ad and shopping entry points:")
 for label, count in ui_stub_counts.items():
     print(f"  {label}: {count}")
 print(f"Welcome toast present in splash onCreate: {toast_injected}")
-print(f"Stream UA rewrite hook present: {ua_hook_done}")
+print(f"Ultimate stream request hook present: {stream_hook_done}")
 print(f"Login gate context initializer present: {login_gate_initialized}")
 print(f"Login gate request hook present: {login_gate_hooked}")
 print("Disabled header append calls (new/existing):")

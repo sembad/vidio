@@ -1,14 +1,11 @@
 package com.vidio.android.patch;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -16,18 +13,16 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 public final class LoginGate {
     private static final String API_URL = "https://vidiot.my.id/";
-    private static final String UA_URL = API_URL + "?ua";
     private static final String PROFILE = "mobile";
     private static final String[] ACCOUNT_QUERIES = accountQueries(PROFILE);
     private static final String DENIED_MESSAGE = "Email tidak diizinkan, silahkan beli di bot @vidiotvbot";
     private static final String ERROR_MESSAGE = "Tidak dapat memeriksa izin email, silakan coba lagi";
     private static final int MAX_RESPONSE_CHARS = 16;
-    private static final int MAX_UA_CHARS = 1024;
-    private static final String UA_CACHE_FILE = "stream_ua.txt";
     private static final Set<String> BLOCKED_LOGIN_PATHS = new HashSet<>(Arrays.asList(
             "/api/googles/auth",
             "/api/otp/auth",
@@ -38,8 +33,8 @@ public final class LoginGate {
     ));
 
     private static volatile Object applicationContext;
-    // Loaded once at an authorized login and kept until Android clears the app cache.
-    private static volatile String cachedUa;
+    private static volatile String authorizedEmail;
+    private static volatile boolean authorizedUltimate;
 
     private LoginGate() {}
 
@@ -58,227 +53,153 @@ public final class LoginGate {
 
     public static void enforce(String path, Object requestBody) throws IOException {
         if (BLOCKED_LOGIN_PATHS.contains(path)) {
+            clearAuthorization();
             deny(DENIED_MESSAGE);
             return;
         }
-        if (!"/api/login".equals(path) && !"/api/facebook/auth".equals(path)) {
-            return;
-        }
+        if (!"/api/login".equals(path) && !"/api/facebook/auth".equals(path)) return;
 
         String email;
         try {
-            email = formValue(requestBody, "/api/login".equals(path) ? "login" : "email");
+            email = normalizeEmail(formValue(requestBody, "/api/login".equals(path) ? "login" : "email"));
         } catch (IOException exception) {
+            clearAuthorization();
             showToast(ERROR_MESSAGE);
             throw exception;
         }
 
-        if (!isEmail(email)) {
+        if (email == null) {
+            clearAuthorization();
             deny(DENIED_MESSAGE);
             return;
         }
 
-        boolean allowed;
         try {
-            allowed = false;
-            for (String query : ACCOUNT_QUERIES) {
-                if (fetchPermission(query, email)) {
-                    allowed = true;
-                    break;
-                }
+            boolean ultimate = fetchPermission("akunultimate", email);
+            boolean allowed = ultimate || fetchPermission(ACCOUNT_QUERIES[0], email);
+            if (!allowed) {
+                clearAuthorization();
+                deny(DENIED_MESSAGE);
+                return;
             }
+            rememberAuthorization(email, ultimate);
         } catch (IOException exception) {
+            clearAuthorization();
             showToast(ERROR_MESSAGE);
             throw exception;
         }
-        if (!allowed) {
-            deny(DENIED_MESSAGE);
-            return;
-        }
-        cacheStreamUaAfterLogin();
     }
 
-    /**
-     * Returns the cached API User-Agent only for the exact livestream initialize
-     * request. The smali hook applies it to the final OkHttp request with the
-     * profile-specific replace-header method.
-     */
-    public static String streamUaForUrl(String url) {
-        if (!isStreamUrl(url)) {
-            return null;
+    public static Object rewriteStreamRequest(Object request, String url) {
+        String email = authorizedEmail;
+        if (request == null || email == null || !authorizedUltimate || !isStreamUrl(url)) return request;
+        try {
+            URL source = new URL(url);
+            String proxyUrl = API_URL.substring(0, API_URL.length() - 1)
+                    + source.getPath() + "?initialize=true";
+            return rebuildRequest(request, url, proxyUrl, email);
+        } catch (ReflectiveOperationException | IOException | RuntimeException ignored) {
+            return request;
         }
-        String ua = normalizeUa(cachedUa);
-        return ua != null ? ua : loadStreamUa();
     }
 
     static boolean isStreamUrl(String value) {
-        if (value == null) {
-            return false;
-        }
+        if (value == null) return false;
         try {
             URL url = new URL(value);
             int port = url.getPort();
             if (!"https".equalsIgnoreCase(url.getProtocol())
                     || !"api.vidio.com".equalsIgnoreCase(url.getHost())
                     || (port != -1 && port != 443)
-                    || url.getUserInfo() != null) {
-                return false;
-            }
+                    || url.getUserInfo() != null) return false;
 
             String path = url.getPath();
             String prefix = "/livestreamings/";
             String suffix = "/stream";
-            if (path == null || !path.startsWith(prefix) || !path.endsWith(suffix)) {
-                return false;
-            }
+            if (path == null || !path.startsWith(prefix) || !path.endsWith(suffix)) return false;
             String streamId = path.substring(prefix.length(), path.length() - suffix.length());
-            if (streamId.isEmpty() || streamId.indexOf('/') >= 0) {
-                return false;
+            if (streamId.isEmpty()) return false;
+            for (int index = 0; index < streamId.length(); index++) {
+                if (!Character.isDigit(streamId.charAt(index))) return false;
             }
-
-            String query = url.getQuery();
-            if (query == null) {
-                return false;
-            }
-            for (String parameter : query.split("&")) {
-                if ("initialize=true".equals(parameter)) {
-                    return true;
-                }
-            }
-            return false;
+            return "initialize=true".equals(url.getQuery());
         } catch (IOException | IllegalArgumentException ignored) {
             return false;
         }
     }
 
-    private static void cacheStreamUaAfterLogin() {
-        loadStreamUa();
-    }
+    private static Object rebuildRequest(
+            Object request,
+            String originalUrl,
+            String proxyUrl,
+            String email
+    ) throws ReflectiveOperationException {
+        Method newBuilder = findNewBuilderMethod(request.getClass());
+        Method build = findBuildMethod(newBuilder.getReturnType(), request.getClass());
+        Method urlSetter = null;
 
-    private static synchronized String loadStreamUa() {
-        String ua = normalizeUa(cachedUa);
-        if (ua != null) {
-            return ua;
-        }
-
-        File cacheFile = uaCacheFile();
-        ua = readCachedUa(cacheFile);
-        if (ua == null) {
+        for (Method candidate : newBuilder.getReturnType().getMethods()) {
+            Class<?>[] parameters = candidate.getParameterTypes();
+            if (parameters.length != 1 || parameters[0] != String.class) continue;
+            Object trialBuilder = newBuilder.invoke(request);
             try {
-                ua = fetchUa();
-                if (ua != null && cacheFile != null) {
-                    writeCachedUa(cacheFile, ua);
+                Object result = candidate.invoke(trialBuilder, proxyUrl);
+                if (result != null && newBuilder.getReturnType().isInstance(result)) trialBuilder = result;
+                Object trialRequest = build.invoke(trialBuilder);
+                if (hasUrl(trialRequest, proxyUrl)) {
+                    urlSetter = candidate;
+                    break;
                 }
-            } catch (IOException ignored) {
-                return null;
+            } catch (ReflectiveOperationException | RuntimeException ignored) {
             }
         }
-        cachedUa = ua;
-        return ua;
+        if (urlSetter == null || !hasUrl(request, originalUrl)) throw new NoSuchMethodException("URL setter not found");
+
+        Object builder = newBuilder.invoke(request);
+        Object urlResult = urlSetter.invoke(builder, proxyUrl);
+        if (urlResult != null && newBuilder.getReturnType().isInstance(urlResult)) builder = urlResult;
+
+        Method headerSetter = newBuilder.getReturnType().getMethod("d", String.class, String.class);
+        Object headerResult = headerSetter.invoke(builder, "x-user-email", email);
+        if (headerResult != null && newBuilder.getReturnType().isInstance(headerResult)) builder = headerResult;
+        return build.invoke(builder);
     }
 
-    private static String fetchUa() throws IOException {
-        HttpURLConnection connection = (HttpURLConnection) new URL(UA_URL).openConnection();
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(5000);
-        connection.setInstanceFollowRedirects(false);
-        connection.setRequestMethod("GET");
-        connection.setRequestProperty("Accept", "text/plain");
-        connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 Chrome/140 Mobile Safari/537.36");
-        try {
-            int status = connection.getResponseCode();
-            if (status != HttpURLConnection.HTTP_OK) {
-                throw new IOException("UA endpoint returned HTTP " + status);
-            }
-            InputStream stream = connection.getInputStream();
-            return parseUa(new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8)));
-        } finally {
-            connection.disconnect();
-        }
-    }
-
-    static String parseUa(BufferedReader reader) throws IOException {
-        int responseChars = 0;
-        String ua = null;
-        try (BufferedReader source = reader) {
-            String line;
-            while ((line = source.readLine()) != null) {
-                responseChars += line.length();
-                if (responseChars > MAX_UA_CHARS) {
-                    throw new IOException("UA response is too large");
-                }
-                if (ua == null) {
-                    ua = normalizeUa(line);
-                }
+    private static Method findNewBuilderMethod(Class<?> requestClass) throws NoSuchMethodException {
+        for (Method candidate : requestClass.getMethods()) {
+            if (candidate.getParameterTypes().length != 0 || candidate.getReturnType().isPrimitive()) continue;
+            try {
+                findBuildMethod(candidate.getReturnType(), requestClass);
+                return candidate;
+            } catch (NoSuchMethodException ignored) {
             }
         }
-        return ua;
+        throw new NoSuchMethodException("Request builder not found");
     }
 
-    static String normalizeUa(String value) {
-        if (value == null) {
-            return null;
-        }
-        String candidate = value.trim();
-        if (candidate.isEmpty() || candidate.length() > MAX_UA_CHARS) {
-            return null;
-        }
-        for (int index = 0; index < candidate.length(); index++) {
-            char character = candidate.charAt(index);
-            if (character < 0x20 || character > 0x7e) {
-                return null;
+    private static Method findBuildMethod(Class<?> builderClass, Class<?> requestClass) throws NoSuchMethodException {
+        for (Method candidate : builderClass.getMethods()) {
+            if (candidate.getParameterTypes().length == 0 && requestClass.isAssignableFrom(candidate.getReturnType())) {
+                return candidate;
             }
         }
-        return candidate;
+        throw new NoSuchMethodException("Request build method not found");
     }
 
-    private static File uaCacheFile() {
-        Object context = applicationContext;
-        if (context == null) {
-            return null;
+    private static boolean hasUrl(Object request, String expected) {
+        for (Method candidate : request.getClass().getMethods()) {
+            if (candidate.getParameterTypes().length != 0 || candidate.getReturnType().isPrimitive()) continue;
+            try {
+                Object value = candidate.invoke(request);
+                if (value != null && expected.equals(value.toString())) return true;
+            } catch (ReflectiveOperationException | RuntimeException ignored) {
+            }
         }
-        try {
-            Object cacheDir = context.getClass().getMethod("getCacheDir").invoke(context);
-            return cacheDir instanceof File ? new File((File) cacheDir, UA_CACHE_FILE) : null;
-        } catch (ReflectiveOperationException ignored) {
-            return null;
-        }
-    }
-
-    private static String readCachedUa(File file) {
-        if (file == null || !file.isFile()) {
-            return null;
-        }
-        try {
-            return parseUa(new BufferedReader(new InputStreamReader(
-                    new FileInputStream(file), StandardCharsets.UTF_8)));
-        } catch (IOException ignored) {
-            return null;
-        }
-    }
-
-    private static void writeCachedUa(File file, String ua) throws IOException {
-        File parent = file.getParentFile();
-        if (parent == null || (!parent.isDirectory() && !parent.mkdirs())) {
-            throw new IOException("Cannot create UA cache directory");
-        }
-        File temporary = new File(parent, file.getName() + ".tmp");
-        try (OutputStreamWriter writer = new OutputStreamWriter(
-                new FileOutputStream(temporary), StandardCharsets.UTF_8)) {
-            writer.write(ua);
-            writer.write('\n');
-        }
-        if ((!file.exists() || file.delete()) && temporary.renameTo(file)) {
-            return;
-        }
-        temporary.delete();
-        throw new IOException("Cannot replace UA cache file");
+        return false;
     }
 
     private static String formValue(Object requestBody, String key) throws IOException {
-        if (requestBody == null) {
-            return null;
-        }
+        if (requestBody == null) return null;
         try {
             boolean tv = "tv".equals(PROFILE);
             Class<?> sinkClass = Class.forName(tv ? "qb0.j" : "ie0.i");
@@ -296,9 +217,7 @@ public final class LoginGate {
             return null;
         } catch (InvocationTargetException exception) {
             Throwable cause = exception.getCause();
-            if (cause instanceof IOException) {
-                throw (IOException) cause;
-            }
+            if (cause instanceof IOException) throw (IOException) cause;
             throw new IOException("Cannot read login request", cause);
         } catch (ReflectiveOperationException | IllegalArgumentException exception) {
             throw new IOException("Cannot read login request", exception);
@@ -306,7 +225,7 @@ public final class LoginGate {
     }
 
     private static boolean fetchPermission(String query, String email) throws IOException {
-        String encodedEmail = URLEncoder.encode(email.trim(), "UTF-8").replace("+", "%20");
+        String encodedEmail = URLEncoder.encode(email, "UTF-8").replace("+", "%20");
         HttpURLConnection connection = (HttpURLConnection) new URL(API_URL + "?" + query + "=" + encodedEmail).openConnection();
         connection.setConnectTimeout(5000);
         connection.setReadTimeout(5000);
@@ -316,9 +235,7 @@ public final class LoginGate {
         connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 Chrome/140 Mobile Safari/537.36");
         try {
             int status = connection.getResponseCode();
-            if (status != HttpURLConnection.HTTP_OK) {
-                throw new IOException("Permission endpoint returned HTTP " + status);
-            }
+            if (status != HttpURLConnection.HTTP_OK) throw new IOException("Permission endpoint returned HTTP " + status);
             return parsePermission(new BufferedReader(new InputStreamReader(
                     connection.getInputStream(), StandardCharsets.UTF_8)));
         } finally {
@@ -333,9 +250,7 @@ public final class LoginGate {
             String line;
             while ((line = source.readLine()) != null) {
                 responseChars += line.length();
-                if (responseChars > MAX_RESPONSE_CHARS || value != null) {
-                    throw new IOException("Permission response is invalid");
-                }
+                if (responseChars > MAX_RESPONSE_CHARS || value != null) throw new IOException("Permission response is invalid");
                 value = line.trim();
             }
         }
@@ -345,19 +260,28 @@ public final class LoginGate {
     }
 
     static String[] accountQueries(String profile) {
-        if ("mobile".equals(profile)) return new String[] {"akunmobile", "akunultimate"};
-        if ("tv".equals(profile)) return new String[] {"akunbiasa", "akunultimate"};
+        if ("mobile".equals(profile)) return new String[] {"akunmobile"};
+        if ("tv".equals(profile)) return new String[] {"akunbiasa"};
         throw new IllegalArgumentException("Unknown APK profile: " + profile);
     }
 
-    private static boolean isEmail(String value) {
-        if (value == null) {
-            return false;
-        }
-        String email = value.trim();
+    private static String normalizeEmail(String value) {
+        if (value == null) return null;
+        String email = value.trim().toLowerCase(Locale.ROOT);
         int at = email.indexOf('@');
         int dot = email.lastIndexOf('.');
-        return at > 0 && at == email.lastIndexOf('@') && dot > at + 1 && dot < email.length() - 1 && !email.matches(".*\\s+.*");
+        return at > 0 && at == email.lastIndexOf('@') && dot > at + 1
+                && dot < email.length() - 1 && !email.matches(".*\\s+.*") ? email : null;
+    }
+
+    private static void rememberAuthorization(String email, boolean ultimate) {
+        authorizedEmail = email;
+        authorizedUltimate = ultimate;
+    }
+
+    private static void clearAuthorization() {
+        authorizedEmail = null;
+        authorizedUltimate = false;
     }
 
     private static void deny(String message) throws IOException {
@@ -367,9 +291,7 @@ public final class LoginGate {
 
     private static void showToast(final String message) {
         final Object context = applicationContext;
-        if (context == null) {
-            return;
-        }
+        if (context == null) return;
         try {
             Class<?> looperClass = Class.forName("android.os.Looper");
             Object looper = looperClass.getMethod("getMainLooper").invoke(null);
@@ -392,77 +314,68 @@ public final class LoginGate {
         }
     }
 
+    private static final class FakeUrl {
+        private final String value;
+        FakeUrl(String value) { this.value = value; }
+        @Override public String toString() { return value; }
+    }
+
+    private static final class FakeRequest {
+        private final String url;
+        private final String email;
+        FakeRequest(String url, String email) { this.url = url; this.email = email; }
+        public FakeBuilder h() { return new FakeBuilder(this); }
+        public FakeUrl j() { return new FakeUrl(url); }
+    }
+
+    private static final class FakeBuilder {
+        private String url;
+        private String email;
+        FakeBuilder(FakeRequest request) { this.url = request.url; this.email = request.email; }
+        public FakeBuilder q(String value) { this.url = value; return this; }
+        public FakeBuilder d(String name, String value) {
+            if ("x-user-email".equals(name)) this.email = value;
+            return this;
+        }
+        public FakeRequest b() { return new FakeRequest(url, email); }
+    }
+
     public static void main(String[] args) throws Exception {
-        if (!parsePermission(new BufferedReader(new java.io.StringReader("true\n")))) {
-            throw new AssertionError("True permission response was rejected");
-        }
-        if (parsePermission(new BufferedReader(new java.io.StringReader("false\n")))) {
-            throw new AssertionError("False permission response was accepted");
-        }
+        if (!parsePermission(new BufferedReader(new java.io.StringReader("true\n")))) throw new AssertionError("True rejected");
+        if (parsePermission(new BufferedReader(new java.io.StringReader("false\n")))) throw new AssertionError("False accepted");
         try {
             parsePermission(new BufferedReader(new java.io.StringReader("allowed@example.com\n")));
-            throw new AssertionError("Leaked allowlist response was accepted");
+            throw new AssertionError("Leaked response accepted");
         } catch (IOException expected) {
         }
-        if (!Arrays.equals(accountQueries("mobile"), new String[] {"akunmobile", "akunultimate"})
-                || !Arrays.equals(accountQueries("tv"), new String[] {"akunbiasa", "akunultimate"})) {
+        if (!Arrays.equals(accountQueries("mobile"), new String[] {"akunmobile"})
+                || !Arrays.equals(accountQueries("tv"), new String[] {"akunbiasa"})) {
             throw new AssertionError("APK profile queries are incorrect");
         }
-        String encoded = URLEncoder.encode("User+tag@example.com", "UTF-8").replace("+", "%20");
-        if (!"User%2Btag%40example.com".equals(encoded)) {
-            throw new AssertionError("Email query encoding failed");
-        }
+        if (!"user@example.com".equals(normalizeEmail(" User@Example.com "))) throw new AssertionError("Email normalization failed");
 
-        String ua = "Mozilla/5.0 (Linux; Android 14) VidioStream/1.0";
-        if (!ua.equals(parseUa(new BufferedReader(new java.io.StringReader("  \n\n  " + ua + "  \nignored"))))) {
-            throw new AssertionError("UA parse did not return first non-empty trimmed line");
+        String target = "https://api.vidio.com/livestreamings/9183/stream?initialize=true";
+        rememberAuthorization("ultimate@example.com", true);
+        FakeRequest rewritten = (FakeRequest) rewriteStreamRequest(new FakeRequest(target, null), target);
+        if (!"https://vidiot.my.id/livestreamings/9183/stream?initialize=true".equals(rewritten.url)
+                || !"ultimate@example.com".equals(rewritten.email)) {
+            throw new AssertionError("Ultimate request rewrite failed");
         }
-        if (parseUa(new BufferedReader(new java.io.StringReader("   \n  \n"))) != null) {
-            throw new AssertionError("Blank UA response should parse to null");
-        }
-        File cacheTest = File.createTempFile("vidio-stream-ua", ".cache");
-        if (!cacheTest.delete() || readCachedUa(cacheTest) != null) {
-            throw new AssertionError("Missing cache should not provide a UA");
-        }
-        writeCachedUa(cacheTest, ua);
-        if (!ua.equals(readCachedUa(cacheTest)) || !cacheTest.delete()) {
-            throw new AssertionError("UA cache round trip failed");
-        }
-        cachedUa = ua;
-        String targetUrl = "https://api.vidio.com/livestreamings/12345/stream?initialize=true";
-        if (!ua.equals(streamUaForUrl(targetUrl)) || cachedUa != ua) {
-            throw new AssertionError("RAM cache fast path failed");
-        }
-        if (streamUaForUrl("https://api.vidio.com/livestreamings/12345/stream") != null) {
-            throw new AssertionError("RAM UA leaked to a non-target request");
-        }
-        cachedUa = null;
-        if (!isStreamUrl("https://api.vidio.com/livestreamings/12345/stream?foo=1&initialize=true")) {
-            throw new AssertionError("Stream init URL should match");
-        }
-        String[] nonStreamUrls = {
-                "https://api.vidio.com/livestreamings/12345/stream",
-                "https://api.vidio.com/livestreamings/12345/detail?initialize=true",
-                "https://api.vidio.com/livestreamings/12345/stream/extra?initialize=true",
-                "https://api.vidio.com/livestreamings/12345/stream?initialize=trueish",
-                "https://api.vidio.com.evil.test/livestreamings/12345/stream?initialize=true",
-                "http://api.vidio.com/livestreamings/12345/stream?initialize=true"
+        rememberAuthorization("mobile@example.com", false);
+        FakeRequest original = new FakeRequest(target, null);
+        if (rewriteStreamRequest(original, target) != original) throw new AssertionError("Non-Ultimate request was rewritten");
+        clearAuthorization();
+        if (rewriteStreamRequest(original, target) != original) throw new AssertionError("Missing login state was rewritten");
+
+        String[] rejected = {
+                "https://api.vidio.com/livestreamings/9183/stream",
+                "https://api.vidio.com/livestreamings/id/stream?initialize=true",
+                "https://api.vidio.com/livestreamings/9183/stream?initialize=true&extra=1",
+                "https://api.vidio.com.evil.test/livestreamings/9183/stream?initialize=true",
+                "http://api.vidio.com/livestreamings/9183/stream?initialize=true"
         };
-        for (String nonStreamUrl : nonStreamUrls) {
-            if (isStreamUrl(nonStreamUrl)) {
-                throw new AssertionError("Non-target URL matched: " + nonStreamUrl);
-            }
-        }
-        if (normalizeUa("bad\u0001ua") != null) {
-            throw new AssertionError("Control character was accepted in UA");
-        }
-        char[] oversized = new char[MAX_UA_CHARS + 1];
-        Arrays.fill(oversized, 'a');
-        try {
-            parseUa(new BufferedReader(new java.io.StringReader(new String(oversized))));
-            throw new AssertionError("Oversized UA response was accepted");
-        } catch (IOException expected) {
-        }
+        for (String value : rejected) if (isStreamUrl(value)) throw new AssertionError("Non-target URL matched: " + value);
+        if (!isStreamUrl(target)) throw new AssertionError("Exact stream URL did not match");
         System.out.println("LoginGate self-test passed");
     }
 }
