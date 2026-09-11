@@ -368,7 +368,7 @@ if hook_count != 1:
     raise SystemExit(f"Expected exactly one login gate request hook, found {hook_count}")
 login_gate_hooked = True
 
-# Rewrite only exact active-Ultimate stream requests in the app interceptor.
+# Rewrite only exact active-Ultimate stream requests at the final bridge boundary.
 # Use each APK's concrete request builder; reflection previously failed silently.
 request_type = login_request_type
 url_type = login_url_type
@@ -378,102 +378,162 @@ rewrite_marker = "Lcom/vidio/android/patch/LoginGate;->rewriteStreamUrl(Ljava/la
 stream_email_marker = "Lcom/vidio/android/patch/LoginGate;->streamEmail(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
 legacy_rewrite_marker = "Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"
 legacy_stream_email_marker = "Lcom/vidio/android/patch/LoginGate;->streamEmail(Ljava/lang/String;)Ljava/lang/String;"
-stream_text = interceptor_path.read_text()
 old_ua_marker = "Lcom/vidio/android/patch/LoginGate;->streamUaForUrl(Ljava/lang/String;)Ljava/lang/String;"
 
-# Remove the previous transport-level UA block when migrating an already-patched APK.
-transport_suffix = "yd0/a.smali" if profile == "mobile" else "gb0/a.smali"
-transport_matches = list(root.glob(f"smali*/**/{transport_suffix}"))
+# Remove the superseded transport-level UA marker block from older patched inputs.
+transport_rel = "yd0/a.smali" if profile == "mobile" else "gb0/a.smali"
+transport_matches = list(root.glob(f"smali*/{transport_rel}"))
 if len(transport_matches) != 1:
-    raise SystemExit(f"Expected one {profile} transport interceptor, found {len(transport_matches)}")
+  raise SystemExit(f"Expected one {profile} transport interceptor, found {len(transport_matches)}")
 transport_path = transport_matches[0]
 transport_text = transport_path.read_text()
 if old_ua_marker in transport_text:
-    transport_lines = transport_text.splitlines(keepends=True)
-    marker_indexes = [index for index, line in enumerate(transport_lines) if old_ua_marker in line]
-    if len(marker_indexes) != 1:
-        raise SystemExit(f"Expected one old {profile} transport UA hook")
-    marker_index = marker_indexes[0]
-    start = marker_index
-    request_url_call = f"invoke-virtual {{v0}}, {request_type}->j(){url_type}"
-    while start >= 0 and request_url_call not in transport_lines[start]:
-        start -= 1
-    end = marker_index
-    header_call = f"invoke-virtual {{v1, v2, v10}}, {builder_type}->d(Ljava/lang/String;Ljava/lang/String;)V"
-    while end < len(transport_lines) and header_call not in transport_lines[end]:
-        end += 1
-    if start < 0 or end == len(transport_lines):
-        raise SystemExit(f"Could not bound old {profile} transport UA hook")
-    del transport_lines[start:end + 1]
-    if start < len(transport_lines) and transport_lines[start].strip() == "":
-        del transport_lines[start]
-    transport_text = "".join(transport_lines)
-    if old_ua_marker in transport_text:
-        raise SystemExit(f"Could not remove old {profile} transport UA hook")
-    transport_path.write_text(transport_text)
-    changed_files.add(transport_path.relative_to(root))
+  transport_lines = transport_text.splitlines(keepends=True)
+  marker_indexes = [index for index, line in enumerate(transport_lines) if old_ua_marker in line]
+  if len(marker_indexes) != 1:
+    raise SystemExit(f"Expected one old {profile} transport UA hook, found {len(marker_indexes)}")
+  marker_index = marker_indexes[0]
+  start = marker_index - 1
+  while start >= 0 and not re.match(r"\s*invoke-virtual \{v0\}, L(?:td0|bb0)/f0;->j\(\)L(?:td0|bb0)/y;", transport_lines[start]):
+    start -= 1
+  end = marker_index + 1
+  while end < len(transport_lines) and not re.match(r"\s*if-eqz v10, :cond_6", transport_lines[end]):
+    end += 1
+  if start < 0 or end >= len(transport_lines):
+    raise SystemExit(f"Could not locate old {profile} transport UA hook boundaries")
+  del transport_lines[start:end]
+  user_agent_index = next(
+    (index for index in range(max(0, start - 12), min(len(transport_lines), start + 12))
+     if 'const-string v2, "User-Agent"' in transport_lines[index]),
+    None,
+  )
+  if user_agent_index is None:
+    raise SystemExit(f"Could not restore {profile} transport User-Agent lookup")
+  del transport_lines[user_agent_index + 1:start]
+  transport_text = "".join(transport_lines)
+  if old_ua_marker in transport_text:
+    raise SystemExit(f"Could not remove old {profile} transport UA hook")
+  transport_path.write_text(transport_text)
+  changed_files.add(transport_path.relative_to(root))
 
-if old_ua_marker in stream_text:
-    raise SystemExit(f"Unexpected old app-level stream UA hook in {interceptor_path}")
-if legacy_stream_email_marker in stream_text:
-    old_concrete_block = re.compile(
-        rf"(    invoke-static \{{v2, v3\}}, Lcom/vidio/android/patch/LoginGate;->enforce\(Ljava/lang/String;Ljava/lang/Object;\)V\n)"
-        rf"\n    invoke-virtual \{{v0\}}, {re.escape(request_type)}->j\(\){re.escape(url_type)}\n\n"
-        rf".*?{re.escape(legacy_stream_email_marker)}.*?    move-result-object v0\n",
-        re.DOTALL,
-    )
-    stream_text, removed = old_concrete_block.subn(lambda match: match.group(1), stream_text, count=1)
-    if removed != 1 or legacy_stream_email_marker in stream_text:
-        raise SystemExit(f"Could not remove old concrete Ultimate hook from {interceptor_path}")
-if legacy_rewrite_marker in stream_text:
-    legacy_block = re.compile(
-        rf"\n    invoke-virtual \{{v0\}}, {re.escape(request_type)}->j\(\){re.escape(url_type)}\n\n"
-        rf"    move-result-object v2\n\n"
-        rf"    invoke-virtual \{{v2\}}, {re.escape(url_type)}->toString\(\)Ljava/lang/String;\n\n"
-        rf"    move-result-object v2\n\n"
-        rf"    invoke-static \{{v0, v2\}}, {re.escape(legacy_rewrite_marker)}\n\n"
-        rf"    move-result-object v0\n\n"
-        rf"    check-cast v0, {re.escape(request_type)}\n"
-    )
-    stream_text, removed = legacy_block.subn("", stream_text, count=1)
-    if removed != 1 or legacy_rewrite_marker in stream_text:
-        raise SystemExit(f"Could not remove legacy Ultimate stream hook from {interceptor_path}")
+# Keep login enforcement in the app interceptor, but remove any older stream rewrite
+# there because X-USER-EMAIL is added by a later application interceptor.
+app_stream_text = interceptor_path.read_text()
+original_app_stream_text = app_stream_text
+if old_ua_marker in app_stream_text:
+  raise SystemExit(f"Unexpected old app-level stream UA hook in {interceptor_path}")
+if legacy_stream_email_marker in app_stream_text:
+  old_concrete_block = re.compile(
+    rf"(    invoke-static \{{v2, v3\}}, {re.escape(hook_marker)}\n)"
+    rf"\n    invoke-virtual \{{v0\}}, {re.escape(request_type)}->j\(\){re.escape(url_type)}\n\n"
+    rf".*?{re.escape(legacy_stream_email_marker)}.*?    move-result-object v0\n",
+    re.DOTALL,
+  )
+  app_stream_text, removed = old_concrete_block.subn(
+    lambda match: match.group(1), app_stream_text, count=1
+  )
+  if removed != 1 or legacy_stream_email_marker in app_stream_text:
+    raise SystemExit(f"Could not remove old concrete Ultimate hook from {interceptor_path}")
+if legacy_rewrite_marker in app_stream_text:
+  legacy_block = re.compile(
+    rf"    invoke-virtual \{{v0\}}, {re.escape(request_type)}->j\(\){re.escape(url_type)}\n\n"
+    rf"    move-result-object v2\n\n"
+    rf"    invoke-virtual \{{v2\}}, {re.escape(url_type)}->toString\(\)Ljava/lang/String;\n\n"
+    rf"    move-result-object v2\n\n"
+    rf"    invoke-static \{{v0, v2\}}, {re.escape(legacy_rewrite_marker)}\n\n"
+    rf"    move-result-object v0\n\n"
+  )
+  app_stream_text, removed = legacy_block.subn("", app_stream_text, count=1)
+  if removed != 1 or legacy_rewrite_marker in app_stream_text:
+    raise SystemExit(f"Could not remove legacy Ultimate stream hook from {interceptor_path}")
 
-if stream_text.count(rewrite_marker) == 0:
-    enforce_call = (
-        "    invoke-static {v2, v3}, "
-        "Lcom/vidio/android/patch/LoginGate;->enforce(Ljava/lang/String;Ljava/lang/Object;)V\n"
-    )
-    rewrite_block = (
-        "\n    invoke-virtual {v0}, " + request_type + "->j()" + url_type + "\n\n"
-        "    move-result-object v2\n\n"
-        "    invoke-virtual {v2}, " + url_type + "->toString()Ljava/lang/String;\n\n"
-        "    move-result-object v2\n\n"
-        "    const-string v3, \"x-user-email\"\n\n"
-        "    invoke-virtual {v0, v3}, " + request_type + "->d(Ljava/lang/String;)Ljava/lang/String;\n\n"
-        "    move-result-object v3\n\n"
-        "    invoke-static {v2, v3}, " + stream_email_marker + "\n\n"
-        "    move-result-object v3\n\n"
-        "    if-eqz v3, :v0_ultimate_stream_done\n\n"
-        "    new-instance v1, " + builder_type + "\n\n"
-        "    invoke-direct {v1, v0}, " + builder_type + "-><init>(" + request_type + ")V\n\n"
-        "    invoke-static {v2}, " + rewrite_marker + "\n\n"
-        "    move-result-object v2\n\n"
-        "    invoke-virtual {v1, v2}, " + builder_type + "->" + url_setter + "(Ljava/lang/String;)V\n\n"
-        "    const-string v2, \"x-user-email\"\n\n"
-        "    invoke-virtual {v1, v2, v3}, " + builder_type + "->d(Ljava/lang/String;Ljava/lang/String;)V\n\n"
-        "    invoke-virtual {v1}, " + builder_type + "->b()" + request_type + "\n\n"
-        "    move-result-object v0\n\n"
-        "    :v0_ultimate_stream_done\n"
-    )
-    if stream_text.count(enforce_call) != 1:
-        raise SystemExit(f"Expected one login enforce call in {interceptor_path}")
-    stream_text = stream_text.replace(enforce_call, enforce_call + rewrite_block, 1)
-    interceptor_path.write_text(stream_text)
-    changed_files.add(interceptor_path.relative_to(root))
-if (stream_text.count(rewrite_marker) != 1 or stream_text.count(stream_email_marker) != 1
-        or legacy_rewrite_marker in stream_text or legacy_stream_email_marker in stream_text):
-    raise SystemExit("Expected exactly one request-email Ultimate stream hook")
+app_rewrite_count = app_stream_text.count(rewrite_marker)
+app_stream_email_count = app_stream_text.count(stream_email_marker)
+if app_rewrite_count or app_stream_email_count:
+  if app_rewrite_count != 1 or app_stream_email_count != 1:
+    raise SystemExit("App-level Ultimate stream hook is incomplete")
+  app_rewrite_block = re.compile(
+    rf"(    invoke-static \{{v2, v3\}}, {re.escape(hook_marker)}\n)"
+    rf"\n    invoke-virtual \{{v0\}}, {re.escape(request_type)}->j\(\){re.escape(url_type)}\n\n"
+    rf".*?{re.escape(stream_email_marker)}.*?{re.escape(rewrite_marker)}.*?"
+    rf"    move-result-object v0\n\n"
+    rf"(?:    \.line \d+\n)?"
+    rf"    :[A-Za-z0-9_]+\n"
+    rf"(?=    invoke-virtual \{{v0\}}, Ljava/lang/Object;->getClass\(\)Ljava/lang/Class;)",
+    re.DOTALL,
+  )
+  app_stream_text, removed = app_rewrite_block.subn(
+    lambda match: match.group(1) + "\n", app_stream_text, count=1
+  )
+  if removed != 1:
+    raise SystemExit(f"Could not remove app-level Ultimate stream hook from {interceptor_path}")
+if (rewrite_marker in app_stream_text or stream_email_marker in app_stream_text
+    or legacy_rewrite_marker in app_stream_text or legacy_stream_email_marker in app_stream_text):
+  raise SystemExit("Ultimate stream rewrite must not remain in the app interceptor")
+if app_stream_text.count(hook_marker) != 1:
+  raise SystemExit("Login enforcement was lost while moving the Ultimate stream hook")
+if app_stream_text != original_app_stream_text:
+  interceptor_path.write_text(app_stream_text)
+  changed_files.add(interceptor_path.relative_to(root))
+
+# Rewrite at the bridge/transport boundary. By this point later application
+# interceptors have supplied X-USER-EMAIL, and rebuilding v0 before the stock
+# bridge logic also makes Host derive from the proxy URL.
+transport_text = transport_path.read_text()
+transport_rewrite_count = transport_text.count(rewrite_marker)
+transport_stream_email_count = transport_text.count(stream_email_marker)
+if transport_rewrite_count == 0 and transport_stream_email_count == 0:
+  transport_request = re.compile(
+    rf"(    invoke-virtual \{{p1\}}, {re.escape(chain_type)}->request\(\){re.escape(request_type)}\n"
+    rf"(?:\n|    \.line [^\n]+\n)*"
+    rf"    move-result-object v0\n)"
+  )
+  transport_rewrite_block = (
+    "\n    invoke-virtual {v0}, " + request_type + "->j()" + url_type + "\n\n"
+    "    move-result-object v1\n\n"
+    "    invoke-virtual {v1}, " + url_type + "->toString()Ljava/lang/String;\n\n"
+    "    move-result-object v1\n\n"
+    '    const-string v2, "x-user-email"\n\n'
+    "    invoke-virtual {v0, v2}, " + request_type + "->d(Ljava/lang/String;)Ljava/lang/String;\n\n"
+    "    move-result-object v2\n\n"
+    "    invoke-static {v1, v2}, " + stream_email_marker + "\n\n"
+    "    move-result-object v2\n\n"
+    "    if-eqz v2, :v0_transport_ultimate_done\n\n"
+    "    new-instance v10, " + builder_type + "\n\n"
+    "    invoke-direct {v10, v0}, " + builder_type + "-><init>(" + request_type + ")V\n\n"
+    "    invoke-static {v1}, " + rewrite_marker + "\n\n"
+    "    move-result-object v1\n\n"
+    "    invoke-virtual {v10, v1}, " + builder_type + "->" + url_setter + "(Ljava/lang/String;)V\n\n"
+    '    const-string v1, "x-user-email"\n\n'
+    "    invoke-virtual {v10, v1, v2}, " + builder_type + "->d(Ljava/lang/String;Ljava/lang/String;)V\n\n"
+    '    const-string v1, "Host"\n\n'
+    "    invoke-virtual {v10, v1}, " + builder_type + "->g(Ljava/lang/String;)V\n\n"
+    "    invoke-virtual {v10}, " + builder_type + "->b()" + request_type + "\n\n"
+    "    move-result-object v0\n\n"
+    "    :v0_transport_ultimate_done\n"
+  )
+  transport_text, inserted = transport_request.subn(
+    lambda match: match.group(1) + transport_rewrite_block,
+    transport_text,
+    count=1,
+  )
+  if inserted != 1:
+    raise SystemExit(f"Could not locate {profile} transport request boundary")
+  transport_path.write_text(transport_text)
+  changed_files.add(transport_path.relative_to(root))
+elif transport_rewrite_count != 1 or transport_stream_email_count != 1:
+  raise SystemExit("Transport-level Ultimate stream hook is incomplete")
+
+transport_text = transport_path.read_text()
+if transport_text.count(rewrite_marker) != 1 or transport_text.count(stream_email_marker) != 1:
+  raise SystemExit("Expected exactly one transport-level request-email Ultimate stream hook")
+rewrite_locations = [
+  path.relative_to(root)
+  for path in root.glob("smali*/**/*.smali")
+  if rewrite_marker in path.read_text() or stream_email_marker in path.read_text()
+]
+if rewrite_locations != [transport_path.relative_to(root)]:
+  raise SystemExit(f"Ultimate stream hook found outside transport boundary: {rewrite_locations}")
 stream_hook_done = True
 
 # Keep the classes and DI graph intact, then disable only the Mobile render and
