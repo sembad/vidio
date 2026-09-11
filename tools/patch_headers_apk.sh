@@ -368,8 +368,8 @@ if hook_count != 1:
     raise SystemExit(f"Expected exactly one login gate request hook, found {hook_count}")
 login_gate_hooked = True
 
-# Rewrite only exact active-Ultimate stream requests at the final bridge boundary.
-# Use each APK's concrete request builder; reflection previously failed silently.
+# Rewrite only exact authenticated stream requests after the app has attached
+# X-USER-EMAIL. The proxy endpoint performs the authoritative Ultimate check.
 request_type = login_request_type
 url_type = login_url_type
 builder_type = "Ltd0/f0$a;" if profile == "mobile" else "Lbb0/f0$a;"
@@ -476,64 +476,108 @@ if app_stream_text != original_app_stream_text:
   interceptor_path.write_text(app_stream_text)
   changed_files.add(interceptor_path.relative_to(root))
 
-# Rewrite at the bridge/transport boundary. By this point later application
-# interceptors have supplied X-USER-EMAIL, and rebuilding v0 before the stock
-# bridge logic also makes Host derive from the proxy URL.
+# Remove the bridge-level rewrite from APKs produced by the previous revision.
+# Its synchronous permission lookup ran during playback and could terminate the player.
 transport_text = transport_path.read_text()
 transport_rewrite_count = transport_text.count(rewrite_marker)
 transport_stream_email_count = transport_text.count(stream_email_marker)
-if transport_rewrite_count == 0 and transport_stream_email_count == 0:
-  transport_request = re.compile(
-    rf"(    invoke-virtual \{{p1\}}, {re.escape(chain_type)}->request\(\){re.escape(request_type)}\n"
-    rf"(?:\n|    \.line [^\n]+\n)*"
-    rf"    move-result-object v0\n)"
+if transport_rewrite_count or transport_stream_email_count:
+  if transport_rewrite_count != 1 or transport_stream_email_count != 1:
+    raise SystemExit("Transport-level Ultimate stream hook is incomplete")
+  transport_rewrite_block = re.compile(
+    rf"\n    invoke-virtual \{{v0\}}, {re.escape(request_type)}->j\(\){re.escape(url_type)}\n\n"
+    rf".*?{re.escape(stream_email_marker)}.*?{re.escape(rewrite_marker)}.*?"
+    rf"    move-result-object v0\n\n"
+    rf"(?:    \.line [^\n]+\n)?"
+    rf"    :[A-Za-z0-9_]+\n"
+    rf"(?=    invoke-virtual \{{v0\}}, Ljava/lang/Object;->getClass\(\)Ljava/lang/Class;)",
+    re.DOTALL,
   )
-  transport_rewrite_block = (
-    "\n    invoke-virtual {v0}, " + request_type + "->j()" + url_type + "\n\n"
-    "    move-result-object v1\n\n"
-    "    invoke-virtual {v1}, " + url_type + "->toString()Ljava/lang/String;\n\n"
-    "    move-result-object v1\n\n"
-    '    const-string v2, "x-user-email"\n\n'
-    "    invoke-virtual {v0, v2}, " + request_type + "->d(Ljava/lang/String;)Ljava/lang/String;\n\n"
-    "    move-result-object v2\n\n"
-    "    invoke-static {v1, v2}, " + stream_email_marker + "\n\n"
-    "    move-result-object v2\n\n"
-    "    if-eqz v2, :v0_transport_ultimate_done\n\n"
-    "    new-instance v10, " + builder_type + "\n\n"
-    "    invoke-direct {v10, v0}, " + builder_type + "-><init>(" + request_type + ")V\n\n"
-    "    invoke-static {v1}, " + rewrite_marker + "\n\n"
-    "    move-result-object v1\n\n"
-    "    invoke-virtual {v10, v1}, " + builder_type + "->" + url_setter + "(Ljava/lang/String;)V\n\n"
-    '    const-string v1, "x-user-email"\n\n'
-    "    invoke-virtual {v10, v1, v2}, " + builder_type + "->d(Ljava/lang/String;Ljava/lang/String;)V\n\n"
-    '    const-string v1, "Host"\n\n'
-    "    invoke-virtual {v10, v1}, " + builder_type + "->g(Ljava/lang/String;)V\n\n"
-    "    invoke-virtual {v10}, " + builder_type + "->b()" + request_type + "\n\n"
+  transport_text, removed = transport_rewrite_block.subn("\n", transport_text, count=1)
+  if removed != 1:
+    raise SystemExit(f"Could not remove bridge-level Ultimate hook from {transport_path}")
+  transport_path.write_text(transport_text)
+  changed_files.add(transport_path.relative_to(root))
+if rewrite_marker in transport_text or stream_email_marker in transport_text:
+  raise SystemExit("Ultimate stream rewrite must not remain in the bridge interceptor")
+
+# Rewrite in the app's authentication interceptor, after it has loaded the
+# session email but before the stock bridge derives Host from the new URL.
+auth_types = {
+  "mobile": ("f60/i.smali", "Lf60/i;", "Ltd0/l0;"),
+  "tv": ("l00/i.smali", "Ll00/i;", "Lbb0/l0;"),
+}
+auth_suffix, auth_class_type, response_type = auth_types[profile]
+auth_matches = list(root.glob(f"smali*/**/{auth_suffix}"))
+if len(auth_matches) != 1:
+  raise SystemExit(f"Expected one {profile} auth interceptor, found {len(auth_matches)}")
+auth_path = auth_matches[0]
+auth_text = auth_path.read_text()
+auth_rewrite_count = auth_text.count(rewrite_marker)
+auth_stream_email_count = auth_text.count(stream_email_marker)
+if auth_rewrite_count == 0 and auth_stream_email_count == 0:
+  method_signature = f".method public static a({auth_class_type}{chain_type}){response_type}"
+  method_locals = re.compile(rf"({re.escape(method_signature)}\n    \.locals )(\d+)")
+  locals_match = method_locals.search(auth_text)
+  if locals_match is None or int(locals_match.group(2)) < 4:
+    raise SystemExit(f"Unexpected auth interceptor locals in {auth_path}")
+  auth_text, locals_updated = method_locals.subn(
+    lambda match: match.group(1) + str(max(7, int(match.group(2)))),
+    auth_text,
+    count=1,
+  )
+  if locals_updated != 1:
+    raise SystemExit(f"Could not reserve auth interceptor registers in {auth_path}")
+
+  auth_proceed = re.compile(
+    rf"(    :[A-Za-z0-9_]+\n)"
+    rf"(    invoke-virtual \{{p1, v0\}}, {re.escape(chain_type)}->a\({re.escape(request_type)}\){re.escape(response_type)}\n)"
+  )
+  auth_rewrite_block = (
+    "    invoke-virtual {v0}, " + request_type + "->j()" + url_type + "\n\n"
+    "    move-result-object v4\n\n"
+    "    invoke-virtual {v4}, " + url_type + "->toString()Ljava/lang/String;\n\n"
+    "    move-result-object v4\n\n"
+    '    const-string v5, "x-user-email"\n\n'
+    "    invoke-virtual {v0, v5}, " + request_type + "->d(Ljava/lang/String;)Ljava/lang/String;\n\n"
+    "    move-result-object v5\n\n"
+    "    invoke-static {v4, v5}, " + stream_email_marker + "\n\n"
+    "    move-result-object v5\n\n"
+    "    if-eqz v5, :v0_auth_ultimate_done\n\n"
+    "    new-instance v6, " + builder_type + "\n\n"
+    "    invoke-direct {v6, v0}, " + builder_type + "-><init>(" + request_type + ")V\n\n"
+    "    invoke-static {v4}, " + rewrite_marker + "\n\n"
+    "    move-result-object v4\n\n"
+    "    invoke-virtual {v6, v4}, " + builder_type + "->" + url_setter + "(Ljava/lang/String;)V\n\n"
+    '    const-string v4, "x-user-email"\n\n'
+    "    invoke-virtual {v6, v4, v5}, " + builder_type + "->d(Ljava/lang/String;Ljava/lang/String;)V\n\n"
+    '    const-string v4, "Host"\n\n'
+    "    invoke-virtual {v6, v4}, " + builder_type + "->g(Ljava/lang/String;)V\n\n"
+    "    invoke-virtual {v6}, " + builder_type + "->b()" + request_type + "\n\n"
     "    move-result-object v0\n\n"
-    "    :v0_transport_ultimate_done\n"
+    "    :v0_auth_ultimate_done\n"
   )
-  transport_text, inserted = transport_request.subn(
-    lambda match: match.group(1) + transport_rewrite_block,
-    transport_text,
+  auth_text, inserted = auth_proceed.subn(
+    lambda match: match.group(1) + auth_rewrite_block + match.group(2),
+    auth_text,
     count=1,
   )
   if inserted != 1:
-    raise SystemExit(f"Could not locate {profile} transport request boundary")
-  transport_path.write_text(transport_text)
-  changed_files.add(transport_path.relative_to(root))
-elif transport_rewrite_count != 1 or transport_stream_email_count != 1:
-  raise SystemExit("Transport-level Ultimate stream hook is incomplete")
+    raise SystemExit(f"Could not locate {profile} auth interceptor proceed call")
+  auth_path.write_text(auth_text)
+  changed_files.add(auth_path.relative_to(root))
+elif auth_rewrite_count != 1 or auth_stream_email_count != 1:
+  raise SystemExit("Auth-level Ultimate stream hook is incomplete")
 
-transport_text = transport_path.read_text()
-if transport_text.count(rewrite_marker) != 1 or transport_text.count(stream_email_marker) != 1:
-  raise SystemExit("Expected exactly one transport-level request-email Ultimate stream hook")
+if auth_text.count(rewrite_marker) != 1 or auth_text.count(stream_email_marker) != 1:
+  raise SystemExit("Expected exactly one auth-level request-email Ultimate stream hook")
 rewrite_locations = [
   path.relative_to(root)
   for path in root.glob("smali*/**/*.smali")
   if rewrite_marker in path.read_text() or stream_email_marker in path.read_text()
 ]
-if rewrite_locations != [transport_path.relative_to(root)]:
-  raise SystemExit(f"Ultimate stream hook found outside transport boundary: {rewrite_locations}")
+if rewrite_locations != [auth_path.relative_to(root)]:
+  raise SystemExit(f"Ultimate stream hook found outside auth interceptor: {rewrite_locations}")
 stream_hook_done = True
 
 # Keep the classes and DI graph intact, then disable only the Mobile render and
