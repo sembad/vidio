@@ -364,73 +364,85 @@ if profile == "mobile":
         raise SystemExit(f"Expected exactly one login gate request hook, found {hook_count}")
     login_gate_hooked = True
 
-# Apply the cached stream UA after this interceptor has finished adding its
-# normal headers. Builder.d(name, value) removes every old value before adding
-# the replacement, so Mobile/TV defaults cannot win or remain as duplicates.
+# Rewrite the stream UA inside OkHttp's transport interceptor, after all app
+# interceptors and immediately before the final request is built and sent.
 if profile == "mobile":
-    ua_suffix = "f60/d.smali"
+    app_ua_suffix = "f60/d.smali"
+    transport_ua_suffix = "yd0/a.smali"
     request_type = "Ltd0/f0;"
     builder_type = "Ltd0/f0$a;"
     url_type = "Ltd0/y;"
-    chain_type = "Lyd0/g;"
 else:
-    ua_suffix = "l00/d.smali"
+    app_ua_suffix = "l00/d.smali"
+    transport_ua_suffix = "gb0/a.smali"
     request_type = "Lbb0/f0;"
     builder_type = "Lbb0/f0$a;"
     url_type = "Lbb0/y;"
-    chain_type = "Lgb0/g;"
-
-ua_matches = list(root.glob(f"smali*/**/{ua_suffix}"))
-if len(ua_matches) != 1:
-    raise SystemExit(f"Expected one {profile} request interceptor for UA hook, found {len(ua_matches)}")
-ua_path = ua_matches[0]
-ua_text = ua_path.read_text()
-legacy_block = re.compile(
-    rf"\n    invoke-virtual \{{v0\}}, {re.escape(request_type)}->j\(\){re.escape(url_type)}\n\n"
-    r"    move-result-object v2\n\n"
-    rf"    invoke-virtual \{{v2\}}, {re.escape(url_type)}->toString\(\)Ljava/lang/String;\n\n"
-    r"    move-result-object v2\n\n"
-    r"    invoke-static \{v0, v2\}, Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest\(Ljava/lang/Object;Ljava/lang/String;\)Ljava/lang/Object;\n\n"
-    r"    move-result-object v0\n\n"
-    rf"    check-cast v0, {re.escape(request_type)}\n"
-)
-ua_text, legacy_count = legacy_block.subn("", ua_text)
-if legacy_count > 1:
-    raise SystemExit(f"Expected at most one legacy stream UA hook, found {legacy_count}")
 
 ua_marker = "Lcom/vidio/android/patch/LoginGate;->streamUaForUrl(Ljava/lang/String;)Ljava/lang/String;"
+app_ua_matches = list(root.glob(f"smali*/**/{app_ua_suffix}"))
+if len(app_ua_matches) != 1:
+    raise SystemExit(f"Expected one {profile} app interceptor, found {len(app_ua_matches)}")
+app_ua_path = app_ua_matches[0]
+app_ua_text = app_ua_path.read_text()
+legacy_marker = "Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"
+app_ua_lines = app_ua_text.splitlines(keepends=True)
+removed_app_hooks = 0
+for marker, end_marker in ((legacy_marker, f"check-cast v0, {request_type}"),
+                           (ua_marker, "move-result-object v0")):
+    marker_indexes = [index for index, line in enumerate(app_ua_lines) if marker in line]
+    if len(marker_indexes) > 1:
+        raise SystemExit(f"Expected at most one old {profile} app-level UA hook for {marker}")
+    if not marker_indexes:
+        continue
+    marker_index = marker_indexes[0]
+    start = marker_index
+    while start >= 0 and f"invoke-virtual {{v0}}, {request_type}->j(){url_type}" not in app_ua_lines[start]:
+        start -= 1
+    end = marker_index
+    while end < len(app_ua_lines) and end_marker not in app_ua_lines[end]:
+        end += 1
+    if start < 0 or end == len(app_ua_lines):
+        raise SystemExit(f"Could not bound old {profile} app-level UA hook")
+    del app_ua_lines[start:end + 1]
+    if start < len(app_ua_lines) and app_ua_lines[start].strip() == "":
+        del app_ua_lines[start]
+    removed_app_hooks += 1
+app_ua_text = "".join(app_ua_lines)
+if ua_marker in app_ua_text or legacy_marker in app_ua_text:
+    raise SystemExit(f"Could not remove the old {profile} app-level UA hook cleanly")
+if removed_app_hooks:
+    app_ua_path.write_text(app_ua_text)
+    changed_files.add(app_ua_path.relative_to(root))
+
+transport_matches = list(root.glob(f"smali*/**/{transport_ua_suffix}"))
+if len(transport_matches) != 1:
+    raise SystemExit(f"Expected one {profile} transport interceptor, found {len(transport_matches)}")
+ua_path = transport_matches[0]
+ua_text = ua_path.read_text()
 if ua_text.count(ua_marker) == 0:
-    final_request_pattern = re.compile(
-        rf"(    invoke-virtual \{{v1\}}, {re.escape(builder_type)}->b\(\){re.escape(request_type)}\n\n"
-        r"(?:    \.line \d+\n)+"
-        r"    move-result-object v0\n)\n"
-        rf"((?:    \.line \d+\n)+    invoke-virtual \{{p1, v0\}}, {re.escape(chain_type)}->a\({re.escape(request_type)}\)L[^;]+;\n)"
+    transport_build_pattern = re.compile(
+        rf"(    :cond_6\n(?:\n|    \.line \d+\n)*)"
+        rf"(    invoke-virtual \{{v1\}}, {re.escape(builder_type)}->b\(\){re.escape(request_type)}\n)"
     )
-    final_ua_block = (
-        "\n    invoke-virtual {v0}, " + request_type + "->j()" + url_type + "\n\n"
-        "    move-result-object v2\n\n"
-        "    invoke-virtual {v2}, " + url_type + "->toString()Ljava/lang/String;\n\n"
-        "    move-result-object v2\n\n"
-        "    invoke-static {v2}, " + ua_marker + "\n\n"
-        "    move-result-object v2\n\n"
-        "    if-eqz v2, :stream_ua_done\n\n"
-        "    new-instance v1, " + builder_type + "\n\n"
-        "    invoke-direct {v1, v0}, " + builder_type + "-><init>(" + request_type + ")V\n\n"
-        '    const-string v3, "User-Agent"\n\n'
-        "    invoke-virtual {v1, v3, v2}, " + builder_type + "->d(Ljava/lang/String;Ljava/lang/String;)V\n\n"
-        "    invoke-virtual {v1}, " + builder_type + "->b()" + request_type + "\n\n"
-        "    move-result-object v0\n\n"
-        "    :stream_ua_done\n\n"
+    transport_ua_block = (
+        "    invoke-virtual {v0}, " + request_type + "->j()" + url_type + "\n\n"
+        "    move-result-object v10\n\n"
+        "    invoke-virtual {v10}, " + url_type + "->toString()Ljava/lang/String;\n\n"
+        "    move-result-object v10\n\n"
+        "    invoke-static {v10}, " + ua_marker + "\n\n"
+        "    move-result-object v10\n\n"
+        "    if-eqz v10, :stream_ua_transport_done\n\n"
+        "    invoke-virtual {v1, v2, v10}, " + builder_type + "->d(Ljava/lang/String;Ljava/lang/String;)V\n\n"
+        "    :stream_ua_transport_done\n"
     )
-    ua_text, ua_inserted = final_request_pattern.subn(
-        lambda match: match.group(1) + final_ua_block + match.group(2), ua_text, count=1
+    ua_text, ua_inserted = transport_build_pattern.subn(
+        lambda match: match.group(1) + transport_ua_block + "\n" + match.group(2), ua_text, count=1
     )
     if ua_inserted != 1:
-        raise SystemExit(f"Final stream UA hook point not found in {ua_path}")
+        raise SystemExit(f"Transport stream UA hook point not found in {ua_path}")
 if ua_text.count(ua_marker) != 1:
-    raise SystemExit("Expected exactly one final stream UA hook")
-if "->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;" in ua_text:
-    raise SystemExit("Legacy pre-header stream UA hook is still present")
+    raise SystemExit("Expected exactly one transport stream UA hook")
 ua_path.write_text(ua_text)
 changed_files.add(ua_path.relative_to(root))
 ua_hook_done = True

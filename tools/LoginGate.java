@@ -154,10 +154,10 @@ public final class LoginGate {
 
         File cacheFile = uaCacheFile();
         ua = readCachedUa(cacheFile);
-        if (ua == null && cacheFile != null) {
+        if (ua == null) {
             try {
                 ua = fetchUa();
-                if (ua != null) {
+                if (ua != null && cacheFile != null) {
                     writeCachedUa(cacheFile, ua);
                 }
             } catch (IOException ignored) {
