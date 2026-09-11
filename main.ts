@@ -104,7 +104,7 @@ function findUltimateCredential(
     const token = typeof account.ultimate_credential_token === "string"
       ? account.ultimate_credential_token.trim()
       : "";
-    if (credentialEmail === requestedEmail && token) {
+    if (credentialEmail && token) {
       return { email: credentialEmail, token };
     }
   }
