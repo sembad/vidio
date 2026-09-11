@@ -8,9 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -92,54 +90,16 @@ public final class LoginGate {
     }
 
     /**
-     * Called from the shared OkHttp request interceptor on every outbound request.
-     * For the livestream init request only, swaps the User-Agent to the value from
-     * the app cache populated at login. Every other request is returned untouched.
-     * Never throws: on any problem the original request is returned.
-     *
-     * @param request the OkHttp Request (obfuscated type), passed as Object
-     * @param url     request.url().toString(), supplied by the smali hook
-     * @return the same request, or a rewritten one carrying the custom UA
+     * Returns the cached API User-Agent only for the exact livestream initialize
+     * request. The smali hook applies it to the final OkHttp request with the
+     * profile-specific replace-header method.
      */
-    public static Object rewriteStreamRequest(Object request, String url) {
-        try {
-            if (request == null || !isStreamUrl(url)) {
-                return request;
-            }
-            String ua = getStreamUa();
-            if (ua == null) {
-                return request;
-            }
-            Class<?> reqCls = request.getClass();
-            for (Method newBuilder : reqCls.getMethods()) {
-                if (newBuilder.getParameterTypes().length != 0) {
-                    continue;
-                }
-                Class<?> builderCls = newBuilder.getReturnType();
-                if (builderCls == reqCls || builderCls.isPrimitive() || builderCls == Void.TYPE) {
-                    continue;
-                }
-                Object rewritten = buildWithUa(reqCls, builderCls, newBuilder.invoke(request), ua);
-                if (rewritten != null) {
-                    return rewritten;
-                }
-            }
-            for (Class<?> builderCls : reqCls.getDeclaredClasses()) {
-                for (Constructor<?> constructor : builderCls.getConstructors()) {
-                    Class<?>[] params = constructor.getParameterTypes();
-                    if (params.length != 1 || params[0] != reqCls) {
-                        continue;
-                    }
-                    Object rewritten = buildWithUa(reqCls, builderCls, constructor.newInstance(request), ua);
-                    if (rewritten != null) {
-                        return rewritten;
-                    }
-                }
-            }
-            return request;
-        } catch (Throwable ignored) {
-            return request;
+    public static String streamUaForUrl(String url) {
+        if (!isStreamUrl(url)) {
+            return null;
         }
+        String ua = normalizeUa(cachedUa);
+        return ua != null ? ua : loadStreamUa();
     }
 
     static boolean isStreamUrl(String value) {
@@ -182,82 +142,18 @@ public final class LoginGate {
         }
     }
 
-    private static Object buildWithUa(Class<?> reqCls, Class<?> builderCls, Object builder, String ua)
-            throws ReflectiveOperationException {
-        Method build = findBuild(builderCls, reqCls);
-        Method header = findHeader(builderCls);
-        if (builder == null || build == null || header == null) {
-            return null;
-        }
-        builder = clearHeader(builder, builderCls, "User-Agent");
-        Object updated = header.invoke(builder, "User-Agent", ua);
-        return build.invoke(updated != null ? updated : builder);
+    private static void cacheStreamUaAfterLogin() {
+        loadStreamUa();
     }
 
-    private static Method findBuild(Class<?> builderCls, Class<?> reqCls) {
-        for (Method method : builderCls.getMethods()) {
-            if (method.getParameterTypes().length == 0 && method.getReturnType() == reqCls) {
-                return method;
-            }
-        }
-        return null;
-    }
-
-    private static Method findHeader(Class<?> builderCls) {
-        for (Method method : builderCls.getMethods()) {
-            Class<?>[] params = method.getParameterTypes();
-            Class<?> result = method.getReturnType();
-            if (params.length == 2 && params[0] == String.class && params[1] == String.class
-                    && (result == builderCls || result == Void.TYPE)) {
-                return method;
-            }
-        }
-        return null;
-    }
-
-    private static Object clearHeader(Object builder, Class<?> builderCls, String name) {
-        for (Method method : builderCls.getMethods()) {
-            Class<?>[] params = method.getParameterTypes();
-            Class<?> result = method.getReturnType();
-            if (params.length != 1 || params[0] != String.class
-                    || (result != builderCls && result != Void.TYPE)) {
-                continue;
-            }
-            try {
-                Object updated = method.invoke(builder, name);
-                if (updated != null) {
-                    builder = updated;
-                }
-            } catch (ReflectiveOperationException | IllegalArgumentException ignored) {
-            }
-        }
-        return builder;
-    }
-
-    private static synchronized void cacheStreamUaAfterLogin() {
-        File cacheFile = uaCacheFile();
-        String ua = readCachedUa(cacheFile);
-        cachedUa = ua;
-        if (ua != null) {
-            return;
-        }
-        try {
-            ua = fetchUa();
-            if (ua != null && cacheFile != null) {
-                writeCachedUa(cacheFile, ua);
-                cachedUa = ua;
-            }
-        } catch (IOException ignored) {
-            // No failed value is stored; the next authorized login tries again.
-        }
-    }
-
-    private static synchronized String getStreamUa() {
+    private static synchronized String loadStreamUa() {
         String ua = normalizeUa(cachedUa);
-        File cacheFile = uaCacheFile();
-        if (ua == null) {
-            ua = readCachedUa(cacheFile);
+        if (ua != null) {
+            return ua;
         }
+
+        File cacheFile = uaCacheFile();
+        ua = readCachedUa(cacheFile);
         if (ua == null && cacheFile != null) {
             try {
                 ua = fetchUa();
@@ -520,6 +416,15 @@ public final class LoginGate {
         if (!ua.equals(readCachedUa(cacheTest)) || !cacheTest.delete()) {
             throw new AssertionError("UA cache round trip failed");
         }
+        cachedUa = ua;
+        String targetUrl = "https://api.vidio.com/livestreamings/12345/stream?initialize=true";
+        if (!ua.equals(streamUaForUrl(targetUrl)) || cachedUa != ua) {
+            throw new AssertionError("RAM cache fast path failed");
+        }
+        if (streamUaForUrl("https://api.vidio.com/livestreamings/12345/stream") != null) {
+            throw new AssertionError("RAM UA leaked to a non-target request");
+        }
+        cachedUa = null;
         if (!isStreamUrl("https://api.vidio.com/livestreamings/12345/stream?foo=1&initialize=true")) {
             throw new AssertionError("Stream init URL should match");
         }

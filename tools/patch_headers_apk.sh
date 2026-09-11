@@ -355,57 +355,75 @@ if profile == "mobile":
         raise SystemExit(f"Expected exactly one login gate request hook, found {hook_count}")
     login_gate_hooked = True
 
-# Stream User-Agent rewrite (Mobile and TV): hand the outbound request plus its
-# URL string to LoginGate before the profile's normal header interceptor runs.
-# LoginGate returns the original request except for the exact livestream init URL.
+# Apply the cached stream UA after this interceptor has finished adding its
+# normal headers. Builder.d(name, value) removes every old value before adding
+# the replacement, so Mobile/TV defaults cannot win or remain as duplicates.
 if profile == "mobile":
     ua_suffix = "f60/d.smali"
-    ua_request_pattern = re.compile(
-        r"(?ms)(    invoke-virtual \{p1\}, Lyd0/g;->request\(\)Ltd0/f0;\n"
-        r".*?    move-result-object v0\n)"
-    )
-    ua_block = (
-        "\n    invoke-virtual {v0}, Ltd0/f0;->j()Ltd0/y;\n\n"
-        "    move-result-object v2\n\n"
-        "    invoke-virtual {v2}, Ltd0/y;->toString()Ljava/lang/String;\n\n"
-        "    move-result-object v2\n\n"
-        "    invoke-static {v0, v2}, "
-        "Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;\n\n"
-        "    move-result-object v0\n\n"
-        "    check-cast v0, Ltd0/f0;\n"
-    )
+    request_type = "Ltd0/f0;"
+    builder_type = "Ltd0/f0$a;"
+    url_type = "Ltd0/y;"
+    chain_type = "Lyd0/g;"
 else:
     ua_suffix = "l00/d.smali"
-    ua_request_pattern = re.compile(
-        r"(?ms)(    invoke-virtual \{p1\}, Lgb0/g;->request\(\)Lbb0/f0;\n"
-        r".*?    move-result-object v0\n)"
-    )
-    ua_block = (
-        "\n    invoke-virtual {v0}, Lbb0/f0;->j()Lbb0/y;\n\n"
-        "    move-result-object v2\n\n"
-        "    invoke-virtual {v2}, Lbb0/y;->toString()Ljava/lang/String;\n\n"
-        "    move-result-object v2\n\n"
-        "    invoke-static {v0, v2}, "
-        "Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;\n\n"
-        "    move-result-object v0\n\n"
-        "    check-cast v0, Lbb0/f0;\n"
-    )
+    request_type = "Lbb0/f0;"
+    builder_type = "Lbb0/f0$a;"
+    url_type = "Lbb0/y;"
+    chain_type = "Lgb0/g;"
 
-ua_hook_done = False
 ua_matches = list(root.glob(f"smali*/**/{ua_suffix}"))
 if len(ua_matches) != 1:
     raise SystemExit(f"Expected one {profile} request interceptor for UA hook, found {len(ua_matches)}")
 ua_path = ua_matches[0]
 ua_text = ua_path.read_text()
-ua_marker = "Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;"
+legacy_block = re.compile(
+    rf"\n    invoke-virtual \{{v0\}}, {re.escape(request_type)}->j\(\){re.escape(url_type)}\n\n"
+    r"    move-result-object v2\n\n"
+    rf"    invoke-virtual \{{v2\}}, {re.escape(url_type)}->toString\(\)Ljava/lang/String;\n\n"
+    r"    move-result-object v2\n\n"
+    r"    invoke-static \{v0, v2\}, Lcom/vidio/android/patch/LoginGate;->rewriteStreamRequest\(Ljava/lang/Object;Ljava/lang/String;\)Ljava/lang/Object;\n\n"
+    r"    move-result-object v0\n\n"
+    rf"    check-cast v0, {re.escape(request_type)}\n"
+)
+ua_text, legacy_count = legacy_block.subn("", ua_text)
+if legacy_count > 1:
+    raise SystemExit(f"Expected at most one legacy stream UA hook, found {legacy_count}")
+
+ua_marker = "Lcom/vidio/android/patch/LoginGate;->streamUaForUrl(Ljava/lang/String;)Ljava/lang/String;"
 if ua_text.count(ua_marker) == 0:
-    ua_text, ua_inserted = ua_request_pattern.subn(lambda match: match.group(1) + ua_block, ua_text, count=1)
+    final_request_pattern = re.compile(
+        rf"(    invoke-virtual \{{v1\}}, {re.escape(builder_type)}->b\(\){re.escape(request_type)}\n\n"
+        r"(?:    \.line \d+\n)+"
+        r"    move-result-object v0\n)\n"
+        rf"((?:    \.line \d+\n)+    invoke-virtual \{{p1, v0\}}, {re.escape(chain_type)}->a\({re.escape(request_type)}\)L[^;]+;\n)"
+    )
+    final_ua_block = (
+        "\n    invoke-virtual {v0}, " + request_type + "->j()" + url_type + "\n\n"
+        "    move-result-object v2\n\n"
+        "    invoke-virtual {v2}, " + url_type + "->toString()Ljava/lang/String;\n\n"
+        "    move-result-object v2\n\n"
+        "    invoke-static {v2}, " + ua_marker + "\n\n"
+        "    move-result-object v2\n\n"
+        "    if-eqz v2, :stream_ua_done\n\n"
+        "    new-instance v1, " + builder_type + "\n\n"
+        "    invoke-direct {v1, v0}, " + builder_type + "-><init>(" + request_type + ")V\n\n"
+        '    const-string v3, "User-Agent"\n\n'
+        "    invoke-virtual {v1, v3, v2}, " + builder_type + "->d(Ljava/lang/String;Ljava/lang/String;)V\n\n"
+        "    invoke-virtual {v1}, " + builder_type + "->b()" + request_type + "\n\n"
+        "    move-result-object v0\n\n"
+        "    :stream_ua_done\n\n"
+    )
+    ua_text, ua_inserted = final_request_pattern.subn(
+        lambda match: match.group(1) + final_ua_block + match.group(2), ua_text, count=1
+    )
     if ua_inserted != 1:
-        raise SystemExit(f"Stream UA hook point not found in {ua_path}")
-    ua_path.write_text(ua_text)
-    changed_files.add(ua_path.relative_to(root))
-if ua_path.read_text().count(ua_marker) != 1:
-    raise SystemExit("Expected exactly one stream UA hook")
+        raise SystemExit(f"Final stream UA hook point not found in {ua_path}")
+if ua_text.count(ua_marker) != 1:
+    raise SystemExit("Expected exactly one final stream UA hook")
+if "->rewriteStreamRequest(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;" in ua_text:
+    raise SystemExit("Legacy pre-header stream UA hook is still present")
+ua_path.write_text(ua_text)
+changed_files.add(ua_path.relative_to(root))
 ua_hook_done = True
 
 # Keep the classes and DI graph intact, then disable only the Mobile render and
