@@ -5,7 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SOURCE_FILE="$SCRIPT_DIR/vidio_gate.c"
-OUT_BASE="$SCRIPT_DIR/libs"
+OUT_BASE="$SCRIPT_DIR/libs/lib"
 
 if [[ -z "${ANDROID_NDK_HOME:-}" ]]; then
   echo "ANDROID_NDK_HOME not set. Set it to compile native libraries." >&2

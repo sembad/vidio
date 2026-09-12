@@ -39,7 +39,7 @@ Java_com_vidio_android_patch_LoginGate_getStreamProxyHost(JNIEnv *env, jclass cl
     (void)clazz;
     size_t len = sizeof(ENC_HOST) - 1;
     char* host = deobfuscate(ENC_HOST, len);
-    if (!host) return (*env)->NewStringUTF(env, "vidiot.my.id");
+    if (!host) return NULL;
     jstring result = (*env)->NewStringUTF(env, host);
     free(host);
     return result;
@@ -50,7 +50,7 @@ Java_com_vidio_android_patch_LoginGate_getApiUrl(JNIEnv *env, jclass clazz) {
     (void)clazz;
     size_t len = sizeof(ENC_URL) - 1;
     char* url = deobfuscate(ENC_URL, len);
-    if (!url) return (*env)->NewStringUTF(env, "https://vidiot.my.id/");
+    if (!url) return NULL;
     jstring result = (*env)->NewStringUTF(env, url);
     free(url);
     return result;

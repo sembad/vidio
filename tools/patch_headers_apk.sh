@@ -63,10 +63,26 @@ else
   MIN_API=23
 fi
 
+# Keystore and signing setup (resolved early to embed expected signature SHA-256 into LoginGate)
+REPO_KEYSTORE="$ROOT/tools/patch.keystore"
+if [[ -f "$REPO_KEYSTORE" && -z "${APK_PATCH_KEYSTORE:-}" ]]; then
+  KEYSTORE="$REPO_KEYSTORE"
+else
+  KEYSTORE=${APK_PATCH_KEYSTORE:-"$WORK_DIR/patch.keystore"}
+fi
+KEY_ALIAS=${APK_PATCH_KEY_ALIAS:-v0patch}
+STORE_PASS=${APK_PATCH_STORE_PASS:-changeit}
+KEY_PASS=${APK_PATCH_KEY_PASS:-$STORE_PASS}
+if [[ ! -f "$KEYSTORE" ]]; then
+  keytool -genkeypair -noprompt -keystore "$KEYSTORE" -storepass "$STORE_PASS" -keypass "$KEY_PASS" -alias "$KEY_ALIAS" -keyalg RSA -keysize 3072 -validity 10000 -dname "CN=Vidio Header Patch,OU=Local Build,O=v0,C=ID"
+fi
+SIGNING_SHA256=$(keytool -list -v -keystore "$KEYSTORE" -storepass "$STORE_PASS" -alias "$KEY_ALIAS" | grep -i "SHA256:" | head -n1 | tr -d ' :' | tr '[:lower:]' '[:upper:]' | sed 's/.*SHA256//')
+
 # Both profiles get a profile-specific LoginGate for email checks and stream UA.
 [[ -f "$LOGIN_GATE_SOURCE" ]] || { echo "Missing login gate source: $LOGIN_GATE_SOURCE" >&2; exit 1; }
 mkdir -p "$WORK_DIR/login-gate-source/com/vidio/android/patch" "$WORK_DIR/login-gate-classes" "$WORK_DIR/login-gate-dex"
-sed "s/private static final String PROFILE = \"mobile\";/private static final String PROFILE = \"$PROFILE\";/" \
+sed -e "s/private static final String PROFILE = \"mobile\";/private static final String PROFILE = \"$PROFILE\";/" \
+    -e "s/AE5901E4DF20E96CA3A39B9B35EE49F1B2581B49D38C4E26B928532E4940FEB0/$SIGNING_SHA256/" \
   "$LOGIN_GATE_SOURCE" > "$WORK_DIR/login-gate-source/com/vidio/android/patch/LoginGate.java"
 javac --release 8 -d "$WORK_DIR/login-gate-classes" "$WORK_DIR/login-gate-source/com/vidio/android/patch/LoginGate.java"
 java -cp "$WORK_DIR/login-gate-classes" com.vidio.android.patch.LoginGate
@@ -766,7 +782,7 @@ cp "$WORK_DIR/login-gate-dex/classes.dex" "$WORK_DIR/$LOGIN_GATE_DEX_NAME"
 NATIVE_LIBS_DIR="$ROOT/tools/native/libs"
 if [[ -d "$NATIVE_LIBS_DIR" ]]; then
   echo "Injecting native libraries from $NATIVE_LIBS_DIR..."
-  (cd "$ROOT/tools/native" && zip -q -r "$WORK_DIR/rebuilt.apk" libs/)
+  (cd "$NATIVE_LIBS_DIR" && zip -q -r "$WORK_DIR/rebuilt.apk" lib/)
 fi
 
 if [[ $HAS_AUDIENCE_NETWORK_ASSET == true ]]; then
@@ -776,19 +792,6 @@ if [[ $HAS_AUDIENCE_NETWORK_ASSET == true ]]; then
   fi
 fi
 zipalign -f -p 4 "$WORK_DIR/rebuilt.apk" "$WORK_DIR/aligned.apk"
-
-REPO_KEYSTORE="$ROOT/tools/patch.keystore"
-if [[ -f "$REPO_KEYSTORE" && -z "${APK_PATCH_KEYSTORE:-}" ]]; then
-  KEYSTORE="$REPO_KEYSTORE"
-else
-  KEYSTORE=${APK_PATCH_KEYSTORE:-"$WORK_DIR/patch.keystore"}
-fi
-KEY_ALIAS=${APK_PATCH_KEY_ALIAS:-v0patch}
-STORE_PASS=${APK_PATCH_STORE_PASS:-changeit}
-KEY_PASS=${APK_PATCH_KEY_PASS:-$STORE_PASS}
-if [[ ! -f "$KEYSTORE" ]]; then
-  keytool -genkeypair -noprompt -keystore "$KEYSTORE" -storepass "$STORE_PASS" -keypass "$KEY_PASS" -alias "$KEY_ALIAS" -keyalg RSA -keysize 3072 -validity 10000 -dname "CN=Vidio Header Patch,OU=Local Build,O=v0,C=ID"
-fi
 
 apksigner sign --v1-signing-enabled true --v2-signing-enabled true --v3-signing-enabled true --v4-signing-enabled false --ks "$KEYSTORE" --ks-key-alias "$KEY_ALIAS" --ks-pass "pass:$STORE_PASS" --key-pass "pass:$KEY_PASS" --out "$OUTPUT" "$WORK_DIR/aligned.apk"
 zipalign -c -p 4 "$OUTPUT"

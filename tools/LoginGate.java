@@ -15,17 +15,36 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import org.json.JSONObject;
 
 public final class LoginGate {
-    private static final String DEFAULT_API_URL = "https://vidiot.my.id/";
-    private static final String DEFAULT_STREAM_PROXY_HOST = "vidiot.my.id";
+    private static final byte[] ENC_DEFAULT_API_URL = new byte[] {
+        (byte)('h' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('p' ^ 0x5A), (byte)('s' ^ 0x5A),
+        (byte)(':' ^ 0x5A), (byte)('/' ^ 0x5A), (byte)('/' ^ 0x5A), (byte)('v' ^ 0x5A), (byte)('i' ^ 0x5A),
+        (byte)('d' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('o' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('.' ^ 0x5A),
+        (byte)('m' ^ 0x5A), (byte)('y' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('d' ^ 0x5A),
+        (byte)('/' ^ 0x5A)
+    };
+    private static final byte[] ENC_DEFAULT_STREAM_PROXY_HOST = new byte[] {
+        (byte)('v' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('d' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('o' ^ 0x5A),
+        (byte)('t' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('m' ^ 0x5A), (byte)('y' ^ 0x5A), (byte)('.' ^ 0x5A),
+        (byte)('i' ^ 0x5A), (byte)('d' ^ 0x5A)
+    };
+
+    private static String decodeMasked(byte[] enc) {
+        byte[] copy = new byte[enc.length];
+        for (int i = 0; i < enc.length; i++) {
+            copy[i] = (byte) (enc[i] ^ 0x5A);
+        }
+        return new String(copy, StandardCharsets.UTF_8);
+    }
+
     private static final byte[] AES_KEY = "0123456789abcdef0123456789abcdef".getBytes(StandardCharsets.UTF_8);
 
     private static volatile boolean nativeLibraryLoaded = false;
@@ -47,7 +66,7 @@ public final class LoginGate {
                 }
             } catch (Throwable ignored) {}
         }
-        return DEFAULT_STREAM_PROXY_HOST;
+        return decodeMasked(ENC_DEFAULT_STREAM_PROXY_HOST);
     }
 
     public static String getEffectiveApiUrl() {
@@ -61,7 +80,7 @@ public final class LoginGate {
                 }
             } catch (Throwable ignored) {}
         }
-        return DEFAULT_API_URL;
+        return decodeMasked(ENC_DEFAULT_API_URL);
     }
 
     private static final String STREAM_SOURCE_HOST = "api.vidio.com";
@@ -87,19 +106,21 @@ public final class LoginGate {
     ));
 
     public static class DecryptedStreamResponse {
-        public final JSONObject headers;
+        public final Map<String, String> headers;
         public final String body;
 
-        public DecryptedStreamResponse(JSONObject headers, String body) {
+        public DecryptedStreamResponse(Map<String, String> headers, String body) {
             this.headers = headers;
             this.body = body;
         }
     }
 
     public static DecryptedStreamResponse decryptResponse(String jsonEnvelope) throws Exception {
-        JSONObject envelope = new JSONObject(jsonEnvelope);
-        String ivStr = envelope.getString("iv");
-        String payloadStr = envelope.getString("payload");
+        String ivStr = extractJsonString(jsonEnvelope, "iv");
+        String payloadStr = extractJsonString(jsonEnvelope, "payload");
+        if (ivStr == null || payloadStr == null) {
+            throw new IllegalArgumentException("Invalid encrypted payload envelope");
+        }
 
         byte[] iv = decodeBase64(ivStr);
         byte[] ciphertext = decodeBase64(payloadStr);
@@ -109,8 +130,56 @@ public final class LoginGate {
         byte[] decryptedBytes = cipher.doFinal(ciphertext);
         String plain = new String(decryptedBytes, StandardCharsets.UTF_8);
 
-        JSONObject parsed = new JSONObject(plain);
-        return new DecryptedStreamResponse(parsed.optJSONObject("headers"), parsed.optString("body", ""));
+        String body = extractJsonString(plain, "body");
+        Map<String, String> headers = extractJsonHeaders(plain);
+        return new DecryptedStreamResponse(headers, body != null ? body : "");
+    }
+
+    private static String extractJsonString(String json, String key) {
+        String target = "\"" + key + "\":\"";
+        int start = json.indexOf(target);
+        if (start == -1) return null;
+        start += target.length();
+        StringBuilder sb = new StringBuilder();
+        boolean escape = false;
+        for (int i = start; i < json.length(); i++) {
+            char c = json.charAt(i);
+            if (escape) {
+                if (c == 'n') sb.append('\n');
+                else if (c == 'r') sb.append('\r');
+                else if (c == 't') sb.append('\t');
+                else sb.append(c);
+                escape = false;
+            } else if (c == '\\') {
+                escape = true;
+            } else if (c == '"') {
+                return sb.toString();
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    private static Map<String, String> extractJsonHeaders(String json) {
+        Map<String, String> map = new HashMap<>();
+        int hIdx = json.indexOf("\"headers\":");
+        if (hIdx == -1) return map;
+        int openBrace = json.indexOf('{', hIdx);
+        if (openBrace == -1) return map;
+        int closeBrace = json.indexOf('}', openBrace);
+        if (closeBrace == -1) return map;
+        String block = json.substring(openBrace + 1, closeBrace);
+        String[] pairs = block.split(",");
+        for (String pair : pairs) {
+            String[] kv = pair.split(":", 2);
+            if (kv.length == 2) {
+                String k = kv[0].trim().replace("\"", "");
+                String v = kv[1].trim().replace("\"", "");
+                if (!k.isEmpty()) map.put(k, v);
+            }
+        }
+        return map;
     }
 
     private static byte[] decodeBase64(String value) throws Exception {
@@ -220,7 +289,7 @@ public final class LoginGate {
      * livestream initialize request.
      */
     public static String streamUaForUrl(String url) {
-        if (!isStreamUrl(url, STREAM_SOURCE_HOST) && !isStreamUrl(url, STREAM_PROXY_HOST)) {
+        if (!isStreamUrl(url, STREAM_SOURCE_HOST) && !isStreamUrl(url, getEffectiveStreamProxyHost())) {
             return null;
         }
         String ua = normalizeUa(cachedUa);
@@ -287,7 +356,7 @@ public final class LoginGate {
         if (!Boolean.TRUE.equals(ultimate)) {
             // When account is not Ultimate (expired or standard), if the stream URL was routed
             // to the proxy host, rewrite it back to official api.vidio.com.
-            if (isStreamUrl(value, proxyHost) || isStreamUrl(value, DEFAULT_STREAM_PROXY_HOST)) {
+            if (isStreamUrl(value, proxyHost) || isStreamUrl(value, decodeMasked(ENC_DEFAULT_STREAM_PROXY_HOST))) {
                 try {
                     URL source = new URL(value);
                     String query = source.getQuery();
@@ -401,6 +470,21 @@ public final class LoginGate {
             writeAccountMode(file, normalizedEmail, ultimate);
         } catch (IOException ignored) {
         }
+    }
+
+    private static void checkUltimateExpiryAsync(final String email) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    boolean stillUltimate = fetchPermission("akunultimate", email);
+                    if (!stillUltimate) {
+                        cacheAccountModeAfterLogin(email, false);
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+        }).start();
     }
 
     private static void loadCachedAccountModeOnStart() {
@@ -1049,7 +1133,7 @@ public final class LoginGate {
 
         cachedUa = ua;
         String targetUrl = "https://api.vidio.com/livestreamings/12345/stream?initialize=true";
-        String expectedProxyUrl = "https://vidiot.my.id/livestreamings/12345/stream?initialize=true";
+        String expectedProxyUrl = "https://" + getEffectiveStreamProxyHost() + "/livestreamings/12345/stream?initialize=true";
         if (!ua.equals(streamUaForUrl(targetUrl))
                 || !ua.equals(streamUaForUrl(expectedProxyUrl))
                 || cachedUa != ua) {
@@ -1058,7 +1142,7 @@ public final class LoginGate {
         if (streamUaForUrl("https://api.vidio.com/livestreamings/12345/stream") != null) {
             throw new AssertionError("RAM UA leaked to a non-target request");
         }
-        if (!STREAM_PROXY_HOST.equals(streamApiHostForAccountMode(Boolean.TRUE))
+        if (!getEffectiveStreamProxyHost().equals(streamApiHostForAccountMode(Boolean.TRUE))
                 || !STREAM_SOURCE_HOST.equals(streamApiHostForAccountMode(Boolean.FALSE))
                 || !STREAM_SOURCE_HOST.equals(streamApiHostForAccountMode(null))) {
             throw new AssertionError("KMM stream host selection must only use stream proxy for Ultimate");
@@ -1087,7 +1171,7 @@ public final class LoginGate {
             throw new AssertionError("Stream init URL should match");
         }
         String contentAccessUrl = "https://api.vidio.com/users/content_access?content_id=206&content_type=LIVESTREAMING";
-        String expectedContentAccessProxy = "https://vidiot.my.id/users/content_access?content_id=206&content_type=LIVESTREAMING";
+        String expectedContentAccessProxy = "https://" + getEffectiveStreamProxyHost() + "/users/content_access?content_id=206&content_type=LIVESTREAMING";
         if (isStreamUrl(contentAccessUrl)) {
             throw new AssertionError("Content access URL should not be classified as stream URL");
         }
@@ -1148,7 +1232,7 @@ public final class LoginGate {
         if (!"#EXTM3U\ntest.m3u8".equals(dec.body)) {
             throw new AssertionError("Decrypted stream body mismatch: " + dec.body);
         }
-        if (!"application/vnd.apple.mpegurl".equals(dec.headers.getString("content-type"))) {
+        if (!"application/vnd.apple.mpegurl".equals(dec.headers.get("content-type"))) {
             throw new AssertionError("Decrypted stream header content-type mismatch");
         }
 
