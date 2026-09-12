@@ -53,21 +53,76 @@ function getSelectedQuery(url: URL): AccountQuery | null {
   ) ?? null;
 }
 
+function isUltimateExpired(
+  account: Record<string, unknown>,
+  nowSeconds = Math.floor(Date.now() / 1000),
+): boolean {
+  const expiresAt = account.ultimate_expires_at;
+  if (typeof expiresAt === "number") {
+    return expiresAt <= nowSeconds;
+  }
+  if (typeof expiresAt === "string") {
+    const ts = Number(expiresAt);
+    if (!Number.isNaN(ts)) {
+      return ts <= nowSeconds;
+    }
+  }
+  return false;
+}
+
 function hasAccount(
   data: Record<string, unknown>,
   query: AccountQuery,
   requestedEmail: string,
+  nowSeconds = Math.floor(Date.now() / 1000),
 ): boolean {
-  const group = data[queryToGroup[query]];
-  if (!isRecord(group)) return false;
+  if (query === "akunultimate") {
+    const group = data[queryToGroup.akunultimate];
+    if (!isRecord(group)) return false;
 
-  for (const accounts of Object.values(group)) {
-    if (!isRecord(accounts)) continue;
-    for (const account of Object.values(accounts)) {
-      if (!isRecord(account) || typeof account.email !== "string") continue;
-      if (normalizeEmail(account.email) === requestedEmail) return true;
+    for (const accounts of Object.values(group)) {
+      if (!isRecord(accounts)) continue;
+      for (const account of Object.values(accounts)) {
+        if (!isRecord(account) || typeof account.email !== "string") continue;
+        const accEmail = normalizeEmail(account.email);
+        const credEmail = typeof account.ultimate_credential_email === "string"
+          ? normalizeEmail(account.ultimate_credential_email)
+          : null;
+        if (accEmail === requestedEmail || credEmail === requestedEmail) {
+          if (isUltimateExpired(account, nowSeconds)) {
+            return false;
+          }
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  const group = data[queryToGroup[query]];
+  if (isRecord(group)) {
+    for (const accounts of Object.values(group)) {
+      if (!isRecord(accounts)) continue;
+      for (const account of Object.values(accounts)) {
+        if (!isRecord(account) || typeof account.email !== "string") continue;
+        if (normalizeEmail(account.email) === requestedEmail) return true;
+      }
     }
   }
+
+  // Akun ultimate yang sudah expired (atau aktif) tetap diizinkan sebagai akun biasa/mobile
+  // agar dapat kembali menggunakan stream resmi api.vidio.com
+  const ultGroup = data[queryToGroup.akunultimate];
+  if (isRecord(ultGroup)) {
+    for (const accounts of Object.values(ultGroup)) {
+      if (!isRecord(accounts)) continue;
+      for (const account of Object.values(accounts)) {
+        if (!isRecord(account) || typeof account.email !== "string") continue;
+        if (normalizeEmail(account.email) === requestedEmail) return true;
+      }
+    }
+  }
+
   return false;
 }
 
@@ -90,43 +145,43 @@ interface UltimateCredential {
   token: string;
 }
 
-function findUltimateCredential(
+function findActiveUltimateCredential(
   data: Record<string, unknown>,
-  requestedEmail?: string | null,
+  requestedEmail: string,
+  nowSeconds = Math.floor(Date.now() / 1000),
 ): UltimateCredential | null {
   const group = data[queryToGroup.akunultimate];
   if (!isRecord(group)) return null;
-
-  const targetEmail = requestedEmail ? normalizeEmail(requestedEmail) : null;
-  let fallback: UltimateCredential | null = null;
 
   for (const accounts of Object.values(group)) {
     if (!isRecord(accounts)) continue;
     for (const account of Object.values(accounts)) {
       if (!isRecord(account)) continue;
 
-      const userEmail = typeof account.email === "string" ? account.email : null;
+      const userEmail = typeof account.email === "string" ? normalizeEmail(account.email) : null;
       const credEmail = typeof account.ultimate_credential_email === "string"
-        ? account.ultimate_credential_email
-        : (typeof account.email === "string" ? account.email : null);
-      const credToken = typeof account.ultimate_credential_token === "string"
-        ? account.ultimate_credential_token
-        : (typeof account.token === "string" ? account.token : null);
+        ? normalizeEmail(account.ultimate_credential_email)
+        : userEmail;
 
-      if (!credEmail || !credToken) continue;
+      if (userEmail === requestedEmail || credEmail === requestedEmail) {
+        if (isUltimateExpired(account, nowSeconds)) {
+          return null;
+        }
 
-      const cred: UltimateCredential = { email: credEmail, token: credToken };
-      if (!fallback) fallback = cred;
+        const effectiveCredEmail = typeof account.ultimate_credential_email === "string"
+          ? account.ultimate_credential_email
+          : (typeof account.email === "string" ? account.email : null);
+        const effectiveCredToken = typeof account.ultimate_credential_token === "string"
+          ? account.ultimate_credential_token
+          : (typeof account.token === "string" ? account.token : null);
 
-      if (targetEmail && userEmail && normalizeEmail(userEmail) === targetEmail) {
-        return cred;
-      }
-      if (targetEmail && credEmail && normalizeEmail(credEmail) === targetEmail) {
-        return cred;
+        if (!effectiveCredEmail || !effectiveCredToken) return null;
+
+        return { email: effectiveCredEmail, token: effectiveCredToken };
       }
     }
   }
-  return fallback;
+  return null;
 }
 
 function originalStreamUrl(streamId: string, search = "?initialize=true"): string {
@@ -146,7 +201,7 @@ function getProxyHttpClient(): unknown {
 
 async function proxyUltimateStream(
   streamId: string,
-  credential?: UltimateCredential | null,
+  credential: UltimateCredential,
   request?: Request,
 ): Promise<Response> {
   const incoming = request ? new URL(request.url) : null;
@@ -156,6 +211,7 @@ async function proxyUltimateStream(
   const client = "1788880138";
   const signature = "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4";
   const defaultVisitorId = "c0f1cf62-ab27-45fb-9663-5e056ca0e3b3";
+  const visitorId = request?.headers.get("x-visitor-id") || defaultVisitorId;
 
   const headers = new Headers({
     "user-agent": USER_AGENT,
@@ -167,19 +223,11 @@ async function proxyUltimateStream(
     "x-api-auth": API_AUTH,
     "x-api-app-info": "tv-android/16/2608.2.4-1020",
     "accept-language": "id",
-    "x-visitor-id": defaultVisitorId,
+    "x-visitor-id": visitorId,
     "content-type": "application/vnd.api+json",
+    "x-user-email": credential.email,
+    "x-user-token": credential.token,
   });
-
-  if (credential) {
-    headers.set("x-user-email", credential.email);
-    headers.set("x-user-token", credential.token);
-  } else if (request) {
-    const email = request.headers.get("x-user-email");
-    const token = request.headers.get("x-user-token");
-    if (email) headers.set("x-user-email", email);
-    if (token) headers.set("x-user-token", token);
-  }
 
   let upstream: Response;
   try {
@@ -214,26 +262,45 @@ async function proxyUltimateStream(
 }
 
 async function proxyStream(streamId: string, request: Request): Promise<Response> {
-  const email = request.headers.get("x-user-email");
-  let credential: UltimateCredential | null = null;
+  const userEmail = request.headers.get("x-user-email");
+  const userToken = request.headers.get("x-user-token");
 
+  // x-user-email dan x-user-token wajib diisi sesuai akun ultimate
+  if (!userEmail || !userEmail.trim() || !userToken || !userToken.trim()) {
+    return textResponse("forbidden", 403);
+  }
+
+  const requestedEmail = normalizeEmail(userEmail);
+  if (!requestedEmail) {
+    return textResponse("forbidden", 403);
+  }
+
+  let data: Record<string, unknown>;
   try {
     const res = await fetch(BOT_DATA_URL, {
-      signal: AbortSignal.timeout(5_000),
+      signal: AbortSignal.timeout(10_000),
       redirect: "follow",
       headers: { accept: "application/json" },
     });
-    if (res.ok) {
-      const data = await res.json();
-      if (isRecord(data)) {
-        credential = findUltimateCredential(data, email ? normalizeEmail(email) : null);
-      }
+    if (!res.ok) {
+      return textResponse("upstream unavailable", 502);
     }
+    const parsed: unknown = await res.json();
+    if (!isRecord(parsed)) {
+      return textResponse("upstream unavailable", 502);
+    }
+    data = parsed;
   } catch {
-    // If bot data is temporarily unreachable, proxyUltimateStream handles request headers
+    return textResponse("upstream unavailable", 502);
   }
 
-  return proxyUltimateStream(streamId, credential, request);
+  const activeUltimate = findActiveUltimateCredential(data, requestedEmail);
+  // Kalau bukan akun ultimate aktif (belum terdaftar atau sudah expired), tolak 403
+  if (!activeUltimate) {
+    return textResponse("forbidden", 403);
+  }
+
+  return proxyUltimateStream(streamId, activeUltimate, request);
 }
 
 async function handleRequest(request: Request): Promise<Response> {
@@ -298,29 +365,72 @@ async function handleRequest(request: Request): Promise<Response> {
 }
 
 async function selfCheck(): Promise<void> {
+  const now = Math.floor(Date.now() / 1000);
   const sample = {
     akun_mobile: { plan: { first: { email: "Allowed@Example.com" } } },
     akun_biasa: {},
     akun_ultimate: {
       plan: {
-        first: {
+        active: {
           email: "user@example.com",
           ultimate_credential_email: "cred@fake.com",
           ultimate_credential_token: "cred-token",
+          ultimate_expires_at: now + 3600,
+        },
+        expired: {
+          email: "expired@example.com",
+          ultimate_credential_email: "expired-cred@fake.com",
+          ultimate_credential_token: "expired-token",
+          ultimate_expires_at: now - 3600,
         },
       },
     },
   };
-  if (!hasAccount(sample, "akunmobile", "allowed@example.com")) {
+
+  if (!hasAccount(sample, "akunmobile", "allowed@example.com", now)) {
     throw new Error("Account matching self-check failed");
   }
-  if (hasAccount(sample, "akunmobile", "other@example.com")) {
+  if (hasAccount(sample, "akunmobile", "other@example.com", now)) {
     throw new Error("Unknown account self-check failed");
   }
-  const ultimateCred = findUltimateCredential(sample, "user@example.com");
-  if (!ultimateCred || ultimateCred.email !== "cred@fake.com" || ultimateCred.token !== "cred-token") {
+
+  // Active ultimate account matches akunultimate
+  if (!hasAccount(sample, "akunultimate", "user@example.com", now)) {
+    throw new Error("Active ultimate account should match akunultimate");
+  }
+  // Expired ultimate account must NOT match akunultimate
+  if (hasAccount(sample, "akunultimate", "expired@example.com", now)) {
+    throw new Error("Expired ultimate account must NOT match akunultimate");
+  }
+  // Expired ultimate account falls back to standard accounts (akunbiasa / akunmobile)
+  if (!hasAccount(sample, "akunbiasa", "expired@example.com", now)) {
+    throw new Error("Expired ultimate account should fall back to standard akunbiasa");
+  }
+
+  const activeCred = findActiveUltimateCredential(sample, "user@example.com", now);
+  if (!activeCred || activeCred.email !== "cred@fake.com" || activeCred.token !== "cred-token") {
     throw new Error("Ultimate credential matching failed");
   }
+
+  const expiredCred = findActiveUltimateCredential(sample, "expired@example.com", now);
+  if (expiredCred !== null) {
+    throw new Error("Expired ultimate account must not yield active credentials");
+  }
+
+  // Test stream request without required headers returns 403 Forbidden
+  const noHeaderReq = new Request("https://vidiot.my.id/livestreamings/123/stream");
+  const noHeaderRes = await handleRequest(noHeaderReq);
+  if (noHeaderRes.status !== 403) {
+    throw new Error(`Expected 403 for missing auth headers, got ${noHeaderRes.status}`);
+  }
+
+  // Test stream request with non-GET returns 405
+  const postReq = new Request("https://vidiot.my.id/livestreamings/123/stream", { method: "POST" });
+  const postRes = await handleRequest(postReq);
+  if (postRes.status !== 405) {
+    throw new Error(`Expected 405 for POST stream, got ${postRes.status}`);
+  }
+
   const testStreamId = "test-stream-id";
   if (originalStreamUrl(testStreamId) !== `https://api.vidio.com/livestreamings/${testStreamId}/stream?initialize=true`) {
     throw new Error("originalStreamUrl default failed");
@@ -340,10 +450,17 @@ async function selfCheck(): Promise<void> {
   }
 }
 
-if (import.meta.main) {
+export { handleRequest, hasAccount, isUltimateExpired, findActiveUltimateCredential };
+
+const isDirectRun =
+  Boolean((import.meta as unknown as { main?: boolean }).main) ||
+  (typeof process !== "undefined" && Boolean(process.argv?.[1]?.endsWith("main.ts")));
+
+if (isDirectRun) {
   await selfCheck();
   const denoObj = (globalThis as unknown as { Deno?: { serve: (handler: (req: Request) => Promise<Response>) => void } }).Deno;
   if (denoObj?.serve) {
     denoObj.serve(handleRequest);
   }
 }
+
