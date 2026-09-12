@@ -130,20 +130,76 @@ public class LoginGate {
 
 ---
 
-## 4. Checklist untuk AI / Developer Selanjutnya
+## 4. Referensi Kode Siap Pakai (Copy-Paste)
 
-Saat mengimplementasikan fitur ini, ikuti urutan berikut:
+### A. Server Side (`main.ts`)
+```typescript
+import { createCipheriv, randomBytes } from "node:crypto";
 
-1. **Backend (`main.ts`)**:
-   - Definisikan `AES_SECRET_KEY` (32 bytes hex/base64).
-   - Buat fungsi `encryptPayload(data: { headers: Record<string, string>, body: string }): { iv: string, payload: string }`.
-   - Modifikasi handler stream di `main.ts` agar mengembalikan JSON terenkripsi.
+const AES_KEY = Buffer.from("0123456789abcdef0123456789abcdef", "utf-8"); // 32 bytes
 
-2. **Android Dex (`tools/LoginGate.java`)**:
-   - Tambahkan fungsi `decryptPayload(String jsonEnvelope)` menggunakan `javax.crypto.Cipher`.
-   - Ganti static string host dengan fungsi `getProxyHost()`.
-   - Pada interceptor HTTP/transport, sebelum stream dikirim ke internal player, jalankan dekripsi.
+export function encryptStreamResponse(headers: Record<string, string>, body: string): string {
+  const iv = randomBytes(16); // IV DINAMIS per-request
+  const cipher = createCipheriv("aes-256-cbc", AES_KEY, iv);
+  const plainText = JSON.stringify({ headers, body });
+  const encrypted = Buffer.concat([cipher.update(plainText, "utf8"), cipher.final()]);
+  return JSON.stringify({
+    iv: iv.toString("base64"),
+    payload: encrypted.toString("base64")
+  });
+}
+```
 
-3. **Native `.so` (`tools/patch_headers_apk.sh`)**:
-   - Simpan precompiled binary `.so` di folder `tools/native_libs/{arm64-v8a,armeabi-v7a}/`.
-   - Update script bash untuk menyalin folder `lib/` ke dalam APK sebelum di-zip/align/sign.
+### B. Client Side Android (`LoginGate.java`)
+```java
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.util.Base64;
+import org.json.JSONObject;
+
+public class DecryptHelper {
+    private static final byte[] AES_KEY = "0123456789abcdef0123456789abcdef".getBytes();
+
+    public static class DecryptedData {
+        public JSONObject headers;
+        public String body;
+    }
+
+    public static DecryptedData decrypt(String jsonEnvelope) throws Exception {
+        JSONObject envelope = new JSONObject(jsonEnvelope);
+        byte[] iv = android.util.Base64.decode(envelope.getString("iv"), android.util.Base64.DEFAULT);
+        byte[] ciphertext = android.util.Base64.decode(envelope.getString("payload"), android.util.Base64.DEFAULT);
+
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(AES_KEY, "AES"), new IvParameterSpec(iv));
+        String plain = new String(cipher.doFinal(ciphertext), "UTF-8");
+
+        JSONObject parsed = new JSONObject(plain);
+        DecryptedData data = new DecryptedData();
+        data.headers = parsed.optJSONObject("headers");
+        data.body = parsed.optString("body");
+        return data;
+    }
+}
+```
+
+---
+
+## 5. Instruksi Khusus untuk AI Selanjutnya (Token-Saving Prompt)
+
+Untuk AI berikutnya yang membaca proyek ini:
+> **PENTING UNTUK MENGHEMAT TOKEN & KREDIT ($):**
+> 1. Jangan generate ulang penjelasan arsitektur.
+> 2. Langsung terapkan edit ke target file (`main.ts`, `tools/LoginGate.java`, atau `tools/patch_headers_apk.sh`).
+> 3. Gunakan `AES/CBC/PKCS5Padding` dengan format envelope `{ "iv": "...", "payload": "..." }`.
+> 4. URL API proxy didapat via JNI `.so` `getStreamProxyHost()`.
+
+---
+
+## 6. Checklist Eksekusi
+
+Saat mengimplementasikan fitur ini:
+1. **Backend (`main.ts`)**: Terapkan `encryptStreamResponse` pada endpoint stream.
+2. **Android Dex (`tools/LoginGate.java`)**: Pasang `DecryptHelper` sebelum data dibaca player.
+3. **Native `.so` (`tools/patch_headers_apk.sh`)**: Taruh binary prebuilt `libvidio_gate.so` di folder `lib/{abi}/`.
