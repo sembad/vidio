@@ -3699,7 +3699,7 @@ function showAccountUpgradeMenu($chat_id, $account_id, $return_page = 1) {
     if (empty($rows)) {
         $response .= "Tidak ada paket upgrade yang aktif saat ini.";
     }
-    $rows[] = [['text' => 'Kembali ke Riwayat', 'callback_data' => 'account_history_page_' . max(1, (int)$return_page)]];
+    $rows[] = [['text' => 'Kembali ke Daftar Upgrade', 'callback_data' => 'account_upgrade_page_' . max(1, (int)$return_page)]];
     sendMessage($chat_id, $response, ['inline_keyboard' => $rows]);
 }
 
@@ -3820,10 +3820,12 @@ function logTokenUsage($chat_id, $email_akun, $token, $token_email, $timestamp =
 }
 
 // FUNGSI BARU: Tampilkan riwayat akun yang dibuat dengan pagination
-function showAccountHistory($chat_id, $page = 1) {
+function showAccountHistory($chat_id, $page = 1, $upgrade_mode = false) {
     $data = loadData();
     
-    $response = "RIWAYAT AKUN YANG DIBUAT\n\n";
+    $response = $upgrade_mode
+        ? "UPGRADE AKUN\n\nPilih akun yang ingin di-upgrade.\n\n"
+        : "RIWAYAT AKUN YANG DIBUAT\n\n";
     
     $accounts = getUserPackageAccountsFromData($data, $chat_id);
     if (empty($accounts)) {
@@ -3897,38 +3899,46 @@ function showAccountHistory($chat_id, $page = 1) {
         return !$account['is_free'] && $account['status'] == 'sukses';
     });
     
-    if (!empty($paid_accounts)) {
+    if (!$upgrade_mode && !empty($paid_accounts)) {
         $keyboard_rows[] = [
             ['text' => 'Cek Status Garansi', 'callback_data' => 'warranty_check_page_1']
         ];
     }
 
-    $package_definitions = getAccountPackageDefinitions();
-    for ($i = $start_index; $i < $end_index; $i++) {
-        $account = $accounts[$i];
-        if (($account['status'] ?? '') !== 'sukses') {
-            continue;
-        }
-        $current_package = $account['package'] ?? 'biasa';
-        foreach ($package_definitions as $target_package => $definition) {
-            if ($definition['level'] > $package_definitions[$current_package]['level'] && isAccountPackageActive($target_package)) {
-                $keyboard_rows[] = [[
-                    'text' => 'Upgrade ' . $account['email'],
-                    'callback_data' => 'upgrade_account_' . $account['account_id'] . '_' . $page
-                ]];
-                break;
+    if ($upgrade_mode) {
+        $package_definitions = getAccountPackageDefinitions();
+        $has_upgrade_option = false;
+        for ($i = $start_index; $i < $end_index; $i++) {
+            $account = $accounts[$i];
+            if (($account['status'] ?? '') !== 'sukses') {
+                continue;
             }
+            $current_package = $account['package'] ?? 'biasa';
+            foreach ($package_definitions as $target_package => $definition) {
+                if ($definition['level'] > $package_definitions[$current_package]['level'] && isAccountPackageActive($target_package, $data)) {
+                    $keyboard_rows[] = [[
+                        'text' => 'Upgrade ' . $account['email'],
+                        'callback_data' => 'upgrade_account_' . $account['account_id'] . '_' . $page
+                    ]];
+                    $has_upgrade_option = true;
+                    break;
+                }
+            }
+        }
+        if (!$has_upgrade_option) {
+            $response .= "\nTidak ada akun yang dapat di-upgrade pada halaman ini.";
         }
     }
     
     // Tombol pagination
+    $page_callback = $upgrade_mode ? 'account_upgrade_page_' : 'account_history_page_';
     $pagination_buttons = [];
     if ($page > 1) {
-        $pagination_buttons[] = ['text' => '◀️ Sebelumnya', 'callback_data' => 'account_history_page_' . ($page - 1)];
+        $pagination_buttons[] = ['text' => '◀️ Sebelumnya', 'callback_data' => $page_callback . ($page - 1)];
     }
-    $pagination_buttons[] = ['text' => '🔄 Refresh', 'callback_data' => 'account_history_page_' . $page];
+    $pagination_buttons[] = ['text' => '🔄 Refresh', 'callback_data' => $page_callback . $page];
     if ($page < $total_pages) {
-        $pagination_buttons[] = ['text' => 'Selanjutnya ▶️', 'callback_data' => 'account_history_page_' . ($page + 1)];
+        $pagination_buttons[] = ['text' => 'Selanjutnya ▶️', 'callback_data' => $page_callback . ($page + 1)];
     }
     
     if (!empty($pagination_buttons)) {
@@ -3942,6 +3952,10 @@ function showAccountHistory($chat_id, $page = 1) {
     $keyboard = ['inline_keyboard' => $keyboard_rows];
     
     sendMessage($chat_id, $response, $keyboard);
+}
+
+function showAccountUpgradeList($chat_id, $page = 1) {
+    showAccountHistory($chat_id, $page, true);
 }
 
 // FUNGSI BARU: Tampilkan halaman cek garansi dengan pagination
@@ -5433,15 +5447,15 @@ if (!empty($row_akun)) {
 }
 
 // Tombol lainnya
-// Baris 1: Top Up dan Riwayat
+// Baris 1: Top Up dan Upgrade Akun
 $keyboard_rows[] = [
     ['text' => 'Top Up Saldo', 'callback_data' => 'topup'],
-    ['text' => 'Klaim Garansi', 'callback_data' => 'account_history_page_1']
+    ['text' => 'Upgrade Akun', 'callback_data' => 'account_upgrade_page_1']
 ];
 
-// Baris 2: Cek Pembayaran dan Riwayat Transaksi
+// Baris 2: Klaim Garansi dan Riwayat Transaksi
 $keyboard_rows[] = [
-    ['text' => 'Cek Pembayaran', 'callback_data' => 'cek_pembayaran'],
+    ['text' => 'Klaim Garansi', 'callback_data' => 'account_history_page_1'],
     ['text' => 'Riwayat Transaksi', 'callback_data' => 'riwayat']
 ];
 
@@ -6747,9 +6761,6 @@ function showRiwayatTransaksi($chat_id) {
         'inline_keyboard' => [
             [
                 ['text' => 'Refresh', 'callback_data' => 'riwayat'],
-                ['text' => 'Cek Pembayaran', 'callback_data' => 'cek_pembayaran']
-            ],
-            [
                 ['text' => 'Kembali', 'callback_data' => 'back_start']
             ]
         ]
@@ -8302,6 +8313,12 @@ function handleCallbackQuery($callback_query) {
         deleteMessage($chat_id, $message_id);
         showAccountHistory($chat_id, $page);
 
+    } elseif (strpos($callback_data, 'account_upgrade_page_') === 0) {
+        answerCallbackQuery($callback_id);
+        $page = intval(str_replace('account_upgrade_page_', '', $callback_data));
+        deleteMessage($chat_id, $message_id);
+        showAccountUpgradeList($chat_id, $page);
+
     } elseif (strpos($callback_data, 'upgrade_account_') === 0) {
         answerCallbackQuery($callback_id);
         $payload = str_replace('upgrade_account_', '', $callback_data);
@@ -8326,7 +8343,7 @@ function handleCallbackQuery($callback_query) {
         } else {
             sendMessage($chat_id, $result['error']);
         }
-        showAccountHistory($chat_id, 1);
+        showAccountUpgradeList($chat_id, 1);
         
     } elseif (strpos($callback_data, 'warranty_check_page_') === 0) {
         answerCallbackQuery($callback_id);
