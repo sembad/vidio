@@ -149,17 +149,19 @@ public final class LoginGate {
 
     /**
      * Retains a transport-level fallback for stream requests created outside the
-     * KMM request builder. Only rewrites api.vidio.com stream endpoints to vidiot.my.id
-     * when the account mode is verified as Ultimate.
+     * KMM request builder. api.vidio.com/users/content_access is always rewritten
+     * to vidiot.my.id for every account so the endpoint never receives traffic and
+     * the paywall player_offer banner can never render. Livestream stream endpoints
+     * are only rewritten when the account mode is verified as Ultimate.
      */
     public static String streamProxyUrl(String value, String email) {
         return streamProxyUrlForAccountMode(value, loadAccountMode(email));
     }
 
     static String streamProxyUrlForAccountMode(String value, Boolean ultimate) {
-        if (!Boolean.TRUE.equals(ultimate)) {
-            return null;
-        }
+        // Block all api.vidio.com/users/content_access traffic for every user,
+        // Ultimate or not. Routing it to the proxy means the paywall offer is never
+        // fetched from Vidio and the "Dapatkan akses nonton" banner never appears.
         if (isContentAccessUrl(value)) {
             try {
                 URL source = new URL(value);
@@ -168,6 +170,9 @@ public final class LoginGate {
             } catch (IOException | IllegalArgumentException ignored) {
                 return null;
             }
+        }
+        if (!Boolean.TRUE.equals(ultimate)) {
+            return null;
         }
         if (!isStreamUrl(value, STREAM_SOURCE_HOST)) {
             return null;
@@ -914,11 +919,14 @@ public final class LoginGate {
         if (!isContentAccessUrl(contentAccessUrl)) {
             throw new AssertionError("Content access URL should match isContentAccessUrl");
         }
-        if (!expectedContentAccessProxy.equals(streamProxyUrlForAccountMode(contentAccessUrl, Boolean.TRUE))) {
-            throw new AssertionError("Content access URL was not routed to proxy for Ultimate");
+        if (!expectedContentAccessProxy.equals(streamProxyUrlForAccountMode(contentAccessUrl, Boolean.TRUE))
+                || !expectedContentAccessProxy.equals(streamProxyUrlForAccountMode(contentAccessUrl, Boolean.FALSE))
+                || !expectedContentAccessProxy.equals(streamProxyUrlForAccountMode(contentAccessUrl, null))) {
+            throw new AssertionError("Content access URL must always be routed to the proxy for every account");
         }
-        if (streamProxyUrlForAccountMode(contentAccessUrl, Boolean.FALSE) != null) {
-            throw new AssertionError("Content access URL must not be proxied for non-Ultimate");
+        if (streamProxyUrl(contentAccessUrl, null) == null
+                || streamProxyUrl(contentAccessUrl, "not-an-email") == null) {
+            throw new AssertionError("Content access URL must be proxied even without a verified account");
         }
         String[] nonStreamUrls = {
                 "https://api.vidio.com/livestreamings/abc/stream?initialize=true",
