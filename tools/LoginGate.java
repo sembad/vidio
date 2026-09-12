@@ -51,6 +51,8 @@ public final class LoginGate {
     private static volatile String cachedUa;
     private static volatile String cachedAccountEmail;
     private static volatile Boolean cachedUltimate;
+    private static volatile long lastModeCheckTimeMs = 0L;
+    private static final long MODE_CHECK_INTERVAL_MS = 60_000L; // 1 minute re-check interval
 
     private LoginGate() {}
 
@@ -285,6 +287,28 @@ public final class LoginGate {
         String modeEmail = cachedAccountEmail;
         if (mode != null && (normalizedEmail == null
                 || (modeEmail != null && modeEmail.equalsIgnoreCase(normalizedEmail)))) {
+            long now = System.currentTimeMillis();
+            if (Boolean.TRUE.equals(mode) && (now - lastModeCheckTimeMs > MODE_CHECK_INTERVAL_MS)) {
+                String checkEmail = modeEmail != null ? modeEmail : normalizedEmail;
+                if (checkEmail != null) {
+                    try {
+                        boolean stillUltimate = fetchPermission("akunultimate", checkEmail);
+                        lastModeCheckTimeMs = now;
+                        if (!stillUltimate) {
+                            cachedUltimate = Boolean.FALSE;
+                            File file = accountModeFile();
+                            if (file != null) {
+                                try {
+                                    writeAccountMode(file, checkEmail, false);
+                                } catch (IOException ignored) {}
+                            }
+                            return Boolean.FALSE;
+                        }
+                    } catch (IOException ignored) {
+                        // Jika koneksi gagal, pertahankan mode terakhir untuk sementara
+                    }
+                }
+            }
             return mode;
         }
 
@@ -292,6 +316,22 @@ public final class LoginGate {
         if (mode != null) {
             cachedAccountEmail = normalizedEmail;
             cachedUltimate = mode;
+            lastModeCheckTimeMs = System.currentTimeMillis();
+            if (Boolean.TRUE.equals(mode) && normalizedEmail != null) {
+                try {
+                    boolean stillUltimate = fetchPermission("akunultimate", normalizedEmail);
+                    if (!stillUltimate) {
+                        cachedUltimate = Boolean.FALSE;
+                        File file = accountModeFile();
+                        if (file != null) {
+                            try {
+                                writeAccountMode(file, normalizedEmail, false);
+                            } catch (IOException ignored) {}
+                        }
+                        return Boolean.FALSE;
+                    }
+                } catch (IOException ignored) {}
+            }
         }
         return mode;
     }
