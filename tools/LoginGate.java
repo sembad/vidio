@@ -65,8 +65,8 @@ public final class LoginGate {
             applicationContext = context;
         }
         verifySignature(context);
+        loadCachedAccountModeOnStart();
         registerActivityLifecycle();
-        checkAccountOnAppEntry();
     }
 
     public static void initAndToast(Object context, String message) {
@@ -280,43 +280,40 @@ public final class LoginGate {
         }
     }
 
-    private static synchronized Boolean loadAccountMode(String email) {
-        String normalizedEmail = normalizeAccountEmail(email);
-        if (normalizedEmail == null) {
-            normalizedEmail = cachedAccountEmail;
-        }
-        if (normalizedEmail == null) {
+    private static void loadCachedAccountModeOnStart() {
+        if (cachedUltimate == null) {
             File file = accountModeFile();
             if (file != null && file.isFile()) {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                         new FileInputStream(file), StandardCharsets.UTF_8))) {
-                    normalizedEmail = normalizeAccountEmail(reader.readLine());
+                    String storedEmail = normalizeAccountEmail(reader.readLine());
+                    String storedMode = reader.readLine();
+                    if (storedEmail != null && storedMode != null) {
+                        cachedAccountEmail = storedEmail;
+                        cachedUltimate = ULTIMATE_MODE.equals(storedMode) ? Boolean.TRUE : Boolean.FALSE;
+                    }
                 } catch (Throwable ignored) {}
             }
         }
-        if (normalizedEmail == null || !isEmail(normalizedEmail)) {
-            return Boolean.FALSE;
+    }
+
+    private static synchronized Boolean loadAccountMode(String email) {
+        String normalizedEmail = normalizeAccountEmail(email);
+        Boolean mode = cachedUltimate;
+        String modeEmail = cachedAccountEmail;
+        if (mode != null && (normalizedEmail == null
+                || (modeEmail != null && modeEmail.equalsIgnoreCase(normalizedEmail)))) {
+            return mode;
         }
 
-        try {
-            boolean stillUltimate = fetchPermission("akunultimate", normalizedEmail);
-            cachedAccountEmail = normalizedEmail;
-            cachedUltimate = stillUltimate ? Boolean.TRUE : Boolean.FALSE;
-            File file = accountModeFile();
-            if (file != null) {
-                try {
-                    writeAccountMode(file, normalizedEmail, stillUltimate);
-                } catch (IOException ignored) {}
-            }
-            if (!stillUltimate) {
-                showToast("Akses Ultimate tidak aktif atau telah berakhir");
-            }
-            return stillUltimate ? Boolean.TRUE : Boolean.FALSE;
-        } catch (Throwable ignored) {
-            // Ketika pengecekan fresh gagal (koneksi/server/expired), tolak/blokir stream (jangan pakai cache lama)
-            cachedUltimate = Boolean.FALSE;
-            return Boolean.FALSE;
+        mode = readAccountMode(accountModeFile(), normalizedEmail);
+        if (mode != null) {
+            cachedAccountEmail = normalizedEmail != null ? normalizedEmail : cachedAccountEmail;
+            cachedUltimate = mode;
+            return mode;
         }
+
+        return Boolean.FALSE;
     }
 
     private static Boolean readAccountMode(File file, String requestedEmail) {
@@ -594,47 +591,6 @@ public final class LoginGate {
         return at > 0 && at == email.lastIndexOf('@') && dot > at + 1 && dot < email.length() - 1 && !email.matches(".*\\s+.*");
     }
 
-    private static void checkAccountOnAppEntry() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String email = cachedAccountEmail;
-                if (email == null) {
-                    File file = accountModeFile();
-                    if (file != null && file.isFile()) {
-                        try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                                new FileInputStream(file), StandardCharsets.UTF_8))) {
-                            email = normalizeAccountEmail(reader.readLine());
-                        } catch (Throwable ignored) {}
-                    }
-                }
-                if (email != null && isEmail(email)) {
-                    try {
-                        boolean allowed = false;
-                        for (String query : ACCOUNT_QUERIES) {
-                            if (fetchPermission(query, email)) {
-                                allowed = true;
-                                break;
-                            }
-                        }
-                        if (!allowed) {
-                            cachedUltimate = Boolean.FALSE;
-                            cachedAccountEmail = null;
-                            File file = accountModeFile();
-                            if (file != null) {
-                                try {
-                                    writeAccountMode(file, email, false);
-                                } catch (IOException ignored) {}
-                            }
-                            showToast(DENIED_MESSAGE);
-                        }
-                    } catch (Throwable ignored) {
-                    }
-                }
-            }
-        }).start();
-    }
-
     private static void registerActivityLifecycle() {
         Object app = applicationContext;
         if (app == null) {
@@ -656,7 +612,6 @@ public final class LoginGate {
                             if ("onActivityResumed".equals(name) || "onActivityStarted".equals(name)) {
                                 if (args != null && args.length > 0 && args[0] != null) {
                                     currentActivity = args[0];
-                                    checkAccountOnAppEntry();
                                 }
                             } else if ("onActivityDestroyed".equals(name)) {
                                 if (args != null && args.length > 0 && args[0] == currentActivity) {
