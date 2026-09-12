@@ -21,7 +21,7 @@ function debugLog($label, $data = null, $force_print = false) {
 define('DEFAULT_HARGA_SATU_AKUN_USER', 10000); // Rp 10.000 untuk user biasa
 define('DEFAULT_HARGA_SATU_AKUN_RESELLER', 5000); // Rp 5.000 untuk reseller
 define('DEFAULT_HARGA_MULTI_AKUN', 6000); // Rp 6.000 untuk multi akun (Pro)
-define('DEFAULT_MINIMAL_SALDO_PRO', 200000); // Minimal saldo untuk Pro (multi akun)
+define('DEFAULT_MINIMAL_AKUMULASI_TOPUP_PRO', 200000); // Minimal akumulasi top up untuk Pro (multi akun)
 define('DEFAULT_MINIMAL_SALDO_RESELLER', 100000); // Minimal saldo untuk Reseller (satu akun)
 define('DEFAULT_MINIMAL_TOPUP', 5000); // Minimal top up Rp 5.000 (default)
 define('PAYMENT_TIMEOUT', 600); // 10 menit dalam detik
@@ -1016,13 +1016,23 @@ function showHelpMenu($chat_id) {
     sendMessage($chat_id, "silahkan hubungi di bot @csvidiobot", $keyboard);
 }
 
+function getTotalTopupFromData($data, $chat_id) {
+    return max(0, (int)($data['users'][$chat_id]['total_topup'] ?? 0));
+}
+
+function getTotalTopup($chat_id) {
+    return getTotalTopupFromData(loadData(), $chat_id);
+}
+
 // Fungsi untuk mendapatkan status user (user biasa / reseller / pro)
 function getUserStatus($chat_id) {
-    $saldo = cekSaldo($chat_id);
-    $minimal_reseller = getMinimalSaldoReseller();
-    $minimal_pro = getMinimalSaldoPro();
+    $data = loadData();
+    $saldo = (int)($data['users'][$chat_id]['saldo'] ?? 0);
+    $total_topup = getTotalTopupFromData($data, $chat_id);
+    $minimal_reseller = (int)($data['settings']['minimal_saldo_reseller'] ?? DEFAULT_MINIMAL_SALDO_RESELLER);
+    $minimal_pro = (int)($data['settings']['minimal_akumulasi_topup_pro'] ?? DEFAULT_MINIMAL_AKUMULASI_TOPUP_PRO);
     
-    if ($saldo >= $minimal_pro) {
+    if ($total_topup >= $minimal_pro) {
         return 'pro';
     } elseif ($saldo >= $minimal_reseller) {
         return 'reseller';
@@ -1039,13 +1049,13 @@ function getMinimalSaldoReseller() {
     return DEFAULT_MINIMAL_SALDO_RESELLER;
 }
 
-// Fungsi untuk mendapatkan minimal saldo pro dari data
-function getMinimalSaldoPro() {
+// Fungsi untuk mendapatkan minimal akumulasi top up pro dari data
+function getMinimalAkumulasiTopupPro() {
     $data = loadData();
-    if (isset($data['settings']['minimal_saldo_pro'])) {
-        return (int)$data['settings']['minimal_saldo_pro'];
+    if (isset($data['settings']['minimal_akumulasi_topup_pro'])) {
+        return (int)$data['settings']['minimal_akumulasi_topup_pro'];
     }
-    return DEFAULT_MINIMAL_SALDO_PRO;
+    return DEFAULT_MINIMAL_AKUMULASI_TOPUP_PRO;
 }
 
 // Fungsi untuk mendapatkan harga satu akun user biasa
@@ -1340,10 +1350,11 @@ function updateMinimalSaldoReseller($minimal) {
     return true;
 }
 
-// Fungsi untuk update minimal saldo pro
-function updateMinimalSaldoPro($minimal) {
+// Fungsi untuk update minimal akumulasi top up pro
+function updateMinimalAkumulasiTopupPro($minimal) {
     $data = loadData();
-    $data['settings']['minimal_saldo_pro'] = (int)$minimal;
+    $data['settings']['minimal_akumulasi_topup_pro'] = (int)$minimal;
+    unset($data['settings']['minimal_saldo_pro']);
     saveData($data);
     return true;
 }
@@ -1886,7 +1897,7 @@ function loadData() {
                     ],
                     'harga_multi_akun' => DEFAULT_HARGA_MULTI_AKUN,
                     'minimal_saldo_reseller' => DEFAULT_MINIMAL_SALDO_RESELLER,
-                    'minimal_saldo_pro' => DEFAULT_MINIMAL_SALDO_PRO,
+                    'minimal_akumulasi_topup_pro' => DEFAULT_MINIMAL_AKUMULASI_TOPUP_PRO,
                     'minimal_topup' => DEFAULT_MINIMAL_TOPUP,
                     'limit_gratis_duration' => DEFAULT_LIMIT_GRATIS_DURATION,
                     'max_claim_per_day' => DEFAULT_MAX_CLAIM_PER_DAY,
@@ -1924,6 +1935,32 @@ function loadData() {
                 if (!isset($data['users'])) $data['users'] = [];
                 if (!isset($data['partner_tokens'])) $data['partner_tokens'] = [];
                 if (!isset($data['payments'])) $data['payments'] = [];
+
+                // Migrasi total top up lama; saldo aktif menjadi batas bawah saat riwayat lama sudah dibersihkan.
+                $historical_topups = [];
+                foreach ($data['payments'] as $payment) {
+                    if (($payment['status'] ?? '') !== 'success' || (int)($payment['amount_original'] ?? 0) <= 0) {
+                        continue;
+                    }
+                    $payment_chat_id = (string)($payment['chat_id'] ?? '');
+                    if ($payment_chat_id === '') {
+                        continue;
+                    }
+                    $historical_topups[$payment_chat_id] = ($historical_topups[$payment_chat_id] ?? 0) + (int)$payment['amount_original'];
+                }
+                foreach ($data['users'] as $user_chat_id => &$user) {
+                    if (!is_array($user)) {
+                        continue;
+                    }
+                    if (!array_key_exists('total_topup', $user)) {
+                        $historical_total = (int)($historical_topups[(string)$user_chat_id] ?? 0);
+                        $user['total_topup'] = max($historical_total, max(0, (int)($user['saldo'] ?? 0)));
+                    } else {
+                        $user['total_topup'] = max(0, (int)$user['total_topup']);
+                    }
+                }
+                unset($user);
+
                 if (!isset($data['transactions'])) $data['transactions'] = [];
                 if (!isset($data['used_tokens'])) $data['used_tokens'] = [];
                 if (!isset($data['token_pool'])) $data['token_pool'] = [];
@@ -1942,8 +1979,17 @@ function loadData() {
                         $account['package'] = $package;
                         $account['account_id'] = $account['account_id'] ?? $account_id;
                         $account['chat_id'] = (int)$owner_chat_id;
+                        if ($package === 'ultimate' && empty($account['ultimate_credential_email'])) {
+                            $credential = getUltimateCredentialByNumber($account['ultimate_credential_number'] ?? 0);
+                            if ($credential && !empty($credential['email'])) {
+                                $account['ultimate_credential_email'] = (string)$credential['email'];
+                            }
+                        }
+                        $data['created_accounts'][$owner_chat_id][$account_id] = $account;
                         if (!isset($data['akun_' . $package][$owner_chat_id][$account_id])) {
                             $data['akun_' . $package][$owner_chat_id][$account_id] = $account;
+                        } elseif ($package === 'ultimate' && !empty($account['ultimate_credential_email'])) {
+                            $data['akun_ultimate'][$owner_chat_id][$account_id]['ultimate_credential_email'] = $account['ultimate_credential_email'];
                         }
                     }
                 }
@@ -1958,7 +2004,7 @@ function loadData() {
                         'harga_satu_akun_reseller' => DEFAULT_HARGA_SATU_AKUN_RESELLER,
                         'harga_multi_akun' => DEFAULT_HARGA_MULTI_AKUN,
                         'minimal_saldo_reseller' => DEFAULT_MINIMAL_SALDO_RESELLER,
-                        'minimal_saldo_pro' => DEFAULT_MINIMAL_SALDO_PRO,
+                        'minimal_akumulasi_topup_pro' => DEFAULT_MINIMAL_AKUMULASI_TOPUP_PRO,
                         'minimal_topup' => DEFAULT_MINIMAL_TOPUP,
                         'limit_gratis_duration' => DEFAULT_LIMIT_GRATIS_DURATION,
                         'max_claim_per_day' => DEFAULT_MAX_CLAIM_PER_DAY,
@@ -2020,9 +2066,12 @@ function loadData() {
                 if (!isset($data['settings']['minimal_saldo_reseller'])) {
                     $data['settings']['minimal_saldo_reseller'] = DEFAULT_MINIMAL_SALDO_RESELLER;
                 }
-                if (!isset($data['settings']['minimal_saldo_pro'])) {
-                    $data['settings']['minimal_saldo_pro'] = DEFAULT_MINIMAL_SALDO_PRO;
+                if (!isset($data['settings']['minimal_akumulasi_topup_pro'])) {
+                    $data['settings']['minimal_akumulasi_topup_pro'] = isset($data['settings']['minimal_saldo_pro'])
+                        ? (int)$data['settings']['minimal_saldo_pro']
+                        : DEFAULT_MINIMAL_AKUMULASI_TOPUP_PRO;
                 }
+                unset($data['settings']['minimal_saldo_pro']);
                 if (!isset($data['settings']['minimal_topup'])) {
                     $data['settings']['minimal_topup'] = DEFAULT_MINIMAL_TOPUP;
                 }
@@ -2097,7 +2146,7 @@ function loadData() {
             'harga_satu_akun_reseller' => DEFAULT_HARGA_SATU_AKUN_RESELLER,
             'harga_multi_akun' => DEFAULT_HARGA_MULTI_AKUN,
             'minimal_saldo_reseller' => DEFAULT_MINIMAL_SALDO_RESELLER,
-            'minimal_saldo_pro' => DEFAULT_MINIMAL_SALDO_PRO,
+            'minimal_akumulasi_topup_pro' => DEFAULT_MINIMAL_AKUMULASI_TOPUP_PRO,
             'minimal_topup' => DEFAULT_MINIMAL_TOPUP,
             'limit_gratis_duration' => DEFAULT_LIMIT_GRATIS_DURATION,
             'max_claim_per_day' => DEFAULT_MAX_CLAIM_PER_DAY,
@@ -2187,6 +2236,7 @@ function saveUserInfo($chat_id, $username, $first_name) {
     if (!isset($data['users'][$chat_id])) {
         $data['users'][$chat_id] = [
             'saldo' => 0,
+            'total_topup' => 0,
             'akun_dibuat' => 0,
             'limit_gratis' => 1,
             'username' => $username,
@@ -2212,6 +2262,7 @@ function getUserInfo($chat_id) {
     
     return [
         'saldo' => 0,
+        'total_topup' => 0,
         'akun_dibuat' => 0,
         'limit_gratis' => 1,
         'username' => '',
@@ -2255,6 +2306,7 @@ function cekLimitGratis($chat_id) {
     if (!isset($data['users'][$chat_id])) {
         $data['users'][$chat_id] = [
             'saldo' => 0,
+            'total_topup' => 0,
             'akun_dibuat' => 0,
             'limit_gratis' => 1,
             'username' => '',
@@ -2291,6 +2343,7 @@ function tambahAkunDibuat($chat_id, $jumlah) {
     if (!isset($data['users'][$chat_id])) {
         $data['users'][$chat_id] = [
             'saldo' => 0,
+            'total_topup' => 0,
             'akun_dibuat' => $jumlah,
             'limit_gratis' => 1,
             'username' => '',
@@ -2318,13 +2371,15 @@ function cekSaldo($chat_id) {
     return isset($data['users'][$chat_id]['saldo']) ? (int)$data['users'][$chat_id]['saldo'] : 0;
 }
 
-// Fungsi tambah saldo
+// Fungsi tambah saldo dari top up
 function tambahSaldo($chat_id, $jumlah) {
     $data = loadData();
+    $jumlah = max(0, (int)$jumlah);
     
     if (!isset($data['users'][$chat_id])) {
         $data['users'][$chat_id] = [
-            'saldo' => (int)$jumlah,
+            'saldo' => $jumlah,
+            'total_topup' => $jumlah,
             'akun_dibuat' => 0,
             'limit_gratis' => 1,
             'username' => '',
@@ -2332,11 +2387,10 @@ function tambahSaldo($chat_id, $jumlah) {
             'last_seen' => time()
         ];
     } else {
-        if (!isset($data['users'][$chat_id]['saldo'])) {
-            $data['users'][$chat_id]['saldo'] = 0;
-        }
-        $saldo_sekarang = (int)$data['users'][$chat_id]['saldo'];
-        $data['users'][$chat_id]['saldo'] = $saldo_sekarang + (int)$jumlah;
+        $saldo_sekarang = (int)($data['users'][$chat_id]['saldo'] ?? 0);
+        $total_topup_sekarang = getTotalTopupFromData($data, $chat_id);
+        $data['users'][$chat_id]['saldo'] = $saldo_sekarang + $jumlah;
+        $data['users'][$chat_id]['total_topup'] = $total_topup_sekarang + $jumlah;
     }
     
     saveData($data);
@@ -2371,6 +2425,7 @@ function kembalikanSaldo($chat_id, $jumlah) {
     if (!isset($data['users'][$chat_id])) {
         $data['users'][$chat_id] = [
             'saldo' => (int)$jumlah,
+            'total_topup' => 0,
             'akun_dibuat' => 0,
             'limit_gratis' => 1,
             'username' => '',
@@ -3277,11 +3332,15 @@ function completePaymentFromMutation($payment_id, $transaction) {
             return ['status' => 'error', 'message' => 'Data pengguna pembayaran tidak ditemukan'];
         }
 
+        $topup_amount = max(0, (int)$payment['amount_original']);
         $current_balance = (int)($data['users'][$payment_chat_id]['saldo'] ?? 0);
-        $new_balance = $current_balance + (int)$payment['amount_original'];
+        $current_total_topup = getTotalTopupFromData($data, $payment_chat_id);
+        $new_balance = $current_balance + $topup_amount;
+        $new_total_topup = $current_total_topup + $topup_amount;
         $paid_at = time();
 
         $data['users'][$payment_chat_id]['saldo'] = $new_balance;
+        $data['users'][$payment_chat_id]['total_topup'] = $new_total_topup;
         $data['payments'][$payment_id]['status'] = 'success';
         $data['payments'][$payment_id]['paid_at'] = $paid_at;
         $data['payments'][$payment_id]['reference'] = $reference;
@@ -3297,6 +3356,7 @@ function completePaymentFromMutation($payment_id, $transaction) {
             'status' => 'success',
             'payment' => $completed_payment,
             'balance' => $new_balance,
+            'total_topup' => $new_total_topup,
             'notify' => true
         ];
     } finally {
@@ -3415,9 +3475,14 @@ function sendPaymentSuccessMessage($result) {
     $response .= "Nominal: Rp " . number_format($payment['amount_original'], 0, ',', '.') . "\n";
     $response .= "Kode Unik: " . $payment['kode_unik'] . "\n";
     $response .= "Total: Rp " . number_format($payment['amount'], 0, ',', '.') . "\n";
+    $total_topup = (int)($result['total_topup'] ?? getTotalTopup($payment['chat_id']));
     $response .= "Saldo bertambah: Rp " . number_format($payment['amount_original'], 0, ',', '.') . "\n";
-    $response .= "Saldo Anda sekarang: Rp " . number_format($result['balance'], 0, ',', '.') . "\n\n";
-    $response .= "Terima kasih telah melakukan top up!";
+    $response .= "Saldo Anda sekarang: Rp " . number_format($result['balance'], 0, ',', '.') . "\n";
+    $response .= "Akumulasi top up: Rp " . number_format($total_topup, 0, ',', '.') . "\n";
+    if ($total_topup >= getMinimalAkumulasiTopupPro()) {
+        $response .= "Status Anda: PRO\n";
+    }
+    $response .= "\nTerima kasih telah melakukan top up!";
 
     sendMessage($payment['chat_id'], $response);
     notifyPrivateGroup('TOP UP BERHASIL', $payment['chat_id'], [
@@ -3427,6 +3492,7 @@ function sendPaymentSuccessMessage($result) {
         'Referensi' => $payment['reference'] ?? '-',
         'Metode' => 'QRIS',
         'Saldo Akhir' => 'Rp ' . number_format($result['balance'], 0, ',', '.'),
+        'Akumulasi Top Up' => 'Rp ' . number_format($total_topup, 0, ',', '.'),
         'Status' => 'SUKSES'
     ]);
 }
@@ -3549,6 +3615,7 @@ function saveCreatedAccount($chat_id, $email, $password, $status, $created_at = 
         if ($package === 'ultimate' && is_array($ultimate_credential)) {
             $ultimate_started_at = time();
             $record['ultimate_credential_number'] = (int)$ultimate_credential['nomor'];
+            $record['ultimate_credential_email'] = (string)$ultimate_credential['email'];
             $record['ultimate_credential_token'] = (string)$ultimate_credential['token'];
             $record['ultimate_started_at'] = $ultimate_started_at;
             $record['ultimate_expires_at'] = $ultimate_started_at + ULTIMATE_DURATION;
@@ -3698,6 +3765,7 @@ function processAccountPackageUpgrade($chat_id, $account_id, $target_package) {
     $account['chat_id'] = (int)$chat_id;
     if ($target_package === 'ultimate') {
         $account['ultimate_credential_number'] = (int)$ultimate_credential['nomor'];
+        $account['ultimate_credential_email'] = (string)$ultimate_credential['email'];
         $account['ultimate_credential_token'] = (string)$ultimate_credential['token'];
         $account['ultimate_started_at'] = $account['upgraded_at'];
         $account['ultimate_expires_at'] = $account['upgraded_at'] + ULTIMATE_DURATION;
@@ -4572,6 +4640,7 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
                 unset($data['akun_ultimate'][$chat_id][$account_id]);
                 unset(
                     $data['created_accounts'][$chat_id][$account_id]['ultimate_credential_number'],
+                    $data['created_accounts'][$chat_id][$account_id]['ultimate_credential_email'],
                     $data['created_accounts'][$chat_id][$account_id]['ultimate_credential_token'],
                     $data['created_accounts'][$chat_id][$account_id]['ultimate_started_at'],
                     $data['created_accounts'][$chat_id][$account_id]['ultimate_expires_at']
@@ -5297,8 +5366,8 @@ function handleStart($chat_id, $from_first_name, $username = '') {
     $harga_satu_akun_user = getHargaSatuAkunUser();
     $harga_satu_akun_reseller = getHargaSatuAkunReseller();
     $harga_multi_akun = getHargaMultiAkun();
-    $minimal_reseller = getMinimalSaldoReseller();
-    $minimal_pro = getMinimalSaldoPro();
+    $total_topup = getTotalTopup($chat_id);
+    $minimal_pro = getMinimalAkumulasiTopupPro();
     $limit_gratis_status = isLimitGratisActive() ? "AKTIF" : "NONAKTIF";
     
     $response = "Halo, " . $from_first_name . "!\n\n";
@@ -5328,8 +5397,12 @@ function handleStart($chat_id, $from_first_name, $username = '') {
         $response .= "Bikin Gratis: DINONAKTIFKAN\n";
     }
     
-    $response .= "Saldo Anda: Rp " . number_format($saldo, 0, ',', '.') . "\n\n";
-    $response .= "INFO HARGA :\n\n";    
+    $response .= "Saldo Anda: Rp " . number_format($saldo, 0, ',', '.') . "\n";
+    $response .= "Akumulasi Top Up: Rp " . number_format($total_topup, 0, ',', '.') . "\n";
+    if ($user_status !== 'pro') {
+        $response .= "Target PRO: Rp " . number_format($minimal_pro, 0, ',', '.') . " akumulasi top up\n";
+    }
+    $response .= "\nINFO HARGA :\n\n";
     $response .= "Harga Satu Akun (User): Rp " . number_format($harga_satu_akun_user, 0, ',', '.') . "\n";
     $response .= "Harga Satu Akun (Reseller/Pro): Rp " . number_format($harga_satu_akun_reseller, 0, ',', '.') . "\n";
     $response .= "Harga Multi Akun (Pro): Rp " . number_format($harga_multi_akun, 0, ',', '.') . "\n\n";
@@ -5404,7 +5477,7 @@ function showAdminPanel($chat_id) {
     $harga_satu_akun_reseller = getHargaSatuAkunReseller();
     $harga_multi_akun = getHargaMultiAkun();
     $minimal_saldo_reseller = getMinimalSaldoReseller();
-    $minimal_saldo_pro = getMinimalSaldoPro();
+    $minimal_akumulasi_topup_pro = getMinimalAkumulasiTopupPro();
     $minimal_topup = getMinimalTopup();
     
     $response = "ADMIN\n\n";
@@ -5416,7 +5489,7 @@ function showAdminPanel($chat_id) {
     $response .= "Harga Satu Akun (Reseller/Pro): Rp " . number_format($harga_satu_akun_reseller, 0, ',', '.') . "\n";
     $response .= "Harga Multi Akun (Pro): Rp " . number_format($harga_multi_akun, 0, ',', '.') . "\n\n";
     $response .= "Minimal Saldo Reseller: Rp " . number_format($minimal_saldo_reseller, 0, ',', '.') . "\n";
-    $response .= "Minimal Saldo PRO: Rp " . number_format($minimal_saldo_pro, 0, ',', '.') . "\n";
+    $response .= "Minimal Akumulasi Top Up PRO: Rp " . number_format($minimal_akumulasi_topup_pro, 0, ',', '.') . "\n";
     $response .= "Minimal Topup: Rp " . number_format($minimal_topup, 0, ',', '.') . "\n\n";
     $response .= "Pilih menu admin:";
     
@@ -5442,7 +5515,7 @@ function showAdminPanel($chat_id) {
                 ['text' => 'Edit Minimal Saldo Reseller', 'callback_data' => 'admin_edit_minimal_reseller']
             ],
             [
-                ['text' => 'Edit Minimal Saldo PRO', 'callback_data' => 'admin_edit_minimal_pro'],
+                ['text' => 'Edit Akumulasi Top Up PRO', 'callback_data' => 'admin_edit_minimal_pro'],
                 ['text' => 'Edit Minimal Topup', 'callback_data' => 'admin_edit_minimal']
             ],
             [
@@ -5563,7 +5636,7 @@ function showAdminStats($chat_id) {
     $harga_satu_akun_reseller = getHargaSatuAkunReseller();
     $harga_multi_akun = getHargaMultiAkun();
     $minimal_saldo_reseller = getMinimalSaldoReseller();
-    $minimal_saldo_pro = getMinimalSaldoPro();
+    $minimal_akumulasi_topup_pro = getMinimalAkumulasiTopupPro();
     $minimal_topup = getMinimalTopup();
     
     // Hitung statistik
@@ -5586,11 +5659,12 @@ function showAdminStats($chat_id) {
     }
     
     foreach ($data['users'] as $user_id => $user) {
-        $saldo_user = isset($user['saldo']) ? $user['saldo'] : 0;
+        $saldo_user = isset($user['saldo']) ? (int)$user['saldo'] : 0;
+        $total_topup_user = getTotalTopupFromData($data, $user_id);
         $total_saldo += $saldo_user;
         
-        // Hitung jumlah reseller dan pro
-        if ($saldo_user >= $minimal_saldo_pro) {
+        // PRO dihitung dari akumulasi top up, reseller tetap dari saldo aktif.
+        if ($total_topup_user >= $minimal_akumulasi_topup_pro) {
             $total_pro++;
         } elseif ($saldo_user >= $minimal_saldo_reseller) {
             $total_reseller++;
@@ -5621,10 +5695,10 @@ function showAdminStats($chat_id) {
     $response .= "Satu Akun (Reseller/Pro): Rp " . number_format($harga_satu_akun_reseller, 0, ',', '.') . "\n";
     $response .= "Multi Akun (Pro): Rp " . number_format($harga_multi_akun, 0, ',', '.') . "\n\n";
     
-    $response .= "MINIMAL SALDO:\n";
-    $response .= "Reseller: Rp " . number_format($minimal_saldo_reseller, 0, ',', '.') . "\n";
-    $response .= "PRO: Rp " . number_format($minimal_saldo_pro, 0, ',', '.') . "\n";
-    $response .= "Topup: Rp " . number_format($minimal_topup, 0, ',', '.') . "\n\n";
+    $response .= "SYARAT STATUS:\n";
+    $response .= "Reseller (saldo): Rp " . number_format($minimal_saldo_reseller, 0, ',', '.') . "\n";
+    $response .= "PRO (akumulasi top up): Rp " . number_format($minimal_akumulasi_topup_pro, 0, ',', '.') . "\n";
+    $response .= "Minimal per transaksi top up: Rp " . number_format($minimal_topup, 0, ',', '.') . "\n\n";
     
     $response .= "STATISTIK PENGUNJUNG:\n";
     $response .= "Total User: " . $total_users . "\n";
@@ -5789,14 +5863,14 @@ function editMinimalSaldoReseller($chat_id) {
     ]));
 }
 
-// Fungsi untuk edit minimal saldo pro
-function editMinimalSaldoPro($chat_id) {
+// Fungsi untuk edit minimal akumulasi top up pro
+function editMinimalAkumulasiTopupPro($chat_id) {
     if (!isAdmin($chat_id)) {
         sendMessage($chat_id, "Anda bukan admin!");
         return;
     }
     
-    $current_minimal = getMinimalSaldoPro();
+    $current_minimal = getMinimalAkumulasiTopupPro();
     
     $keyboard = [
         'inline_keyboard' => [
@@ -5807,9 +5881,9 @@ function editMinimalSaldoPro($chat_id) {
         ]
     ];
     
-    $response = "EDIT MINIMAL SALDO PRO\n\n";
+    $response = "EDIT MINIMAL AKUMULASI TOP UP PRO\n\n";
     $response .= "Minimal saat ini: Rp " . number_format($current_minimal, 0, ',', '.') . "\n\n";
-    $response .= "Silakan input minimal saldo baru (dalam angka):\n";
+    $response .= "Silakan input minimal akumulasi top up baru (dalam angka):\n";
     $response .= "Contoh: 200000 (untuk Rp 200.000)";
     
     $sent_msg = sendMessage($chat_id, $response, $keyboard);
@@ -6067,8 +6141,8 @@ function processAdminEditMinimalReseller($chat_id, $text, $message_id) {
     sendMessage($chat_id, $response, $keyboard);
 }
 
-// Fungsi process admin edit minimal pro
-function processAdminEditMinimalPro($chat_id, $text, $message_id) {
+// Fungsi process admin edit minimal akumulasi top up pro
+function processAdminEditMinimalAkumulasiTopupPro($chat_id, $text, $message_id) {
     if (!isAdmin($chat_id)) {
         sendMessage($chat_id, "Anda bukan admin!");
         return;
@@ -6095,19 +6169,19 @@ function processAdminEditMinimalPro($chat_id, $text, $message_id) {
     $minimal_baru = intval(trim($text));
     
     if ($minimal_baru < 1000) {
-        sendMessage($chat_id, "Minimal saldo terlalu kecil! Minimal Rp 1.000.");
+        sendMessage($chat_id, "Minimal akumulasi top up terlalu kecil! Minimal Rp 1.000.");
         unlink($state_file);
         showAdminPanel($chat_id);
         return;
     }
     
-    // Update minimal saldo pro
-    updateMinimalSaldoPro($minimal_baru);
+    // Update minimal akumulasi top up pro
+    updateMinimalAkumulasiTopupPro($minimal_baru);
     
     // Hapus state file
     unlink($state_file);
     
-    $response = "Minimal saldo PRO berhasil diupdate!\n\n";
+    $response = "Minimal akumulasi top up PRO berhasil diupdate!\n\n";
     $response .= "Minimal baru: Rp " . number_format($minimal_baru, 0, ',', '.');
     
     $keyboard = [
@@ -6293,39 +6367,20 @@ function requestMultipleAkun($chat_id) {
         return;
     }
     
-    // Cek status user - HARUS PRO
+    // Cek status user - HARUS PRO berdasarkan akumulasi top up.
     $user_status = getUserStatus($chat_id);
-    $saldo = cekSaldo($chat_id);
-    $minimal_saldo_pro = getMinimalSaldoPro();
+    $total_topup = getTotalTopupFromData($data, $chat_id);
+    $minimal_akumulasi_topup_pro = getMinimalAkumulasiTopupPro();
     
-    // Hanya PRO yang bisa akses multi akun
+    // Hanya PRO yang bisa akses multi akun; saldo aktif tidak menghapus status PRO.
     if ($user_status != 'pro') {
+        $kekurangan_topup = max(0, $minimal_akumulasi_topup_pro - $total_topup);
         $response = "Fitur Multi Akun hanya untuk PRO!\n\n";
         $response .= "Status Anda: " . strtoupper($user_status) . "\n";
-        $response .= "Saldo Anda: Rp " . number_format($saldo, 0, ',', '.') . "\n";
-        $response .= "Minimal saldo untuk menjadi PRO: Rp " . number_format($minimal_saldo_pro, 0, ',', '.') . "\n\n";
-        $response .= "Silakan top up saldo terlebih dahulu untuk menjadi PRO.";
-        
-        $keyboard = [
-            'inline_keyboard' => [
-                [
-                    ['text' => 'Top Up Saldo', 'callback_data' => 'topup'],
-                    ['text' => 'Kembali', 'callback_data' => 'back_start']
-                ]
-            ]
-        ];
-        
-        sendMessage($chat_id, $response, $keyboard);
-        return;
-    }
-    
-    // Cek minimal saldo untuk multi akun (minimal saldo pro)
-    if ($saldo < $minimal_saldo_pro) {
-        $response = "Saldo tidak mencukupi untuk Multi Akun!\n\n";
-        $response .= "Saldo Anda: Rp " . number_format($saldo, 0, ',', '.') . "\n";
-        $response .= "Minimal saldo untuk PRO: Rp " . number_format($minimal_saldo_pro, 0, ',', '.') . "\n";
-        $response .= "Kekurangan: Rp " . number_format($minimal_saldo_pro - $saldo, 0, ',', '.') . "\n\n";
-        $response .= "Silakan top up saldo terlebih dahulu.";
+        $response .= "Akumulasi top up Anda: Rp " . number_format($total_topup, 0, ',', '.') . "\n";
+        $response .= "Minimal akumulasi top up untuk PRO: Rp " . number_format($minimal_akumulasi_topup_pro, 0, ',', '.') . "\n";
+        $response .= "Kekurangan akumulasi: Rp " . number_format($kekurangan_topup, 0, ',', '.') . "\n\n";
+        $response .= "Silakan lakukan top up hingga akumulasi memenuhi syarat PRO.";
         
         $keyboard = [
             'inline_keyboard' => [
@@ -8111,7 +8166,14 @@ function handleCallbackQuery($callback_query) {
     $username = isset($callback_query['from']['username']) ? $callback_query['from']['username'] : '';
     
     if ($callback_data == "pro_only") {
-        answerCallbackQuery($callback_id, "Fitur ini hanya untuk PRO. Top up saldo minimal Rp 200.000 untuk menjadi PRO!", true);
+        $total_topup = getTotalTopup($chat_id);
+        $minimal_pro = getMinimalAkumulasiTopupPro();
+        $kekurangan = max(0, $minimal_pro - $total_topup);
+        answerCallbackQuery(
+            $callback_id,
+            "Khusus PRO. Akumulasi top up Anda Rp " . number_format($total_topup, 0, ',', '.') . "; kurang Rp " . number_format($kekurangan, 0, ',', '.') . ".",
+            true
+        );
         return;
     }
     
@@ -8408,7 +8470,7 @@ function handleCallbackQuery($callback_query) {
     } elseif ($callback_data == "admin_edit_minimal_pro") {
         answerCallbackQuery($callback_id);
         deleteMessage($chat_id, $message_id);
-        editMinimalSaldoPro($chat_id);
+        editMinimalAkumulasiTopupPro($chat_id);
         
     } elseif ($callback_data == "admin_edit_minimal") {
         answerCallbackQuery($callback_id);
@@ -8739,7 +8801,7 @@ function handleTextMessage($chat_id, $text, $from_first_name, $message_id, $user
                     break;
                     
                 case 'admin_waiting_minimal_pro':
-                    processAdminEditMinimalPro($chat_id, $text, $message_id);
+                    processAdminEditMinimalAkumulasiTopupPro($chat_id, $text, $message_id);
                     break;
                     
                 case 'admin_waiting_minimal_topup':
