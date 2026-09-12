@@ -1,3 +1,21 @@
+import { createCipheriv, randomBytes } from "node:crypto";
+
+const AES_KEY = Buffer.from("0123456789abcdef0123456789abcdef", "utf-8"); // 32 bytes AES-256
+
+export function encryptStreamPayload(
+  headers: Record<string, string>,
+  body: string,
+): { iv: string; payload: string } {
+  const iv = randomBytes(16);
+  const cipher = createCipheriv("aes-256-cbc", AES_KEY, iv);
+  const plainText = JSON.stringify({ headers, body });
+  const encrypted = Buffer.concat([cipher.update(plainText, "utf8"), cipher.final()]);
+  return {
+    iv: iv.toString("base64"),
+    payload: encrypted.toString("base64"),
+  };
+}
+
 const BOT_DATA_URL = "https://baru.pw/botpideook/bot_data.json";
 const REDIRECT_URL = "https://vidio.com";
 const USER_AGENT = "tv-android/2608.2.4 (1020)";
@@ -248,17 +266,40 @@ async function proxyUltimateStream(
     return textResponse("upstream unavailable", 502);
   }
 
-  const responseHeaders = new Headers(securityHeaders);
-  const contentType = upstream.headers.get("content-type");
-  if (contentType) responseHeaders.set("content-type", contentType);
-  responseHeaders.set("cache-control", "no-store");
-  // Never expose a redirect location header to the client
-  responseHeaders.delete("location");
+    const upstreamBody = await upstream.text();
+    const shouldEncrypt = request?.headers.get("x-encrypt-response") === "aes" ||
+      incoming?.searchParams.has("encrypt");
 
-  return new Response(upstream.body, {
-    status: upstream.status,
-    headers: responseHeaders,
-  });
+    if (shouldEncrypt) {
+      const upstreamHeaderMap: Record<string, string> = {};
+      upstream.headers.forEach((val, key) => {
+        if (key.toLowerCase() !== "content-encoding") {
+          upstreamHeaderMap[key] = val;
+        }
+      });
+      const encrypted = encryptStreamPayload(upstreamHeaderMap, upstreamBody);
+      return new Response(JSON.stringify(encrypted), {
+        status: upstream.status,
+        headers: {
+          ...securityHeaders,
+          "content-type": "application/json; charset=utf-8",
+          "x-encrypted": "aes-256-cbc",
+          "cache-control": "no-store",
+        },
+      });
+    }
+
+    const responseHeaders = new Headers(securityHeaders);
+    const contentType = upstream.headers.get("content-type");
+    if (contentType) responseHeaders.set("content-type", contentType);
+    responseHeaders.set("cache-control", "no-store");
+    // Never expose a redirect location header to the client
+    responseHeaders.delete("location");
+
+    return new Response(upstreamBody, {
+      status: upstream.status,
+      headers: responseHeaders,
+    });
 }
 
 async function verifyLiveVidioSession(email: string, token: string): Promise<boolean> {
@@ -556,6 +597,27 @@ async function selfCheck(): Promise<void> {
   const signature = await streamSignature("1788880138");
   if (signature !== "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4") {
     throw new Error("Stream signature self-check failed");
+  }
+
+  // Self-check AES encryption format and round trip
+  const testHeaders = { "content-type": "application/vnd.apple.mpegurl" };
+  const testBody = "#EXTM3U\n#EXT-X-STREAM-INF\ntest.m3u8";
+  const encResult = encryptStreamPayload(testHeaders, testBody);
+  if (!encResult.iv || !encResult.payload) {
+    throw new Error("encryptStreamPayload missing iv or payload");
+  }
+  const decipher = (await import("node:crypto")).createDecipheriv(
+    "aes-256-cbc",
+    AES_KEY,
+    Buffer.from(encResult.iv, "base64"),
+  );
+  const decryptedJson = Buffer.concat([
+    decipher.update(Buffer.from(encResult.payload, "base64")),
+    decipher.final(),
+  ]).toString("utf8");
+  const parsedDecrypted = JSON.parse(decryptedJson);
+  if (parsedDecrypted.body !== testBody || parsedDecrypted.headers["content-type"] !== testHeaders["content-type"]) {
+    throw new Error("AES encryption self-check round-trip mismatch");
   }
 }
 

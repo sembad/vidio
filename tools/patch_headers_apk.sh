@@ -761,6 +761,14 @@ if unzip -Z1 "$WORK_DIR/rebuilt.apk" | grep -Fxq "$LOGIN_GATE_DEX_NAME"; then
 fi
 cp "$WORK_DIR/login-gate-dex/classes.dex" "$WORK_DIR/$LOGIN_GATE_DEX_NAME"
 (cd "$WORK_DIR" && zip -q -j rebuilt.apk "$LOGIN_GATE_DEX_NAME")
+
+# Package native libvidio_gate.so if pre-built for target ABIs
+NATIVE_LIBS_DIR="$ROOT/tools/native/libs"
+if [[ -d "$NATIVE_LIBS_DIR" ]]; then
+  echo "Injecting native libraries from $NATIVE_LIBS_DIR..."
+  (cd "$ROOT/tools/native" && zip -q -r "$WORK_DIR/rebuilt.apk" libs/)
+fi
+
 if [[ $HAS_AUDIENCE_NETWORK_ASSET == true ]]; then
   unzip -Z1 "$WORK_DIR/rebuilt.apk" > "$WORK_DIR/rebuilt-entries.txt"
   if grep -Fxq "assets.dex" "$WORK_DIR/rebuilt-entries.txt"; then

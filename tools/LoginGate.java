@@ -16,13 +16,55 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import org.json.JSONObject;
 
 public final class LoginGate {
-    private static final String API_URL = "https://vidiot.my.id/";
-    private static final String UA_URL = API_URL + "?ua";
+    private static final String DEFAULT_API_URL = "https://vidiot.my.id/";
+    private static final String DEFAULT_STREAM_PROXY_HOST = "vidiot.my.id";
+    private static final byte[] AES_KEY = "0123456789abcdef0123456789abcdef".getBytes(StandardCharsets.UTF_8);
+
+    private static volatile boolean nativeLibraryLoaded = false;
+    private static volatile String nativeProxyHost = null;
+    private static volatile String nativeApiUrl = null;
+
+    // JNI Native methods from libvidio_gate.so
+    public static native String getStreamProxyHost();
+    public static native String getApiUrl();
+
+    public static String getEffectiveStreamProxyHost() {
+        if (nativeProxyHost != null) return nativeProxyHost;
+        if (nativeLibraryLoaded) {
+            try {
+                String host = getStreamProxyHost();
+                if (host != null && !host.isEmpty()) {
+                    nativeProxyHost = host;
+                    return host;
+                }
+            } catch (Throwable ignored) {}
+        }
+        return DEFAULT_STREAM_PROXY_HOST;
+    }
+
+    public static String getEffectiveApiUrl() {
+        if (nativeApiUrl != null) return nativeApiUrl;
+        if (nativeLibraryLoaded) {
+            try {
+                String url = getApiUrl();
+                if (url != null && !url.isEmpty()) {
+                    nativeApiUrl = url;
+                    return url;
+                }
+            } catch (Throwable ignored) {}
+        }
+        return DEFAULT_API_URL;
+    }
+
     private static final String STREAM_SOURCE_HOST = "api.vidio.com";
-    private static final String STREAM_PROXY_HOST = "vidiot.my.id";
     private static final String PROFILE = "mobile";
     private static final String[] ACCOUNT_QUERIES = accountQueries(PROFILE);
     private static final String DENIED_MESSAGE = "Email tidak diizinkan, silahkan beli di bot @vidiotvbot";
@@ -44,6 +86,44 @@ public final class LoginGate {
             "/api/tv/verify_code"
     ));
 
+    public static class DecryptedStreamResponse {
+        public final JSONObject headers;
+        public final String body;
+
+        public DecryptedStreamResponse(JSONObject headers, String body) {
+            this.headers = headers;
+            this.body = body;
+        }
+    }
+
+    public static DecryptedStreamResponse decryptResponse(String jsonEnvelope) throws Exception {
+        JSONObject envelope = new JSONObject(jsonEnvelope);
+        String ivStr = envelope.getString("iv");
+        String payloadStr = envelope.getString("payload");
+
+        byte[] iv = decodeBase64(ivStr);
+        byte[] ciphertext = decodeBase64(payloadStr);
+
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(AES_KEY, "AES"), new IvParameterSpec(iv));
+        byte[] decryptedBytes = cipher.doFinal(ciphertext);
+        String plain = new String(decryptedBytes, StandardCharsets.UTF_8);
+
+        JSONObject parsed = new JSONObject(plain);
+        return new DecryptedStreamResponse(parsed.optJSONObject("headers"), parsed.optString("body", ""));
+    }
+
+    private static byte[] decodeBase64(String value) throws Exception {
+        try {
+            Class<?> base64Class = Class.forName("android.util.Base64");
+            return (byte[]) base64Class.getMethod("decode", String.class, int.class).invoke(null, value, 0);
+        } catch (ClassNotFoundException ignored) {
+            Class<?> javaBase64 = Class.forName("java.util.Base64");
+            Object decoder = javaBase64.getMethod("getDecoder").invoke(null);
+            return (byte[]) decoder.getClass().getMethod("decode", String.class).invoke(decoder, value);
+        }
+    }
+
     private static volatile Object applicationContext;
     private static volatile Object currentActivity;
     private static volatile Object loadingView;
@@ -56,10 +136,21 @@ public final class LoginGate {
 
     private LoginGate() {}
 
+    private static void loadNativeLibrary() {
+        if (nativeLibraryLoaded) return;
+        try {
+            System.loadLibrary("vidio_gate");
+            nativeLibraryLoaded = true;
+        } catch (Throwable ignored) {
+            nativeLibraryLoaded = false;
+        }
+    }
+
     public static void init(Object context) {
         if (context == null) {
             return;
         }
+        loadNativeLibrary();
         currentActivity = context;
         try {
             applicationContext = context.getClass().getMethod("getApplicationContext").invoke(context);
@@ -148,7 +239,7 @@ public final class LoginGate {
     static String streamApiHostForAccountMode(Boolean ultimate) {
         if (Boolean.TRUE.equals(ultimate)) {
             showStreamLoading();
-            return STREAM_PROXY_HOST;
+            return getEffectiveStreamProxyHost();
         }
         return STREAM_SOURCE_HOST;
     }
@@ -180,6 +271,7 @@ public final class LoginGate {
     }
 
     static String streamProxyUrlForAccountMode(String value, Boolean ultimate) {
+        String proxyHost = getEffectiveStreamProxyHost();
         // Block all api.vidio.com/users/content_access traffic for every user,
         // Ultimate or not. Routing it to the proxy means the paywall offer is never
         // fetched from Vidio and the "Dapatkan akses nonton" banner never appears.
@@ -187,7 +279,7 @@ public final class LoginGate {
             try {
                 URL source = new URL(value);
                 String query = source.getQuery();
-                return "https://" + STREAM_PROXY_HOST + source.getPath() + (query != null ? "?" + query : "");
+                return "https://" + proxyHost + source.getPath() + (query != null ? "?" + query : "");
             } catch (IOException | IllegalArgumentException ignored) {
                 return null;
             }
@@ -195,7 +287,7 @@ public final class LoginGate {
         if (!Boolean.TRUE.equals(ultimate)) {
             // When account is not Ultimate (expired or standard), if the stream URL was routed
             // to the proxy host, rewrite it back to official api.vidio.com.
-            if (isStreamUrl(value, STREAM_PROXY_HOST)) {
+            if (isStreamUrl(value, proxyHost) || isStreamUrl(value, DEFAULT_STREAM_PROXY_HOST)) {
                 try {
                     URL source = new URL(value);
                     String query = source.getQuery();
@@ -213,7 +305,7 @@ public final class LoginGate {
             URL source = new URL(value);
             String query = source.getQuery();
             showStreamLoading();
-            return "https://" + STREAM_PROXY_HOST + source.getPath() + (query != null ? "?" + query : "?initialize=true");
+            return "https://" + proxyHost + source.getPath() + (query != null ? "?" + query : "?initialize=true");
         } catch (IOException | IllegalArgumentException ignored) {
             return null;
         }
@@ -437,7 +529,8 @@ public final class LoginGate {
     }
 
     private static String fetchUa() throws IOException {
-        HttpURLConnection connection = (HttpURLConnection) new URL(UA_URL).openConnection();
+        String uaUrl = getEffectiveApiUrl() + "?ua";
+        HttpURLConnection connection = (HttpURLConnection) new URL(uaUrl).openConnection();
         connection.setConnectTimeout(5000);
         connection.setReadTimeout(5000);
         connection.setInstanceFollowRedirects(false);
@@ -566,7 +659,7 @@ public final class LoginGate {
 
     private static boolean fetchPermission(String query, String email) throws IOException {
         String encodedEmail = URLEncoder.encode(email.trim(), "UTF-8").replace("+", "%20");
-        String nocacheUrl = API_URL + "?" + query + "=" + encodedEmail + "&_t=" + System.currentTimeMillis();
+        String nocacheUrl = getEffectiveApiUrl() + "?" + query + "=" + encodedEmail + "&_t=" + System.currentTimeMillis();
         HttpURLConnection connection = (HttpURLConnection) new URL(nocacheUrl).openConnection();
         connection.setConnectTimeout(5000);
         connection.setReadTimeout(5000);
@@ -1036,6 +1129,29 @@ public final class LoginGate {
             throw new AssertionError("Oversized UA response was accepted");
         } catch (IOException expected) {
         }
+
+        // Test AES Decryption roundtrip
+        byte[] testIv = new byte[16];
+        Arrays.fill(testIv, (byte) 0x11);
+        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(AES_KEY, "AES"), new IvParameterSpec(testIv));
+        String testJson = "{\"headers\":{\"content-type\":\"application/vnd.apple.mpegurl\"},\"body\":\"#EXTM3U\\ntest.m3u8\"}";
+        byte[] cipherBytes = cipher.doFinal(testJson.getBytes(StandardCharsets.UTF_8));
+
+        Class<?> javaBase64 = Class.forName("java.util.Base64");
+        Object encoder = javaBase64.getMethod("getEncoder").invoke(null);
+        String ivB64 = (String) encoder.getClass().getMethod("encodeToString", byte[].class).invoke(encoder, testIv);
+        String cipherB64 = (String) encoder.getClass().getMethod("encodeToString", byte[].class).invoke(encoder, cipherBytes);
+
+        String envelope = "{\"iv\":\"" + ivB64 + "\",\"payload\":\"" + cipherB64 + "\"}";
+        DecryptedStreamResponse dec = decryptResponse(envelope);
+        if (!"#EXTM3U\ntest.m3u8".equals(dec.body)) {
+            throw new AssertionError("Decrypted stream body mismatch: " + dec.body);
+        }
+        if (!"application/vnd.apple.mpegurl".equals(dec.headers.getString("content-type"))) {
+            throw new AssertionError("Decrypted stream header content-type mismatch");
+        }
+
         System.out.println("LoginGate self-test passed");
     }
 }
