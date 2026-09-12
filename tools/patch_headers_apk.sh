@@ -565,6 +565,7 @@ hide_view_body = (
     "    return-void\n"
 )
 return_void_body = "    .locals 0\n\n    return-void\n"
+return_null_body = "    .locals 1\n\n    const/4 v0, 0x0\n\n    return-object v0\n"
 hidden_shopping_state_body = (
     "    .locals 2\n\n"
     "    invoke-static {p1}, Lpb0/s;->b(Ljava/lang/Object;)V\n\n"
@@ -617,8 +618,27 @@ ui_method_stubs = {
             return_void_body,
             "shopping route",
         ),
+        (
+            "com/vidio/kmm/usecase/a.smali",
+            r"\.method public final c\(\)Lcom/vidio/kmm/usecase/b;",
+            return_null_body,
+            "mobile content access paywall meta nullifier",
+        ),
+        (
+            "com/vidio/kmm/usecase/b.smali",
+            r"\.method public final b\(\)Lcom/vidio/kmm/usecase/b\$e;",
+            return_null_body,
+            "mobile content access player_offer nullifier",
+        ),
     ],
-    "tv": [],
+    "tv": [
+        (
+            "com/vidio/kmm/usecase/b.smali",
+            r"\.method public final a\(\)Lcom/vidio/kmm/usecase/b\$e;",
+            return_null_body,
+            "tv content access player_offer nullifier",
+        ),
+    ],
 }
 ui_stub_counts = Counter()
 for suffix, method_sig, body, label in ui_method_stubs[profile]:
