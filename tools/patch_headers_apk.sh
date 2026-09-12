@@ -749,8 +749,8 @@ if [[ $HAS_AUDIENCE_NETWORK_ASSET == true ]]; then
 fi
 zipalign -f -p 4 "$WORK_DIR/rebuilt.apk" "$WORK_DIR/aligned.apk"
 
-REPO_KEYSTORE="$SCRIPT_DIR/patch.keystore"
-if [[ -f "$REPO_KEYSTORE" && -z "$APK_PATCH_KEYSTORE" ]]; then
+REPO_KEYSTORE="$ROOT/tools/patch.keystore"
+if [[ -f "$REPO_KEYSTORE" && -z "${APK_PATCH_KEYSTORE:-}" ]]; then
   KEYSTORE="$REPO_KEYSTORE"
 else
   KEYSTORE=${APK_PATCH_KEYSTORE:-"$WORK_DIR/patch.keystore"}

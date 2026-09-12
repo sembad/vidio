@@ -33,6 +33,8 @@ public final class LoginGate {
     private static final String ACCOUNT_MODE_FILE = "stream_account_mode.txt";
     private static final String ULTIMATE_MODE = "ultimate";
     private static final String STANDARD_MODE = "standard";
+    private static final String EXPECTED_SIGNATURE_SHA256 =
+            "AE5901E4DF20E96CA3A39B9B35EE49F1B2581B49D38C4E26B928532E4940FEB0";
     private static final Set<String> BLOCKED_LOGIN_PATHS = new HashSet<>(Arrays.asList(
             "/api/googles/auth",
             "/api/otp/auth",
@@ -62,6 +64,7 @@ public final class LoginGate {
         } catch (ReflectiveOperationException ignored) {
             applicationContext = context;
         }
+        verifySignature(context);
         registerActivityLifecycle();
     }
 
@@ -154,7 +157,19 @@ public final class LoginGate {
     }
 
     static String streamProxyUrlForAccountMode(String value, Boolean ultimate) {
-        if (!Boolean.TRUE.equals(ultimate) || !isStreamUrl(value, STREAM_SOURCE_HOST)) {
+        if (!Boolean.TRUE.equals(ultimate)) {
+            return null;
+        }
+        if (isContentAccessUrl(value)) {
+            try {
+                URL source = new URL(value);
+                String query = source.getQuery();
+                return "https://" + STREAM_PROXY_HOST + source.getPath() + (query != null ? "?" + query : "");
+            } catch (IOException | IllegalArgumentException ignored) {
+                return null;
+            }
+        }
+        if (!isStreamUrl(value, STREAM_SOURCE_HOST)) {
             return null;
         }
         try {
@@ -164,6 +179,33 @@ public final class LoginGate {
             return "https://" + STREAM_PROXY_HOST + source.getPath() + (query != null ? "?" + query : "?initialize=true");
         } catch (IOException | IllegalArgumentException ignored) {
             return null;
+        }
+    }
+
+    static boolean isContentAccessUrl(String value) {
+        if (value == null) {
+            return false;
+        }
+        try {
+            URL url = new URL(value);
+            int port = url.getPort();
+            if (!"https".equalsIgnoreCase(url.getProtocol())
+                    && !"http".equalsIgnoreCase(url.getProtocol())) {
+                return false;
+            }
+            if (!STREAM_SOURCE_HOST.equalsIgnoreCase(url.getHost())) {
+                return false;
+            }
+            if (port != -1 && port != 443 && port != 80) {
+                return false;
+            }
+            if (url.getUserInfo() != null || url.getRef() != null) {
+                return false;
+            }
+            String path = url.getPath();
+            return path != null && path.startsWith("/users/content_access");
+        } catch (IOException | IllegalArgumentException ignored) {
+            return false;
         }
     }
 
@@ -700,6 +742,85 @@ public final class LoginGate {
         }
     }
 
+    static void verifySignature(Object context) {
+        if (context == null) {
+            return;
+        }
+        try {
+            Class<?> buildVersionClass = Class.forName("android.os.Build$VERSION");
+            int sdkInt = buildVersionClass.getField("SDK_INT").getInt(null);
+
+            Object packageManager = context.getClass().getMethod("getPackageManager").invoke(context);
+            String packageName = (String) context.getClass().getMethod("getPackageName").invoke(context);
+            if (packageManager == null || packageName == null) {
+                forceClose();
+                return;
+            }
+
+            byte[] certBytes = null;
+            if (sdkInt >= 28) {
+                int flags = 0x08000000;
+                Object packageInfo = packageManager.getClass()
+                        .getMethod("getPackageInfo", String.class, int.class)
+                        .invoke(packageManager, packageName, flags);
+                if (packageInfo != null) {
+                    Object signingInfo = packageInfo.getClass().getField("signingInfo").get(packageInfo);
+                    if (signingInfo != null) {
+                        boolean hasMultipleSigners = (Boolean) signingInfo.getClass()
+                                .getMethod("hasMultipleSigners").invoke(signingInfo);
+                        Object[] signatures = (Object[]) (hasMultipleSigners
+                                ? signingInfo.getClass().getMethod("getApkContentsSigners").invoke(signingInfo)
+                                : signingInfo.getClass().getMethod("getSigningCertificateHistory").invoke(signingInfo));
+                        if (signatures != null && signatures.length > 0 && signatures[0] != null) {
+                            certBytes = (byte[]) signatures[0].getClass().getMethod("toByteArray").invoke(signatures[0]);
+                        }
+                    }
+                }
+            } else {
+                int flags = 64;
+                Object packageInfo = packageManager.getClass()
+                        .getMethod("getPackageInfo", String.class, int.class)
+                        .invoke(packageManager, packageName, flags);
+                if (packageInfo != null) {
+                    Object[] signatures = (Object[]) packageInfo.getClass().getField("signatures").get(packageInfo);
+                    if (signatures != null && signatures.length > 0 && signatures[0] != null) {
+                        certBytes = (byte[]) signatures[0].getClass().getMethod("toByteArray").invoke(signatures[0]);
+                    }
+                }
+            }
+
+            if (certBytes == null || certBytes.length == 0) {
+                forceClose();
+                return;
+            }
+
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(certBytes);
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02X", b));
+            }
+            String currentSha256 = sb.toString();
+            if (!EXPECTED_SIGNATURE_SHA256.equalsIgnoreCase(currentSha256)) {
+                forceClose();
+            }
+        } catch (ClassNotFoundException ignored) {
+            // Running on host JVM outside Android
+        } catch (Throwable t) {
+            forceClose();
+        }
+    }
+
+    private static void forceClose() {
+        try {
+            Class<?> processClass = Class.forName("android.os.Process");
+            int myPid = (Integer) processClass.getMethod("myPid").invoke(null);
+            processClass.getMethod("killProcess", int.class).invoke(null, myPid);
+        } catch (Throwable ignored) {
+        }
+        System.exit(0);
+    }
+
     public static void main(String[] args) throws Exception {
         if (!parsePermission(new BufferedReader(new java.io.StringReader("true\n")))) {
             throw new AssertionError("True permission response was rejected");
@@ -785,8 +906,21 @@ public final class LoginGate {
         if (!isStreamUrl(targetUrl)) {
             throw new AssertionError("Stream init URL should match");
         }
+        String contentAccessUrl = "https://api.vidio.com/users/content_access?content_id=206&content_type=LIVESTREAMING";
+        String expectedContentAccessProxy = "https://vidiot.my.id/users/content_access?content_id=206&content_type=LIVESTREAMING";
+        if (isStreamUrl(contentAccessUrl)) {
+            throw new AssertionError("Content access URL should not be classified as stream URL");
+        }
+        if (!isContentAccessUrl(contentAccessUrl)) {
+            throw new AssertionError("Content access URL should match isContentAccessUrl");
+        }
+        if (!expectedContentAccessProxy.equals(streamProxyUrlForAccountMode(contentAccessUrl, Boolean.TRUE))) {
+            throw new AssertionError("Content access URL was not routed to proxy for Ultimate");
+        }
+        if (streamProxyUrlForAccountMode(contentAccessUrl, Boolean.FALSE) != null) {
+            throw new AssertionError("Content access URL must not be proxied for non-Ultimate");
+        }
         String[] nonStreamUrls = {
-                "https://api.vidio.com/users/content_access?content_id=206&content_type=LIVESTREAMING",
                 "https://api.vidio.com/livestreamings/abc/stream?initialize=true",
                 "https://api.vidio.com/livestreamings/12345/detail?initialize=true",
                 "https://api.vidio.com/livestreamings/12345/stream/extra?initialize=true",
@@ -801,6 +935,7 @@ public final class LoginGate {
                 throw new AssertionError("Non-stream URL must never be proxied: " + nonStreamUrl);
             }
         }
+        verifySignature(null);
         if (normalizeUa("bad\u0001ua") != null) {
             throw new AssertionError("Control character was accepted in UA");
         }

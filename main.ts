@@ -11,6 +11,7 @@ const UPSTREAM_PROXY_URL = "http://54e00827b371c0c310a2__cr.id:817df9dc4f7bfe33@
 const STREAM_TOKEN_KEY = "V1d10D3v";
 const API_AUTH = "laZOmogezono5ogekaso5oz4Mezimew1";
 const STREAM_PATH = /^\/livestreamings\/([^/]+)\/stream$/;
+const CONTENT_ACCESS_PATH = /^\/users\/content_access(?:\.json)?$/;
 
 const queryToGroup = {
   akunbiasa: "akun_biasa",
@@ -246,6 +247,29 @@ async function handleRequest(request: Request): Promise<Response> {
     return proxyStream(streamMatch[1], request);
   }
 
+  if (CONTENT_ACCESS_PATH.test(url.pathname)) {
+    return new Response(
+      JSON.stringify({
+        data: {
+          has_access: true,
+          allowed: true,
+        },
+        meta: {
+          player_offer: null,
+          bottom_sheet: null,
+        },
+      }),
+      {
+        status: 200,
+        headers: {
+          ...securityHeaders,
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": "no-store, no-cache, must-revalidate",
+        },
+      },
+    );
+  }
+
   const selectedQuery = getSelectedQuery(url);
   if (!selectedQuery) {
     return new Response(null, {
@@ -306,6 +330,9 @@ async function selfCheck(): Promise<void> {
   }
   if (!STREAM_PATH.test(`/livestreamings/${testStreamId}/stream`)) {
     throw new Error("Stream path self-check failed");
+  }
+  if (!CONTENT_ACCESS_PATH.test("/users/content_access")) {
+    throw new Error("Content access path self-check failed");
   }
   const signature = await streamSignature("1788880138");
   if (signature !== "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4") {

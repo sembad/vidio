@@ -1,6 +1,6 @@
 .apk-patch-tools/
-!tools/patch.keystore
 *.keystore
+!tools/patch.keystore
 *.jks
 *.pem
 *.pk8
