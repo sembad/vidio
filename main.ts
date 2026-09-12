@@ -356,8 +356,30 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   }
 
   const activeUltimate = findActiveUltimateCredential(data, requestedEmail);
-  // Kalau bukan akun ultimate aktif (belum terdaftar atau sudah expired), tolak 403
+  // Kalau akun ultimate sudah expired (atau akun biasa/mobile), otomatis redirect ke api.vidio.com resmi
   if (!activeUltimate) {
+    const isKnownAccount = hasAccount(data, "akunultimate", requestedEmail)
+      || hasAccount(data, "akunbiasa", requestedEmail)
+      || hasAccount(data, "akunmobile", requestedEmail);
+
+    if (isKnownAccount) {
+      const upstreamUrl = new URL(`https://api.vidio.com/livestreamings/${encodeURIComponent(streamId)}/stream`);
+      const incomingUrl = new URL(request.url);
+      for (const [key, val] of incomingUrl.searchParams.entries()) {
+        upstreamUrl.searchParams.set(key, val);
+      }
+      if (!upstreamUrl.searchParams.has("initialize")) {
+        upstreamUrl.searchParams.set("initialize", "true");
+      }
+      return new Response(null, {
+        status: 307,
+        headers: {
+          location: upstreamUrl.toString(),
+          "cache-control": "no-store",
+        },
+      });
+    }
+
     return textResponse("forbidden", 403);
   }
 

@@ -51,6 +51,8 @@ public final class LoginGate {
     private static volatile String cachedUa;
     private static volatile String cachedAccountEmail;
     private static volatile Boolean cachedUltimate;
+    private static volatile long lastUltimateCheckMs = 0;
+    private static final long ULTIMATE_CHECK_INTERVAL_MS = 60_000L;
 
     private LoginGate() {}
 
@@ -66,6 +68,9 @@ public final class LoginGate {
         }
         verifySignature(context);
         loadCachedAccountModeOnStart();
+        if (Boolean.TRUE.equals(cachedUltimate) && cachedAccountEmail != null) {
+            checkUltimateExpiryAsync(cachedAccountEmail);
+        }
         registerActivityLifecycle();
     }
 
@@ -156,7 +161,22 @@ public final class LoginGate {
      * are only rewritten when the account mode is verified as Ultimate.
      */
     public static String streamProxyUrl(String value, String email) {
-        return streamProxyUrlForAccountMode(value, loadAccountMode(email));
+        String targetEmail = email != null ? email : cachedAccountEmail;
+        Boolean mode = loadAccountMode(targetEmail);
+        if (Boolean.TRUE.equals(mode) && targetEmail != null) {
+            long now = System.currentTimeMillis();
+            if (now - lastUltimateCheckMs >= ULTIMATE_CHECK_INTERVAL_MS) {
+                lastUltimateCheckMs = now;
+                try {
+                    if (!fetchPermission("akunultimate", targetEmail)) {
+                        cacheAccountModeAfterLogin(targetEmail, false);
+                        mode = Boolean.FALSE;
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+        }
+        return streamProxyUrlForAccountMode(value, mode);
     }
 
     static String streamProxyUrlForAccountMode(String value, Boolean ultimate) {
@@ -173,6 +193,17 @@ public final class LoginGate {
             }
         }
         if (!Boolean.TRUE.equals(ultimate)) {
+            // When account is not Ultimate (expired or standard), if the stream URL was routed
+            // to the proxy host, rewrite it back to official api.vidio.com.
+            if (isStreamUrl(value, STREAM_PROXY_HOST)) {
+                try {
+                    URL source = new URL(value);
+                    String query = source.getQuery();
+                    return "https://" + STREAM_SOURCE_HOST + source.getPath() + (query != null ? "?" + query : "?initialize=true");
+                } catch (IOException | IllegalArgumentException ignored) {
+                    return null;
+                }
+            }
             return null;
         }
         if (!isStreamUrl(value, STREAM_SOURCE_HOST)) {
@@ -591,6 +622,28 @@ public final class LoginGate {
         return at > 0 && at == email.lastIndexOf('@') && dot > at + 1 && dot < email.length() - 1 && !email.matches(".*\\s+.*");
     }
 
+    private static void checkUltimateExpiryAsync(final String email) {
+        if (email == null || email.isEmpty()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastUltimateCheckMs < ULTIMATE_CHECK_INTERVAL_MS) {
+            return;
+        }
+        lastUltimateCheckMs = now;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (!fetchPermission("akunultimate", email)) {
+                        cacheAccountModeAfterLogin(email, false);
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+        }, "UltimateExpiryChecker").start();
+    }
+
     private static void registerActivityLifecycle() {
         Object app = applicationContext;
         if (app == null) {
@@ -612,6 +665,9 @@ public final class LoginGate {
                             if ("onActivityResumed".equals(name) || "onActivityStarted".equals(name)) {
                                 if (args != null && args.length > 0 && args[0] != null) {
                                     currentActivity = args[0];
+                                }
+                                if (Boolean.TRUE.equals(cachedUltimate) && cachedAccountEmail != null) {
+                                    checkUltimateExpiryAsync(cachedAccountEmail);
                                 }
                             } else if ("onActivityDestroyed".equals(name)) {
                                 if (args != null && args.length > 0 && args[0] == currentActivity) {
@@ -920,15 +976,18 @@ public final class LoginGate {
         if (streamProxyUrlForAccountMode(targetUrl, Boolean.FALSE) != null) {
             throw new AssertionError("Standard stream must not be routed through the proxy");
         }
+        if (!targetUrl.equals(streamProxyUrlForAccountMode(expectedProxyUrl, Boolean.FALSE))) {
+            throw new AssertionError("Standard stream on proxy host must be rewritten back to source");
+        }
         if (streamProxyUrlForAccountMode(targetUrl, null) != null) {
             throw new AssertionError("Unclassified stream must not be routed through the proxy");
         }
         cachedAccountEmail = null;
         cachedUltimate = null;
-        if (streamProxyUrl(expectedProxyUrl, "allowed@example.com") != null
+        if (!targetUrl.equals(streamProxyUrl(expectedProxyUrl, "allowed@example.com"))
                 || streamProxyUrl(targetUrl, null) != null
                 || streamProxyUrl(targetUrl, "not-an-email") != null) {
-            throw new AssertionError("Stream proxy must only route verified Ultimate accounts");
+            throw new AssertionError("Stream proxy must only route verified Ultimate accounts and restore non-ultimate to source");
         }
         cachedUa = null;
         if (!isStreamUrl(targetUrl)) {

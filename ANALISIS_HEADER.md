@@ -572,12 +572,12 @@ Gerbang `isInStreamAdsEnabled()` dan `isSurfaceViewSecure()` pada policy aplikas
 Gerbang login memeriksa `akunultimate` terlebih dahulu, lalu `akunmobile` untuk Mobile atau `akunbiasa` untuk TV. Hasil klasifikasi per email disimpan di file internal dan digunakan oleh builder stream; respons harus tepat `true` atau `false`. Login yang tidak diizinkan ditolak sebelum request autentikasi Vidio diteruskan.
 
 ```text
-Mobile APK SHA-256:          e07946d56a4f02a5c04befdb8546515db8372051084a348cc060be88ad25dec7
-Mobile certificate SHA-256:  59e19839d0b310edda7a47e50a617193d659222a25e62500b5b2dcfb8e1b9bc0
+Mobile APK SHA-256:          0796e2ac7f87a3b250dd6e5c523624095a95460344e3316f1fa4d6e1223e8f44
+Mobile certificate SHA-256:  ae5901e4df20e96ca3a39b9b35ee49f1b2581b49d38c4e26b928532e4940feb0
 Mobile size:                 29,532,776 bytes
-TV APK SHA-256:              91316111ba21d5c4e70c7b407778c5be1e98f7d784c1bb8075f77ab92455cbcc
-TV certificate SHA-256:      d30ea566d04f9dfd0ac71d6ff6bccc7e100c64fc280887eefb914ef3f7b217a1
-TV size:                     25,133,415 bytes
+TV APK SHA-256:              f6d42718280b1d06b595604c36df8880b7a508a60f07d2d4b7abb4ae3f6b31cc
+TV certificate SHA-256:      ae5901e4df20e96ca3a39b9b35ee49f1b2581b49d38c4e26b928532e4940feb0
+TV size:                     25,149,799 bytes
 ```
 
 `zipalign -c` dan `apksigner verify` lulus untuk kedua APK. Pemeriksaan DEX hasil sign memastikan tepat satu pemanggilan langsung `LoginGate.streamApiHost()` pada masing-masing builder stream, diikuti setter host profil yang benar; kedua literal host juga tersedia di helper. Self-test helper mencakup klasifikasi host Ultimate/standard/unknown, validasi URL target/non-target, routing fallback, cache mode akun, dan validasi UA. Runtime Android belum dapat diuji tanpa perangkat, dan APK bertanda tangan berbeda harus dihapus sebelum instalasi ulang. Skrip reproduksi ada di `tools/patch_headers_apk.sh`; kredensial dan HAR tidak disimpan di repository.
