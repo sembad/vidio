@@ -262,32 +262,60 @@ async function proxyUltimateStream(
 }
 
 async function verifyLiveVidioSession(email: string, token: string): Promise<boolean> {
+  const normEmail = normalizeEmail(email);
+  if (!normEmail) return false;
+
+  const testHeaders = {
+    accept: "application/vnd.api+json",
+    "accept-encoding": "gzip",
+    "x-api-auth": API_AUTH,
+    "user-agent": USER_AGENT,
+    "x-user-email": normEmail,
+    "x-user-token": token.trim(),
+    referer: "androidtv-app://com.vidio.android.tv",
+    "cache-control": "no-cache, no-store",
+  };
+
+  try {
+    const res = await fetch("https://api.vidio.com/profiles", {
+      method: "GET",
+      headers: testHeaders,
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (res.ok) {
+      const body: unknown = await res.json();
+      if (isRecord(body) && Array.isArray(body.data) && body.data.length > 0) {
+        for (const item of body.data) {
+          if (!isRecord(item) || !isRecord(item.attributes)) continue;
+          const remoteEmail = typeof item.attributes.email === "string"
+            ? item.attributes.email
+            : (typeof item.attributes.identifier === "string" ? item.attributes.identifier : null);
+          if (remoteEmail && normalizeEmail(remoteEmail) === normEmail) {
+            return true;
+          }
+        }
+      }
+    }
+  } catch {}
+
   try {
     const res = await fetch("https://api.vidio.com/users/data", {
       method: "GET",
-      headers: {
-        accept: "application/vnd.api+json",
-        "accept-encoding": "gzip",
-        "x-api-auth": API_AUTH,
-        "x-api-app-info": "tv-android/16/2608.2.4-1020",
-        "x-client": "1788880138",
-        "x-signature": "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4",
-        "user-agent": USER_AGENT,
-        "x-user-email": email,
-        "x-user-token": token,
-        "cache-control": "no-cache, no-store",
-      },
-      signal: AbortSignal.timeout(10_000),
+      headers: testHeaders,
+      signal: AbortSignal.timeout(8_000),
     });
-    if (!res.ok) return false;
-    const body: unknown = await res.json();
-    if (!isRecord(body) || !isRecord(body.data)) return false;
-    const attributes = isRecord(body.data.attributes) ? body.data.attributes : null;
-    const remoteEmail = attributes && typeof attributes.email === "string" ? attributes.email : null;
-    return remoteEmail !== null && normalizeEmail(remoteEmail) === normalizeEmail(email);
-  } catch {
-    return false;
-  }
+    if (res.ok) {
+      const body: unknown = await res.json();
+      if (isRecord(body) && isRecord(body.data) && isRecord(body.data.attributes)) {
+        const remoteEmail = typeof body.data.attributes.email === "string" ? body.data.attributes.email : null;
+        if (remoteEmail && normalizeEmail(remoteEmail) === normEmail) {
+          return true;
+        }
+      }
+    }
+  } catch {}
+
+  return false;
 }
 
 async function proxyStream(streamId: string, request: Request): Promise<Response> {
