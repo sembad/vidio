@@ -1,4 +1,5 @@
 .apk-patch-tools/
+!tools/patch.keystore
 *.keystore
 *.jks
 *.pem
