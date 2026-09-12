@@ -261,6 +261,35 @@ async function proxyUltimateStream(
   });
 }
 
+async function verifyLiveVidioSession(email: string, token: string): Promise<boolean> {
+  try {
+    const res = await fetch("https://api.vidio.com/users/data", {
+      method: "GET",
+      headers: {
+        accept: "application/vnd.api+json",
+        "accept-encoding": "gzip",
+        "x-api-auth": API_AUTH,
+        "x-api-app-info": "tv-android/16/2608.2.4-1020",
+        "x-client": "1788880138",
+        "x-signature": "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4",
+        "user-agent": USER_AGENT,
+        "x-user-email": email,
+        "x-user-token": token,
+        "cache-control": "no-cache, no-store",
+      },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return false;
+    const body: unknown = await res.json();
+    if (!isRecord(body) || !isRecord(body.data)) return false;
+    const attributes = isRecord(body.data.attributes) ? body.data.attributes : null;
+    const remoteEmail = attributes && typeof attributes.email === "string" ? attributes.email : null;
+    return remoteEmail !== null && normalizeEmail(remoteEmail) === normalizeEmail(email);
+  } catch {
+    return false;
+  }
+}
+
 async function proxyStream(streamId: string, request: Request): Promise<Response> {
   const userEmail = request.headers.get("x-user-email");
   const userToken = request.headers.get("x-user-token");
@@ -277,10 +306,14 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
 
   let data: Record<string, unknown>;
   try {
-    const res = await fetch(BOT_DATA_URL, {
+    const res = await fetch(`${BOT_DATA_URL}?_nocache=${Date.now()}`, {
       signal: AbortSignal.timeout(10_000),
       redirect: "follow",
-      headers: { accept: "application/json" },
+      headers: {
+        accept: "application/json",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        pragma: "no-cache",
+      },
     });
     if (!res.ok) {
       return textResponse("upstream unavailable", 502);
@@ -298,6 +331,16 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   // Kalau bukan akun ultimate aktif (belum terdaftar atau sudah expired), tolak 403
   if (!activeUltimate) {
     return textResponse("forbidden", 403);
+  }
+
+  // Token wajib sesuai: baik token ultimate langsung atau sesi valid pembeli di Vidio
+  const trimmedToken = userToken.trim();
+  const matchesDirectUltimate = trimmedToken === activeUltimate.token.trim();
+  if (!matchesDirectUltimate) {
+    const isLiveValid = await verifyLiveVidioSession(requestedEmail, trimmedToken);
+    if (!isLiveValid) {
+      return textResponse("forbidden", 403);
+    }
   }
 
   return proxyUltimateStream(streamId, activeUltimate, request);
@@ -349,10 +392,14 @@ async function handleRequest(request: Request): Promise<Response> {
   if (!requestedEmail) return textResponse("false");
 
   try {
-    const response = await fetch(BOT_DATA_URL, {
+    const response = await fetch(`${BOT_DATA_URL}?_nocache=${Date.now()}`, {
       signal: AbortSignal.timeout(30_000),
       redirect: "follow",
-      headers: { accept: "application/json" },
+      headers: {
+        accept: "application/json",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        pragma: "no-cache",
+      },
     });
     if (!response.ok) return textResponse("false", 502);
 
@@ -422,6 +469,18 @@ async function selfCheck(): Promise<void> {
   const noHeaderRes = await handleRequest(noHeaderReq);
   if (noHeaderRes.status !== 403) {
     throw new Error(`Expected 403 for missing auth headers, got ${noHeaderRes.status}`);
+  }
+
+  // Test stream request with unknown email returns 403 Forbidden
+  const badEmailReq = new Request("https://vidiot.my.id/livestreamings/123/stream", {
+    headers: {
+      "x-user-email": "non-existent-buyer@example.invalid",
+      "x-user-token": "any-token",
+    },
+  });
+  const badEmailRes = await handleRequest(badEmailReq);
+  if (badEmailRes.status !== 403) {
+    throw new Error(`Expected 403 for non-existent buyer email, got ${badEmailRes.status}`);
   }
 
   // Test stream request with non-GET returns 405
