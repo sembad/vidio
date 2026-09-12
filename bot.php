@@ -5447,15 +5447,15 @@ if (!empty($row_akun)) {
 }
 
 // Tombol lainnya
-// Baris 1: Top Up dan Upgrade Akun
+// Baris 1: Top Up dan Klaim Garansi
 $keyboard_rows[] = [
     ['text' => 'Top Up Saldo', 'callback_data' => 'topup'],
-    ['text' => 'Upgrade Akun', 'callback_data' => 'account_upgrade_page_1']
+    ['text' => 'Klaim Garansi', 'callback_data' => 'account_history_page_1']
 ];
 
-// Baris 2: Klaim Garansi dan Riwayat Transaksi
+// Baris 2: Upgrade Akun menggantikan menu Cek Pembayaran
 $keyboard_rows[] = [
-    ['text' => 'Klaim Garansi', 'callback_data' => 'account_history_page_1'],
+    ['text' => 'Upgrade Akun', 'callback_data' => 'account_upgrade_page_1'],
     ['text' => 'Riwayat Transaksi', 'callback_data' => 'riwayat']
 ];
 
@@ -6761,6 +6761,9 @@ function showRiwayatTransaksi($chat_id) {
         'inline_keyboard' => [
             [
                 ['text' => 'Refresh', 'callback_data' => 'riwayat'],
+                ['text' => 'Cek Pembayaran', 'callback_data' => 'cek_pembayaran']
+            ],
+            [
                 ['text' => 'Kembali', 'callback_data' => 'back_start']
             ]
         ]
