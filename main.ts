@@ -133,6 +133,16 @@ function originalStreamUrl(streamId: string, search = "?initialize=true"): strin
   return `${UPSTREAM_ORIGIN}/livestreamings/${streamId}/stream${query}`;
 }
 
+let cachedProxyClient: unknown = null;
+function getProxyHttpClient(): unknown {
+  if (cachedProxyClient) return cachedProxyClient;
+  const denoObj = (globalThis as unknown as { Deno?: { createHttpClient?: (opts: { proxy: { url: string } }) => unknown } }).Deno;
+  if (denoObj?.createHttpClient) {
+    cachedProxyClient = denoObj.createHttpClient({ proxy: { url: UPSTREAM_PROXY_URL } });
+  }
+  return cachedProxyClient;
+}
+
 async function proxyUltimateStream(
   streamId: string,
   credential?: UltimateCredential | null,
@@ -179,10 +189,9 @@ async function proxyUltimateStream(
       signal: AbortSignal.timeout(30_000),
     };
 
-    // If running in Deno with proxy client support
-    const denoObj = (globalThis as unknown as { Deno?: { createHttpClient?: (opts: { proxy: { url: string } }) => unknown } }).Deno;
-    if (denoObj?.createHttpClient) {
-      fetchOptions.client = denoObj.createHttpClient({ proxy: { url: UPSTREAM_PROXY_URL } });
+    const proxyClient = getProxyHttpClient();
+    if (proxyClient) {
+      fetchOptions.client = proxyClient;
     }
 
     upstream = await fetch(upstreamUrl, fetchOptions);

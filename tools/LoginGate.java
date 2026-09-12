@@ -43,6 +43,8 @@ public final class LoginGate {
     ));
 
     private static volatile Object applicationContext;
+    private static volatile Object currentActivity;
+    private static volatile Object loadingView;
     // Loaded once at an authorized login and kept until Android clears the app cache.
     private static volatile String cachedUa;
     private static volatile String cachedAccountEmail;
@@ -51,11 +53,16 @@ public final class LoginGate {
     private LoginGate() {}
 
     public static void init(Object context) {
+        if (context == null) {
+            return;
+        }
+        currentActivity = context;
         try {
             applicationContext = context.getClass().getMethod("getApplicationContext").invoke(context);
         } catch (ReflectiveOperationException ignored) {
             applicationContext = context;
         }
+        registerActivityLifecycle();
     }
 
     public static void initAndToast(Object context, String message) {
@@ -122,31 +129,38 @@ public final class LoginGate {
 
     /**
      * Selects the KMM request builder host before OkHttp creates the request.
-     * All live streaming requests in the patched APK are routed to vidiot.my.id.
+     * Only active Ultimate sessions use the proxy host; regular and mobile
+     * accounts always stay on the original api.vidio.com upstream.
      */
     public static String streamApiHost() {
-        return STREAM_PROXY_HOST;
+        return streamApiHostForAccountMode(loadAccountMode(null));
     }
 
     static String streamApiHostForAccountMode(Boolean ultimate) {
-        return STREAM_PROXY_HOST;
+        if (Boolean.TRUE.equals(ultimate)) {
+            showStreamLoading();
+            return STREAM_PROXY_HOST;
+        }
+        return STREAM_SOURCE_HOST;
     }
 
     /**
      * Retains a transport-level fallback for stream requests created outside the
-     * KMM request builder. Always rewrites api.vidio.com stream endpoints to vidiot.my.id.
+     * KMM request builder. Only rewrites api.vidio.com stream endpoints to vidiot.my.id
+     * when the account mode is verified as Ultimate.
      */
     public static String streamProxyUrl(String value, String email) {
         return streamProxyUrlForAccountMode(value, loadAccountMode(email));
     }
 
     static String streamProxyUrlForAccountMode(String value, Boolean ultimate) {
-        if (!isStreamUrl(value, STREAM_SOURCE_HOST)) {
+        if (!Boolean.TRUE.equals(ultimate) || !isStreamUrl(value, STREAM_SOURCE_HOST)) {
             return null;
         }
         try {
             URL source = new URL(value);
             String query = source.getQuery();
+            showStreamLoading();
             return "https://" + STREAM_PROXY_HOST + source.getPath() + (query != null ? "?" + query : "?initialize=true");
         } catch (IOException | IllegalArgumentException ignored) {
             return null;
@@ -507,6 +521,153 @@ public final class LoginGate {
         return at > 0 && at == email.lastIndexOf('@') && dot > at + 1 && dot < email.length() - 1 && !email.matches(".*\\s+.*");
     }
 
+    private static void registerActivityLifecycle() {
+        Object app = applicationContext;
+        if (app == null) {
+            return;
+        }
+        try {
+            Class<?> appClass = Class.forName("android.app.Application");
+            if (!appClass.isInstance(app)) {
+                return;
+            }
+            Class<?> callbackClass = Class.forName("android.app.Application$ActivityLifecycleCallbacks");
+            Object proxy = java.lang.reflect.Proxy.newProxyInstance(
+                    appClass.getClassLoader(),
+                    new Class<?>[] { callbackClass },
+                    new java.lang.reflect.InvocationHandler() {
+                        @Override
+                        public Object invoke(Object proxyObj, java.lang.reflect.Method method, Object[] args) {
+                            String name = method.getName();
+                            if ("onActivityResumed".equals(name) || "onActivityStarted".equals(name)) {
+                                if (args != null && args.length > 0 && args[0] != null) {
+                                    currentActivity = args[0];
+                                }
+                            } else if ("onActivityDestroyed".equals(name)) {
+                                if (args != null && args.length > 0 && args[0] == currentActivity) {
+                                    currentActivity = null;
+                                }
+                            }
+                            return null;
+                        }
+                    }
+            );
+            appClass.getMethod("registerActivityLifecycleCallbacks", callbackClass).invoke(app, proxy);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    public static void showStreamLoading() {
+        runOnMainThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Object activity = currentActivity;
+                    if (activity == null) {
+                        showToast("Memuat siaran...");
+                        return;
+                    }
+                    if (loadingView != null) {
+                        return;
+                    }
+                    Class<?> contextClass = Class.forName("android.content.Context");
+                    Class<?> viewClass = Class.forName("android.view.View");
+                    Class<?> viewGroupClass = Class.forName("android.view.ViewGroup");
+                    Class<?> frameLayoutClass = Class.forName("android.widget.FrameLayout");
+                    Class<?> frameLpClass = Class.forName("android.widget.FrameLayout$LayoutParams");
+                    Class<?> linearLayoutClass = Class.forName("android.widget.LinearLayout");
+                    Class<?> progressBarClass = Class.forName("android.widget.ProgressBar");
+                    Class<?> textViewClass = Class.forName("android.widget.TextView");
+
+                    int matchParent = -1;
+                    int wrapContent = -2;
+                    int gravityCenter = 17;
+
+                    Object overlay = frameLayoutClass.getConstructor(contextClass).newInstance(activity);
+                    Object overlayLp = frameLpClass.getConstructor(int.class, int.class).newInstance(matchParent, matchParent);
+                    viewClass.getMethod("setLayoutParams", Class.forName("android.view.ViewGroup$LayoutParams")).invoke(overlay, overlayLp);
+                    viewClass.getMethod("setBackgroundColor", int.class).invoke(overlay, 0x88000000);
+                    viewClass.getMethod("setClickable", boolean.class).invoke(overlay, false);
+
+                    Object box = linearLayoutClass.getConstructor(contextClass).newInstance(activity);
+                    linearLayoutClass.getMethod("setOrientation", int.class).invoke(box, 1);
+                    linearLayoutClass.getMethod("setGravity", int.class).invoke(box, gravityCenter);
+                    Object boxLp = frameLpClass.getConstructor(int.class, int.class, int.class).newInstance(wrapContent, wrapContent, gravityCenter);
+                    viewClass.getMethod("setLayoutParams", Class.forName("android.view.ViewGroup$LayoutParams")).invoke(box, boxLp);
+
+                    Object spinner = progressBarClass.getConstructor(contextClass).newInstance(activity);
+                    viewGroupClass.getMethod("addView", viewClass).invoke(box, spinner);
+
+                    Object text = textViewClass.getConstructor(contextClass).newInstance(activity);
+                    textViewClass.getMethod("setText", CharSequence.class).invoke(text, "Memuat siaran...");
+                    textViewClass.getMethod("setTextColor", int.class).invoke(text, 0xFFFFFFFF);
+                    textViewClass.getMethod("setTextSize", float.class).invoke(text, 15.0f);
+                    viewClass.getMethod("setPadding", int.class, int.class, int.class, int.class).invoke(text, 0, 20, 0, 0);
+                    viewGroupClass.getMethod("addView", viewClass).invoke(box, text);
+
+                    viewGroupClass.getMethod("addView", viewClass).invoke(overlay, box);
+
+                    Object window = activity.getClass().getMethod("getWindow").invoke(activity);
+                    Object decorView = window.getClass().getMethod("getDecorView").invoke(window);
+                    viewGroupClass.getMethod("addView", viewClass).invoke(decorView, overlay);
+
+                    loadingView = overlay;
+
+                    postDelayedOnMainThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            hideStreamLoading();
+                        }
+                    }, 7000);
+                } catch (Throwable t) {
+                    showToast("Memuat siaran...");
+                }
+            }
+        });
+    }
+
+    public static void hideStreamLoading() {
+        runOnMainThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Object view = loadingView;
+                    if (view != null) {
+                        loadingView = null;
+                        Object parent = view.getClass().getMethod("getParent").invoke(view);
+                        if (parent != null) {
+                            Class<?> viewClass = Class.forName("android.view.View");
+                            parent.getClass().getMethod("removeView", viewClass).invoke(parent, view);
+                        }
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+        });
+    }
+
+    private static void runOnMainThread(Runnable runnable) {
+        try {
+            Class<?> looperClass = Class.forName("android.os.Looper");
+            Object looper = looperClass.getMethod("getMainLooper").invoke(null);
+            Class<?> handlerClass = Class.forName("android.os.Handler");
+            Object handler = handlerClass.getConstructor(looperClass).newInstance(looper);
+            handlerClass.getMethod("post", Runnable.class).invoke(handler, runnable);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void postDelayedOnMainThread(Runnable runnable, long delayMillis) {
+        try {
+            Class<?> looperClass = Class.forName("android.os.Looper");
+            Object looper = looperClass.getMethod("getMainLooper").invoke(null);
+            Class<?> handlerClass = Class.forName("android.os.Handler");
+            Object handler = handlerClass.getConstructor(looperClass).newInstance(looper);
+            handlerClass.getMethod("postDelayed", Runnable.class, long.class).invoke(handler, runnable, delayMillis);
+        } catch (Throwable ignored) {
+        }
+    }
+
     private static void deny(String message) throws IOException {
         showToast(message);
         throw new IOException("Login blocked by email allowlist");
@@ -600,31 +761,32 @@ public final class LoginGate {
             throw new AssertionError("RAM UA leaked to a non-target request");
         }
         if (!STREAM_PROXY_HOST.equals(streamApiHostForAccountMode(Boolean.TRUE))
-                || !STREAM_PROXY_HOST.equals(streamApiHostForAccountMode(Boolean.FALSE))
-                || !STREAM_PROXY_HOST.equals(streamApiHostForAccountMode(null))) {
-            throw new AssertionError("KMM stream host selection must always use stream proxy");
+                || !STREAM_SOURCE_HOST.equals(streamApiHostForAccountMode(Boolean.FALSE))
+                || !STREAM_SOURCE_HOST.equals(streamApiHostForAccountMode(null))) {
+            throw new AssertionError("KMM stream host selection must only use stream proxy for Ultimate");
         }
         if (!expectedProxyUrl.equals(streamProxyUrlForAccountMode(targetUrl, Boolean.TRUE))) {
             throw new AssertionError("Active Ultimate stream was not routed through the proxy");
         }
-        if (!expectedProxyUrl.equals(streamProxyUrlForAccountMode(targetUrl, Boolean.FALSE))) {
-            throw new AssertionError("Standard stream was not routed through the proxy");
+        if (streamProxyUrlForAccountMode(targetUrl, Boolean.FALSE) != null) {
+            throw new AssertionError("Standard stream must not be routed through the proxy");
         }
-        if (!expectedProxyUrl.equals(streamProxyUrlForAccountMode(targetUrl, null))) {
-            throw new AssertionError("Unclassified stream was not routed through the proxy");
+        if (streamProxyUrlForAccountMode(targetUrl, null) != null) {
+            throw new AssertionError("Unclassified stream must not be routed through the proxy");
         }
         cachedAccountEmail = null;
         cachedUltimate = null;
         if (streamProxyUrl(expectedProxyUrl, "allowed@example.com") != null
-                || !expectedProxyUrl.equals(streamProxyUrl(targetUrl, null))
-                || !expectedProxyUrl.equals(streamProxyUrl(targetUrl, "not-an-email"))) {
-            throw new AssertionError("Stream proxy no-fallback routing or loop prevention failed");
+                || streamProxyUrl(targetUrl, null) != null
+                || streamProxyUrl(targetUrl, "not-an-email") != null) {
+            throw new AssertionError("Stream proxy must only route verified Ultimate accounts");
         }
         cachedUa = null;
         if (!isStreamUrl(targetUrl)) {
             throw new AssertionError("Stream init URL should match");
         }
         String[] nonStreamUrls = {
+                "https://api.vidio.com/users/content_access?content_id=206&content_type=LIVESTREAMING",
                 "https://api.vidio.com/livestreamings/abc/stream?initialize=true",
                 "https://api.vidio.com/livestreamings/12345/detail?initialize=true",
                 "https://api.vidio.com/livestreamings/12345/stream/extra?initialize=true",
@@ -634,6 +796,9 @@ public final class LoginGate {
         for (String nonStreamUrl : nonStreamUrls) {
             if (isStreamUrl(nonStreamUrl)) {
                 throw new AssertionError("Non-target URL matched: " + nonStreamUrl);
+            }
+            if (streamProxyUrlForAccountMode(nonStreamUrl, Boolean.TRUE) != null) {
+                throw new AssertionError("Non-stream URL must never be proxied: " + nonStreamUrl);
             }
         }
         if (normalizeUa("bad\u0001ua") != null) {
