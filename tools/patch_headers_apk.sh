@@ -371,9 +371,16 @@ if min_api < 26:
 if profile == "mobile":
     normalizations = {
         "android-app://com.vidio.android": ("androidtv-app://com.vidio.android.tv", 2),
-        "tv-android/2608.2.4 (1020)": ("vidioandroid/2608.2.7-73babcffa4 (3191921)", 6),
+        "tv-android/2608.2.4 (1020)": ("vidioandroid/2608.2.7-73babcffa4 (3191921)", 9),
     }
-    smali_paths = list(root.glob("smali*/**/*.smali"))
+    # LoginGate is re-injected as a fresh DEX on every build, so its stale smali
+    # (which may still carry an old hardcoded UA) must not count toward the app's
+    # own identity strings.
+    smali_paths = [
+        path
+        for path in root.glob("smali*/**/*.smali")
+        if "com/vidio/android/patch/" not in path.as_posix()
+    ]
     current_counts = Counter()
     desired_counts = Counter()
     for path in smali_paths:
