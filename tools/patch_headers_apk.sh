@@ -371,7 +371,7 @@ if min_api < 26:
 if profile == "mobile":
     normalizations = {
         "android-app://com.vidio.android": ("androidtv-app://com.vidio.android.tv", 2),
-        "tv-android/2608.2.4 (1020)": ("vidioandroid/2608.2.7-73babcffa4 (3191921)", 9),
+        "tv-android/2608.2.4 (1020)": ("vidioandroid/2608.2.7-73babcffa4 (3191921)", 6),
     }
     smali_paths = list(root.glob("smali*/**/*.smali"))
     current_counts = Counter()
