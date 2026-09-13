@@ -4171,9 +4171,21 @@ function processWarrantyAccountNumber($chat_id, $text, $message_id) {
     checkWarrantyStatusForAccount($chat_id, $account_id, $state['page']);
 }
 
+function resolveCurrentWarrantyAccountId($data, $chat_id, $account_id) {
+    $visited = [];
+    while (!isset($visited[$account_id])) {
+        $visited[$account_id] = true;
+        $replacement_id = $data['warranty_claims'][$account_id]['new_account_id'] ?? null;
+        if (!$replacement_id || !isset($data['created_accounts'][$chat_id][$replacement_id])) break;
+        $account_id = $replacement_id;
+    }
+    return $account_id;
+}
+
 // FUNGSI BARU: Cek status garansi untuk akun tertentu
 function checkWarrantyStatusForAccount($chat_id, $account_id, $return_page = 1) {
     $data = loadData();
+    $account_id = resolveCurrentWarrantyAccountId($data, $chat_id, $account_id);
     
     if (!isset($data['created_accounts'][$chat_id][$account_id])) {
         sendMessage($chat_id, "Akun tidak ditemukan dalam riwayat.");
@@ -4200,28 +4212,6 @@ function checkWarrantyStatusForAccount($chat_id, $account_id, $return_page = 1) 
         
         sendMessage($chat_id, $response, $keyboard);
         return;
-    }
-    
-    // Cek apakah sudah pernah klaim garansi untuk akun ini
-    if (isset($data['warranty_claims'][$account_id])) {
-        $claim = $data['warranty_claims'][$account_id];
-        if ($claim['status'] == 'used') {
-            $response = "Garansi untuk akun ini sudah digunakan.\n\n";
-            $response .= "Email: " . $account['email'] . "\n";
-            $response .= "Password: " . $account['password'] . "\n";
-            $response .= "Status: Garansi Sudah Digunakan";
-            
-            $keyboard = [
-                'inline_keyboard' => [
-                    [
-                        ['text' => 'Kembali ke Daftar', 'callback_data' => 'warranty_check_page_' . $return_page]
-                    ]
-                ]
-            ];
-            
-            sendMessage($chat_id, $response, $keyboard);
-            return;
-        }
     }
     
     $processing_msg = sendMessage($chat_id, "Memeriksa status subscription akun...");
@@ -4312,6 +4302,7 @@ function checkWarrantyStatusForAccount($chat_id, $account_id, $return_page = 1) 
 
 function startWarrantyPasswordChange($chat_id, $account_id, $return_page = 1) {
     $data = loadData();
+    $account_id = resolveCurrentWarrantyAccountId($data, $chat_id, $account_id);
     if (!isset($data['created_accounts'][$chat_id][$account_id])) {
         sendMessage($chat_id, "Akun tidak ditemukan dalam riwayat Anda.");
         showWarrantyCheckPage($chat_id, $return_page);
@@ -4439,6 +4430,7 @@ function processWarrantyPasswordChange($chat_id, $text, $message_id) {
 // FUNGSI BARU: Proses klaim garansi langsung
 function processDirectWarrantyClaim($chat_id, $account_id) {
     $data = loadData();
+    $account_id = resolveCurrentWarrantyAccountId($data, $chat_id, $account_id);
     
     if (!isset($data['created_accounts'][$chat_id][$account_id])) {
         sendMessage($chat_id, "Akun tidak ditemukan dalam riwayat.");
@@ -4451,14 +4443,6 @@ function processDirectWarrantyClaim($chat_id, $account_id) {
     if ($account['is_free']) {
         sendMessage($chat_id, "Akun ini dibuat dari limit gratis. Tidak bisa klaim garansi.");
         return;
-    }
-    
-    // Cek apakah sudah pernah klaim garansi untuk akun ini
-    if (isset($data['warranty_claims'][$account_id])) {
-        if ($data['warranty_claims'][$account_id]['status'] == 'used') {
-            sendMessage($chat_id, "Garansi untuk akun ini sudah digunakan.");
-            return;
-        }
     }
     
     // Cek status subscription sebelum klaim
@@ -4519,7 +4503,7 @@ function processDirectWarrantyClaim($chat_id, $account_id) {
             flock($claim_lock, LOCK_UN);
             fclose($claim_lock);
             sendMessage($chat_id, $existing_status === 'used'
-                ? "Garansi untuk akun ini sudah digunakan."
+                ? "Silakan pilih akun pengganti terbaru dari daftar garansi."
                 : "Klaim akun ini sedang diproses. Lanjutkan sesi yang sudah terbuka.");
             return;
         }
