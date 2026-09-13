@@ -1196,9 +1196,16 @@ function releaseUltimateCredentialReservation($reservation_id) {
     saveData($data);
 }
 
+function getAccountBuyerTierFromData($data, $chat_id) {
+    $saldo = (int)($data['users'][$chat_id]['saldo'] ?? 0);
+    $total_topup = getTotalTopupFromData($data, $chat_id);
+    $minimal_reseller = (int)($data['settings']['minimal_saldo_reseller'] ?? DEFAULT_MINIMAL_SALDO_RESELLER);
+    $minimal_pro = (int)($data['settings']['minimal_akumulasi_topup_pro'] ?? DEFAULT_MINIMAL_AKUMULASI_TOPUP_PRO);
+    return ($saldo >= $minimal_reseller || $total_topup >= $minimal_pro) ? 'reseller' : 'user';
+}
+
 function getAccountBuyerTier($chat_id) {
-    $status = getUserStatus($chat_id);
-    return ($status === 'reseller' || $status === 'pro') ? 'reseller' : 'user';
+    return getAccountBuyerTierFromData(loadData(), $chat_id);
 }
 
 function getAccountPackagePriceFromData($data, $package, $tier) {
@@ -1229,6 +1236,16 @@ function isAccountPackageActive($package, $data = null) {
 
     $data = $data ?: loadData();
     return !empty($data['settings']['package_active'][$package]);
+}
+
+function isAccountUpgradeAvailableFromData($data, $current_package, $target_package, $tier) {
+    $definitions = getAccountPackageDefinitions();
+    if (!isset($definitions[$current_package], $definitions[$target_package])) {
+        return false;
+    }
+
+    return $definitions[$target_package]['level'] > $definitions[$current_package]['level']
+        && getAccountPackagePriceFromData($data, $target_package, $tier) > getAccountPackagePriceFromData($data, $current_package, $tier);
 }
 
 function hasActiveAccountPackage() {
@@ -3699,8 +3716,7 @@ function showAccountUpgradeMenu($chat_id, $account_id, $return_page = 1) {
     $account = $accounts[$account_id];
     $current_package = $account['package'] ?? 'biasa';
     $definitions = getAccountPackageDefinitions();
-    $current_level = $definitions[$current_package]['level'];
-    $tier = $account['buyer_tier'] ?? getAccountBuyerTier($chat_id);
+    $tier = $account['buyer_tier'] ?? getAccountBuyerTierFromData($data, $chat_id);
     $current_price = getAccountPackagePriceFromData($data, $current_package, $tier);
     $rows = [];
     $response = "UPGRADE PAKET AKUN\n\n";
@@ -3708,7 +3724,7 @@ function showAccountUpgradeMenu($chat_id, $account_id, $return_page = 1) {
     $response .= "Paket saat ini: " . $definitions[$current_package]['name'] . "\n\n";
 
     foreach ($definitions as $package => $definition) {
-        if ($definition['level'] <= $current_level || !isAccountPackageActive($package, $data)) {
+        if (!isAccountUpgradeAvailableFromData($data, $current_package, $package, $tier)) {
             continue;
         }
         $target_price = getAccountPackagePriceFromData($data, $package, $tier);
@@ -3746,12 +3762,12 @@ function processAccountPackageUpgrade($chat_id, $account_id, $target_package) {
     $account = $accounts[$account_id];
     $current_package = $account['package'] ?? 'biasa';
     $definitions = getAccountPackageDefinitions();
-    if (!isAccountPackageActive($target_package, $data) || $definitions[$target_package]['level'] <= $definitions[$current_package]['level']) {
+    $tier = $account['buyer_tier'] ?? getAccountBuyerTierFromData($data, $chat_id);
+    if (!isAccountUpgradeAvailableFromData($data, $current_package, $target_package, $tier)) {
         releaseDataLock();
-        return ['success' => false, 'error' => 'Paket sudah berubah atau tidak tersedia.'];
+        return ['success' => false, 'error' => 'Paket sudah berubah atau harga upgrade belum valid.'];
     }
 
-    $tier = $account['buyer_tier'] ?? getAccountBuyerTier($chat_id);
     $current_price = getAccountPackagePriceFromData($data, $current_package, $tier);
     $target_price = getAccountPackagePriceFromData($data, $target_package, $tier);
     $difference = $target_price - $current_price;
@@ -3931,8 +3947,9 @@ function showAccountHistory($chat_id, $page = 1, $upgrade_mode = false) {
                 continue;
             }
             $current_package = $account['package'] ?? 'biasa';
+            $tier = $account['buyer_tier'] ?? getAccountBuyerTierFromData($data, $chat_id);
             foreach ($package_definitions as $target_package => $definition) {
-                if ($definition['level'] > $package_definitions[$current_package]['level'] && isAccountPackageActive($target_package, $data)) {
+                if (isAccountUpgradeAvailableFromData($data, $current_package, $target_package, $tier)) {
                     $keyboard_rows[] = [[
                         'text' => 'Upgrade ' . $account['email'],
                         'callback_data' => 'upgrade_account_' . $account['account_id'] . '_' . $page
