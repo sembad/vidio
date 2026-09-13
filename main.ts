@@ -29,6 +29,7 @@ const UPSTREAM_PROXY_URL = "http://54e00827b371c0c310a2__cr.id:817df9dc4f7bfe33@
 const STREAM_TOKEN_KEY = "V1d10D3v";
 const API_AUTH = "laZOmogezono5ogekaso5oz4Mezimew1";
 const STREAM_PATH = /^\/livestreamings\/([^/]+)\/stream$/;
+const VIDEO_DATA_PATH = /^\/api\/stream\/v1\/video_data\/([^/]+)$/;
 const CONTENT_ACCESS_PATH = /^\/users\/content_access(?:\.json)?$/;
 
 const queryToGroup = {
@@ -205,6 +206,11 @@ function findActiveUltimateCredential(
 function originalStreamUrl(streamId: string, search = "?initialize=true"): string {
   const query = search ? (search.startsWith("?") ? search : `?${search}`) : "?initialize=true";
   return `${UPSTREAM_ORIGIN}/livestreamings/${streamId}/stream${query}`;
+}
+
+function originalVideoDataUrl(videoId: string, search = "?initialize=true"): string {
+  const query = search ? (search.startsWith("?") ? search : `?${search}`) : "?initialize=true";
+  return `${UPSTREAM_ORIGIN}/api/stream/v1/video_data/${videoId}${query}`;
 }
 
 let cachedProxyClient: unknown = null;
@@ -451,6 +457,166 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   return proxyUltimateStream(streamId, activeUltimate, request);
 }
 
+async function proxyUltimateVideoData(
+  videoId: string,
+  credential: UltimateCredential,
+  request?: Request,
+): Promise<Response> {
+  const incoming = request ? new URL(request.url) : null;
+  const search = incoming ? incoming.search : "?initialize=true";
+  const upstreamUrl = originalVideoDataUrl(videoId, search);
+  const defaultVisitorId = "c0f1cf62-ab27-45fb-9663-5e056ca0e3b3";
+  const visitorId = request?.headers.get("x-visitor-id") || defaultVisitorId;
+
+  const headers = new Headers({
+    "accept-encoding": "gzip",
+    accept: "application/json",
+    "content-type": "application/json",
+    referer: "androidtv-app://com.vidio.android.tv",
+    "x-api-platform": "tv-android",
+    "x-api-auth": API_AUTH,
+    "x-api-app-info": "tv-android/16/2608.2.4-1020",
+    "user-agent": USER_AGENT,
+    "accept-language": "id",
+    "x-visitor-id": visitorId,
+    "x-user-email": credential.email,
+    "x-user-token": credential.token,
+  });
+
+  const authHeader = request?.headers.get("x-authorization");
+  if (authHeader) headers.set("x-authorization", authHeader);
+  const partnerSig = request?.headers.get("x-partner-signature");
+  if (partnerSig !== null && partnerSig !== undefined) headers.set("x-partner-signature", partnerSig);
+
+  let upstream: Response;
+  try {
+    const fetchOptions: RequestInit & { client?: unknown } = {
+      method: "GET",
+      headers,
+      redirect: "follow",
+      signal: AbortSignal.timeout(30_000),
+    };
+
+    const proxyClient = getProxyHttpClient();
+    if (proxyClient) {
+      fetchOptions.client = proxyClient;
+    }
+
+    upstream = await fetch(upstreamUrl, fetchOptions);
+  } catch {
+    return textResponse("upstream unavailable", 502);
+  }
+
+  const upstreamBody = await upstream.text();
+  const shouldEncrypt = request?.headers.get("x-encrypt-response") === "aes" ||
+    incoming?.searchParams.has("encrypt");
+
+  if (shouldEncrypt) {
+    const upstreamHeaderMap: Record<string, string> = {};
+    upstream.headers.forEach((val, key) => {
+      if (key.toLowerCase() !== "content-encoding") {
+        upstreamHeaderMap[key] = val;
+      }
+    });
+    const encrypted = encryptStreamPayload(upstreamHeaderMap, upstreamBody);
+    return new Response(JSON.stringify(encrypted), {
+      status: upstream.status,
+      headers: {
+        ...securityHeaders,
+        "content-type": "application/json; charset=utf-8",
+        "x-encrypted": "aes-256-cbc",
+        "cache-control": "no-store",
+      },
+    });
+  }
+
+  const responseHeaders = new Headers(securityHeaders);
+  const contentType = upstream.headers.get("content-type");
+  if (contentType) responseHeaders.set("content-type", contentType);
+  responseHeaders.set("cache-control", "no-store");
+  responseHeaders.delete("location");
+
+  return new Response(upstreamBody, {
+    status: upstream.status,
+    headers: responseHeaders,
+  });
+}
+
+async function proxyVideoData(videoId: string, request: Request): Promise<Response> {
+  const userEmail = request.headers.get("x-user-email");
+  const userToken = request.headers.get("x-user-token");
+
+  if (!userEmail || !userEmail.trim() || !userToken || !userToken.trim()) {
+    return textResponse("forbidden", 403);
+  }
+
+  const requestedEmail = normalizeEmail(userEmail);
+  if (!requestedEmail) {
+    return textResponse("forbidden", 403);
+  }
+
+  let data: Record<string, unknown>;
+  try {
+    const res = await fetch(`${BOT_DATA_URL}?_nocache=${Date.now()}`, {
+      signal: AbortSignal.timeout(10_000),
+      redirect: "follow",
+      headers: {
+        accept: "application/json",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        pragma: "no-cache",
+      },
+    });
+    if (!res.ok) {
+      return textResponse("upstream unavailable", 502);
+    }
+    const parsed: unknown = await res.json();
+    if (!isRecord(parsed)) {
+      return textResponse("upstream unavailable", 502);
+    }
+    data = parsed;
+  } catch {
+    return textResponse("upstream unavailable", 502);
+  }
+
+  const activeUltimate = findActiveUltimateCredential(data, requestedEmail);
+  if (!activeUltimate) {
+    const isKnownAccount = hasAccount(data, "akunultimate", requestedEmail)
+      || hasAccount(data, "akunbiasa", requestedEmail)
+      || hasAccount(data, "akunmobile", requestedEmail);
+
+    if (isKnownAccount) {
+      const upstreamUrl = new URL(`https://api.vidio.com/api/stream/v1/video_data/${encodeURIComponent(videoId)}`);
+      const incomingUrl = new URL(request.url);
+      for (const [key, val] of incomingUrl.searchParams.entries()) {
+        upstreamUrl.searchParams.set(key, val);
+      }
+      if (!upstreamUrl.searchParams.has("initialize")) {
+        upstreamUrl.searchParams.set("initialize", "true");
+      }
+      return new Response(null, {
+        status: 307,
+        headers: {
+          location: upstreamUrl.toString(),
+          "cache-control": "no-store",
+        },
+      });
+    }
+
+    return textResponse("forbidden", 403);
+  }
+
+  const trimmedToken = userToken.trim();
+  const matchesDirectUltimate = trimmedToken === activeUltimate.token.trim();
+  if (!matchesDirectUltimate) {
+    const isLiveValid = await verifyLiveVidioSession(requestedEmail, trimmedToken);
+    if (!isLiveValid) {
+      return textResponse("forbidden", 403);
+    }
+  }
+
+  return proxyUltimateVideoData(videoId, activeUltimate, request);
+}
+
 async function handleRequest(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
@@ -460,6 +626,12 @@ async function handleRequest(request: Request): Promise<Response> {
   if (streamMatch) {
     if (request.method !== "GET") return textResponse("method not allowed", 405);
     return proxyStream(streamMatch[1], request);
+  }
+
+  const videoDataMatch = url.pathname.match(VIDEO_DATA_PATH);
+  if (videoDataMatch) {
+    if (request.method !== "GET") return textResponse("method not allowed", 405);
+    return proxyVideoData(videoDataMatch[1], request);
   }
 
   if (CONTENT_ACCESS_PATH.test(url.pathname)) {
@@ -599,6 +771,19 @@ async function selfCheck(): Promise<void> {
   if (originalStreamUrl(testStreamId) !== `https://api.vidio.com/livestreamings/${testStreamId}/stream?initialize=true`) {
     throw new Error("originalStreamUrl default failed");
   }
+  const testVideoId = "9332265";
+  if (originalVideoDataUrl(testVideoId) !== `https://api.vidio.com/api/stream/v1/video_data/${testVideoId}?initialize=true`) {
+    throw new Error("originalVideoDataUrl default failed");
+  }
+  if (!VIDEO_DATA_PATH.test(`/api/stream/v1/video_data/${testVideoId}`)) {
+    throw new Error("Video data path self-check failed");
+  }
+
+  // Test UA endpoint returns tv-android UA
+  const uaRes = await handleRequest(new Request("https://vidiot.my.id/?ua"));
+  if (uaRes.status !== 200 || (await uaRes.text()) !== USER_AGENT) {
+    throw new Error("UA endpoint failed to return expected TV UA");
+  }
   if (getSelectedQuery(new URL("https://vidiot.my.id/?akunultimate=a%40b.id")) !== "akunultimate") {
     throw new Error("Query selection self-check failed");
   }
@@ -673,10 +858,15 @@ const isDirectRun =
   (typeof process !== "undefined" && Boolean(process.argv?.[1]?.endsWith("main.ts")));
 
 if (isDirectRun) {
-  await selfCheck();
-  const denoObj = (globalThis as unknown as { Deno?: { serve: (handler: (req: Request) => Promise<Response>) => void } }).Deno;
-  if (denoObj?.serve) {
-    denoObj.serve(handleRequest);
-  }
+  (async () => {
+    await selfCheck();
+    const denoObj = (globalThis as unknown as { Deno?: { serve: (handler: (req: Request) => Promise<Response>) => void } }).Deno;
+    if (denoObj?.serve) {
+      denoObj.serve(handleRequest);
+    }
+  })().catch((err) => {
+    console.error("Runner error:", err);
+    process.exit(1);
+  });
 }
 

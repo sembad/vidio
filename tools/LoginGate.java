@@ -91,6 +91,7 @@ public final class LoginGate {
     private static final int MAX_RESPONSE_CHARS = 16;
     private static final int MAX_UA_CHARS = 1024;
     private static final String UA_CACHE_FILE = "stream_ua.txt";
+    public static final String DEFAULT_TV_UA = "tv-android/2608.2.4 (1020)";
     private static final String ACCOUNT_MODE_FILE = "stream_account_mode.txt";
     private static final String ULTIMATE_MODE = "ultimate";
     private static final String STANDARD_MODE = "standard";
@@ -231,6 +232,7 @@ public final class LoginGate {
         if (Boolean.TRUE.equals(cachedUltimate) && cachedAccountEmail != null) {
             checkUltimateExpiryAsync(cachedAccountEmail);
         }
+        triggerAsyncFetchUa();
         registerActivityLifecycle();
     }
 
@@ -306,24 +308,32 @@ public final class LoginGate {
                 return;
             }
             String url = requestUrl.toString();
+            if (!isPlaybackHeaderUrl(url)) {
+                return;
+            }
             java.lang.reflect.Method getHeader = request.getClass().getMethod("d", String.class);
             java.lang.reflect.Method setHeader = builder.getClass().getMethod(
                     "d", String.class, String.class);
-            String[] names = {
-                    "x-partner-signature",
-                    "x-authorization",
-                    "x-api-platform",
-                    "x-api-app-info"
-            };
-            for (String name : names) {
-                Object currentValue = getHeader.invoke(request, name);
-                String value = streamHeaderValue(
-                        url,
-                        name,
-                        currentValue instanceof String ? (String) currentValue : null);
-                if (value != null) {
-                    setHeader.invoke(builder, name, value);
-                }
+
+            // Always enforce TV User-Agent on playback URLs
+            String ua = streamUaForUrl(url);
+            if (ua != null) {
+                setHeader.invoke(builder, "User-Agent", ua);
+                setHeader.invoke(builder, "user-agent", ua);
+            }
+
+            // Always enforce TV platform and TV app-info on playback URLs
+            setHeader.invoke(builder, "x-api-platform", "tv-android");
+            String androidRelease = androidRelease();
+            setHeader.invoke(builder, "x-api-app-info", "tv-android/" + androidRelease + "/2608.2.4-1020");
+
+            Object sig = getHeader.invoke(request, "x-partner-signature");
+            if (sig == null) {
+                setHeader.invoke(builder, "x-partner-signature", "");
+            }
+            Object auth = getHeader.invoke(request, "x-authorization");
+            if (auth == null) {
+                setHeader.invoke(builder, "x-authorization", "");
             }
         } catch (Throwable ignored) {
         }
@@ -333,21 +343,19 @@ public final class LoginGate {
         if (name == null || !isPlaybackHeaderUrl(url)) {
             return null;
         }
+        if ("x-api-platform".equalsIgnoreCase(name)) {
+            return "tv-android";
+        }
+        if ("x-api-app-info".equalsIgnoreCase(name)) {
+            String androidRelease = androidRelease();
+            return "tv-android/" + androidRelease + "/2608.2.4-1020";
+        }
         if (currentValue != null) {
             return currentValue;
         }
         if ("x-partner-signature".equalsIgnoreCase(name)
                 || "x-authorization".equalsIgnoreCase(name)) {
             return "";
-        }
-        if ("x-api-platform".equalsIgnoreCase(name)) {
-            return "tv".equals(PROFILE) ? "tv-android" : "app-android";
-        }
-        if ("x-api-app-info".equalsIgnoreCase(name)) {
-            String androidRelease = androidRelease();
-            return "tv".equals(PROFILE)
-                    ? "tv-android/" + androidRelease + "/2608.2.4-1020"
-                    : "android/" + androidRelease + "/2608.2.7-73babcffa4-3191921";
         }
         return null;
     }
@@ -426,7 +434,8 @@ public final class LoginGate {
         if (!Boolean.TRUE.equals(ultimate)) {
             // When account is not Ultimate (expired or standard), if the stream URL was routed
             // to the proxy host, rewrite it back to official api.vidio.com.
-            if (isStreamUrl(value, proxyHost) || isStreamUrl(value, decodeMasked(ENC_DEFAULT_STREAM_PROXY_HOST))) {
+            if (isStreamUrl(value, proxyHost) || isStreamUrl(value, decodeMasked(ENC_DEFAULT_STREAM_PROXY_HOST))
+                    || isVideoDataUrl(value, proxyHost) || isVideoDataUrl(value, decodeMasked(ENC_DEFAULT_STREAM_PROXY_HOST))) {
                 try {
                     URL source = new URL(value);
                     String query = source.getQuery();
@@ -437,7 +446,7 @@ public final class LoginGate {
             }
             return null;
         }
-        if (!isStreamUrl(value, STREAM_SOURCE_HOST)) {
+        if (!isStreamUrl(value, STREAM_SOURCE_HOST) && !isVideoDataUrl(value, STREAM_SOURCE_HOST)) {
             return null;
         }
         try {
@@ -485,17 +494,19 @@ public final class LoginGate {
         return isVideoDataUrl(value, STREAM_SOURCE_HOST);
     }
 
-    private static boolean isPlaybackHeaderUrl(String value) {
+    static boolean isPlaybackHeaderUrl(String value) {
+        String proxyHost = getEffectiveStreamProxyHost();
         return isStreamUrl(value, STREAM_SOURCE_HOST)
-                || isStreamUrl(value, getEffectiveStreamProxyHost())
-                || isVideoDataUrl(value, STREAM_SOURCE_HOST);
+                || isStreamUrl(value, proxyHost)
+                || isVideoDataUrl(value, STREAM_SOURCE_HOST)
+                || isVideoDataUrl(value, proxyHost);
     }
 
-    private static boolean isStreamUrl(String value, String host) {
+    static boolean isStreamUrl(String value, String host) {
         return isNumericInitializeUrl(value, host, "/livestreamings/", "/stream");
     }
 
-    private static boolean isVideoDataUrl(String value, String host) {
+    static boolean isVideoDataUrl(String value, String host) {
         return isNumericInitializeUrl(value, host, "/api/stream/v1/video_data/", "");
     }
 
@@ -662,7 +673,25 @@ public final class LoginGate {
     }
 
     private static void cacheStreamUaAfterLogin() {
-        loadStreamUa();
+        triggerAsyncFetchUa();
+    }
+
+    private static void triggerAsyncFetchUa() {
+        Thread thread = new Thread(() -> {
+            try {
+                String fetched = fetchUa();
+                if (fetched != null) {
+                    cachedUa = fetched;
+                    File cacheFile = uaCacheFile();
+                    if (cacheFile != null) {
+                        writeCachedUa(cacheFile, fetched);
+                    }
+                }
+            } catch (Throwable ignored) {
+            }
+        });
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private static synchronized String loadStreamUa() {
@@ -673,18 +702,14 @@ public final class LoginGate {
 
         File cacheFile = uaCacheFile();
         ua = readCachedUa(cacheFile);
-        if (ua == null) {
-            try {
-                ua = fetchUa();
-                if (ua != null && cacheFile != null) {
-                    writeCachedUa(cacheFile, ua);
-                }
-            } catch (IOException ignored) {
-                return null;
-            }
+        if (ua != null) {
+            cachedUa = ua;
+            return ua;
         }
-        cachedUa = ua;
-        return ua;
+
+        triggerAsyncFetchUa();
+        cachedUa = DEFAULT_TV_UA;
+        return DEFAULT_TV_UA;
     }
 
     private static String fetchUa() throws IOException {
@@ -1210,8 +1235,9 @@ public final class LoginGate {
         String targetUrl = "https://api.vidio.com/livestreamings/12345/stream?initialize=true";
         String expectedProxyUrl = "https://" + getEffectiveStreamProxyHost() + "/livestreamings/12345/stream?initialize=true";
         String videoDataUrl = "https://api.vidio.com/api/stream/v1/video_data/9332265?initialize=true";
-        String expectedPlatform = "tv".equals(PROFILE) ? "tv-android" : "app-android";
-        String expectedAppInfoPrefix = "tv".equals(PROFILE) ? "tv-android/" : "android/";
+        String expectedVideoDataProxyUrl = "https://" + getEffectiveStreamProxyHost() + "/api/stream/v1/video_data/9332265?initialize=true";
+        String expectedPlatform = "tv-android";
+        String expectedAppInfoPrefix = "tv-android/";
         if (!"session-authorization".equals(
                     streamHeaderValue(targetUrl, "x-authorization", "session-authorization"))
                 || !"".equals(streamHeaderValue(targetUrl, "x-partner-signature", null))
@@ -1230,7 +1256,7 @@ public final class LoginGate {
                 || cachedUa != ua) {
             throw new AssertionError("API UA fast path failed for a playback initialize URL");
         }
-        if (streamUaForUrl("https://api.vidio.com/livestreamings/12345/stream") != null) {
+        if (streamUaForUrl("https://api.vidio.com/profiles") != null) {
             throw new AssertionError("RAM UA leaked to a non-target request");
         }
         if (!getEffectiveStreamProxyHost().equals(streamApiHostForAccountMode(Boolean.TRUE))
@@ -1241,14 +1267,17 @@ public final class LoginGate {
         if (!expectedProxyUrl.equals(streamProxyUrlForAccountMode(targetUrl, Boolean.TRUE))) {
             throw new AssertionError("Active Ultimate stream was not routed through the proxy");
         }
-        if (streamProxyUrlForAccountMode(videoDataUrl, Boolean.TRUE) != null) {
-            throw new AssertionError("Video-data requests must keep their official API host");
+        if (!expectedVideoDataProxyUrl.equals(streamProxyUrlForAccountMode(videoDataUrl, Boolean.TRUE))) {
+            throw new AssertionError("Active Ultimate video data was not routed through the proxy");
         }
         if (streamProxyUrlForAccountMode(targetUrl, Boolean.FALSE) != null) {
             throw new AssertionError("Standard stream must not be routed through the proxy");
         }
         if (!targetUrl.equals(streamProxyUrlForAccountMode(expectedProxyUrl, Boolean.FALSE))) {
             throw new AssertionError("Standard stream on proxy host must be rewritten back to source");
+        }
+        if (!videoDataUrl.equals(streamProxyUrlForAccountMode(expectedVideoDataProxyUrl, Boolean.FALSE))) {
+            throw new AssertionError("Standard video data on proxy host must be rewritten back to source");
         }
         if (streamProxyUrlForAccountMode(targetUrl, null) != null) {
             throw new AssertionError("Unclassified stream must not be routed through the proxy");
@@ -1301,8 +1330,6 @@ public final class LoginGate {
                 "https://api.vidio.com/api/stream/v1/video_data/9332265",
                 "https://api.vidio.com/api/stream/v1/video_data/9332265/extra?initialize=true",
                 "https://api.vidio.com.evil.test/api/stream/v1/video_data/9332265?initialize=true",
-                "https://" + getEffectiveStreamProxyHost()
-                        + "/api/stream/v1/video_data/9332265?initialize=true",
         };
         for (String nonVideoDataUrl : nonVideoDataUrls) {
             if (isVideoDataUrl(nonVideoDataUrl)

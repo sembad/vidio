@@ -118,6 +118,7 @@ LOGIN_GATE_DEX_NAME=""
 LOGIN_GATE_PRESENT=false
 SPLASH_SMALI_DIR=""
 max_dex_index=0
+LOGIN_GATE_DEX_NAMES=()
 while IFS= read -r dex_name; do
   if [[ $dex_name == classes.dex ]]; then
     dex_index=1
@@ -128,8 +129,8 @@ while IFS= read -r dex_name; do
   fi
   (( dex_index > max_dex_index )) && max_dex_index=$dex_index
   unzip -p "$WORK_DIR/universal.apk" "$dex_name" | strings > "$WORK_DIR/${dex_name}.strings"
-  if grep -Eq "https://(xxxxxxx|vidiot)\.my\.id" "$WORK_DIR/${dex_name}.strings"; then
-    [[ -z $LOGIN_GATE_DEX_NAME ]] || { echo "Login gate found in multiple DEX files" >&2; exit 1; }
+  if grep -Fq "com/vidio/android/patch/LoginGate" "$WORK_DIR/${dex_name}.strings" && grep -Fq "stream_ua.txt" "$WORK_DIR/${dex_name}.strings"; then
+    LOGIN_GATE_DEX_NAMES+=("$dex_name")
     LOGIN_GATE_DEX_NAME=$dex_name
     LOGIN_GATE_PRESENT=true
   fi
@@ -137,6 +138,7 @@ done < <(grep -E '^classes([0-9]+)?\.dex$' "$WORK_DIR/universal-entries.txt")
 if [[ $LOGIN_GATE_PRESENT == false ]]; then
   SPLASH_SMALI_DIR="smali_classes$((max_dex_index + 1))"
   LOGIN_GATE_DEX_NAME="classes$((max_dex_index + 2)).dex"
+  LOGIN_GATE_DEX_NAMES+=("$LOGIN_GATE_DEX_NAME")
 fi
 HAS_AUDIENCE_NETWORK_ASSET=false
 if grep -Fxq "assets/audience_network.dex" "$WORK_DIR/universal-entries.txt"; then
@@ -563,6 +565,7 @@ if ua_text.count(ua_marker) == 0:
         "    invoke-static {v10}, " + ua_marker + "\n\n"
         "    move-result-object v10\n\n"
         "    if-eqz v10, :stream_ua_transport_done\n\n"
+        "    const-string v2, \"User-Agent\"\n\n"
         "    invoke-virtual {v1, v2, v10}, " + builder_type + "->d(Ljava/lang/String;Ljava/lang/String;)V\n\n"
         "    :stream_ua_transport_done\n"
     )
@@ -571,6 +574,21 @@ if ua_text.count(ua_marker) == 0:
     )
     if ua_inserted != 1:
         raise SystemExit(f"Transport stream UA hook point not found in {ua_path}")
+else:
+    old_missing_ua_const = (
+        "    if-eqz v10, :stream_ua_transport_done\n\n"
+        "    invoke-virtual {v1, v2, v10}, " + builder_type + "->d(Ljava/lang/String;Ljava/lang/String;)V\n\n"
+        "    :stream_ua_transport_done\n"
+    )
+    fixed_ua_const = (
+        "    if-eqz v10, :stream_ua_transport_done\n\n"
+        "    const-string v2, \"User-Agent\"\n\n"
+        "    invoke-virtual {v1, v2, v10}, " + builder_type + "->d(Ljava/lang/String;Ljava/lang/String;)V\n\n"
+        "    :stream_ua_transport_done\n"
+    )
+    if old_missing_ua_const in ua_text:
+        ua_text = ua_text.replace(old_missing_ua_const, fixed_ua_const, 1)
+        changed_files.add(ua_path.relative_to(root))
 if ua_text.count(ua_marker) != 1:
     raise SystemExit("Expected exactly one transport stream UA hook")
 
@@ -852,11 +870,13 @@ for path in sorted(changed_files):
 PY
 
 java -jar "$TOOLS_DIR/apktool.jar" b --frame-path "$WORK_DIR/framework" "$WORK_DIR/decoded" -o "$WORK_DIR/rebuilt.apk"
-if unzip -Z1 "$WORK_DIR/rebuilt.apk" | grep -Fxq "$LOGIN_GATE_DEX_NAME"; then
-  zip -q -d "$WORK_DIR/rebuilt.apk" "$LOGIN_GATE_DEX_NAME"
-fi
-cp "$WORK_DIR/login-gate-dex/classes.dex" "$WORK_DIR/$LOGIN_GATE_DEX_NAME"
-(cd "$WORK_DIR" && zip -q -j rebuilt.apk "$LOGIN_GATE_DEX_NAME")
+for lg_dex in "${LOGIN_GATE_DEX_NAMES[@]}"; do
+  if unzip -Z1 "$WORK_DIR/rebuilt.apk" | grep -Fxq "$lg_dex"; then
+    zip -q -d "$WORK_DIR/rebuilt.apk" "$lg_dex"
+  fi
+  cp "$WORK_DIR/login-gate-dex/classes.dex" "$WORK_DIR/$lg_dex"
+  (cd "$WORK_DIR" && zip -q -j rebuilt.apk "$lg_dex")
+done
 
 # Package native libvidio_gate.so if pre-built for target ABIs
 NATIVE_LIBS_DIR="$ROOT/tools/native/libs"
