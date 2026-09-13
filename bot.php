@@ -2084,8 +2084,8 @@ function loadData() {
                 foreach ($data['warranty_claims'] as $replaced_account_id => $claim) {
                     if (($claim['status'] ?? '') !== 'used' || empty($claim['new_account_id'])) continue;
                     $owner_chat_id = $claim['chat_id'] ?? null;
-                    if ($owner_chat_id !== null && isset($data['created_accounts'][$owner_chat_id][$claim['new_account_id']])) {
-                        removeAccountRecordFromData($data, $owner_chat_id, $replaced_account_id);
+                    if ($owner_chat_id !== null && isset($data['created_accounts'][$owner_chat_id][$replaced_account_id])) {
+                        $data['created_accounts'][$owner_chat_id][$replaced_account_id]['warranty_replaced_by'] = $claim['new_account_id'];
                     }
                 }
                 if (!isset($data['settings'])) {
@@ -3711,6 +3711,10 @@ function getUserPackageAccountsFromData($data, $chat_id) {
     }
 
     foreach ($accounts as $account_id => &$account) {
+        if (!empty($data['created_accounts'][$chat_id][$account_id]['warranty_replaced_by'])) {
+            unset($accounts[$account_id]);
+            continue;
+        }
         $account['account_id'] = $account['account_id'] ?? $account_id;
         $account['package'] = $account['package'] ?? 'biasa';
     }
@@ -4172,6 +4176,10 @@ function processWarrantyAccountNumber($chat_id, $text, $message_id) {
 }
 
 function resolveCurrentWarrantyAccountId($data, $chat_id, $account_id) {
+    if (isset($data['created_accounts'][$chat_id][$account_id])) {
+        return $account_id;
+    }
+
     $visited = [];
     while (!isset($visited[$account_id])) {
         $visited[$account_id] = true;
@@ -4395,12 +4403,10 @@ function processWarrantyPasswordChange($chat_id, $text, $message_id) {
     }
 
     $account = $data['created_accounts'][$chat_id][$account_id];
-    $claim_used = isset($data['warranty_claims'][$account_id])
-        && ($data['warranty_claims'][$account_id]['status'] ?? '') === 'used';
 
-    if (!empty($account['is_free']) || $claim_used) {
+    if (!empty($account['is_free'])) {
         unlink($state_file);
-        sendMessage($chat_id, "Akun ini tidak lagi memenuhi syarat pemeriksaan garansi.");
+        sendMessage($chat_id, "Akun dari limit gratis tidak memenuhi syarat pemeriksaan garansi.");
         showWarrantyCheckPage($chat_id, $return_page);
         return;
     }
@@ -4684,9 +4690,11 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
                 return;
             }
             
-            // Akun pengganti menggantikan akun lama di riwayat agar tidak tampil ganda.
+            // Simpan akun lama untuk klaim unlimited, tetapi sembunyikan dari daftar agar tidak tampil ganda.
             $data = loadData();
-            removeAccountRecordFromData($data, $chat_id, $account_id);
+            if (isset($data['created_accounts'][$chat_id][$account_id])) {
+                $data['created_accounts'][$chat_id][$account_id]['warranty_replaced_by'] = $new_account_id;
+            }
             $data['warranty_claims'][$account_id]['status'] = 'used';
             $data['warranty_claims'][$account_id]['new_account_id'] = $new_account_id;
             $data['warranty_claims'][$account_id]['completed_at'] = time();
