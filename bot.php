@@ -1163,12 +1163,6 @@ function getAvailableUltimateCredentialFromData($data) {
 }
 
 function reserveUltimateCredential($chat_id) {
-    $lock = fopen(DATA_FILE . '.package.lock', 'c');
-    if (!$lock || !flock($lock, LOCK_EX)) {
-        if ($lock) fclose($lock);
-        return ['success' => false, 'error' => 'Sistem credential sedang sibuk. Silakan coba lagi.'];
-    }
-
     $data = loadData();
     $now = time();
     foreach (($data['ultimate_credential_reservations'] ?? []) as $reservation_id => $reservation) {
@@ -1178,8 +1172,7 @@ function reserveUltimateCredential($chat_id) {
     }
     $credential = getAvailableUltimateCredentialFromData($data);
     if (!$credential) {
-        flock($lock, LOCK_UN);
-        fclose($lock);
+        releaseDataLock();
         return ['success' => false, 'error' => 'Credential Ultimate sedang habis. Transaksi tidak diproses dan saldo tidak dipotong.'];
     }
 
@@ -1190,8 +1183,6 @@ function reserveUltimateCredential($chat_id) {
         'expires_at' => $now + 3600
     ];
     $saved = saveData($data);
-    flock($lock, LOCK_UN);
-    fclose($lock);
     if (!$saved) {
         return ['success' => false, 'error' => 'Gagal memesan credential Ultimate.'];
     }
@@ -1200,16 +1191,9 @@ function reserveUltimateCredential($chat_id) {
 
 function releaseUltimateCredentialReservation($reservation_id) {
     if (!$reservation_id) return;
-    $lock = fopen(DATA_FILE . '.package.lock', 'c');
-    if (!$lock || !flock($lock, LOCK_EX)) {
-        if ($lock) fclose($lock);
-        return;
-    }
     $data = loadData();
     unset($data['ultimate_credential_reservations'][$reservation_id]);
     saveData($data);
-    flock($lock, LOCK_UN);
-    fclose($lock);
 }
 
 function getAccountBuyerTier($chat_id) {
@@ -1853,8 +1837,77 @@ function escapeMarkdown($text) {
     return $text;
 }
 
+// Satu lock untuk seluruh siklus load -> mutate -> save pada request ini.
+function acquireDataLock() {
+    global $data_lock_handle;
+    if (is_resource($data_lock_handle ?? null)) {
+        return true;
+    }
+
+    $data_lock_handle = fopen(DATA_FILE . '.lock', 'c');
+    if (!$data_lock_handle || !flock($data_lock_handle, LOCK_EX)) {
+        if ($data_lock_handle) fclose($data_lock_handle);
+        $data_lock_handle = null;
+        return false;
+    }
+    return true;
+}
+
+function releaseDataLock() {
+    global $data_lock_handle;
+    if (is_resource($data_lock_handle ?? null)) {
+        flock($data_lock_handle, LOCK_UN);
+        fclose($data_lock_handle);
+    }
+    $data_lock_handle = null;
+}
+
+function readValidJsonFile($file) {
+    if (!is_file($file)) return null;
+    $content = file_get_contents($file);
+    if ($content === false || trim($content) === '') return null;
+    $decoded = json_decode($content, true);
+    return is_array($decoded) && json_last_error() === JSON_ERROR_NONE ? $content : null;
+}
+
+function writeFileAtomically($file, $content) {
+    try {
+        $suffix = getmypid() . '.' . bin2hex(random_bytes(6));
+    } catch (Exception $e) {
+        $suffix = getmypid() . '.' . uniqid('', true);
+    }
+    $temp_file = $file . '.tmp.' . $suffix;
+    $fp = fopen($temp_file, 'xb');
+    if (!$fp) return false;
+
+    $length = strlen($content);
+    $written = 0;
+    while ($written < $length) {
+        $bytes = fwrite($fp, substr($content, $written));
+        if ($bytes === false || $bytes === 0) {
+            fclose($fp);
+            @unlink($temp_file);
+            return false;
+        }
+        $written += $bytes;
+    }
+    $synced = fflush($fp);
+    if ($synced && function_exists('fsync')) $synced = fsync($fp);
+    fclose($fp);
+
+    if (!$synced || !rename($temp_file, $file)) {
+        @unlink($temp_file);
+        return false;
+    }
+    return true;
+}
+
 // Fungsi memuat data dari file tunggal
 function loadData() {
+    if (!acquireDataLock()) {
+        throw new RuntimeException('Gagal mengunci database bot.');
+    }
+
     $max_retries = 3;
     $retry_delay = 100000; // 0.1 detik
     
@@ -1920,7 +1973,7 @@ function loadData() {
         
         // Gunakan file locking untuk membaca
         $fp = fopen(DATA_FILE, 'r');
-        if (flock($fp, LOCK_SH)) { // Shared lock untuk membaca
+        if ($fp && flock($fp, LOCK_SH)) { // Shared lock untuk membaca
             $content = '';
             while (!feof($fp)) {
                 $content .= fread($fp, 8192);
@@ -1930,7 +1983,7 @@ function loadData() {
             
             $data = json_decode($content, true);
             
-            if ($data !== null) {
+            if (is_array($data) && json_last_error() === JSON_ERROR_NONE) {
                 // Pastikan semua key ada
                 if (!isset($data['users'])) $data['users'] = [];
                 if (!isset($data['partner_tokens'])) $data['partner_tokens'] = [];
@@ -1966,11 +2019,28 @@ function loadData() {
                 if (!isset($data['token_pool'])) $data['token_pool'] = [];
                 if (!isset($data['token_logs'])) $data['token_logs'] = [];
                 if (!isset($data['token_usage_count'])) $data['token_usage_count'] = [];
-                if (!isset($data['created_accounts'])) $data['created_accounts'] = [];
-                if (!isset($data['akun_biasa'])) $data['akun_biasa'] = [];
-                if (!isset($data['akun_mobile'])) $data['akun_mobile'] = [];
-                if (!isset($data['akun_ultimate'])) $data['akun_ultimate'] = [];
+                if (!isset($data['created_accounts']) || !is_array($data['created_accounts'])) $data['created_accounts'] = [];
+                if (!isset($data['akun_biasa']) || !is_array($data['akun_biasa'])) $data['akun_biasa'] = [];
+                if (!isset($data['akun_mobile']) || !is_array($data['akun_mobile'])) $data['akun_mobile'] = [];
+                if (!isset($data['akun_ultimate']) || !is_array($data['akun_ultimate'])) $data['akun_ultimate'] = [];
                 if (!isset($data['ultimate_credential_reservations'])) $data['ultimate_credential_reservations'] = [];
+
+                // Pulihkan created_accounts dari indeks paket lama agar riwayat/upgrade tetap tampil.
+                foreach (array_keys(getAccountPackageDefinitions()) as $package) {
+                    foreach ($data['akun_' . $package] as $owner_chat_id => $accounts) {
+                        if (!is_array($accounts)) continue;
+                        foreach ($accounts as $account_id => $account) {
+                            if (!is_array($account)) continue;
+                            $account['package'] = $package;
+                            $account['account_id'] = $account['account_id'] ?? $account_id;
+                            $account['chat_id'] = (int)$owner_chat_id;
+                            if (!isset($data['created_accounts'][$owner_chat_id][$account_id])) {
+                                $data['created_accounts'][$owner_chat_id][$account_id] = $account;
+                            }
+                        }
+                    }
+                }
+
                 foreach ($data['created_accounts'] as $owner_chat_id => $accounts) {
                     if (!is_array($accounts)) continue;
                     foreach ($accounts as $account_id => $account) {
@@ -2116,85 +2186,6 @@ function loadData() {
                 return $data;
             }
         } else {
-            fclose($fp);
-        }
-        
-        // Jika gagal, tunggu sebentar lalu coba lagi
-        if ($attempt < $max_retries) {
-            usleep($retry_delay);
-        }
-    }
-    
-    // Jika semua percobaan gagal, kembalikan default
-    return [
-        'users' => [], 
-        'partner_tokens' => [],
-        'payments' => [],
-        'transactions' => [],
-        'used_tokens' => [],
-        'token_pool' => [],
-        'token_logs' => [],
-        'token_usage_count' => [],
-        'created_accounts' => [],
-        'warranty_claims' => [],
-        'settings' => [
-            'bot_active' => true,
-            'satu_akun_active' => true,
-            'multi_akun_active' => true,
-            'limit_gratis_active' => true,
-            'harga_satu_akun_user' => DEFAULT_HARGA_SATU_AKUN_USER,
-            'harga_satu_akun_reseller' => DEFAULT_HARGA_SATU_AKUN_RESELLER,
-            'harga_multi_akun' => DEFAULT_HARGA_MULTI_AKUN,
-            'minimal_saldo_reseller' => DEFAULT_MINIMAL_SALDO_RESELLER,
-            'minimal_akumulasi_topup_pro' => DEFAULT_MINIMAL_AKUMULASI_TOPUP_PRO,
-            'minimal_topup' => DEFAULT_MINIMAL_TOPUP,
-            'limit_gratis_duration' => DEFAULT_LIMIT_GRATIS_DURATION,
-            'max_claim_per_day' => DEFAULT_MAX_CLAIM_PER_DAY,
-            'auto_limit_gratis_active' => false,
-            'auto_limit_gratis_next_run' => 0,
-            'auto_limit_gratis_end_time' => 0,
-            'broadcast_history' => [],
-            'last_claim_date' => '',
-            'daily_claim_count' => 0,
-            'claimed_users' => []
-        ],
-        'username_restrictions' => [
-            'enabled' => false,
-            'users' => [],
-            'default_cooldown' => 30,
-            'cooldown_units' => 'days'
-        ]
-    ];
-}
-
-// Fungsi menyimpan data ke file tunggal
-function saveData($data) {
-    $max_retries = 3;
-    $retry_delay = 100000; // 0.1 detik
-    
-    // Buat backup terlebih dahulu
-    if (file_exists(DATA_FILE)) {
-        copy(DATA_FILE, DATA_FILE . '.backup');
-    }
-    
-    $json_data = json_encode($data, JSON_PRETTY_PRINT);
-    
-    for ($attempt = 1; $attempt <= $max_retries; $attempt++) {
-        // Tulis ke file temporary dulu
-        $temp_file = DATA_FILE . '.tmp';
-        $fp = fopen($temp_file, 'w');
-        
-        if ($fp && flock($fp, LOCK_EX)) { // Exclusive lock untuk menulis
-            fwrite($fp, $json_data);
-            fflush($fp);
-            flock($fp, LOCK_UN);
-            fclose($fp);
-            
-            // Rename file temporary ke file asli (atomic operation)
-            if (rename($temp_file, DATA_FILE)) {
-                return true;
-            }
-        } else {
             if ($fp) fclose($fp);
         }
         
@@ -2204,8 +2195,44 @@ function saveData($data) {
         }
     }
     
-    // Jika semua percobaan gagal, coba tulis langsung
-    return file_put_contents(DATA_FILE, $json_data) !== false;
+    // Pulihkan hanya dari backup yang masih valid. Jangan pernah mengganti data rusak dengan data kosong.
+    foreach ([DATA_FILE . '.backup', DATA_FILE . '.backup.1'] as $backup_file) {
+        $backup_content = readValidJsonFile($backup_file);
+        if ($backup_content !== null && writeFileAtomically(DATA_FILE, $backup_content)) {
+            return loadData();
+        }
+    }
+
+    releaseDataLock();
+    throw new RuntimeException('Database bot rusak dan tidak ada backup valid.');
+}
+
+// Fungsi menyimpan data ke file tunggal
+function saveData($data) {
+    if (!acquireDataLock()) return false;
+
+    $json_data = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    if ($json_data === false || !is_array(json_decode($json_data, true))) {
+        releaseDataLock();
+        return false;
+    }
+
+    $current_content = readValidJsonFile(DATA_FILE);
+    if ($current_content !== null) {
+        $previous_backup = readValidJsonFile(DATA_FILE . '.backup');
+        if ($previous_backup !== null && !writeFileAtomically(DATA_FILE . '.backup.1', $previous_backup)) {
+            releaseDataLock();
+            return false;
+        }
+        if (!writeFileAtomically(DATA_FILE . '.backup', $current_content)) {
+            releaseDataLock();
+            return false;
+        }
+    }
+
+    $saved = writeFileAtomically(DATA_FILE, $json_data);
+    releaseDataLock();
+    return $saved;
 }
 
 // Fungsi cek otorisasi untuk semua jenis update
@@ -3421,6 +3448,7 @@ function expirePayment($payment_id, $claim_notification = true) {
 
 function checkPaymentOnce($payment_id, $claim_expiry_notification = true) {
     $data = loadData();
+    releaseDataLock();
     if (!isset($data['payments'][$payment_id])) {
         return ['status' => 'not_found', 'message' => 'Pembayaran tidak ditemukan'];
     }
@@ -3546,6 +3574,7 @@ function pollPaymentUntilExpired($payment_id) {
     }
 
     $expires_at = getPaymentExpiresAt($data['payments'][$payment_id]);
+    releaseDataLock();
     $next_check_at = time();
 
     while (time() <= $expires_at) {
@@ -3585,18 +3614,18 @@ function pollPaymentUntilExpired($payment_id) {
 
 // FUNGSI BARU: Simpan akun yang dibuat ke riwayat
 function saveCreatedAccount($chat_id, $email, $password, $status, $created_at = null, $is_free = false, $warranty_source = null, $package = null, $price = 0, $buyer_tier = null, $ultimate_credential = null, $ultimate_reservation_id = null) {
-    $lock = fopen(DATA_FILE . '.package.lock', 'c');
-    if (!$lock || !flock($lock, LOCK_EX)) {
-        if ($lock) fclose($lock);
-        return false;
-    }
     $data = loadData();
     
     if (!isset($data['created_accounts'][$chat_id])) {
         $data['created_accounts'][$chat_id] = [];
     }
     
-    $account_id = 'ACC_' . time() . '_' . substr(md5($email), 0, 8);
+    try {
+        $account_suffix = bin2hex(random_bytes(8));
+    } catch (Exception $e) {
+        $account_suffix = substr(hash('sha256', $email . microtime(true) . mt_rand()), 0, 16);
+    }
+    $account_id = 'ACC_' . time() . '_' . $account_suffix;
     $record = [
         'email' => $email,
         'password' => $password,
@@ -3631,8 +3660,6 @@ function saveCreatedAccount($chat_id, $email, $password, $status, $created_at = 
         unset($data['ultimate_credential_reservations'][$ultimate_reservation_id]);
     }
     $saved = saveData($data);
-    flock($lock, LOCK_UN);
-    fclose($lock);
     return $saved ? $account_id : false;
 }
 
@@ -3663,6 +3690,7 @@ function getUserPackageAccountsFromData($data, $chat_id) {
 function showAccountUpgradeMenu($chat_id, $account_id, $return_page = 1) {
     $data = loadData();
     $accounts = getUserPackageAccountsFromData($data, $chat_id);
+    releaseDataLock();
     if (!isset($accounts[$account_id])) {
         sendMessage($chat_id, "Akun tidak ditemukan atau bukan milik Anda.");
         return;
@@ -3708,17 +3736,10 @@ function processAccountPackageUpgrade($chat_id, $account_id, $target_package) {
         return ['success' => false, 'error' => 'Paket tujuan tidak valid.'];
     }
 
-    $lock = fopen(DATA_FILE . '.package.lock', 'c');
-    if (!$lock || !flock($lock, LOCK_EX)) {
-        if ($lock) fclose($lock);
-        return ['success' => false, 'error' => 'Sistem sedang sibuk. Silakan coba lagi.'];
-    }
-
     $data = loadData();
     $accounts = getUserPackageAccountsFromData($data, $chat_id);
     if (!isset($accounts[$account_id])) {
-        flock($lock, LOCK_UN);
-        fclose($lock);
+        releaseDataLock();
         return ['success' => false, 'error' => 'Akun tidak ditemukan atau bukan milik Anda.'];
     }
 
@@ -3726,8 +3747,7 @@ function processAccountPackageUpgrade($chat_id, $account_id, $target_package) {
     $current_package = $account['package'] ?? 'biasa';
     $definitions = getAccountPackageDefinitions();
     if (!isAccountPackageActive($target_package, $data) || $definitions[$target_package]['level'] <= $definitions[$current_package]['level']) {
-        flock($lock, LOCK_UN);
-        fclose($lock);
+        releaseDataLock();
         return ['success' => false, 'error' => 'Paket sudah berubah atau tidak tersedia.'];
     }
 
@@ -3739,15 +3759,13 @@ function processAccountPackageUpgrade($chat_id, $account_id, $target_package) {
     if ($target_package === 'ultimate') {
         $ultimate_credential = getAvailableUltimateCredentialFromData($data);
         if (!$ultimate_credential) {
-            flock($lock, LOCK_UN);
-            fclose($lock);
+            releaseDataLock();
             return ['success' => false, 'error' => 'Credential Ultimate sedang habis. Saldo tidak dipotong.'];
         }
     }
     $balance = (int)($data['users'][$chat_id]['saldo'] ?? 0);
     if ($difference <= 0 || $balance < $difference) {
-        flock($lock, LOCK_UN);
-        fclose($lock);
+        releaseDataLock();
         $error = $difference <= 0 ? 'Harga paket belum valid.' : 'Saldo tidak cukup. Kekurangan Rp ' . number_format($difference - $balance, 0, ',', '.');
         return ['success' => false, 'error' => $error];
     }
@@ -3789,8 +3807,6 @@ function processAccountPackageUpgrade($chat_id, $account_id, $target_package) {
         'created_at' => time()
     ];
     $saved = saveData($data);
-    flock($lock, LOCK_UN);
-    fclose($lock);
 
     if (!$saved) {
         return ['success' => false, 'error' => 'Gagal menyimpan upgrade. Saldo tidak diubah.'];
@@ -3828,6 +3844,7 @@ function showAccountHistory($chat_id, $page = 1, $upgrade_mode = false) {
         : "RIWAYAT AKUN YANG DIBUAT\n\n";
     
     $accounts = getUserPackageAccountsFromData($data, $chat_id);
+    releaseDataLock();
     if (empty($accounts)) {
         $response .= "Belum ada riwayat akun yang dibuat.";
         
@@ -7269,7 +7286,7 @@ function cloneTvTaskMultiple($chat_id, $emails, $password_to_use, $jumlah_akun) 
                         $sukses_dengan_sub++;
                         
                         // Simpan ke riwayat akun
-                        saveCreatedAccount($chat_id, $email, $password_to_use, 'sukses', time(), false);
+                        saveCreatedAccount($chat_id, $email, $password_to_use, 'sukses', time(), false, null, 'biasa', $harga_per_akun, getAccountBuyerTier($chat_id));
                         notifyPrivateGroup('PEMBELIAN MULTI AKUN BERHASIL', $chat_id, [
                             'Akun' => ($index + 1) . ' dari ' . $jumlah_akun,
                             'Nominal' => 'Rp ' . number_format($harga_per_akun, 0, ',', '.'),
@@ -9076,6 +9093,9 @@ function cleanupOldPayments() {
             }
             foreach ($old_accounts as $account_id) {
                 unset($data['created_accounts'][$chat_id][$account_id]);
+                foreach (array_keys(getAccountPackageDefinitions()) as $package) {
+                    unset($data['akun_' . $package][$chat_id][$account_id]);
+                }
                 $changed = true;
             }
             
