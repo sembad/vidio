@@ -2080,7 +2080,14 @@ function loadData() {
                         }
                     }
                 }
-                if (!isset($data['warranty_claims'])) $data['warranty_claims'] = [];
+                if (!isset($data['warranty_claims']) || !is_array($data['warranty_claims'])) $data['warranty_claims'] = [];
+                foreach ($data['warranty_claims'] as $replaced_account_id => $claim) {
+                    if (($claim['status'] ?? '') !== 'used' || empty($claim['new_account_id'])) continue;
+                    $owner_chat_id = $claim['chat_id'] ?? null;
+                    if ($owner_chat_id !== null && isset($data['created_accounts'][$owner_chat_id][$claim['new_account_id']])) {
+                        removeAccountRecordFromData($data, $owner_chat_id, $replaced_account_id);
+                    }
+                }
                 if (!isset($data['settings'])) {
                     $data['settings'] = [
                         'bot_active' => true,
@@ -3629,6 +3636,13 @@ function pollPaymentUntilExpired($payment_id) {
     }
 }
 
+function removeAccountRecordFromData(&$data, $chat_id, $account_id) {
+    unset($data['created_accounts'][$chat_id][$account_id]);
+    foreach (array_keys(getAccountPackageDefinitions()) as $package) {
+        unset($data['akun_' . $package][$chat_id][$account_id]);
+    }
+}
+
 // FUNGSI BARU: Simpan akun yang dibuat ke riwayat
 function saveCreatedAccount($chat_id, $email, $password, $status, $created_at = null, $is_free = false, $warranty_source = null, $package = null, $price = 0, $buyer_tier = null, $ultimate_credential = null, $ultimate_reservation_id = null) {
     $data = loadData();
@@ -4682,19 +4696,9 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
                 return;
             }
             
-            // Muat ulang agar record akun pengganti tidak tertimpa data lama.
+            // Akun pengganti menggantikan akun lama di riwayat agar tidak tampil ganda.
             $data = loadData();
-            if ($original_package === 'ultimate') {
-                unset($data['akun_ultimate'][$chat_id][$account_id]);
-                unset(
-                    $data['created_accounts'][$chat_id][$account_id]['ultimate_credential_number'],
-                    $data['created_accounts'][$chat_id][$account_id]['ultimate_credential_email'],
-                    $data['created_accounts'][$chat_id][$account_id]['ultimate_credential_token'],
-                    $data['created_accounts'][$chat_id][$account_id]['ultimate_started_at'],
-                    $data['created_accounts'][$chat_id][$account_id]['ultimate_expires_at']
-                );
-                $data['created_accounts'][$chat_id][$account_id]['warranty_replaced_by'] = $new_account_id;
-            }
+            removeAccountRecordFromData($data, $chat_id, $account_id);
             $data['warranty_claims'][$account_id]['status'] = 'used';
             $data['warranty_claims'][$account_id]['new_account_id'] = $new_account_id;
             $data['warranty_claims'][$account_id]['completed_at'] = time();
