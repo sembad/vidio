@@ -4176,6 +4176,14 @@ function resolveCurrentWarrantyAccountId($data, $chat_id, $account_id) {
     while (!isset($visited[$account_id])) {
         $visited[$account_id] = true;
         $replacement_id = $data['warranty_claims'][$account_id]['new_account_id'] ?? null;
+        if (!$replacement_id || !isset($data['created_accounts'][$chat_id][$replacement_id])) {
+            $replacement_id = null;
+            foreach ($data['created_accounts'][$chat_id] ?? [] as $candidate_id => $candidate) {
+                if (($candidate['warranty_source'] ?? null) === $account_id) {
+                    $replacement_id = $candidate_id;
+                }
+            }
+        }
         if (!$replacement_id || !isset($data['created_accounts'][$chat_id][$replacement_id])) break;
         $account_id = $replacement_id;
     }
@@ -4310,11 +4318,9 @@ function startWarrantyPasswordChange($chat_id, $account_id, $return_page = 1) {
     }
 
     $account = $data['created_accounts'][$chat_id][$account_id];
-    $claim_used = isset($data['warranty_claims'][$account_id])
-        && ($data['warranty_claims'][$account_id]['status'] ?? '') === 'used';
 
-    if (!empty($account['is_free']) || $claim_used) {
-        sendMessage($chat_id, "Akun ini tidak lagi memenuhi syarat pemeriksaan garansi.");
+    if (!empty($account['is_free'])) {
+        sendMessage($chat_id, "Akun dari limit gratis tidak memenuhi syarat pemeriksaan garansi.");
         showWarrantyCheckPage($chat_id, $return_page);
         return;
     }
@@ -4499,12 +4505,10 @@ function processDirectWarrantyClaim($chat_id, $account_id) {
     if (is_array($existing_claim)) {
         $existing_status = $existing_claim['status'] ?? '';
         $still_active = time() - (int)($existing_claim['claimed_at'] ?? 0) < 600;
-        if ($existing_status === 'used' || in_array($existing_status, ['pending', 'processing'], true) && $still_active) {
+        if (in_array($existing_status, ['pending', 'processing'], true) && $still_active) {
             flock($claim_lock, LOCK_UN);
             fclose($claim_lock);
-            sendMessage($chat_id, $existing_status === 'used'
-                ? "Silakan pilih akun pengganti terbaru dari daftar garansi."
-                : "Klaim akun ini sedang diproses. Lanjutkan sesi yang sudah terbuka.");
+            sendMessage($chat_id, "Klaim akun ini sedang diproses. Lanjutkan sesi yang sudah terbuka.");
             return;
         }
     }
