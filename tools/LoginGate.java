@@ -718,7 +718,10 @@ public final class LoginGate {
         }
         cachedUa = ua;
         if (cacheFile != null) {
-            writeCachedUa(cacheFile, ua);
+            try {
+                writeCachedUa(cacheFile, ua);
+            } catch (IOException ignored) {
+            }
         }
         return ua;
     }
