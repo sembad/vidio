@@ -165,12 +165,8 @@ import sys
 root = Path(sys.argv[1])
 profile = sys.argv[2]
 min_api = int(sys.argv[3])
-targets = {
-    "X-API-Platform": 2,
-    "X-API-App-Info": 2,
-    "X-AUTHORIZATION": 2,
+disabled_headers = {
     "X-Partner-Id": 1,
-    "X-Partner-Signature": 1,
     "X-Device-Brand": 1,
     "X-Device-Model": 1,
     "X-Device-Form-Factor": 1,
@@ -179,9 +175,36 @@ targets = {
     "X-Device-Android-MPC": 1,
     "X-Device-CPU-Arch": 1,
 }
+preserved_stream_headers = {
+    "X-API-Platform": 2,
+    "X-API-App-Info": 2,
+    "X-AUTHORIZATION": 2,
+    "X-Partner-Signature": 1,
+}
+stream_header_restorations = {
+    "mobile": {
+        ("t20/e.smali", "X-API-Platform"): "invoke-virtual {p1, v1, v2}, Lx20/d;->b(Ljava/lang/String;Ljava/lang/String;)V",
+        ("t20/e.smali", "X-API-App-Info"): "invoke-virtual {p1, v2, v1}, Lx20/d;->b(Ljava/lang/String;Ljava/lang/String;)V",
+        ("f60/d.smali", "X-API-Platform"): "invoke-virtual {v1, v2, v3}, Ltd0/f0$a;->a(Ljava/lang/String;Ljava/lang/String;)V",
+        ("f60/d.smali", "X-API-App-Info"): "invoke-virtual {v1, v2, v0}, Ltd0/f0$a;->a(Ljava/lang/String;Ljava/lang/String;)V",
+        ("w20/k.smali", "X-AUTHORIZATION"): "invoke-virtual {v1, v3, v0}, Lx20/d;->b(Ljava/lang/String;Ljava/lang/String;)V",
+        ("qw/r0.smali", "X-AUTHORIZATION"): "invoke-virtual {v5, v2, v1}, Ltd0/f0$a;->d(Ljava/lang/String;Ljava/lang/String;)V",
+        ("t20/d.smali", "X-Partner-Signature"): "invoke-virtual {v0, p1, v1}, Lx20/d;->b(Ljava/lang/String;Ljava/lang/String;)V",
+    },
+    "tv": {
+        ("mx/d.smali", "X-API-Platform"): "invoke-virtual {p1, v0, v2}, Lpx/e;->b(Ljava/lang/String;Ljava/lang/String;)V",
+        ("mx/d.smali", "X-API-App-Info"): "invoke-virtual {p1, v2, v0}, Lpx/e;->b(Ljava/lang/String;Ljava/lang/String;)V",
+        ("l00/d.smali", "X-API-Platform"): "invoke-virtual {v1, v2, v3}, Lbb0/f0$a;->a(Ljava/lang/String;Ljava/lang/String;)V",
+        ("l00/d.smali", "X-API-App-Info"): "invoke-virtual {v1, v2, v0}, Lbb0/f0$a;->a(Ljava/lang/String;Ljava/lang/String;)V",
+        ("ox/k.smali", "X-AUTHORIZATION"): "invoke-virtual {v1, v2, v0}, Lpx/e;->b(Ljava/lang/String;Ljava/lang/String;)V",
+        ("ms/f.smali", "X-AUTHORIZATION"): "invoke-virtual {v4, v1, v0}, Lbb0/f0$a;->d(Ljava/lang/String;Ljava/lang/String;)V",
+        ("mx/c.smali", "X-Partner-Signature"): "invoke-virtual {v0, v1, p1}, Lpx/e;->b(Ljava/lang/String;Ljava/lang/String;)V",
+    },
+}
+scanned_headers = {**disabled_headers, **preserved_stream_headers}
 const_pattern = re.compile(
     r'^\s*const-string(?:/jumbo)?\s+([vp]\d+),\s+"(' +
-    "|".join(re.escape(name) for name in targets) + r')"\s*$'
+    "|".join(re.escape(name) for name in scanned_headers) + r')"\s*$'
 )
 append_pattern = re.compile(
     r'^\s*invoke-(?:virtual|interface)(?:/range)?\s+\{([^}]*)\},\s+'
@@ -189,6 +212,8 @@ append_pattern = re.compile(
 )
 counts = Counter()
 already_patched_counts = Counter()
+preserved_counts = Counter()
+restored_stream_header_counts = Counter()
 changed_files = set()
 
 for path in root.glob("smali*/**/*.smali"):
@@ -205,14 +230,36 @@ for path in root.glob("smali*/**/*.smali"):
         register, header = pending
         append = append_pattern.match(line)
         if append and register in {part.strip() for part in append.group(1).split(",")}:
-            indentation = line[:len(line) - len(line.lstrip())]
-            newline = "\n" if line.endswith("\n") else ""
-            lines[index] = f"{indentation}nop{newline}"
-            counts[header] += 1
-            changed = True
+            if header in preserved_stream_headers:
+                preserved_counts[header] += 1
+            else:
+                indentation = line[:len(line) - len(line.lstrip())]
+                newline = "\n" if line.endswith("\n") else ""
+                lines[index] = f"{indentation}nop{newline}"
+                counts[header] += 1
+                changed = True
             pending = None
         elif re.match(r'^\s*nop\s*$', line):
-            already_patched_counts[header] += 1
+            if header in preserved_stream_headers:
+                relative_path = path.relative_to(root).as_posix()
+                restorations = [
+                    invocation
+                    for (suffix, expected_header), invocation
+                    in stream_header_restorations[profile].items()
+                    if header == expected_header and relative_path.endswith(suffix)
+                ]
+                if len(restorations) != 1:
+                    raise SystemExit(
+                        f"Cannot safely restore required stream header {header} in {relative_path}"
+                    )
+                indentation = line[:len(line) - len(line.lstrip())]
+                newline = "\n" if line.endswith("\n") else ""
+                lines[index] = f"{indentation}{restorations[0]}{newline}"
+                preserved_counts[header] += 1
+                restored_stream_header_counts[header] += 1
+                changed = True
+            else:
+                already_patched_counts[header] += 1
             pending = None
         elif re.match(r'^\s*const-string(?:/jumbo)?\s+' + re.escape(register) + r',', line):
             raise SystemExit(f"Header register overwritten before append: {header} in {path}")
@@ -223,10 +270,15 @@ for path in root.glob("smali*/**/*.smali"):
         changed_files.add(path.relative_to(root))
 
 combined_header_counts = counts + already_patched_counts
-if combined_header_counts != Counter(targets):
+if combined_header_counts != Counter(disabled_headers):
     raise SystemExit(
-        f"Unexpected header patch counts: expected {targets}, "
+        f"Unexpected header patch counts: expected {disabled_headers}, "
         f"new={dict(counts)}, existing={dict(already_patched_counts)}"
+    )
+if preserved_counts != Counter(preserved_stream_headers):
+    raise SystemExit(
+        f"Unexpected preserved stream header counts: expected {preserved_stream_headers}, "
+        f"found={dict(preserved_counts)}"
     )
 
 policy_files = {
@@ -456,6 +508,7 @@ else:
     url_setter = "j"
 
 ua_marker = "Lcom/vidio/android/patch/LoginGate;->streamUaForUrl(Ljava/lang/String;)Ljava/lang/String;"
+stream_headers_marker = "Lcom/vidio/android/patch/LoginGate;->addStreamHeaders(Ljava/lang/Object;Ljava/lang/Object;)V"
 proxy_marker = "Lcom/vidio/android/patch/LoginGate;->streamProxyUrl(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;"
 app_ua_matches = list(root.glob(f"smali*/**/{app_ua_suffix}"))
 if len(app_ua_matches) != 1:
@@ -521,6 +574,21 @@ if ua_text.count(ua_marker) == 0:
 if ua_text.count(ua_marker) != 1:
     raise SystemExit("Expected exactly one transport stream UA hook")
 
+if ua_text.count(stream_headers_marker) == 0:
+    final_builder_call = (
+        "    invoke-virtual {v1}, " + builder_type + "->b()" + request_type + "\n"
+    )
+    if ua_text.count(final_builder_call) != 1:
+        raise SystemExit("Transport stream header hook point not found")
+    stream_headers_block = (
+        "    invoke-static {v0, v1}, " + stream_headers_marker + "\n\n"
+        + final_builder_call
+    )
+    ua_text = ua_text.replace(final_builder_call, stream_headers_block, 1)
+if ua_text.count(stream_headers_marker) != 1:
+    raise SystemExit("Expected exactly one transport stream header hook")
+stream_headers_hook_done = True
+
 if ua_text.count(proxy_marker) == 0:
     transport_proxy_pattern = re.compile(
         rf"(    invoke-(?:interface|virtual) \{{p1\}}, [^\n]+->(?:request|a)\(\){re.escape(request_type)}\n"
@@ -563,9 +631,14 @@ if "stream_proxy_transport_done" in ua_text or "->streamProxyHost()Ljava/lang/St
     raise SystemExit("Late stream proxy hook or manual Host override is still present")
 proxy_index = ua_text.index(proxy_marker)
 ua_index = ua_text.index(ua_marker)
-first_builder_index = ua_text.index(f"{builder_type}->b(){request_type}")
-if proxy_index > first_builder_index or proxy_index > ua_index:
+stream_headers_index = ua_text.index(stream_headers_marker)
+final_builder_index = ua_text.index(
+    f"invoke-virtual {{v1}}, {builder_type}->b(){request_type}"
+)
+if proxy_index > final_builder_index or proxy_index > ua_index:
     raise SystemExit("Stream proxy hook must run before BridgeInterceptor builds headers")
+if stream_headers_index > final_builder_index:
+    raise SystemExit("Required stream headers must be added before the request is built")
 ua_path.write_text(ua_text)
 changed_files.add(ua_path.relative_to(root))
 ua_hook_done = True
@@ -757,12 +830,19 @@ for label, count in ui_stub_counts.items():
 print(f"Welcome toast present in splash onCreate: {toast_injected}")
 print(f"KMM stream host hook present: {stream_builder_hook_done}")
 print(f"Stream UA rewrite hook present: {ua_hook_done}")
+print(f"Required stream header hook present: {stream_headers_hook_done}")
 print(f"Stream proxy fallback hook present: {stream_proxy_hook_done}")
 print(f"Login gate context initializer present: {login_gate_initialized}")
 print(f"Login gate request hook present: {login_gate_hooked}")
+print("Preserved stream header append calls:")
+for header in preserved_stream_headers:
+    print(f"  {header}: {preserved_counts[header]}")
 print("Disabled header append calls (new/existing):")
-for header in targets:
+for header in disabled_headers:
     print(f"  {header}: {counts[header]}/{already_patched_counts[header]}")
+print("Required stream headers restored from prior builds:")
+for header in preserved_stream_headers:
+    print(f"  {header}: {restored_stream_header_counts[header]}")
 print("Playback policy methods forced false:")
 for method_name in playback_methods:
     print(f"  {method_name}: {playback_counts[method_name]}")

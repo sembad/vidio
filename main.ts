@@ -217,6 +217,19 @@ function getProxyHttpClient(): unknown {
   return cachedProxyClient;
 }
 
+const STREAM_HEADER_DEFAULTS: Record<string, string> = {
+  "x-partner-signature": "",
+  "x-authorization": "",
+  "x-api-platform": "tv-android",
+  "x-api-app-info": "tv-android/16/2608.2.4-1020",
+};
+
+function applyForwardedStreamHeaders(headers: Headers, request?: Request): void {
+  for (const [name, fallback] of Object.entries(STREAM_HEADER_DEFAULTS)) {
+    headers.set(name, request?.headers.get(name) ?? fallback);
+  }
+}
+
 async function proxyUltimateStream(
   streamId: string,
   credential: UltimateCredential,
@@ -246,6 +259,7 @@ async function proxyUltimateStream(
     "x-user-email": credential.email,
     "x-user-token": credential.token,
   });
+  applyForwardedStreamHeaders(headers, request);
 
   let upstream: Response;
   try {
@@ -597,6 +611,35 @@ async function selfCheck(): Promise<void> {
   const signature = await streamSignature("1788880138");
   if (signature !== "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4") {
     throw new Error("Stream signature self-check failed");
+  }
+
+  const forwardedHeaders = new Headers();
+  applyForwardedStreamHeaders(
+    forwardedHeaders,
+    new Request("https://vidiot.my.id/livestreamings/123/stream?initialize=true", {
+      headers: {
+        "x-partner-signature": "partner-signature",
+        "x-authorization": "session-authorization",
+        "x-api-platform": "app-android",
+        "x-api-app-info": "android/16/test-build",
+      },
+    }),
+  );
+  if (
+    forwardedHeaders.get("x-partner-signature") !== "partner-signature" ||
+    forwardedHeaders.get("x-authorization") !== "session-authorization" ||
+    forwardedHeaders.get("x-api-platform") !== "app-android" ||
+    forwardedHeaders.get("x-api-app-info") !== "android/16/test-build"
+  ) {
+    throw new Error("Stream header forwarding self-check failed");
+  }
+
+  const defaultHeaders = new Headers();
+  applyForwardedStreamHeaders(defaultHeaders);
+  for (const name of Object.keys(STREAM_HEADER_DEFAULTS)) {
+    if (!defaultHeaders.has(name)) {
+      throw new Error(`Required stream header missing: ${name}`);
+    }
   }
 
   // Self-check AES encryption format and round trip

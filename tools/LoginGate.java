@@ -296,6 +296,77 @@ public final class LoginGate {
         return ua != null ? ua : loadStreamUa();
     }
 
+    public static void addStreamHeaders(Object request, Object builder) {
+        if (request == null || builder == null) {
+            return;
+        }
+        try {
+            Object requestUrl = request.getClass().getMethod("j").invoke(request);
+            if (requestUrl == null) {
+                return;
+            }
+            String url = requestUrl.toString();
+            java.lang.reflect.Method getHeader = request.getClass().getMethod("d", String.class);
+            java.lang.reflect.Method setHeader = builder.getClass().getMethod(
+                    "d", String.class, String.class);
+            String[] names = {
+                    "x-partner-signature",
+                    "x-authorization",
+                    "x-api-platform",
+                    "x-api-app-info"
+            };
+            for (String name : names) {
+                Object currentValue = getHeader.invoke(request, name);
+                String value = streamHeaderValue(
+                        url,
+                        name,
+                        currentValue instanceof String ? (String) currentValue : null);
+                if (value != null) {
+                    setHeader.invoke(builder, name, value);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    static String streamHeaderValue(String url, String name, String currentValue) {
+        if (name == null || (!isStreamUrl(url, STREAM_SOURCE_HOST)
+                && !isStreamUrl(url, getEffectiveStreamProxyHost()))) {
+            return null;
+        }
+        if (currentValue != null) {
+            return currentValue;
+        }
+        if ("x-partner-signature".equalsIgnoreCase(name)
+                || "x-authorization".equalsIgnoreCase(name)) {
+            return "";
+        }
+        if ("x-api-platform".equalsIgnoreCase(name)) {
+            return "tv".equals(PROFILE) ? "tv-android" : "app-android";
+        }
+        if ("x-api-app-info".equalsIgnoreCase(name)) {
+            String androidRelease = androidRelease();
+            return "tv".equals(PROFILE)
+                    ? "tv-android/" + androidRelease + "/2608.2.4-1020"
+                    : "android/" + androidRelease + "/2608.2.7-73babcffa4-3191921";
+        }
+        return null;
+    }
+
+    private static String androidRelease() {
+        try {
+            Object release = Class.forName("android.os.Build$VERSION").getField("RELEASE").get(null);
+            if (release != null) {
+                String value = release.toString().trim();
+                if (!value.isEmpty()) {
+                    return value;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return "16";
+    }
+
     /**
      * Selects the KMM request builder host before OkHttp creates the request.
      * Only active Ultimate sessions use the proxy host; regular and mobile
@@ -470,21 +541,6 @@ public final class LoginGate {
             writeAccountMode(file, normalizedEmail, ultimate);
         } catch (IOException ignored) {
         }
-    }
-
-    private static void checkUltimateExpiryAsync(final String email) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    boolean stillUltimate = fetchPermission("akunultimate", email);
-                    if (!stillUltimate) {
-                        cacheAccountModeAfterLogin(email, false);
-                    }
-                } catch (Throwable ignored) {
-                }
-            }
-        }).start();
     }
 
     private static void loadCachedAccountModeOnStart() {
@@ -1134,6 +1190,17 @@ public final class LoginGate {
         cachedUa = ua;
         String targetUrl = "https://api.vidio.com/livestreamings/12345/stream?initialize=true";
         String expectedProxyUrl = "https://" + getEffectiveStreamProxyHost() + "/livestreamings/12345/stream?initialize=true";
+        String expectedPlatform = "tv".equals(PROFILE) ? "tv-android" : "app-android";
+        String expectedAppInfoPrefix = "tv".equals(PROFILE) ? "tv-android/" : "android/";
+        if (!"session-authorization".equals(
+                    streamHeaderValue(targetUrl, "x-authorization", "session-authorization"))
+                || !"".equals(streamHeaderValue(targetUrl, "x-partner-signature", null))
+                || !expectedPlatform.equals(streamHeaderValue(targetUrl, "x-api-platform", null))
+                || !streamHeaderValue(expectedProxyUrl, "x-api-app-info", null)
+                        .startsWith(expectedAppInfoPrefix)
+                || streamHeaderValue("https://api.vidio.com/profiles", "x-api-platform", null) != null) {
+            throw new AssertionError("Required headers must only be added to source or proxy stream URLs");
+        }
         if (!ua.equals(streamUaForUrl(targetUrl))
                 || !ua.equals(streamUaForUrl(expectedProxyUrl))
                 || cachedUa != ua) {
