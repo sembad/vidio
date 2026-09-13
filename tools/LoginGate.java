@@ -91,7 +91,6 @@ public final class LoginGate {
     private static final int MAX_RESPONSE_CHARS = 16;
     private static final int MAX_UA_CHARS = 1024;
     private static final String UA_CACHE_FILE = "stream_ua.txt";
-    public static final String DEFAULT_TV_UA = "tv-android/2608.2.4 (1020)";
     private static final String ACCOUNT_MODE_FILE = "stream_account_mode.txt";
     private static final String ULTIMATE_MODE = "ultimate";
     private static final String STANDARD_MODE = "standard";
@@ -707,9 +706,21 @@ public final class LoginGate {
             return ua;
         }
 
-        triggerAsyncFetchUa();
-        cachedUa = DEFAULT_TV_UA;
-        return DEFAULT_TV_UA;
+        // No cached UA yet: fetch it synchronously from the API ?ua endpoint so the
+        // value always tracks the official app version instead of a hardcoded string.
+        try {
+            ua = fetchUa();
+        } catch (IOException ignored) {
+            return null;
+        }
+        if (ua == null) {
+            return null;
+        }
+        cachedUa = ua;
+        if (cacheFile != null) {
+            writeCachedUa(cacheFile, ua);
+        }
+        return ua;
     }
 
     private static String fetchUa() throws IOException {
