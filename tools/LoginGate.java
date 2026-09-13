@@ -323,8 +323,10 @@ public final class LoginGate {
 
             // Always enforce TV platform and TV app-info on playback URLs
             setHeader.invoke(builder, "x-api-platform", "tv-android");
-            String androidRelease = androidRelease();
-            setHeader.invoke(builder, "x-api-app-info", "tv-android/" + androidRelease + "/2608.2.4-1020");
+            String appInfo = streamAppInfo();
+            if (appInfo != null) {
+                setHeader.invoke(builder, "x-api-app-info", appInfo);
+            }
 
             Object sig = getHeader.invoke(request, "x-partner-signature");
             if (sig == null) {
@@ -346,8 +348,7 @@ public final class LoginGate {
             return "tv-android";
         }
         if ("x-api-app-info".equalsIgnoreCase(name)) {
-            String androidRelease = androidRelease();
-            return "tv-android/" + androidRelease + "/2608.2.4-1020";
+            return streamAppInfo();
         }
         if (currentValue != null) {
             return currentValue;
@@ -371,6 +372,45 @@ public final class LoginGate {
         } catch (Throwable ignored) {
         }
         return "16";
+    }
+
+    /**
+     * Extracts the "&lt;version&gt;-&lt;build&gt;" pair from a UA such as
+     * "tv-android/2608.2.4 (1020)" so x-api-app-info always matches the UA the
+     * API handed us instead of a version baked into the APK.
+     */
+    static String appInfoVersionFromUa(String ua) {
+        if (ua == null) {
+            return null;
+        }
+        int slash = ua.indexOf('/');
+        if (slash < 0) {
+            return null;
+        }
+        String rest = ua.substring(slash + 1).trim();
+        int open = rest.indexOf('(');
+        int close = rest.indexOf(')', open + 1);
+        if (open < 0 || close < 0) {
+            return null;
+        }
+        String version = rest.substring(0, open).trim();
+        String build = rest.substring(open + 1, close).trim();
+        if (version.isEmpty() || build.isEmpty()) {
+            return null;
+        }
+        return version + "-" + build;
+    }
+
+    private static String streamAppInfo() {
+        String ua = normalizeUa(cachedUa);
+        if (ua == null) {
+            ua = loadStreamUa();
+        }
+        String version = appInfoVersionFromUa(ua);
+        if (version == null) {
+            return null;
+        }
+        return "tv-android/" + androidRelease() + "/" + version;
     }
 
     /**
@@ -1355,6 +1395,13 @@ public final class LoginGate {
         verifySignature(null);
         if (normalizeUa("bad\u0001ua") != null) {
             throw new AssertionError("Control character was accepted in UA");
+        }
+        if (!"2608.2.4-1020".equals(appInfoVersionFromUa("tv-android/2608.2.4 (1020)"))) {
+            throw new AssertionError("UA version/build was not parsed from the UA");
+        }
+        if (appInfoVersionFromUa("tv-android/2608.2.4") != null
+                || appInfoVersionFromUa(null) != null) {
+            throw new AssertionError("Malformed UA must not yield an app-info version");
         }
         char[] oversized = new char[MAX_UA_CHARS + 1];
         Arrays.fill(oversized, 'a');
