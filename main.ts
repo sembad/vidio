@@ -218,6 +218,7 @@ function getProxyHttpClient(): unknown {
 }
 
 const STREAM_HEADER_DEFAULTS: Record<string, string> = {
+  "user-agent": USER_AGENT,
   "x-partner-signature": "",
   "x-authorization": "",
   "x-api-platform": "tv-android",
@@ -245,7 +246,6 @@ async function proxyUltimateStream(
   const visitorId = request?.headers.get("x-visitor-id") || defaultVisitorId;
 
   const headers = new Headers({
-    "user-agent": USER_AGENT,
     "accept-encoding": "gzip",
     "x-client": client,
     "x-signature": signature,
@@ -618,6 +618,7 @@ async function selfCheck(): Promise<void> {
     forwardedHeaders,
     new Request("https://vidiot.my.id/livestreamings/123/stream?initialize=true", {
       headers: {
+        "user-agent": "tv-android/from-api",
         "x-partner-signature": "partner-signature",
         "x-authorization": "session-authorization",
         "x-api-platform": "app-android",
@@ -626,6 +627,7 @@ async function selfCheck(): Promise<void> {
     }),
   );
   if (
+    forwardedHeaders.get("user-agent") !== "tv-android/from-api" ||
     forwardedHeaders.get("x-partner-signature") !== "partner-signature" ||
     forwardedHeaders.get("x-authorization") !== "session-authorization" ||
     forwardedHeaders.get("x-api-platform") !== "app-android" ||
