@@ -10,11 +10,6 @@ const AES_KEY_BASE64 = 'O8NAJlk7o7GNeNn01qUXxjezrD/Z2djOMjSizTRZt1U=';
 const KEY_ID = 'ZXhDgP7RixaP';
 const X_API_AUTH = 'laZOmogezono5ogekaso5oz4Mezimew1';
 
-// Proxy DataImpulse (IP Indonesia) dari main.ts
-const PROXY_HOST = 'gw.dataimpulse.com';
-const PROXY_PORT = 823;
-const PROXY_AUTH = '54e00827b371c0c310a2__cr.id:817df9dc4f7bfe33';
-
 function sendJson($payload, $status = 200)
 {
     http_response_code($status);
@@ -196,15 +191,6 @@ try {
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_SSL_VERIFYHOST => 2,
     ];
-
-    // Aktifkan Proxy Indonesia jika didefinisikan (diperlukan jika server bukan di Indonesia)
-    if (defined('PROXY_HOST') && PROXY_HOST !== '') {
-        $curlOptions[CURLOPT_PROXY] = PROXY_HOST . ':' . PROXY_PORT;
-        if (defined('PROXY_AUTH') && PROXY_AUTH !== '') {
-            $curlOptions[CURLOPT_PROXYUSERPWD] = PROXY_AUTH;
-        }
-        $curlOptions[CURLOPT_PROXYTYPE] = CURLPROXY_HTTP;
-    }
 
     curl_setopt_array($curl, $curlOptions);
 
