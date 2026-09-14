@@ -125,22 +125,93 @@ function buildPartnerAuth($rawJson)
 $curl = null;
 
 try {
-    // Mode brand dapat dipilih via query param ?brand=coocaa atau ?brand=tcl
-    $brand = isset($_GET['brand']) ? strtolower((string) $_GET['brand']) : 'coocaa';
+    // Daftar katalog partner & model yang terverifikasi di ANALISIS_HEADER.md / APK TV:
+    $brandCatalog = [
+        // 1. Brand berbasis android_id (bisa UUID acak baru, terbukti HTTP 200)
+        'tcl' => [
+            'agent' => 'tcl',
+            'id_type' => 'android_id',
+        ],
+        'coocaa' => [
+            'agent' => 'coocaa_SW3_ATV_T',
+            'id_type' => 'android_id',
+            'supported_models' => ['SW3_ATV_T', 'RTD2841', 'RTD2842', 'SW3_ATV', '4K_ATV', '2K_ATV', 'DTP2162'],
+        ],
+        'aqua' => [
+            'agent' => 'aqua_aqua android tv',
+            'id_type' => 'android_id',
+        ],
 
-    // Konfigurasi identifier & partner_agent sesuai temuan dekompilasi APK TV 2608.2.4
-    if ($brand === 'coocaa') {
-        // Coocaa wajib menyertakan tipe model board hardware (hasil handshake /partner/brand)
-        $partnerAgent = 'coocaa_SW3_ATV_T';
-        $uniqueId = uuidV4();
-    } elseif ($brand === 'firstmedia') {
-        // FirstMedia memerlukan Serial Number STB LinkNet fisik
-        $partnerAgent = 'firstmedia';
-        $uniqueId = isset($_GET['unique_id']) ? (string) $_GET['unique_id'] : '2140H205000423';
+        // 2. Brand berbasis hardware serial number / provider ID khusus
+        'firstmedia' => [
+            'agent' => 'firstmedia',
+            'id_type' => 'firstmedia_serial_number',
+            'default_id' => '2140H205000423',
+        ],
+        'polytron' => [
+            'agent' => 'polytron_PDBM11ADL',
+            'id_type' => 'polytron_serial_number',
+            'default_id' => 'snPolytron_1',
+            'supported_models' => ['PDBM11ADL', 'PLD32AG9953'],
+        ],
+        'akari' => [
+            'agent' => 'akari',
+            'id_type' => 'akari_serial_number',
+            'default_id' => 'A210433620A00283',
+        ],
+        'changhong' => [
+            'agent' => 'changhong',
+            'id_type' => 'changhong_serial_number',
+            'default_id' => 'G92DVB0CHOD01908080',
+        ],
+        'icontv' => [
+            'agent' => 'icontv_ERZA X96Q',
+            'id_type' => 'android_id',
+            'default_id' => 'sapo1',
+        ],
+        'eroc' => [
+            'agent' => 'eroc_android_tv',
+            'id_type' => 'generic_mac_address',
+            'default_id' => '78:8a:86:ae:cd:9b',
+        ],
+        'myrepublic' => [
+            'agent' => 'myrepublic',
+            'id_type' => 'myrepublic_mac_address',
+            'default_id' => 'FC:D5:D9:D3:5B:56',
+        ],
+    ];
+
+    // Parameter fleksibel dari query string:
+    $brand = isset($_GET['brand']) ? strtolower(trim((string) $_GET['brand'])) : 'coocaa';
+    $customModel = isset($_GET['model']) ? trim((string) $_GET['model']) : '';
+    $customAgent = isset($_GET['agent']) ? trim((string) $_GET['agent']) : '';
+    $customUniqueId = isset($_GET['unique_id']) ? trim((string) $_GET['unique_id']) : '';
+
+    // Tentukan partner_agent & unique_id:
+    if ($customAgent !== '') {
+        $partnerAgent = $customAgent;
+        $uniqueId = $customUniqueId !== '' ? $customUniqueId : uuidV4();
+    } elseif (isset($brandCatalog[$brand])) {
+        $config = $brandCatalog[$brand];
+
+        // Jika user menentukan custom model (misal ?brand=coocaa&model=RTD2841)
+        if ($customModel !== '') {
+            $partnerAgent = $brand . '_' . $customModel;
+        } else {
+            $partnerAgent = $config['agent'];
+        }
+
+        if ($customUniqueId !== '') {
+            $uniqueId = $customUniqueId;
+        } elseif ($config['id_type'] === 'android_id') {
+            $uniqueId = uuidV4();
+        } else {
+            $uniqueId = $config['default_id'] ?? uuidV4();
+        }
     } else {
-        // Default TCL
-        $partnerAgent = 'tcl';
-        $uniqueId = uuidV4();
+        // Fallback jika brand lain dimasukkan
+        $partnerAgent = $customModel !== '' ? $brand . '_' . $customModel : $brand;
+        $uniqueId = $customUniqueId !== '' ? $customUniqueId : uuidV4();
     }
 
     $plainPayload = json_encode(
