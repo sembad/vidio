@@ -1124,6 +1124,37 @@ function isValidAccountPackage($package) {
     return isset(getAccountPackageDefinitions()[$package]);
 }
 
+function getPackageInformationText($package = 'biasa') {
+    if ($package === 'ultimate') {
+        return "INFORMASI :\n" .
+            "BRI Super League Pegadaian Championship Vidio Original Series Vidio Eksklusif\n" .
+            "Korean Drama Hollywood Movies Indonesian Movies Anime Film, TV, dan Series Internasional\n" .
+            "Timnas Match\n" .
+            "UEFA Champions League\n" .
+            "LaLiga Eredivisie Carabao Cup ProLiga\n" .
+            "VNL\n" .
+            "AVC\n" .
+            "Sea V-League\n" .
+            "WTA Serie A\n" .
+            "FA Cup\n" .
+            "BWF\n" .
+            "MotoGP\n" .
+            "Formula 1\n" .
+            "Premier League";
+    }
+
+    return "INFORMASI :\n" .
+        "BRI Super League Pegadaian Championship Vidio Original Series Vidio Eksklusif\n" .
+        "Korean Drama Hollywood Movies Indonesian Movies Anime Film, TV, dan Series Internasional\n" .
+        "Timnas Match\n" .
+        "UEFA Champions League\n" .
+        "LaLiga Eredivisie Carabao Cup ProLiga\n" .
+        "VNL\n" .
+        "AVC\n" .
+        "Sea V-League\n" .
+        "WTA";
+}
+
 function getUltimateCredentials() {
     global $CREDENTIALS;
     return $CREDENTIALS;
@@ -4717,11 +4748,10 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
             $response .= "Profil: " . $profile_name . "\n";
             $response .= "Paket: " . ($info['name'] ?? 'N/A') . "\n";
             $response .= "Kode: " . ($info['code'] ?? 'N/A') . "\n";
-            $response .= "Durasi: " . $info['durasi'] . " hari\n";
-            $response .= "Expired: " . $expired_date . "\n\n";
-            $response .= "INFORMASI:\n";
-            $response .= (!empty($info['checkout_description']) ? $info['checkout_description'] : "Hanya dapat ditonton di TV. vidio Original Series, Livestreaming Liga 1, Premier TV Channel (tidak termasuk EPL)") . "\n\n";
-            $response .= "Apk TV: https://t.me/hwiwhwiweveu/8\n\n";
+	            $response .= "Durasi: " . $info['durasi'] . " hari\n";
+	            $response .= "Expired: " . $expired_date . "\n\n";
+	            $response .= getPackageInformationText($original_package) . "\n\n";
+	            $response .= "Apk TV: https://t.me/hwiwhwiweveu/8\n\n";
             $response .= "Apk HP: https://t.me/hwiwhwiweveu/9\n\n";
             $response .= "Akun siap digunakan!\n";
             $response .= "By : @vidiotvbot";
@@ -7084,12 +7114,11 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
             $response .= "Profil: " . $account_details['profil'] . "\n";
             $response .= "Paket: " . $account_details['paket'] . "\n";
             $response .= "Kode: " . $account_details['kode'] . "\n";
-            $response .= "Durasi: " . $account_details['durasi'] . "\n";
-            $response .= "Expired: " . $account_details['expired'] . "\n\n";
-            $response .= "INFORMASI:\n";
-            $response .= (!empty($account_details['checkout_description']) ? $account_details['checkout_description'] : "Hanya dapat ditonton di TV. vidio Original Series, Livestreaming Liga 1, Premier TV Channel (tidak termasuk EPL)") . "\n\n";
-            
-            if ($is_free) {
+	            $response .= "Durasi: " . $account_details['durasi'] . "\n";
+	            $response .= "Expired: " . $account_details['expired'] . "\n\n";
+	            $response .= getPackageInformationText($package) . "\n\n";
+	            
+	            if ($is_free) {
                 $response .= "TERIMAKASIH.\n";
             } else {
                 $response .= "TERIMAKASIH .\n";
@@ -7428,11 +7457,10 @@ function cloneTvTaskMultiple($chat_id, $emails, $password_to_use, $jumlah_akun) 
                 $response .= "Profil: " . $detail['profil'] . "\n";
                 $response .= "Paket: " . $detail['paket'] . "\n";
                 $response .= "Kode: " . $detail['kode'] . "\n";
-                $response .= "Durasi: " . $detail['durasi'] . "\n";
-                $response .= "Expired: " . $detail['expired'] . "\n";
-                $response .= "INFORMASI:\n";
-                $response .= (!empty($detail['checkout_description']) ? $detail['checkout_description'] : "Hanya dapat ditonton di TV. vidio Original Series, Livestreaming Liga 1, Premier TV Channel (tidak termasuk EPL)") . "\n";
-                $response .= "--------------------\n";
+	                $response .= "Durasi: " . $detail['durasi'] . "\n";
+	                $response .= "Expired: " . $detail['expired'] . "\n";
+	                $response .= getPackageInformationText($detail['package'] ?? 'biasa') . "\n";
+	                $response .= "--------------------\n";
                 
                 sendMessage($chat_id, $response);
             }
