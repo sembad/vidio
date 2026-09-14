@@ -662,19 +662,19 @@ Tidak ada satu pun baris kode di APK TV 2608.2.4 yang membedakan secret key, key
 
 Berdasarkan penelusuran arsitektur `TvPartnerFactory` (`np.l` case 93), deteksi parameter build `/partner/brand`, serta pengujian live request terhadap endpoint backend Vidio:
 
-| No | Brand / Partner | String `partner_agent` Sah | Tipe `unique_id` | Status Live Test | Contoh Identifier Valid |
+| No | Brand / Partner | String `partner_agent` Sah | Tipe `unique_id` | Status Live Test | Karakteristik Unique ID |
 |---|---|---|---|---|---|
-| 1 | **TCL** | `tcl` | `android_id` | **HTTP 200 OK** | UUID v4 acak diterima |
-| 2 | **CooCaa** | `coocaa_SW3_ATV_T` | `android_id` | **HTTP 200 OK** | UUID v4 acak diterima |
-| 3 | **Aqua** | `aqua_aqua android tv` | `android_id` | **HTTP 200 OK** | UUID v4 acak diterima |
-| 4 | **Akari** | `akari` | `akari_serial_number` | **HTTP 200 OK** | `A210433620A00283` |
-| 5 | **FirstMedia** | `firstmedia` | `firstmedia_serial_number` | **HTTP 200 OK** | `2140H205000423` (STB SN) |
-| 6 | **IndiHome** | `indihome` | `indihome_id` | **HTTP 200 OK** | `197180000020` |
-| 7 | **MyRepublic** | `myrepublic` | `myrepublic_mac_address` | **HTTP 200 OK** | `FC:D5:D9:D3:5B:56` |
-| 8 | **Nex Parabola** | `nex_parabola` | `mac_eth_interface` | **HTTP 200 OK** | `A8:21:09:F0:AC:C7` |
-| 9 | **Icon TV** | `icon_tv` | `mac_directory` | **HTTP 200 OK** | `sapo1` |
-| 10 | **VNT** | `vnt` | `vnt_id` | **HTTP 200 OK** | `vnt_id_testing` |
-| 11 | **XLHOME** | `xlhome` | `xlhome_sensara_payload` | **HTTP 200 OK** | `mo9Wus9uvxA09Mu22qBBNwWy4w+vcYg8gADjnWuGQDk=` |
+| 1 | **TCL** | `tcl` | `android_id` | **HTTP 200 OK** | **Bisa random UUID v4 baru** setiap request |
+| 2 | **CooCaa** | `coocaa_SW3_ATV_T` | `android_id` | **HTTP 200 OK** | **Bisa random UUID v4 baru** setiap request |
+| 3 | **Aqua** | `aqua_aqua android tv` | `android_id` | **HTTP 200 OK** | **Bisa random UUID v4 baru** setiap request |
+| 4 | **IndiHome** | `indihome` | `indihome_id` | **HTTP 200 OK** | **Bisa random 12-digit baru** (`1971` + 8 digit acak) |
+| 5 | **MyRepublic** | `myrepublic` | `myrepublic_mac_address` | **HTTP 200 OK** | **Bisa random MAC address baru** (`XX:XX:XX:XX:XX:XX`) |
+| 6 | **Nex Parabola** | `nex_parabola` | `mac_eth_interface` | **HTTP 200 OK** | **Bisa random Ethernet MAC baru** (`XX:XX:XX:XX:XX:XX`) |
+| 7 | **Icon TV** | `icon_tv` | `mac_directory` | **HTTP 200 OK** | **Bisa random Device ID baru** (`sapo` + 5 digit acak) |
+| 8 | **VNT** | `vnt` | `vnt_id` | **HTTP 200 OK** | **Bisa random VNT ID baru** (`vnt_id_` + 8 hex acak) |
+| 9 | **FirstMedia** | `firstmedia` | `firstmedia_serial_number` | **HTTP 200 OK** | Wajib SN STB terdaftar di DB LinkNet (`2140H205000423`) |
+| 10 | **Akari** | `akari` | `akari_serial_number` | **HTTP 200 OK** | Wajib SN terdaftar / lolos validasi checksum (`A210433620A00283`) |
+| 11 | **XLHOME** | `xlhome` | `xlhome_sensara_payload` | **HTTP 200 OK** | Wajib Sensara Auth Token terdaftar |
 | 12 | **Polytron** | `polytron_PDBM11ADL` | `polytron_serial_number` | HTTP 422 | Wajib serial number fisik valid |
 | 13 | **Changhong** | `changhong` | `changhong_serial_number` | HTTP 400 | Format SN ditolak backend |
 | 14 | **EROC** | `eroc_android_tv` | `mac_wlan_interface` | HTTP 404 | Partner product tidak aktif di Vidio |

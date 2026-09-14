@@ -57,6 +57,39 @@ function randomNonce($length = 12)
     return $nonce;
 }
 
+function randomMac(): string
+{
+    $bytes = random_bytes(6);
+    return sprintf(
+        '%02X:%02X:%02X:%02X:%02X:%02X',
+        ord($bytes[0]),
+        ord($bytes[1]),
+        ord($bytes[2]),
+        ord($bytes[3]),
+        ord($bytes[4]),
+        ord($bytes[5])
+    );
+}
+
+function randomIndihome(): string
+{
+    $digits = '';
+    for ($i = 0; $i < 8; $i++) {
+        $digits .= (string) random_int(0, 9);
+    }
+    return '1971' . $digits;
+}
+
+function randomIconTv(): string
+{
+    return 'sapo' . random_int(10000, 99999);
+}
+
+function randomVnt(): string
+{
+    return 'vnt_id_' . bin2hex(random_bytes(4));
+}
+
 function buildPartnerAuth($rawJson)
 {
     $key = base64_decode(AES_KEY_BASE64, true);
@@ -218,6 +251,14 @@ try {
             $uniqueId = $customUniqueId;
         } elseif ($config['id_type'] === 'android_id') {
             $uniqueId = uuidV4();
+        } elseif ($config['id_type'] === 'myrepublic_mac_address' || $config['id_type'] === 'mac_eth_interface') {
+            $uniqueId = randomMac();
+        } elseif ($config['id_type'] === 'indihome_id') {
+            $uniqueId = randomIndihome();
+        } elseif ($config['id_type'] === 'mac_directory') {
+            $uniqueId = randomIconTv();
+        } elseif ($config['id_type'] === 'vnt_id') {
+            $uniqueId = randomVnt();
         } else {
             $uniqueId = $config['default_id'] ?? uuidV4();
         }

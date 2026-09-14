@@ -50,71 +50,71 @@ BRANDS = [
         "agent": "aqua_aqua android tv",
         "type": "android_id",
         "default_id": None,
-        "desc": "UUID acak baru",
+        "desc": "UUID acak baru setiap request",
     },
     {
         "id": 4,
-        "name": "Akari",
-        "agent": "akari",
-        "type": "serial_number",
-        "default_id": "A210433620A00283",
-        "desc": "Serial Hardware Akari",
+        "name": "IndiHome",
+        "agent": "indihome",
+        "type": "random_indihome",
+        "default_id": "197180000020",
+        "desc": "Nomor Pelanggan 12-digit (bisa random baru)",
     },
     {
         "id": 5,
-        "name": "FirstMedia",
-        "agent": "firstmedia",
-        "type": "stb_serial",
-        "default_id": "2140H205000423",
-        "desc": "Nomor seri fisik STB LinkNet",
+        "name": "MyRepublic",
+        "agent": "myrepublic",
+        "type": "random_mac",
+        "default_id": "FC:D5:D9:D3:5B:56",
+        "desc": "MAC Address Perangkat (bisa random baru)",
     },
     {
         "id": 6,
-        "name": "IndiHome",
-        "agent": "indihome",
-        "type": "indihome_id",
-        "default_id": "197180000020",
-        "desc": "Akun ID Pelanggan IndiHome",
+        "name": "Nex Parabola",
+        "agent": "nex_parabola",
+        "type": "random_mac",
+        "default_id": "A8:21:09:F0:AC:C7",
+        "desc": "Ethernet MAC Receiver (bisa random baru)",
     },
     {
         "id": 7,
-        "name": "MyRepublic",
-        "agent": "myrepublic",
-        "type": "mac_address",
-        "default_id": "FC:D5:D9:D3:5B:56",
-        "desc": "MAC Address Perangkat",
+        "name": "Icon TV",
+        "agent": "icon_tv",
+        "type": "random_icontv",
+        "default_id": "sapo1",
+        "desc": "Device ID STB IconNet (bisa random baru)",
     },
     {
         "id": 8,
-        "name": "Nex Parabola",
-        "agent": "nex_parabola",
-        "type": "mac_eth",
-        "default_id": "A8:21:09:F0:AC:C7",
-        "desc": "Ethernet MAC Receiver",
+        "name": "VNT",
+        "agent": "vnt",
+        "type": "random_vnt",
+        "default_id": "vnt_id_testing",
+        "desc": "Partner ID VNT (bisa random baru)",
     },
     {
         "id": 9,
-        "name": "Icon TV",
-        "agent": "icon_tv",
-        "type": "device_id",
-        "default_id": "sapo1",
-        "desc": "Device ID STB IconNet",
+        "name": "FirstMedia",
+        "agent": "firstmedia",
+        "type": "fixed",
+        "default_id": "2140H205000423",
+        "desc": "Nomor seri fisik STB LinkNet (wajib terdaftar)",
     },
     {
         "id": 10,
-        "name": "VNT",
-        "agent": "vnt",
-        "type": "vnt_id",
-        "default_id": "vnt_id_testing",
-        "desc": "Partner ID VNT",
+        "name": "Akari",
+        "agent": "akari",
+        "type": "fixed",
+        "default_id": "A210433620A00283",
+        "desc": "Serial Hardware Akari (wajib checksum valid)",
     },
     {
         "id": 11,
         "name": "XLHOME",
         "agent": "xlhome",
-        "type": "sensara_token",
+        "type": "fixed",
         "default_id": "mo9Wus9uvxA09Mu22qBBNwWy4w+vcYg8gADjnWuGQDk=",
-        "desc": "Sensara Auth Token",
+        "desc": "Sensara Auth Token (wajib token terdaftar)",
     },
 ]
 
@@ -122,6 +122,26 @@ BRANDS = [
 def generate_uuid_v4():
     import uuid
     return str(uuid.uuid4())
+
+
+def generate_random_mac():
+    import random
+    return ":".join(["%02X" % random.randint(0, 255) for _ in range(6)])
+
+
+def generate_random_indihome():
+    import random
+    return "1971" + "".join([str(random.randint(0, 9)) for _ in range(8)])
+
+
+def generate_random_icontv():
+    import random
+    return "sapo" + str(random.randint(10000, 99999))
+
+
+def generate_random_vnt():
+    import random
+    return "vnt_id_" + "".join([random.choice("0123456789abcdef") for _ in range(8)])
 
 
 def build_encrypted_payload(plain_dict):
@@ -240,9 +260,38 @@ def main():
 
     print(f"\n-> Anda memilih: {selected_brand['name']}")
 
-    if selected_brand["type"] == "android_id":
+    btype = selected_brand["type"]
+    if btype == "android_id":
         unique_id = generate_uuid_v4()
         print(f"-> Unique ID yang digunakan (UUID acak): {unique_id}")
+    elif btype == "random_mac":
+        suggested_id = generate_random_mac()
+        custom_id = input(
+            f"Masukkan Unique ID (tekan Enter untuk random MAC baru: {suggested_id}): "
+        ).strip()
+        unique_id = custom_id if custom_id else suggested_id
+        print(f"-> Unique ID yang digunakan: {unique_id}")
+    elif btype == "random_indihome":
+        suggested_id = generate_random_indihome()
+        custom_id = input(
+            f"Masukkan Unique ID (tekan Enter untuk random ID baru: {suggested_id}): "
+        ).strip()
+        unique_id = custom_id if custom_id else suggested_id
+        print(f"-> Unique ID yang digunakan: {unique_id}")
+    elif btype == "random_icontv":
+        suggested_id = generate_random_icontv()
+        custom_id = input(
+            f"Masukkan Unique ID (tekan Enter untuk random ID baru: {suggested_id}): "
+        ).strip()
+        unique_id = custom_id if custom_id else suggested_id
+        print(f"-> Unique ID yang digunakan: {unique_id}")
+    elif btype == "random_vnt":
+        suggested_id = generate_random_vnt()
+        custom_id = input(
+            f"Masukkan Unique ID (tekan Enter untuk random ID baru: {suggested_id}): "
+        ).strip()
+        unique_id = custom_id if custom_id else suggested_id
+        print(f"-> Unique ID yang digunakan: {unique_id}")
     else:
         def_id = selected_brand["default_id"]
         custom_id = input(
