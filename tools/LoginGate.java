@@ -86,7 +86,7 @@ public final class LoginGate {
     private static final String STREAM_SOURCE_HOST = "api.vidio.com";
     private static final String PROFILE = "mobile";
     private static final String[] ACCOUNT_QUERIES = accountQueries(PROFILE);
-    private static final String DENIED_MESSAGE = "Email tidak diizinkan, silahkan beli di bot @vidiotvbot";
+    private static final String DENIED_MESSAGE = deniedMessage(PROFILE);
     private static final String ERROR_MESSAGE = "Tidak dapat memeriksa izin email, silakan coba lagi";
     private static final int MAX_RESPONSE_CHARS = 16;
     private static final int MAX_UA_CHARS = 1024;
@@ -943,6 +943,13 @@ public final class LoginGate {
         throw new IllegalArgumentException("Unknown APK profile: " + profile);
     }
 
+    static String deniedMessage(String profile) {
+        if ("tv".equalsIgnoreCase(profile)) {
+            return "email tidak diizinkan pastikan anda membeli paket biasa atau ultimate";
+        }
+        return "email tidak diizinkan pastikan anda membeli paket mobile atau ultimate";
+    }
+
     private static boolean isEmail(String value) {
         if (value == null) {
             return false;
@@ -1251,6 +1258,10 @@ public final class LoginGate {
         if (!Arrays.equals(accountQueries("mobile"), new String[] {"akunultimate", "akunmobile"})
                 || !Arrays.equals(accountQueries("tv"), new String[] {"akunultimate", "akunbiasa"})) {
             throw new AssertionError("APK profile queries must classify Ultimate first");
+        }
+        if (!"email tidak diizinkan pastikan anda membeli paket mobile atau ultimate".equals(deniedMessage("mobile"))
+                || !"email tidak diizinkan pastikan anda membeli paket biasa atau ultimate".equals(deniedMessage("tv"))) {
+            throw new AssertionError("APK profile denied message mismatch");
         }
         String encoded = URLEncoder.encode("User+tag@example.com", "UTF-8").replace("+", "%20");
         if (!"User%2Btag%40example.com".equals(encoded)) {
