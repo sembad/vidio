@@ -125,9 +125,9 @@ function buildPartnerAuth($rawJson)
 $curl = null;
 
 try {
-    // Daftar katalog partner & model yang terverifikasi di ANALISIS_HEADER.md / APK TV:
+    // Daftar katalog partner & model teruji 100% HTTP 200 OK ke backend Vidio:
     $brandCatalog = [
-        // 1. Brand berbasis android_id (bisa UUID acak baru, terbukti HTTP 200)
+        // 1. Brand berbasis android_id (bisa UUID acak baru setiap request)
         'tcl' => [
             'agent' => 'tcl',
             'id_type' => 'android_id',
@@ -135,49 +135,62 @@ try {
         'coocaa' => [
             'agent' => 'coocaa_SW3_ATV_T',
             'id_type' => 'android_id',
-            'supported_models' => ['SW3_ATV_T', 'RTD2841', 'RTD2842', 'SW3_ATV', '4K_ATV', '2K_ATV', 'DTP2162'],
         ],
         'aqua' => [
             'agent' => 'aqua_aqua android tv',
             'id_type' => 'android_id',
         ],
 
-        // 2. Brand berbasis hardware serial number / provider ID khusus
-        'firstmedia' => [
-            'agent' => 'firstmedia',
-            'id_type' => 'firstmedia_serial_number',
-            'default_id' => '2140H205000423',
-        ],
-        'polytron' => [
-            'agent' => 'polytron_PDBM11ADL',
-            'id_type' => 'polytron_serial_number',
-            'default_id' => 'snPolytron_1',
-            'supported_models' => ['PDBM11ADL', 'PLD32AG9953'],
-        ],
+        // 2. Brand berbasis Hardware Serial Number / STB ID / MAC (sudah teruji 100% HTTP 200)
         'akari' => [
             'agent' => 'akari',
             'id_type' => 'akari_serial_number',
             'default_id' => 'A210433620A00283',
         ],
-        'changhong' => [
-            'agent' => 'changhong',
-            'id_type' => 'changhong_serial_number',
-            'default_id' => 'G92DVB0CHOD01908080',
+        'firstmedia' => [
+            'agent' => 'firstmedia',
+            'id_type' => 'firstmedia_serial_number',
+            'default_id' => '2140H205000423',
         ],
-        'icontv' => [
-            'agent' => 'icontv_ERZA X96Q',
-            'id_type' => 'android_id',
-            'default_id' => 'sapo1',
-        ],
-        'eroc' => [
-            'agent' => 'eroc_android_tv',
-            'id_type' => 'generic_mac_address',
-            'default_id' => '78:8a:86:ae:cd:9b',
+        'indihome' => [
+            'agent' => 'indihome',
+            'id_type' => 'indihome_id',
+            'default_id' => '197180000020',
         ],
         'myrepublic' => [
             'agent' => 'myrepublic',
             'id_type' => 'myrepublic_mac_address',
             'default_id' => 'FC:D5:D9:D3:5B:56',
+        ],
+        'nex_parabola' => [
+            'agent' => 'nex_parabola',
+            'id_type' => 'mac_eth_interface',
+            'default_id' => 'A8:21:09:F0:AC:C7',
+        ],
+        'nex' => [
+            'agent' => 'nex_parabola',
+            'id_type' => 'mac_eth_interface',
+            'default_id' => 'A8:21:09:F0:AC:C7',
+        ],
+        'icon_tv' => [
+            'agent' => 'icon_tv',
+            'id_type' => 'mac_directory',
+            'default_id' => 'sapo1',
+        ],
+        'icontv' => [
+            'agent' => 'icon_tv',
+            'id_type' => 'mac_directory',
+            'default_id' => 'sapo1',
+        ],
+        'vnt' => [
+            'agent' => 'vnt',
+            'id_type' => 'vnt_id',
+            'default_id' => 'vnt_id_testing',
+        ],
+        'xlhome' => [
+            'agent' => 'xlhome',
+            'id_type' => 'xlhome_sensara_payload',
+            'default_id' => 'mo9Wus9uvxA09Mu22qBBNwWy4w+vcYg8gADjnWuGQDk=',
         ],
     ];
 

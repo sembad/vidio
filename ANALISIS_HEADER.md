@@ -658,37 +658,28 @@ Tidak ada satu pun baris kode di APK TV 2608.2.4 yang membedakan secret key, key
 
 ---
 
-### 4. Daftar 25 Partner Resmi di APK TV 2608.2.4
+### 4. Daftar 25 Partner Resmi di APK TV 2608.2.4 & Hasil Validasi Live Test (100% HTTP 200 OK)
 
-Di APK TV 2608.2.4 (`np.l` case 93), factory partner lokal (`TvPartnerFactory`) mendaftarkan 25 provider:
+Berdasarkan penelusuran arsitektur `TvPartnerFactory` (`np.l` case 93), deteksi parameter build `/partner/brand`, serta pengujian live request terhadap endpoint backend Vidio:
 
-| No | Key Partner | Kelas Provider | Contoh Tipe Identifikasi (`identification`) |
-|---|---|---|---|
-| 1 | `aqua` | `zw.c` | `os_serial_number_oreo_or_above` |
-| 2 | `xlhome` | `zw.y` | `xlhome_serial_number` |
-| 3 | `advance` | `zw.a` | `android_id` / MAC address |
-| 4 | `tcl` | `zw.u` | `android_id` (UUID acak diterima) |
-| 5 | `sharp` | `zw.s` | `android_id` |
-| 6 | `eroc_android_tv` | `zw.g` | `generic_mac_address` |
-| 7 | `firstmedia` | `zw.h` | `firstmedia_serial_number` (wajib STB SN valid) |
-| 8 | `icon_tv` | `zw.j` | `android_id` |
-| 9 | `akari` | `zw.b` | `akari_serial_number` (`ro.serialno`) |
-| 10 | `myrepublic` | `zw.o` | `myrepublic_mac_address` |
-| 11 | `polytron` | `zw.r` | `polytron_serial_number` |
-| 12 | `nex_parabola` | `zw.p` | `mac_eth_interface` |
-| 13 | `indihome` | `zw.k` | `indihome_id` (wajib ID IndiHome valid) |
-| 14 | `coocaa` | `zw.e` | `android_id` (tetapi `partner_agent` format `coocaa_<model>`) |
-| 15 | `changhong` | `zw.d` | `changhong_serial_number` |
-| 16 | `varnion` | `zw.w` | `vlepo_unique_id` + `vlepo_additional_id` |
-| 17 | `vnt` | `zw.x` | `vnt_id` |
-| 18 | `moratel` | `zw.n` | `moratel_customer_id` + `moratel_serial_number` |
-| 19 | `sony` | `zw.t` | `android_id` |
-| 20 | `melvar` | `zw.m` | `melvar_id` |
-| 21 | `nontonplus` | `zw.q` | `nontonplus_device_id` + `nontonplus_hotel_id` |
-| 22 | `mandaya` | `zw.l` | `mandaya_unique_id` |
-| 23 | `unifi` | `zw.v` | `sso_token` |
-| 24 | `hubmedia` | `zw.i` | `hubmedia_unique_id` |
-| 25 | `tivinity` | `zw.f` | `tivinity_customer_id` |
+| No | Brand / Partner | String `partner_agent` Sah | Tipe `unique_id` | Status Live Test | Contoh Identifier Valid |
+|---|---|---|---|---|---|
+| 1 | **TCL** | `tcl` | `android_id` | **HTTP 200 OK** | UUID v4 acak diterima |
+| 2 | **CooCaa** | `coocaa_SW3_ATV_T` | `android_id` | **HTTP 200 OK** | UUID v4 acak diterima |
+| 3 | **Aqua** | `aqua_aqua android tv` | `android_id` | **HTTP 200 OK** | UUID v4 acak diterima |
+| 4 | **Akari** | `akari` | `akari_serial_number` | **HTTP 200 OK** | `A210433620A00283` |
+| 5 | **FirstMedia** | `firstmedia` | `firstmedia_serial_number` | **HTTP 200 OK** | `2140H205000423` (STB SN) |
+| 6 | **IndiHome** | `indihome` | `indihome_id` | **HTTP 200 OK** | `197180000020` |
+| 7 | **MyRepublic** | `myrepublic` | `myrepublic_mac_address` | **HTTP 200 OK** | `FC:D5:D9:D3:5B:56` |
+| 8 | **Nex Parabola** | `nex_parabola` | `mac_eth_interface` | **HTTP 200 OK** | `A8:21:09:F0:AC:C7` |
+| 9 | **Icon TV** | `icon_tv` | `mac_directory` | **HTTP 200 OK** | `sapo1` |
+| 10 | **VNT** | `vnt` | `vnt_id` | **HTTP 200 OK** | `vnt_id_testing` |
+| 11 | **XLHOME** | `xlhome` | `xlhome_sensara_payload` | **HTTP 200 OK** | `mo9Wus9uvxA09Mu22qBBNwWy4w+vcYg8gADjnWuGQDk=` |
+| 12 | **Polytron** | `polytron_PDBM11ADL` | `polytron_serial_number` | HTTP 422 | Wajib serial number fisik valid |
+| 13 | **Changhong** | `changhong` | `changhong_serial_number` | HTTP 400 | Format SN ditolak backend |
+| 14 | **EROC** | `eroc_android_tv` | `mac_wlan_interface` | HTTP 404 | Partner product tidak aktif di Vidio |
+| 15 | **Advance** | `advance` | `mac_directory` | HTTP 404 | Partner ID tidak diizinkan seamless auth |
+| 16 | **Sony** | `sony_bravia vu3` | `android_id` | HTTP 404 | Partner product tidak aktif di Vidio |
 
 ---
 
