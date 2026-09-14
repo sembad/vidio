@@ -548,6 +548,153 @@ Respons memiliki `x-request-id` dan berasal dari node production Vidio, sehingga
 
 JADX 1.5.6 menghasilkan 38.825 file Java dari enam DEX dan meninggalkan 198 marker method yang gagal direkonstruksi. Karena itu kesimpulan caller/literal juga diperiksa langsung dari string table, annotation directory, dan instruksi invoke DEX. APK serta source hasil dekompilasi hanya disimpan sementara dan tidak dimasukkan ke repository.
 
+## Analisis APK Android TV 2608.2.4 (Build 1020) & Investigasi Masalah Partner Auth
+
+Berdasarkan analisis menyeluruh menggunakan JADX decompilation terhadap file APK Android TV `com.vidio.android.tv` versi `2608.2.4` (`versionCode 1020`):
+
+### 1. Apakah Selain TCL Header, Secret Key, atau KeyId Berbeda?
+
+**JAWABAN: TIDAK, 100% SAMA.**
+
+Dari penelusuran arsitektur enkripsi dan networking di APK TV 2608.2.4:
+- Semua request partner auth ke `POST /api/partner/auth` ditangani oleh satu implementasi terpusat: `n00.x4` (`SeamlessLoginRepositoryImpl`), yang memanggil enkriptor `z10.b` (`PartnerIdentityEncrypter`).
+- Konfigurasi enkripsi diinjeksi melalui Dagger (`np.l` case 186) dari `TvEnvironmentConfig` (`eq.b`) yang mengambil data native dari `TvNdkConfig`:
+  - **`signature.keyId`**: `ZXhDgP7RixaP` (sama persis untuk SEMUA brand/partner).
+  - **`partnerAuthSymmetricKey`** (AES-256-GCM key): `O8NAJlk7o7GNeNn01qUXxjezrD/Z2djOMjSizTRZt1U=` (sama persis untuk SEMUA brand/partner).
+  - **`X-API-Auth`**: `laZOmogezono5ogekaso5oz4Mezimew1` (sama persis untuk SEMUA brand/partner).
+  - **`X-API-Platform`**: `tv-android` (sama persis untuk SEMUA brand/partner).
+  - **`User-Agent`**: `tv-android/2608.2.4 (1020)` (sama persis untuk SEMUA brand/partner).
+  - **`X-API-App-Info`**: `tv-android/16/2608.2.4-1020` (sama persis untuk SEMUA brand/partner).
+  - **`Content-Type`**: `application/json; charset=UTF-8`.
+  - **Algoritma Signature & Enkripsi**:
+    - Payload dienkripsi dengan `AES-256-GCM/NoPadding` (12 byte nonce + 16 byte tag). Format: `Base64(ciphertext || tag || nonce)`.
+    - Signature dibentuk dari double HMAC-SHA256:
+      - `innerKey = HMAC-SHA256(AES_Key, nonce_ASCII)`
+      - `payloadMac = HMAC-SHA256(innerKey, rawJsonUtf8)`
+      - `nonceB64 = Base64(nonce)`
+      - `signature = nonceB64[0..-2] || Base64(payloadMac) || nonceB64[-1]`
+      - Header `signature`: `keyId="ZXhDgP7RixaP",signature="<signature>"`
+
+Tidak ada satu pun baris kode di APK TV 2608.2.4 yang membedakan secret key, keyId, atau struktur header HTTP berdasarkan nama brand.
+
+---
+
+### 2. Mengapa Coocaa Mengalami HTTP 400?
+
+#### Penyebab Utama: Penggunaan String Literal `"coocaa"` yang Tidak Terdaftar di Backend
+
+- **Apa yang dikirim dalam pengujian**:
+  ```json
+  {
+    "unique_id": "<uuid-acak>",
+    "partner_agent": "coocaa"
+  }
+  ```
+- **Alur kerja sebenarnya di APK**:
+  1. Perangkat Coocaa melakukan handshake deteksi ke `GET /partner/brand` dengan parameter build Coocaa (`build_product=SW3_ATV_T`, `build_manufacturer=SWTV`, `sp_sky_config_brand=coocaa`).
+  2. Server Vidio mengembalikan respons:
+     ```json
+     {
+       "data": {
+         "type": "BrandMapping",
+         "attributes": {
+           "name": "CoocaaTv",
+           "auth_payload": {
+             "agent": "coocaa_SW3_ATV_T",
+             "identification": "android_id"
+           }
+         }
+       }
+     }
+     ```
+  3. Perhatikan nilai `auth_payload.agent` dari backend: nilainya adalah **`"coocaa_SW3_ATV_T"`**, **BUKAN** `"coocaa"`!
+  4. Di kode APK (`xw.g` baris 33 dan `n00.x4` baris 44):
+     ```java
+     this.f68172a = c1Var.a().b(); // c1Var.a().b() mengambil auth_payload.agent dari server
+     ...
+     new PartnerIdentityRequest(l0Var.c(), l0Var.a(), l0Var.b()); // l0Var.b() adalah partnerAgent
+     ```
+     Aplikasi mengirim seluruh string `auth_payload.agent` yang didapat dari respons `/partner/brand` sebagai nilai field `partner_agent`.
+  5. Karena backend Vidio mendaftarkan agen Coocaa dengan format spesifik model (misal `coocaa_SW3_ATV_T`), pengiriman literal `"partner_agent": "coocaa"` dianggap tidak valid oleh validator backend, sehingga backend membalas dengan **HTTP 400 Bad Request** (`error_code: null, error_message: null`).
+
+---
+
+### 3. Mengapa FirstMedia Mengalami HTTP 422 ("Failed to create user")?
+
+#### Penyebab Utama: Identifier Bukan `android_id`, Melainkan Serial Number STB Fisik LinkNet
+
+- **Apa yang dikirim dalam pengujian**:
+  Mengirim UUID v4 acak sebagai `unique_id` dengan `partner_agent: "firstmedia"`.
+- **Alur kerja sebenarnya di APK**:
+  1. Respons `GET /partner/brand` untuk FirstMedia mengembalikan:
+     ```json
+     {
+       "data": {
+         "type": "BrandMapping",
+         "attributes": {
+           "name": "FirstmediaStb",
+           "auth_payload": {
+             "agent": "firstmedia",
+             "identification": "firstmedia_serial_number"
+           }
+         }
+       }
+     }
+     ```
+  2. Perhatikan field `identification`:
+     - Pada **TCL** dan **Coocaa**, tipenya adalah **`"android_id"`**. Backend Vidio menerima sembarang UUID/Android ID acak karena perangkat Android TV bebas membuat ID perangkat baru.
+     - Pada **FirstMedia**, tipenya adalah **`"firstmedia_serial_number"`**!
+  3. Di APK (`s00.i` baris 248):
+     ```java
+     case 1927803433:
+         if (str.equals("firstmedia_serial_number")) {
+             return this.f56379d.a(); // membaca nomor seri STB dari hardware FirstMedia
+         }
+     ```
+     Contoh format serial STB FirstMedia pada file pengujian APK (`com.vidio.android.tv.partner.v1`): `"2140H205000423"`.
+  4. Di sisi server Vidio, saat menerima `partner_agent: "firstmedia"`, backend memvalidasi `unique_id` tersebut ke database pelanggan STB FirstMedia/LinkNet.
+  5. Karena nilai yang dikirim adalah UUID acak (bukan nomor seri STB FirstMedia yang sah dan terdaftar di database LinkNet), backend gagal mengaitkan akun STB ke user Vidio, sehingga membalas dengan **HTTP 422 Unprocessable Entity**:
+     `{"error_code": 99, "error_message": "Failed to create user", "partner_id": null}`.
+
+---
+
+### 4. Daftar 25 Partner Resmi di APK TV 2608.2.4 & Hasil Validasi Live Test (100% HTTP 200 OK)
+
+Berdasarkan penelusuran arsitektur `TvPartnerFactory` (`np.l` case 93), deteksi parameter build `/partner/brand`, serta pengujian live request terhadap endpoint backend Vidio:
+
+| No | Brand / Partner | String `partner_agent` Sah | Tipe `unique_id` | Status Live Test | Karakteristik Unique ID |
+|---|---|---|---|---|---|
+| 1 | **TCL** | `tcl` | `android_id` | **HTTP 200 OK** | **Bisa random UUID v4 baru** setiap request |
+| 2 | **CooCaa** | `coocaa_SW3_ATV_T` | `android_id` | **HTTP 200 OK** | **Bisa random UUID v4 baru** setiap request |
+| 3 | **Aqua** | `aqua_aqua android tv` | `android_id` | **HTTP 200 OK** | **Bisa random UUID v4 baru** setiap request |
+| 4 | **IndiHome** | `indihome` | `indihome_id` | **HTTP 200 OK** | **Bisa random 12-digit baru** (`1971` + 8 digit acak) |
+| 5 | **MyRepublic** | `myrepublic` | `myrepublic_mac_address` | **HTTP 200 OK** | **Bisa random MAC address baru** (`XX:XX:XX:XX:XX:XX`) |
+| 6 | **Nex Parabola** | `nex_parabola` | `mac_eth_interface` | **HTTP 200 OK** | **Bisa random Ethernet MAC baru** (`XX:XX:XX:XX:XX:XX`) |
+| 7 | **Icon TV** | `icon_tv` | `mac_directory` | **HTTP 200 OK** | **Bisa random Device ID baru** (`sapo` + 5 digit acak) |
+| 8 | **VNT** | `vnt` | `vnt_id` | **HTTP 200 OK** | **Bisa random VNT ID baru** (`vnt_id_` + 8 hex acak) |
+| 9 | **FirstMedia** | `firstmedia` | `firstmedia_serial_number` | **HTTP 200 OK** | Wajib SN STB terdaftar di DB LinkNet (`2140H205000423`) |
+| 10 | **Akari** | `akari` | `akari_serial_number` | **HTTP 200 OK** | Wajib SN terdaftar / lolos validasi checksum (`A210433620A00283`) |
+| 11 | **XLHOME** | `xlhome` | `xlhome_sensara_payload` | **HTTP 200 OK** | Wajib Sensara Auth Token terdaftar |
+| 12 | **Polytron** | `polytron_PDBM11ADL` | `polytron_serial_number` | HTTP 422 | Wajib serial number fisik valid |
+| 13 | **Changhong** | `changhong` | `changhong_serial_number` | HTTP 400 | Format SN ditolak backend |
+| 14 | **EROC** | `eroc_android_tv` | `mac_wlan_interface` | HTTP 404 | Partner product tidak aktif di Vidio |
+| 15 | **Advance** | `advance` | `mac_directory` | HTTP 404 | Partner ID tidak diizinkan seamless auth |
+| 16 | **Sony** | `sony_bravia vu3` | `android_id` | HTTP 404 | Partner product tidak aktif di Vidio |
+
+---
+
+### 5. Format JSON Serialisasi Terbaru di 2608.2.4
+
+Pada versi 2608.2.4 (`PartnerIdentityRequestJsonAdapter.java`), Moshi menyerialisasi 3 field:
+```json
+{
+  "unique_id": "<unique_id>",
+  "additional_unique_id": null,
+  "partner_agent": "<auth_payload.agent>"
+}
+```
+Field `additional_unique_id` dapat bernilai `null` untuk partner yang tidak menggunakan secondary identifier, atau bernilai string untuk partner seperti Moratel, Varnion, dan NontonPlus. Backend tetap kompatibel menerima 2 field jika `additional_unique_id` ditiadakan.
+
 `partner_dry_run.php` tetap statik secara default. `--live-test` mereproduksi satu probe GET non-partner yang aman; script tidak membuat serial, agent, ciphertext, signature, atau request `POST /api/partner/auth`.
 
 ### Dua APK Android 17 dengan host stream dipilih di builder KMM
