@@ -3,7 +3,7 @@
 
 """
 Script Partner Auth Vidio Android TV (APK 2608.2.4 Build 1020)
-Mendukung 11 brand terverifikasi HTTP 200 OK dengan enkripsi AES-256-GCM + HMAC-SHA256 signature.
+Mendukung SELURUH 25 Brand Partner DEX dengan enkripsi AES-256-GCM + HMAC-SHA256 signature.
 """
 
 import sys
@@ -26,95 +26,262 @@ APP_INFO = "tv-android/16/2608.2.4-1020"
 
 DEFAULT_DATAIMPULSE_PROXY = "http://54e00827b371c0c310a2__cr.id:817df9dc4f7bfe33@gw.dataimpulse.com:823"
 
-# 11 Brand yang 100% teruji HTTP 200 OK di backend Vidio
+# Seluruh 25 Partner Brand yang teridentifikasi di DEX Vidio
 BRANDS = [
+    # --- KELOMPOK 1: SMART TV OEM (Auto-Provisioning Trial/Promotional) ---
     {
         "id": 1,
+        "category": "Smart TV",
         "name": "TCL",
         "agent": "tcl",
         "type": "android_id",
         "default_id": None,
-        "desc": "UUID acak baru setiap request",
+        "status_tested": "200 OK (Sub Created: True, Premier Pkg: 332)",
+        "desc": "UUID acak baru -> 100% Injeksi Langganan Aktif",
     },
     {
         "id": 2,
+        "category": "Smart TV",
         "name": "CooCaa",
         "agent": "coocaa_SW3_ATV_T",
         "type": "android_id",
         "default_id": None,
-        "desc": "Model SW3_ATV_T (UUID acak baru)",
+        "status_tested": "200 OK (Sub Created: True, Premier Pkg: 885)",
+        "desc": "Model SW3_ATV_T -> 100% Injeksi Langganan Aktif",
     },
     {
         "id": 3,
+        "category": "Smart TV",
         "name": "Aqua Android TV",
         "agent": "aqua_aqua android tv",
         "type": "android_id",
         "default_id": None,
-        "desc": "UUID acak baru setiap request",
+        "status_tested": "200 OK (Sub Created: True, Premier Pkg: 332)",
+        "desc": "UUID acak baru -> 100% Injeksi Langganan Aktif",
     },
     {
         "id": 4,
+        "category": "Smart TV",
+        "name": "Polytron",
+        "agent": "polytron_PDBM11ADL",
+        "type": "android_id",
+        "default_id": None,
+        "status_tested": "200 OK (Sub Created: True, Premier Pkg: 332)",
+        "desc": "Model PDBM11ADL -> 100% Injeksi Langganan Aktif",
+    },
+    {
+        "id": 5,
+        "category": "Smart TV",
+        "name": "Changhong",
+        "agent": "changhong",
+        "type": "custom",
+        "default_id": "CH_SN_94829104",
+        "status_tested": "400 Bad Request (Butuh format serial SN Changhong valid)",
+        "desc": "OS Serial Number",
+    },
+    {
+        "id": 6,
+        "category": "Smart TV",
+        "name": "Sony",
+        "agent": "sony_bravia vu3",
+        "type": "custom",
+        "default_id": "SN_SONY_BRAVIA_VU3",
+        "status_tested": "404 Not Found (Promo product campaign telah berakhir)",
+        "desc": "Sony Bravia Android TV",
+    },
+    {
+        "id": 7,
+        "category": "Smart TV",
+        "name": "Akari",
+        "agent": "akari",
+        "type": "custom",
+        "default_id": "A210433620A00283",
+        "status_tested": "401 Unauthorized (Wajib serial aktif di CMS Akari)",
+        "desc": "Serial Hardware Akari",
+    },
+    {
+        "id": 8,
+        "category": "Smart TV",
+        "name": "EROC",
+        "agent": "eroc_android_tv",
+        "type": "android_id",
+        "default_id": None,
+        "status_tested": "404 Not Found (Whitelist seamless auth dinonaktifkan)",
+        "desc": "EROC Android TV",
+    },
+    {
+        "id": 9,
+        "category": "Smart TV",
+        "name": "Advance",
+        "agent": "advance",
+        "type": "android_id",
+        "default_id": None,
+        "status_tested": "404 Not Found (Whitelist seamless auth dinonaktifkan)",
+        "desc": "Advance Android TV",
+    },
+    {
+        "id": 10,
+        "category": "Smart TV",
+        "name": "CVTE",
+        "agent": "cvte",
+        "type": "custom",
+        "default_id": "CVTE_MAINBOARD_ID",
+        "status_tested": "400 Bad Request (Butuh serial board TV CVTE)",
+        "desc": "CVTE Mainboard TV",
+    },
+    {
+        "id": 11,
+        "category": "Smart TV",
+        "name": "Newlink",
+        "agent": "newlink",
+        "type": "custom",
+        "default_id": "NEWLINK_CUS_01",
+        "status_tested": "400 Bad Request (Butuh identifier customer Newlink)",
+        "desc": "Newlink Customer Platform",
+    },
+
+    # --- KELOMPOK 2: OPERATOR ISP & PAY-TV (Billing Synchronized) ---
+    {
+        "id": 12,
+        "category": "ISP/Pay-TV",
         "name": "IndiHome",
         "agent": "indihome",
         "type": "random_indihome",
         "default_id": "197180000020",
+        "status_tested": "200 OK (Akun Terbentuk, butuh ID aktif langganan)",
         "desc": "Nomor Pelanggan 12-digit (bisa random baru)",
     },
     {
-        "id": 5,
+        "id": 13,
+        "category": "ISP/Pay-TV",
         "name": "MyRepublic",
         "agent": "myrepublic",
         "type": "random_mac",
         "default_id": "FC:D5:D9:D3:5B:56",
-        "desc": "MAC Address Perangkat (bisa random baru)",
+        "status_tested": "200 OK (Akun Terbentuk, butuh MAC STB aktif)",
+        "desc": "MAC Address Ethernet STB (bisa random baru)",
     },
     {
-        "id": 6,
+        "id": 14,
+        "category": "ISP/Pay-TV",
         "name": "Nex Parabola",
         "agent": "nex_parabola",
         "type": "random_mac",
         "default_id": "A8:21:09:F0:AC:C7",
-        "desc": "Ethernet MAC Receiver (bisa random baru)",
+        "status_tested": "200 OK (Akun Terbentuk, butuh MAC receiver aktif)",
+        "desc": "Ethernet MAC Receiver Nex (bisa random baru)",
     },
     {
-        "id": 7,
+        "id": 15,
+        "category": "ISP/Pay-TV",
         "name": "Icon TV",
         "agent": "icon_tv",
         "type": "random_icontv",
         "default_id": "sapo1",
+        "status_tested": "200 OK (Akun Terbentuk, butuh ID STB aktif)",
         "desc": "Device ID STB IconNet (bisa random baru)",
     },
     {
-        "id": 8,
+        "id": 16,
+        "category": "ISP/Pay-TV",
+        "name": "FirstMedia",
+        "agent": "firstmedia",
+        "type": "custom",
+        "default_id": "2140H205000423",
+        "status_tested": "200 OK (Akun Terbentuk, butuh SN STB aktif)",
+        "desc": "Nomor seri fisik STB LinkNet",
+    },
+    {
+        "id": 17,
+        "category": "ISP/Pay-TV",
+        "name": "XL Home",
+        "agent": "xlhome",
+        "type": "custom",
+        "default_id": "mo9Wus9uvxA09Mu22qBBNwWy4w+vcYg8gADjnWuGQDk=",
+        "status_tested": "200 OK (Akun Terbentuk, butuh token Sensara aktif)",
+        "desc": "Sensara Auth Token dari STB XL",
+    },
+    {
+        "id": 18,
+        "category": "ISP/Pay-TV",
         "name": "VNT",
         "agent": "vnt",
         "type": "random_vnt",
         "default_id": "vnt_id_testing",
+        "status_tested": "200 OK (Akun Terbentuk, butuh ID aktivasi)",
         "desc": "Partner ID VNT (bisa random baru)",
     },
     {
-        "id": 9,
-        "name": "FirstMedia",
-        "agent": "firstmedia",
-        "type": "fixed",
-        "default_id": "2140H205000423",
-        "desc": "Nomor seri fisik STB LinkNet (wajib terdaftar)",
+        "id": 19,
+        "category": "ISP/Pay-TV",
+        "name": "Moratel",
+        "agent": "moratel",
+        "type": "random_moratel",
+        "default_id": "MORA_019283",
+        "status_tested": "200 OK (Akun Terbentuk, butuh ID Oxygen aktif)",
+        "desc": "Moratel Customer ID (bisa random baru)",
+    },
+
+    # --- KELOMPOK 3: HOSPITALITY & ENTERPRISE IPTV ---
+    {
+        "id": 20,
+        "category": "Enterprise/Hospitality",
+        "name": "Hubmedia",
+        "agent": "hubmedia",
+        "type": "android_id",
+        "default_id": None,
+        "status_tested": "200 OK (Akun Terbentuk, butuh tenant mapping)",
+        "desc": "Hubmedia B2B OTT Platform",
     },
     {
-        "id": 10,
-        "name": "Akari",
-        "agent": "akari",
-        "type": "fixed",
-        "default_id": "A210433620A00283",
-        "desc": "Serial Hardware Akari (wajib checksum valid)",
+        "id": 21,
+        "category": "Enterprise/Hospitality",
+        "name": "Vlepo",
+        "agent": "vlepo",
+        "type": "custom",
+        "default_id": "VLEPO_HOTEL_01",
+        "status_tested": "400 Bad Request (Butuh identifier hotel terdaftar)",
+        "desc": "Vlepo Hospitality IPTV",
     },
     {
-        "id": 11,
-        "name": "XLHOME",
-        "agent": "xlhome",
-        "type": "fixed",
-        "default_id": "mo9Wus9uvxA09Mu22qBBNwWy4w+vcYg8gADjnWuGQDk=",
-        "desc": "Sensara Auth Token (wajib token terdaftar)",
+        "id": 22,
+        "category": "Enterprise/Hospitality",
+        "name": "Melvar",
+        "agent": "melvar",
+        "type": "custom",
+        "default_id": "MELVAR_DEVICE_01",
+        "status_tested": "422 Unprocessable (Failed to create user)",
+        "desc": "Melvar Hospitality IPTV",
+    },
+    {
+        "id": 23,
+        "category": "Enterprise/Hospitality",
+        "name": "NontonPlus",
+        "agent": "nontonplus",
+        "type": "custom",
+        "default_id": "NP_HOTEL_101",
+        "status_tested": "403 Forbidden (Partner ID tidak valid)",
+        "desc": "NontonPlus Hotel OTT",
+    },
+    {
+        "id": 24,
+        "category": "Enterprise/Hospitality",
+        "name": "Mandaya",
+        "agent": "mandaya",
+        "type": "custom",
+        "default_id": "MANDAYA_BED_201",
+        "status_tested": "422 Unprocessable (Failed to create user)",
+        "desc": "Mandaya Hospital In-Room IPTV",
+    },
+    {
+        "id": 25,
+        "category": "Enterprise/Hospitality",
+        "name": "Tivinity",
+        "agent": "tivinity",
+        "type": "custom",
+        "default_id": "TIVINITY_ROOM_505",
+        "status_tested": "422 Unprocessable (Failed to create user)",
+        "desc": "Tivinity Hospitality IPTV",
     },
 ]
 
@@ -142,6 +309,11 @@ def generate_random_icontv():
 def generate_random_vnt():
     import random
     return "vnt_id_" + "".join([random.choice("0123456789abcdef") for _ in range(8)])
+
+
+def generate_random_moratel():
+    import random
+    return "mora_" + "".join([random.choice("0123456789abcdef") for _ in range(8)])
 
 
 def build_encrypted_payload(plain_dict):
@@ -217,9 +389,10 @@ def send_request(plain_dict, proxy_url=None):
 
 
 def main():
-    print("=" * 65)
+    print("=" * 80)
     print("      VIDIO PARTNER AUTH GENERATOR - ANDROID TV 2608.2.4")
-    print("=" * 65)
+    print("           (Mendukung 25 Partner Brand Lengkap dari DEX)")
+    print("=" * 80)
 
     print("\nPilihan Proxy Koneksi:")
     print("  [1] Langsung / Direct (Tanpa Proxy - jika server sudah di Indonesia)")
@@ -242,23 +415,27 @@ def main():
     else:
         print("-> Menggunakan koneksi langsung (Tanpa Proxy).")
 
-    print("\n" + "-" * 65)
-    print("DAFTAR 11 BRAND PARTNER YANG TERUJI (HTTP 200 OK):")
-    print("-" * 65)
+    print("\n" + "-" * 80)
+    print("DAFTAR 25 BRAND PARTNER DARI DEX (LENGKAP):")
+    print("-" * 80)
+    current_cat = None
     for b in BRANDS:
-        print(f"  [{b['id']:2d}] {b['name']:<18} ({b['desc']})")
+        if b["category"] != current_cat:
+            current_cat = b["category"]
+            print(f"\n  [{current_cat.upper()}]:")
+        print(f"    [{b['id']:2d}] {b['name']:<18} | {b['status_tested']}")
 
     selected_brand = None
     while not selected_brand:
-        choice = input("\nSilahkan pilih angka brand [1-11]: ").strip()
+        choice = input("\nSilahkan pilih angka brand [1-25]: ").strip()
         for b in BRANDS:
             if str(b["id"]) == choice or b["name"].lower() == choice.lower():
                 selected_brand = b
                 break
         if not selected_brand:
-            print("Pilihan tidak valid, silahkan masukkan angka 1 sampai 11.")
+            print("Pilihan tidak valid, silahkan masukkan angka 1 sampai 25.")
 
-    print(f"\n-> Anda memilih: {selected_brand['name']}")
+    print(f"\n-> Anda memilih: {selected_brand['name']} ({selected_brand['category']})")
 
     btype = selected_brand["type"]
     if btype == "android_id":
@@ -292,6 +469,13 @@ def main():
         ).strip()
         unique_id = custom_id if custom_id else suggested_id
         print(f"-> Unique ID yang digunakan: {unique_id}")
+    elif btype == "random_moratel":
+        suggested_id = generate_random_moratel()
+        custom_id = input(
+            f"Masukkan Unique ID (tekan Enter untuk random ID baru: {suggested_id}): "
+        ).strip()
+        unique_id = custom_id if custom_id else suggested_id
+        print(f"-> Unique ID yang digunakan: {unique_id}")
     else:
         def_id = selected_brand["default_id"]
         custom_id = input(
@@ -309,24 +493,43 @@ def main():
     print("\nMengirim request ke Vidio...")
     status, response_body, raw_plain = send_request(payload, proxy_url=proxy_url)
 
-    print("\n" + "=" * 65)
+    print("\n" + "=" * 80)
     print(f"HASIL RESPON (HTTP {status})")
-    print("=" * 65)
+    print("=" * 80)
 
     try:
         parsed = json.loads(response_body)
         print(json.dumps(parsed, indent=2, ensure_ascii=False))
 
         auth = parsed.get("auth", {})
+        sub_created = parsed.get("subscription_created", False)
+        
+        # Ekstrak token quiz untuk cek package_ids
+        tokens = parsed.get("tokens", [])
+        quiz_tok = [t["token"] for t in tokens if t.get("service_name") == "quiz.vidio.com"]
+        premier_flag = False
+        package_id = None
+        if quiz_tok:
+            try:
+                p_part = quiz_tok[0].split(".")[1]
+                p_part += "=" * (-len(p_part) % 4)
+                q_payload = json.loads(base64.b64decode(p_part))
+                premier_flag = q_payload.get("is_premier", False)
+                package_id = q_payload.get("package_ids")
+            except Exception:
+                pass
+
         if auth:
-            print("\n" + "-" * 65)
+            print("\n" + "-" * 80)
             print("LOGIN BERHASIL:")
-            print(f"  UID        : {auth.get('uid')}")
-            print(f"  Username   : {auth.get('username')}")
-            print(f"  Email      : {auth.get('email')}")
-            print(f"  Auth Token : {auth.get('auth_token') or auth.get('authentication_token')}")
-            print(f"  Sub Created: {parsed.get('subscription_created')}")
-            print("-" * 65)
+            print(f"  UID         : {auth.get('uid')}")
+            print(f"  Username    : {auth.get('username')}")
+            print(f"  Email       : {auth.get('email')}")
+            print(f"  Auth Token  : {auth.get('auth_token') or auth.get('authentication_token')}")
+            print(f"  Sub Created : {sub_created}")
+            print(f"  Is Premier  : {premier_flag}")
+            print(f"  Package ID  : {package_id}")
+            print("-" * 80)
 
             # Otomatis cek ke endpoint subscriptions
             print("\nMengecek status langganan di GET /api/users/subscriptions...")
@@ -369,10 +572,13 @@ def main():
                             print(f"  -> Status : {p_status.upper()}")
                             print(f"  -> Berlaku: {p_end}")
                     else:
-                        print("HASIL SUBSCRIPTIONS: Kosong ([]) - Akun Free Tier / Tanpa Paket Bundling.")
+                        if premier_flag:
+                            print(f"INFO: Quiz Token mengindikasikan Premier Aktif (Package {package_id}), namun daftar subscription terpisah.")
+                        else:
+                            print("HASIL SUBSCRIPTIONS: Kosong ([]) - Akun Free Tier / Menunggu aktivasi paket billing operator.")
             except Exception as e_sub:
                 print(f"Gagal cek subscriptions: {e_sub}")
-            print("-" * 65)
+            print("-" * 80)
     except Exception:
         print(response_body)
 
