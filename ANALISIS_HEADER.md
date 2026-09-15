@@ -103,6 +103,182 @@ Nama header HTTP tidak peka huruf besar/kecil, jadi bentuk `x-client` dan `X-CLI
 
 ## Partner auth (`POST /api/partner/auth`)
 
+### 1. Analisis Akar Masalah: Mengapa Hanya TCL, CooCaa, Aqua, & Polytron yang Berhasil Mendapatkan Langganan Aktif?
+
+Ketika melakukan pengujian pada endpoint:
+```bash
+curl --http2 -L -X GET 'https://api.vidio.com/api/users/subscriptions' \
+  -H 'User-Agent: tv-android/2.48.8 (462)' \
+  -H 'Accept: application/json' \
+  -H 'Accept-Encoding: gzip' \
+  -H 'x-user-email: {email}' \
+  -H 'x-user-token: {user token}' \
+  -H 'referer: androidtv-app://com.vidio.android.tc' \
+  -H 'x-api-platform: tv-android' \
+  -H 'x-api-app-info: tv-android/16/2.48.8-462' \
+  -H 'accept-language: id' \
+  -H 'x-api-auth: laZOmogezono5ogekaso5oz4Mezimew1'
+```
+Banyak partner menghasilkan respons kosong:
+```json
+{
+  "subscriptions": [],
+  "apple_tier_identifiers": []
+}
+```
+Sedangkan pada **TCL, CooCaa, Aqua, dan Polytron**, responsnya berisi paket langganan aktif (`is_premier: true`, paket ID `332` atau `885`).
+
+#### Penyebab Arsitektural di Backend Vidio:
+
+Terdapat perbedaan mendasar antara model bisnis **Smart TV OEM Bundling** vs **Operator ISP/Pay-TV Billing** vs **Hospitality**:
+
+1. **Smart TV OEM (TCL, CooCaa, Aqua, Polytron): Sistem Auto-Provisioning Promo Ritel**
+   - **Model Bisnis:** Kerjasama penjualan TV fisik ritel di toko/supermarket (promo *"Beli Smart TV dapat bonus Vidio Platinum"*).
+   - **Mekanisme Backend:** Vidio tidak memiliki sistem verifikasi eksternal terhadap pembeli ritel baru. Oleh karena itu, backend Vidio dikonfigurasi dalam mode **Auto-Provisioning**:
+     - Setiap kali ada `android_id` (UUID acak v4) baru yang dikirimkan via `POST /api/partner/auth`, server menganggap ada TV fisik baru yang baru pertama kali dinyalakan oleh konsumen.
+     - Server Vidio secara otomatis:
+       1. Membuat akun baru (`<uuid>-<brand>@fake-tv-bundle.com`).
+       2. Menerbitkan user token baru (`x-user-token`).
+       3. **Menginjeksi paket langganan bundling secara instan** (`subscription_created: true`, Premier Platinum Package ID: `332` / `885`).
+     - Akibatnya, saat dicek di `GET /api/users/subscriptions`, paket langganan **LANGSUNG MUNCUL AKTIF**.
+
+2. **Operator ISP & Pay-TV (IndiHome, FirstMedia, MyRepublic, Nex Parabola, XL Home, Icon TV, VNT, Moratel): Billing-Synchronized Add-On**
+   - **Model Bisnis:** Layanan internet & TV kabel bulanan berbayar. Paket Vidio adalah add-on tagihan bulanan pada kartu pelanggan.
+   - **Mekanisme Backend:**
+     - Vidio mengintegrasikan sistem backend-nya dengan server billing masing-masing operator via API B2B.
+     - Saat kita mengirimkan UID acak ke `POST /api/partner/auth`, server Vidio mengenali format payload dan signature, lalu **berhasil membuat akun (HTTP 200 OK)** dengan prefix username operator (misalnya `idh_197180000020`, `fm_2140H...`, `myrep_*`, dll.) serta menerbitkan token login.
+     - **TETAPI**, server Vidio kemudian melakukan **B2B Billing Check** ke database operator:
+       *"Apakah Nomor Pelanggan / MAC Address / Serial STB ini terdaftar sebagai pelanggan yang membayar paket aktif Vidio?"*
+     - Karena UID yang digenerate adalah **UID acak (bukan pelanggan riil yang terdaftar membayar di Telkom/LinkNet/Sinarmas)**:
+       - Gateway billing operator mengembalikan status: *Pelanggan tidak memiliki add-on Vidio aktif*.
+       - Vidio merespons autentikasi dengan: `"subscription_created": false` dan `"allow_merge": false`.
+       - Akun terbentuk sebagai **Akun Gratis Biasa (Free Tier)** tanpa paket langganan.
+       - Oleh karena itu, saat dipanggil `GET /api/users/subscriptions`, hasilnya mutlak **kosongan (`"subscriptions": []`)**.
+
+3. **Smart TV Lain yang Gagal Autentikasi (Changhong, Sony, Akari, EROC, Advance):**
+   - **Changhong (`Luq/c`):** Backend Vidio memvalidasi format dan checksum serial number pabrik Changhong (`ro.serialno`). Jika UID acak, server membalas `400 Bad Request` (`error_code: 10032004: Serial number gak valid`).
+   - **Sony (`sony_bravia vu3`):** Promo campaign Sony Bravia sudah kedaluwarsa di CMS Vidio (`error_code: 10032002: Partner product gak ditemukan`).
+   - **Akari (`Luq/a`):** Memvalidasi serial hardware ke CMS Akari; serial acak/demo berstatus `401 Unauthorized` (`error_code: 10010004: Pengguna gak aktif`).
+   - **EROC (`Luq/f`) & Advance:** Whitelist partner seamless login telah dinonaktifkan oleh Vidio (`error_code: 10032019: Partner ID not allowed to get seamless login`).
+
+---
+
+### 2. Bedah Teknis APK (`classes2.dex`): Implementasi Unique ID per Partner
+
+Berdasarkan analisis decompilation pada `classes2.dex` package `uq` (`Luq/a` s/d `Luq/o`) dan provider `sq/c`:
+
+| Class APK | Partner Brand | Metode Pengambilan Unique ID di Firmware Asli | Mengapa Tidak Bisa Pakai UID Acak? |
+|---|---|---|---|
+| `Luq/m` | **TCL** | Android ID (`android_id` / UUID v4 acak) | **BISA** (Auto-provisioning paket promo 332 aktif) |
+| `Luq/d` | **CooCaa** | `Settings.System.getString("hw_deviceid")` atau fallback UUID | **BISA** (Auto-provisioning paket promo 885 aktif) |
+| `Luq/b` | **Aqua** | Android ID (UUID v4 acak) | **BISA** (Auto-provisioning paket promo 332 aktif) |
+| `Luq/l` | **Polytron** | Android ID (UUID v4 acak) | **BISA** (Auto-provisioning paket promo 332 aktif) |
+| `Luq/i` (`Les/b`) | **IndiHome** | IPC AIDL Service `fiberHomeService` / `otherIndihomeService` ke STB Telkom | Butuh Nomor Pelanggan Telkom 12-digit aktif berlangganan Vidio |
+| `Luq/g` (`Lgm/a`) | **FirstMedia** | `SharedPreferences.getString("fm_sn")` dari STB LinkNet | Butuh Serial Number STB FirstMedia aktif paket Vidio |
+| `Luq/j` (`Lhm/a`) | **MyRepublic** | File kernel Linux `/sys/class/net/eth0/address` | Butuh MAC Ethernet STB MyRepublic aktif paket Vidio |
+| `Luq/k` (`Ljm/a`) | **Nex Parabola** | Hardware MAC Address interface `eth0` receiver satelit | Butuh Receiver Nex Parabola aktif paket Vidio |
+| `Luq/h` | **Icon TV** | Serial ID STB IconNet (PLN) | Butuh ID STB IconNet aktif paket Vidio |
+| `Luq/o` | **XL Home** | Sensara Token dari firmware STB XL Axiata | Butuh token Sensara terdaftar di server XL |
+| `Luq/n` (`Llm/e`) | **VNT** | Binds IPC service `com.nomaden.id` / `com.giga.tv` | Butuh ID aktivasi Smart TV Nomaden |
+| `Luq/a` (`Lkm/a`) | **Akari** | `Settings.Global.getString("serialno")` atau service SDMC | Serial wajib aktif dan terdaftar di CMS Akari |
+| `Luq/c` (`Lcm/a`) | **Changhong** | Property OS `ro.serialno` dengan checksum pabrik | Backend memvalidasi algoritma checksum serial number pabrik |
+| `Luq/f` (`Lfm/a`) | **EROC** | MAC Address interface `wlan0` | Whitelist seamless login telah dinonaktifkan oleh Vidio |
+
+---
+
+### 3. Audit Seluruh Partner Brand yang Belum Keambil & Hasil Investigasi Internet
+
+Berdasarkan audit komprehensif pada gateway `GET /partner/brand`, API B2B Vidio, serta penelusuran identitas korporasi di internet:
+
+1. **Tivinity (`tivinity`)**
+   - **Perusahaan:** PT Tivinity Teknologi Indonesia.
+   - **Profil Bisnis:** Penyedia platform Cloud-first Hotel IPTV dan Smart TV Hospitality di Indonesia.
+   - **Tipe Integrasi:** TV kamar hotel menggunakan tenant ID (`TIV_ROOM_*`).
+
+2. **Mandaya (`mandaya`)**
+   - **Perusahaan:** Mandaya Hospital Group (Mandaya Royal Hospital Puri).
+   - **Profil Bisnis:** Rumah sakit swasta premium di Jakarta Barat yang mengintegrasikan Vidio langsung ke layar TV ranjang pasien (*Patient Entertainment System / PES*).
+   - **Tipe Integrasi:** Identifikasi per ranjang kamar rawat inap (`BED_*`).
+
+3. **Vlepo / Varnion (`varnion` / `vlepo`)**
+   - **Perusahaan:** PT Varnion Technology Semesta.
+   - **Profil Bisnis:** Penyedia infrastruktur internet perhotelan dan sistem Cloud Smart TV Vlepo untuk ratusan hotel berbintang di Bali dan kota-kota besar Indonesia.
+   - **Tipe Integrasi:** Identifier STB kamar hotel (`VLEPO_*`).
+
+4. **Melvar (`melvar`)**
+   - **Perusahaan:** PT Melvar Lintas Samudera.
+   - **Profil Bisnis:** Penyedia solusi VSAT maritim, internet kapal pesiar/ferry, dan Hospitality IPTV.
+   - **Tipe Integrasi:** Device ID STB / Kamar (`MELVAR_*`).
+
+5. **NontonPlus (`nontonplus`)**
+   - **Perusahaan:** PT Nonton Plus Solusi.
+   - **Profil Bisnis:** Platform OTT & VOD terkurasi khusus jaringan hotel dan apartemen servis.
+   - **Tipe Integrasi:** Partner ID hotel (`NP_*`).
+
+6. **Hubmedia (`hubmedia`)**
+   - **Perusahaan:** PT Hubmedia Interaktif.
+   - **Profil Bisnis:** Integrator digital signage, interactive hotel TV, dan multimedia komersial di Indonesia.
+   - **Tipe Integrasi:** ID B2B Enterprise (`HM_*`).
+
+7. **VNT / Nomaden (`vnt`)**
+   - **Perusahaan:** PT Nomaden Smart TV / Giga TV.
+   - **Profil Bisnis:** Brand Smart TV dan STB Android lokal yang didistribusikan di Indonesia dengan launcher terintegrasi Vidio.
+   - **Tipe Integrasi:** Package service `com.nomaden.id.DeviceInfoService`.
+
+8. **Moratel (`moratel`)**
+   - **Perusahaan:** PT Moratelindo (Oxygen.id).
+   - **Profil Bisnis:** Penyedia jaringan fiber optic broadband dan TV interaktif di Indonesia.
+   - **Tipe Integrasi:** Customer ID Oxygen.id (`MORA_*`).
+
+9. **CVTE (`cvte`)**
+   - **Perusahaan:** Guangzhou Shiyuan Electronic Technology Co., Ltd.
+   - **Profil Bisnis:** Produsen papan sirkuit utama (mainboard / motherboard) Smart TV terbesar di dunia yang memasok OEM berbagai merk TV Android global.
+   - **Tipe Integrasi:** Mainboard Hardware Serial.
+
+10. **Newlink (`newlink`)**
+    - **Perusahaan:** Newlink Technology Platform.
+    - **Profil Bisnis:** Pengembang middleware software dan launcher Android TV komersial untuk OEM Asia.
+    - **Tipe Integrasi:** Customer Account ID.
+
+11. **VMOS (`vmos`)**
+    - **Profil:** Virtual Machine Operating System pada Android.
+    - **Fungsi di Vidio:** Digunakan sebagai profil fallback/default ketika parameter perangkat tidak cocok dengan brand partner fisik manapun.
+
+---
+
+### 4. Tabel Rangkuman 27 Brand Partner Vidio Lengkap
+
+| # | Nama Partner | Kategori | Agent String (`partner_agent`) | Status Uji `POST /api/partner/auth` | Subscriptions Aktif? |
+|---|---|---|---|---|---|
+| 1 | **TCL** | Smart TV | `tcl` | **200 OK** | **YA (Paket 332 Premier Platinum)** |
+| 2 | **CooCaa** | Smart TV | `coocaa_SW3_ATV_T` | **200 OK** | **YA (Paket 885 CooCaa Promo)** |
+| 3 | **Aqua (Haier)** | Smart TV | `aqua_aqua android tv` | **200 OK** | **YA (Paket 332 Premier Platinum)** |
+| 4 | **Polytron** | Smart TV | `polytron_PDBM11ADL` | **200 OK** | **YA (Paket 332 Premier Platinum)** |
+| 5 | **Changhong** | Smart TV | `changhong` | 400 Bad Request | Tidak (Checksum SN pabrik gagal) |
+| 6 | **Sony** | Smart TV | `sony_bravia vu3` | 404 Not Found | Tidak (Promo campaign kedaluwarsa) |
+| 7 | **Akari** | Smart TV | `akari` | 401 Unauthorized | Tidak (Unit nonaktif di CMS) |
+| 8 | **EROC** | Smart TV | `eroc_android_tv` | 404 Not Found | Tidak (Whitelist seamless ditutup) |
+| 9 | **Advance** | Smart TV | `advance` | 404 Not Found | Tidak (Whitelist seamless ditutup) |
+| 10 | **CVTE** | Smart TV OEM | `cvte` | 400 Bad Request | Tidak (Butuh serial board terdaftar) |
+| 11 | **Newlink** | Smart TV OEM | `newlink` | 400 Bad Request | Tidak (Butuh ID customer Newlink) |
+| 12 | **IndiHome** | ISP / Pay-TV | `indihome` | **200 OK** | Tidak (Butuh No. Pelanggan aktif add-on) |
+| 13 | **MyRepublic** | ISP / Pay-TV | `myrepublic` | **200 OK** | Tidak (Butuh MAC STB aktif add-on) |
+| 14 | **FirstMedia** | ISP / Pay-TV | `firstmedia` | **200 OK** | Tidak (Butuh SN STB aktif add-on) |
+| 15 | **Nex Parabola**| ISP / Pay-TV | `nex_parabola` | **200 OK** | Tidak (Butuh Receiver aktif paket) |
+| 16 | **Icon TV** | ISP / Pay-TV | `icon_tv` | **200 OK** | Tidak (Butuh ID STB PLN IconNet aktif) |
+| 17 | **XL Home** | ISP / Pay-TV | `xlhome` | **200 OK** | Tidak (Butuh Token Sensara STB aktif) |
+| 18 | **VNT** | ISP / Pay-TV | `vnt` | **200 OK** | Tidak (Butuh ID aktivasi Nomaden aktif) |
+| 19 | **Moratel** | ISP / Pay-TV | `moratel` | **200 OK** | Tidak (Butuh ID Pelanggan Oxygen aktif) |
+| 20 | **Vlepo/Varnion**| Hospitality | `varnion` | **200 OK** | Tidak (Hak tonton dikontrol gateway hotel)|
+| 21 | **Melvar** | Hospitality | `melvar` | **200 OK** | Tidak (Hak tonton dikontrol gateway hotel)|
+| 22 | **NontonPlus** | Hospitality | `nontonplus` | **200 OK** | Tidak (Hak tonton dikontrol gateway hotel)|
+| 23 | **Mandaya** | Hospitality | `mandaya` | **200 OK** | Tidak (Hak tonton PES RS Mandaya) |
+| 24 | **Hubmedia** | Hospitality | `hubmedia` | **200 OK** | Tidak (Hak tonton dikontrol gateway B2B) |
+| 25 | **Tivinity** | Hospitality | `tivinity` | **200 OK** | Tidak (Hak tonton dikontrol gateway hotel)|
+| 26 | **VMOS** | Fallback | `vmos` | 400 Bad Request | Tidak (Profile virtual emulator) |
+
+---
+
 ### Partner yang dikenali APK 2.48.8
 
 Factory partner lokal mengenali 14 marker pada `auth_payload.agent` dari respons `GET /partner/brand`:
