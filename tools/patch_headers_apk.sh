@@ -166,6 +166,7 @@ python3 - "$WORK_DIR/decoded" "$PROFILE" "$MIN_API" <<'PY'
 from collections import Counter
 from pathlib import Path
 import re
+import shutil
 import sys
 
 root = Path(sys.argv[1])
@@ -372,46 +373,55 @@ if min_api < 26:
             adaptive_v26_dir.mkdir(parents=True, exist_ok=True)
             source.replace(adaptive_v26_dir / icon)
 
-if profile == "mobile":
-    normalizations = {
-        "android-app://com.vidio.android": ("androidtv-app://com.vidio.android.tv", 2),
+profile_identities = {
+    "mobile": {
+        "androidtv-app://com.vidio.android.tv": ("android-app://com.vidio.android", 2),
         "tv-android/2608.2.4 (1020)": ("vidioandroid/2608.2.7-73babcffa4 (3191921)", 9),
-    }
-    # LoginGate is re-injected as a fresh DEX on every build, so its stale smali
-    # (which may still carry an old hardcoded UA) must not count toward the app's
-    # own identity strings.
-    smali_paths = [
-        path
-        for path in root.glob("smali*/**/*.smali")
-        if "com/vidio/android/patch/" not in path.as_posix()
-    ]
-    current_counts = Counter()
-    desired_counts = Counter()
-    for path in smali_paths:
-        text = path.read_text()
-        for current, (desired, _) in normalizations.items():
-            current_counts[current] += text.count(f'"{current}"')
-            desired_counts[current] += text.count(f'"{desired}"')
+    },
+    "tv": {
+        "android-app://com.vidio.android": ("androidtv-app://com.vidio.android.tv", 2),
+        "vidioandroid/2608.2.7-73babcffa4 (3191921)": ("tv-android/2608.2.4 (1020)", 2),
+    },
+}
+normalizations = profile_identities[profile]
+# LoginGate is re-injected as a fresh DEX on every build, so stale copies must
+# not affect identity checks or survive alongside the correctly profiled class.
+smali_paths = [
+    path
+    for path in root.glob("smali*/**/*.smali")
+    if "com/vidio/android/patch/" not in path.as_posix()
+]
+current_counts = Counter()
+desired_counts = Counter()
+for path in smali_paths:
+    text = path.read_text()
+    for current, (desired, _) in normalizations.items():
+        current_counts[current] += text.count(f'"{current}"')
+        desired_counts[current] += text.count(f'"{desired}"')
 
-    pending_normalizations = set()
-    for current, (desired, expected) in normalizations.items():
-        if current_counts[current] == expected and desired_counts[current] == 0:
-            pending_normalizations.add(current)
-        elif current_counts[current] != 0 or desired_counts[current] != expected:
-            raise SystemExit(
-                f"Unexpected Mobile identity state for {current}: "
-                f"current={current_counts[current]}, desired={desired_counts[current]}, expected={expected}"
-            )
+pending_normalizations = set()
+for current, (desired, expected) in normalizations.items():
+    total = current_counts[current] + desired_counts[current]
+    if total != expected:
+        raise SystemExit(
+            f"Unexpected {profile} identity state for {current}: "
+            f"current={current_counts[current]}, desired={desired_counts[current]}, expected={expected}"
+        )
+    if current_counts[current]:
+        pending_normalizations.add(current)
 
-    for path in smali_paths:
-        text = path.read_text()
-        original = text
-        for current in pending_normalizations:
-            desired, _ = normalizations[current]
-            text = text.replace(f'"{current}"', f'"{desired}"')
-        if text != original:
-            path.write_text(text)
-            changed_files.add(path.relative_to(root))
+for path in smali_paths:
+    text = path.read_text()
+    original = text
+    for current in pending_normalizations:
+        desired, _ = normalizations[current]
+        text = text.replace(f'"{current}"', f'"{desired}"')
+    if text != original:
+        path.write_text(text)
+        changed_files.add(path.relative_to(root))
+
+for stale_patch_dir in root.glob("smali*/com/vidio/android/patch"):
+    shutil.rmtree(stale_patch_dir)
 
 login_gate_hooked = False
 login_types = {
