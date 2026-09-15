@@ -749,3 +749,100 @@ php stream_headers.php --send
 ```
 
 Mode default hanya menampilkan request dan menyamarkan signature/token. `--show-sensitive` menampilkan nilai penuh; `--send` benar-benar mengirim GET. Header sesi ditambahkan secara opsional melalui `USER_EMAIL`, `USER_TOKEN`, `VISITOR_ID`, `USER_ID`, dan `AUTHORIZATION`; `X_CLIENT` dapat diisi untuk reproduksi deterministik, jika tidak program memakai `time()`.
+
+---
+
+## Analisis Mendalam: Mekanisme Partner Auth, UID Generate, dan Kenapa API Subscriptions Kosong
+
+### 1. Mengapa Hanya TCL, CooCaa, dan Aqua yang Bisa Menggunakan UID Generate (Random UUID)?
+
+Di arsitektur backend dan aplikasi Android TV Vidio (`com.vidio.android.tv`), terdapat pemisahan tegas antara dua jenis partner:
+
+#### A. OEM Smart TV Hardware (TCL, CooCaa, Aqua)
+- **Tipe Identifikasi di Backend**: `"identification": "android_id"`.
+- **Karakteristik**: Di sistem operasi Android TV, `android_id` (`Settings.Secure.getString(..., "android_id")`) adalah identitas perangkat lokal yang dibentuk saat setup awal perangkat. Aplikasi Vidio mengizinkan nilai ini berupa format UUID v4 acak atau string alfanumerik perangkat.
+- **Sifat Kemitraan**: Kemitraan ini bertujuan untuk **Seamless Auto-Login (Device Provisioning)** agar pembeli TV baru langsung bisa masuk ke aplikasi Vidio tanpa harus mengetik email/password menggunakan remote TV.
+- **Hasil di Backend**: Karena backend Vidio tidak memvalidasi `android_id` ke database pihak ketiga (tidak ada database sentral "pelanggan TV TCL/CooCaa"), backend menerima sembarang UUID acak baru dan **langsung mendaftarkan entitas user baru** (menghasilkan HTTP 200 OK beserta `auth_token` baru).
+
+#### B. ISP / Pay-TV Operator STB (IndiHome, First Media, Akari, Nex Parabola, XL Home, Moratel, dll.)
+- **Tipe Identifikasi di Backend**:
+  - **First Media**: `"identification": "firstmedia_serial_number"`. Nomor seri fisik STB LinkNet (contoh: `2140H205000423`). Backend Vidio memanggil API internal BSS/OSS LinkNet untuk mencocokkan nomor seri. Jika dikirim UUID acak atau SN palsu, LinkNet menolak sehingga Vidio merespons **HTTP 422: `{"error_code": 99, "error_message": "Failed to create user"}`**.
+  - **IndiHome**: `"identification": "indihome_id"`. Nomor pelanggan Telkom IndiHome 12-digit (awalan `1971...`). Backend mencocokkannya ke billing Telkom.
+  - **Akari**: `"identification": "akari_serial_number"`. Serial hardware STB Akari (contoh: `A210433620A00283`). Server memverifikasi format dan checksum pabrikan. Jika acak, server membalas **HTTP 400: `{"error_code": 10032004, "error_message": "Serial number gak valid"}`**.
+  - **Nex Parabola**: `"identification": "mac_eth_interface"`. MAC address Ethernet receiver decoder satelit/IPTV Nex Parabola yang terdaftar di database pelanggan Nex.
+  - **XL Home**: `"identification": "xlhome_sensara_payload"`. Token autentikasi Sensara yang terikat pada middleware STB XL Home / XL Satu.
+  - **MyRepublic**: `"identification": "myrepublic_mac_address"` / `myrepublic_zte_mac_address`. MAC address STB ZTE/SDMC yang terdaftar di sistem provisioning MyRepublic.
+- **Kesimpulan**: Partner operator terikat pada database fisik hardware/pelanggan eksternal. UUID acak akan langsung ditolak validasinya oleh backend operator terkait.
+
+---
+
+### 2. Mengapa Saat Dicek ke API `GET /api/users/subscriptions` Isinya Kosong (`"subscriptions": []`)?
+
+Ketika melakukan curl ke endpoint subscriptions:
+```bash
+curl --http2 -L -X GET 'https://api.vidio.com/api/users/subscriptions' \
+  -H 'User-Agent: tv-android/2.48.8 (462)' \
+  -H 'x-user-email: {email}' \
+  -H 'x-user-token: {user token}' \
+  -H 'x-api-platform: tv-android' \
+  -H 'x-api-auth: laZOmogezono5ogekaso5oz4Mezimew1'
+```
+Mendapatkan respons:
+```json
+{
+  "subscriptions": [],
+  "apple_tier_identifiers": []
+}
+```
+
+Penyebab teknisnya adalah:
+1. **Partner Auth BUKAN Generator Akun VIP/Premium Gratis**:
+   - Partner Auth (`POST /api/partner/auth`) hanya membuatkan **akun pengguna baru (Free Tier / Guest)** di Vidio.
+   - Nilai `"subscription_created": true` pada response auth hanyalah penanda internal database Vidio bahwa baris entitas record profil subscription awal user telah di-inisialisasi (status default free).
+2. **Endpoint `/api/users/subscriptions` Khusus Menampilkan Paket Berbayar Aktif**:
+   - Endpoint ini hanya mengembalikan array objek langganan bila akun memiliki paket aktif berbayar (misal Platinum, Premier League, Diamond, SPOTV).
+   - Karena akun yang dihasilkan dari UUID acak adalah akun baru tanpa transaksi pembelian, array `subscriptions` secara default **PASTI KOSONG `[]`**.
+3. **Bagaimana Promo Bundling Pabrikan (TCL/CooCaa) Sebenarnya Bekerja di Dunia Nyata?**:
+   - Promo bundling resmi (contoh: "Beli TV TCL Dapat Vidio Platinum 1 Tahun") tidak dibagikan ke sembarang UUID acak di internet.
+   - Distribusinya menggunakan salah satu dari dua jalur:
+     - **Klaim Voucher / Promo Code**: Melalui aplikasi khusus promosi bawaan TV atau kartu garansi yang diaktivasi lewat API redeem voucher.
+     - **Hardware Whitelist**: Distributor mendaftarkan rentang serial number TV yang diproduksi untuk batch promo ke server Vidio. UUID acak dari script tidak terdaftar di whitelist tersebut.
+4. **Pengecekan Akses Streaming Sebenarnya di Aplikasi TV**:
+   - Aplikasi TV mengecek hak akses tayangan melalui:
+     `GET https://api.vidio.com/users/content_access?content_id={id}&content_type=LIVESTREAMING`
+   - Jika akun tidak memiliki paket langganan aktif, server mengembalikan status HTTP 403:
+     `{"errors":[{"error":"not_subscribed","code":10030007,"detail":"Tayangan ini gak termasuk ke dalam paketmu. Yuk, aktifkan Vidio Premium!"}]}`
+
+---
+
+### 3. Daftar Lengkap Brand Partner di Vidio TV & Penelusuran Brand Spesifik
+
+Berdasarkan audit DEX (`classes.dex` s/d `classes6.dex`), interceptor deteksi `GET /partner/brand` (28 parameter query), dan penelusuran industri:
+
+| No | Brand / Partner | String `partner_agent` | Tipe Identifikasi | Tipe Entitas & Hasil Penelusuran Industri |
+|---|---|---|---|---|
+| 1 | **TCL** | `tcl` | `android_id` | OEM Smart TV global (CSOT/TCL Technology). Bisa random UUID. |
+| 2 | **CooCaa** | `coocaa_SW3_ATV_T` | `android_id` | OEM Smart TV Skyworth Group. Wajib format agent `coocaa_<model>`. |
+| 3 | **Aqua** | `aqua_aqua android tv` | `android_id` | OEM Smart TV Haier / Aqua Japan. Bisa random UUID. |
+| 4 | **Sony** | `sony_bravia vu3` | `android_id` | Sony Bravia Android TV (status integrasi dormant/404 di backend). |
+| 5 | **IndiHome** | `indihome` | `indihome_id` | Layanan Fixed Broadband & IPTV Telkom Indonesia. Wajib nomor pelanggan 12-digit dengan add-on Vidio aktif. |
+| 6 | **FirstMedia** | `firstmedia` | `firstmedia_serial_number` | Pay-TV & ISP kabel LinkNet. Wajib serial STB fisik terdaftar di DB LinkNet. |
+| 7 | **Akari** | `akari` | `akari_serial_number` | Brand elektronik & Smartbox STB lokal Indonesia (PT Akari Indonesia). Wajib checksum serial valid. |
+| 8 | **Polytron** | `polytron_PDBM11ADL` | `polytron_serial_number` | Brand elektronik Indonesia (PT Hartono Istana Teknologi). Model PDBM11ADL board Smart TV. |
+| 9 | **Changhong** | `changhong` | `changhong_serial_number` | Brand Smart TV Sichuan Changhong Electric Co. |
+| 10 | **Nex Parabola** | `nex_parabola` | `mac_eth_interface` | TV Satelit & OTT Pay-TV milik Emtek Group (induk perusahaan Vidio). Wajib MAC receiver terdaftar. |
+| 11 | **MyRepublic** | `myrepublic` | `myrepublic_mac_address` | ISP Fiber Optik MyRepublic Indonesia (menggunakan STB ZTE & SDMC). Wajib MAC terdaftar di provisioning. |
+| 12 | **XL Home (XL Satu)** | `xlhome` | `xlhome_sensara_payload` | Layanan home broadband XL Axiata berbasis middleware Sensara (`xl190`). |
+| 13 | **Icon TV** | `icon_tv` | `mac_directory` | Layanan IPTV dari IconNet (PLN Icon Plus). Menggunakan STB format Device ID `sapoXXXXX`. |
+| 14 | **VNT** | `vnt` | `vnt_id` | PT Visi Nusantara Telematika (VNT Networks) - Penyedia jaringan ISP & Hospitality IPTV. |
+| 15 | **Moratel / Oxygen.id** | `moratel` | `moratel_customer_id` & `moratel_serial_number` | PT Mora Telematika Indonesia (ISP Oxygen.id). Terdeteksi via properti `ro.oxygen.version` & intent `com.oxygen.atv.action.API_GET_ID`. |
+| 16 | **Vlepo** | `vlepo` | `vlepo_unique_id` & `vlepo_additional_id` | Platform solusi Interactive Hospitality IPTV untuk jaringan hotel di Indonesia. |
+| 17 | **Melvar** | `melvar` | `melvar_id` | PT Melvar Lintas Samudera - Penyedia layanan TV satelit & IPTV maritim untuk kapal pelayaran & area terpencil. |
+| 18 | **NontonPlus** | `nontonplus` | `nontonplus_hotel_id` & `nontonplus_device_id` | Solusi OTT In-Room Entertainment & IPTV untuk hotel, villa, dan apartemen residensial. |
+| 19 | **Mandaya** | `mandaya` | `mandaya_unique_id` | Mandaya Royal Hospital Group - Sistem Smart TV In-Room Patient Infotainment di kamar rawat inap rumah sakit. |
+| 20 | **Hubmedia** | `hubmedia` | `hubmedia_customer_id` & `hubmedia_unique_id` | Solusi TVMS STB perhotelan dari PT Inovasi Riset Nusantara (`id.co.inovasiriset.tvms.stbinterface`). |
+| 21 | **Tivinity** | `tivinity` | `tivinity_customer_id` | Penyedia sistem interactive smart hospitality TV untuk hotel mewah & resort. |
+| 22 | **EROC** | `eroc_android_tv` | `mac_wlan_interface` | Brand Smart Android TV lokal dari PT Eroc Lifestyle Indonesia. |
+| 23 | **Advance** | `advance` | `mac_directory` | Brand elektronik & TV lokal dari PT Advance Digitals Indonesia. |
+| 24 | **CVTE Board ODM** | `(sp_global_device_name)` | `android_id` | Motherboard Smart TV pabrikan Guangzhou Shiyuan Electronics (CVTE) via properti `ro.CVT_DEF_GLOBAL_DEVICE_NAME`. |
+| 25 | **Newlink ODM STB** | `(sp_newlink_cusname)` | `mac_eth_interface` | Shenzhen Newlink Technology - ODM manufaktur berbagai STB Android TV di Indonesia via properti `ro.newlink.cusname`. |
