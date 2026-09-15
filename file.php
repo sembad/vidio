@@ -4,8 +4,16 @@ $password   = 'Dalijo90';
 $x_api_auth = 'laZOmogezono5ogekaso5oz4Mezimew1';
 $user_agent = 'tv-android/2608.2.4 (1020)';
 $app_info   = 'tv-android/10/2608.2.4-1020';
-$visitor_id = '8f1ec0a1-0845-473c-a0f5-9a9417421d1c';
 $secret     = 'V1d10D3v';
+
+function generateUuid() {
+    $data = random_bytes(16);
+    $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+    $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+}
+
+$visitor_id = generateUuid();
 
 $id   = isset($_GET['id']) ? trim($_GET['id']) : '';
 $type = isset($_GET['type']) ? strtolower(trim($_GET['type'])) : '';
@@ -120,13 +128,6 @@ $streamHeaders = [
     'x-user-email: ' . $user_email,
     'x-user-token: ' . $user_token,
     'x-user-id: ' . $user_id,
-    'x-device-brand: Redmi',
-    'x-device-model: M2006C3LG',
-    'x-device-form-factor: TV',
-    'x-device-soc: mt6762 dandelion',
-    'x-device-os: Android 10 (API 29)',
-    'x-device-android-mpc: 0',
-    'x-device-cpu-arch: armeabi-v7a',
     'x-partner-id: ',
     'x-partner-signature: '
 ];
