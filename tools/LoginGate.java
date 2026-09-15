@@ -97,12 +97,10 @@ public final class LoginGate {
     private static final String EXPECTED_SIGNATURE_SHA256 =
             "AE5901E4DF20E96CA3A39B9B35EE49F1B2581B49D38C4E26B928532E4940FEB0";
     private static final Set<String> BLOCKED_LOGIN_PATHS = new HashSet<>(Arrays.asList(
-            "/api/googles/auth",
             "/api/otp/auth",
             "/api/he/auth",
             "/api/login_with_he",
-            "/api/apple/auth",
-            "/api/tv/verify_code"
+            "/api/apple/auth"
     ));
 
     public static class DecryptedStreamResponse {
@@ -193,6 +191,31 @@ public final class LoginGate {
         }
     }
 
+    private static String emailFromGoogleToken(String token) throws IOException {
+        if (token == null) {
+            return null;
+        }
+        String[] segments = token.trim().split("\\.", -1);
+        if (segments.length != 3 || segments[1].isEmpty()) {
+            return null;
+        }
+        String payload = segments[1].replace('-', '+').replace('_', '/');
+        int remainder = payload.length() % 4;
+        if (remainder == 2) {
+            payload += "==";
+        } else if (remainder == 3) {
+            payload += "=";
+        } else if (remainder != 0) {
+            return null;
+        }
+        try {
+            String claims = new String(decodeBase64(payload), StandardCharsets.UTF_8);
+            return extractJsonString(claims, "email");
+        } catch (Exception exception) {
+            throw new IOException("Cannot read Google login token", exception);
+        }
+    }
+
     private static volatile Object applicationContext;
     private static volatile Object currentActivity;
     private static volatile Object loadingView;
@@ -245,13 +268,16 @@ public final class LoginGate {
             deny(DENIED_MESSAGE);
             return;
         }
-        if (!"/api/login".equals(path) && !"/api/facebook/auth".equals(path)) {
+        boolean googleLogin = "/api/googles/auth".equals(path);
+        if (!"/api/login".equals(path) && !"/api/facebook/auth".equals(path) && !googleLogin) {
             return;
         }
 
         String email;
         try {
-            email = formValue(requestBody, "/api/login".equals(path) ? "login" : "email");
+            email = googleLogin
+                    ? emailFromGoogleToken(formValue(requestBody, "token"))
+                    : formValue(requestBody, "/api/login".equals(path) ? "login" : "email");
         } catch (IOException exception) {
             showToast(ERROR_MESSAGE);
             throw exception;
@@ -297,6 +323,12 @@ public final class LoginGate {
         return ua != null ? ua : loadStreamUa();
     }
 
+    static String defaultApiUa() {
+        return "tv".equals(PROFILE)
+                ? "tv-android/2608.2.4 (1020)"
+                : "vidioandroid/2608.2.7-73babcffa4 (3191921)";
+    }
+
     public static void addStreamHeaders(Object request, Object builder) {
         if (request == null || builder == null) {
             return;
@@ -307,14 +339,16 @@ public final class LoginGate {
                 return;
             }
             String url = requestUrl.toString();
-            if (!isPlaybackHeaderUrl(url)) {
-                return;
-            }
             java.lang.reflect.Method getHeader = request.getClass().getMethod("d", String.class);
             java.lang.reflect.Method setHeader = builder.getClass().getMethod(
                     "d", String.class, String.class);
+            if (!isPlaybackHeaderUrl(url)) {
+                setHeader.invoke(builder, "User-Agent", defaultApiUa());
+                setHeader.invoke(builder, "user-agent", defaultApiUa());
+                return;
+            }
 
-            // Always enforce TV User-Agent on playback URLs
+            // Always enforce the configured playback User-Agent on playback URLs
             String ua = streamUaForUrl(url);
             if (ua != null) {
                 setHeader.invoke(builder, "User-Agent", ua);
@@ -1266,6 +1300,20 @@ public final class LoginGate {
         String encoded = URLEncoder.encode("User+tag@example.com", "UTF-8").replace("+", "%20");
         if (!"User%2Btag%40example.com".equals(encoded)) {
             throw new AssertionError("Email query encoding failed");
+        }
+        String googleToken = "e30.eyJlbWFpbCI6Imdvb2dsZUBleGFtcGxlLmNvbSJ9.signature";
+        if (!"google@example.com".equals(emailFromGoogleToken(googleToken))) {
+            throw new AssertionError("Google token email was not parsed");
+        }
+        if (BLOCKED_LOGIN_PATHS.contains("/api/googles/auth")
+                || BLOCKED_LOGIN_PATHS.contains("/api/tv/verify_code")) {
+            throw new AssertionError("Google and TV QR login endpoints must remain enabled");
+        }
+        String expectedApiUa = "tv".equals(PROFILE)
+                ? "tv-android/2608.2.4 (1020)"
+                : "vidioandroid/2608.2.7-73babcffa4 (3191921)";
+        if (!expectedApiUa.equals(defaultApiUa())) {
+            throw new AssertionError("Profile API User-Agent mismatch");
         }
 
         String ua = "Mozilla/5.0 (Linux; Android 14) VidioStream/1.0";

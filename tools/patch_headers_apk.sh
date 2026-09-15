@@ -115,6 +115,7 @@ fi
 
 unzip -Z1 "$WORK_DIR/universal.apk" > "$WORK_DIR/universal-entries.txt"
 LOGIN_GATE_DEX_NAME=""
+LOGIN_GATE_DEX_INDEX=2147483647
 LOGIN_GATE_PRESENT=false
 SPLASH_SMALI_DIR=""
 max_dex_index=0
@@ -131,7 +132,10 @@ while IFS= read -r dex_name; do
   unzip -p "$WORK_DIR/universal.apk" "$dex_name" | strings > "$WORK_DIR/${dex_name}.strings"
   if grep -Fq "com/vidio/android/patch/LoginGate" "$WORK_DIR/${dex_name}.strings" && grep -Fq "stream_ua.txt" "$WORK_DIR/${dex_name}.strings"; then
     LOGIN_GATE_DEX_NAMES+=("$dex_name")
-    LOGIN_GATE_DEX_NAME=$dex_name
+    if (( dex_index < LOGIN_GATE_DEX_INDEX )); then
+      LOGIN_GATE_DEX_NAME=$dex_name
+      LOGIN_GATE_DEX_INDEX=$dex_index
+    fi
     LOGIN_GATE_PRESENT=true
   fi
 done < <(grep -E '^classes([0-9]+)?\.dex$' "$WORK_DIR/universal-entries.txt")
@@ -881,9 +885,9 @@ for lg_dex in "${LOGIN_GATE_DEX_NAMES[@]}"; do
   if unzip -Z1 "$WORK_DIR/rebuilt.apk" | grep -Fxq "$lg_dex"; then
     zip -q -d "$WORK_DIR/rebuilt.apk" "$lg_dex"
   fi
-  cp "$WORK_DIR/login-gate-dex/classes.dex" "$WORK_DIR/$lg_dex"
-  (cd "$WORK_DIR" && zip -q -j rebuilt.apk "$lg_dex")
 done
+cp "$WORK_DIR/login-gate-dex/classes.dex" "$WORK_DIR/$LOGIN_GATE_DEX_NAME"
+(cd "$WORK_DIR" && zip -q -j rebuilt.apk "$LOGIN_GATE_DEX_NAME")
 
 # Package native libvidio_gate.so if pre-built for target ABIs
 NATIVE_LIBS_DIR="$ROOT/tools/native/libs"
