@@ -324,7 +324,54 @@ def main():
             print(f"  UID        : {auth.get('uid')}")
             print(f"  Username   : {auth.get('username')}")
             print(f"  Email      : {auth.get('email')}")
-            print(f"  Auth Token : {auth.get('auth_token')}")
+            print(f"  Auth Token : {auth.get('auth_token') or auth.get('authentication_token')}")
+            print(f"  Sub Created: {parsed.get('subscription_created')}")
+            print("-" * 65)
+
+            # Otomatis cek ke endpoint subscriptions
+            print("\nMengecek status langganan di GET /api/users/subscriptions...")
+            headers_sub = {
+                "User-Agent": USER_AGENT,
+                "Accept": "application/json",
+                "x-user-email": auth.get("email"),
+                "x-user-token": auth.get("authentication_token") or auth.get("auth_token"),
+                "referer": "androidtv-app://com.vidio.android.tv",
+                "x-api-platform": "tv-android",
+                "x-api-app-info": APP_INFO,
+                "accept-language": "id",
+                "x-api-auth": X_API_AUTH,
+                "accept-charset": "UTF-8",
+            }
+            if proxy_url:
+                p_handler = urllib.request.ProxyHandler({"http": proxy_url, "https": proxy_url})
+                sub_opener = urllib.request.build_opener(p_handler)
+            else:
+                sub_opener = urllib.request.build_opener()
+            
+            try:
+                sub_req = urllib.request.Request("https://api.vidio.com/api/users/subscriptions", headers=headers_sub)
+                with sub_opener.open(sub_req, timeout=10) as s_resp:
+                    sub_raw = s_resp.read()
+                    try:
+                        sub_raw = gzip.decompress(sub_raw)
+                    except Exception:
+                        pass
+                    sub_json = json.loads(sub_raw.decode("utf-8"))
+                    subs_list = sub_json.get("subscriptions", [])
+                    if subs_list:
+                        print("PAKET AKTIF DITEMUKAN:")
+                        for s_item in subs_list:
+                            p_name = s_item.get("package", {}).get("name")
+                            p_status = s_item.get("status")
+                            p_end = s_item.get("end_at")
+                            p_cat = s_item.get("product_catalog", {}).get("name")
+                            print(f"  -> Paket  : {p_name} ({p_cat})")
+                            print(f"  -> Status : {p_status.upper()}")
+                            print(f"  -> Berlaku: {p_end}")
+                    else:
+                        print("HASIL SUBSCRIPTIONS: Kosong ([]) - Akun Free Tier / Tanpa Paket Bundling.")
+            except Exception as e_sub:
+                print(f"Gagal cek subscriptions: {e_sub}")
             print("-" * 65)
     except Exception:
         print(response_body)

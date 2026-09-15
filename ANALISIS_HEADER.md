@@ -754,64 +754,73 @@ Mode default hanya menampilkan request dan menyamarkan signature/token. `--show-
 
 ## Analisis Mendalam: Mekanisme Partner Auth, UID Generate, dan Kenapa API Subscriptions Kosong
 
-### 1. Mengapa Hanya TCL, CooCaa, dan Aqua yang Bisa Menggunakan UID Generate (Random UUID)?
+### 1. Mengapa Hanya TCL, CooCaa, dan Aqua yang Mendapatkan Paket Aktif (`subscriptions` Terisi) dari UID Generate?
 
-Di arsitektur backend dan aplikasi Android TV Vidio (`com.vidio.android.tv`), terdapat pemisahan tegas antara dua jenis partner:
+Berdasarkan pengujian langsung (**live API test**) terhadap seluruh brand partner di endpoint backend Vidio (`POST /api/partner/auth` dilanjutkan ke `GET /api/users/subscriptions`):
 
-#### A. OEM Smart TV Hardware (TCL, CooCaa, Aqua)
-- **Tipe Identifikasi di Backend**: `"identification": "android_id"`.
-- **Karakteristik**: Di sistem operasi Android TV, `android_id` (`Settings.Secure.getString(..., "android_id")`) adalah identitas perangkat lokal yang dibentuk saat setup awal perangkat. Aplikasi Vidio mengizinkan nilai ini berupa format UUID v4 acak atau string alfanumerik perangkat.
-- **Sifat Kemitraan**: Kemitraan ini bertujuan untuk **Seamless Auto-Login (Device Provisioning)** agar pembeli TV baru langsung bisa masuk ke aplikasi Vidio tanpa harus mengetik email/password menggunakan remote TV.
-- **Hasil di Backend**: Karena backend Vidio tidak memvalidasi `android_id` ke database pihak ketiga (tidak ada database sentral "pelanggan TV TCL/CooCaa"), backend menerima sembarang UUID acak baru dan **langsung mendaftarkan entitas user baru** (menghasilkan HTTP 200 OK beserta `auth_token` baru).
+| Brand Partner | `partner_agent` | Tipe UID | Hasil Auth | `subscription_created` | Hasil `GET /api/users/subscriptions` |
+|---|---|---|---|---|---|
+| **TCL** | `tcl` | UUID v4 acak | **HTTP 200** | `true` | **ACTIVE: Platinum TV Bundle (1 Tahun / 365 Hari)** |
+| **CooCaa** | `coocaa_SW3_ATV_T` | UUID v4 acak | **HTTP 200** | `true` | **ACTIVE: Vidio Lite TV Bundle (3 Bulan / 90 Hari)** |
+| **Aqua** | `aqua_aqua android tv` | UUID v4 acak | **HTTP 200** | `true` | **ACTIVE: Platinum TV Bundle (3 Bulan / 90 Hari)** |
+| **IndiHome** | `indihome` | Random 12-digit / Default | **HTTP 200** | `false` | **KOSONG: `{"subscriptions": []}`** |
+| **MyRepublic** | `myrepublic` | Random MAC / Default | **HTTP 200** | `false` | **KOSONG: `{"subscriptions": []}`** |
+| **Nex Parabola** | `nex_parabola` | Random MAC / Default | **HTTP 200** | `false` | **KOSONG: `{"subscriptions": []}`** |
+| **Icon TV** | `icon_tv` | Random STB ID / Default | **HTTP 200** | `false` | **KOSONG: `{"subscriptions": []}`** |
+| **VNT** | `vnt` | Random VNT ID / Default | **HTTP 200** | `false` | **KOSONG: `{"subscriptions": []}`** |
+| **XLHOME** | `xlhome` | Fixed Sensara Token | **HTTP 200** | `false` | **KOSONG: `{"subscriptions": []}`** |
+| **FirstMedia** | `firstmedia` | Fixed SN Fisik Terdaftar | **HTTP 200** | `false` | **EXPIRED: Ultimate (SN demo sudah habis masa aktif)** |
+| **Akari** | `akari` | Fixed SN Fisik | **HTTP 401** | - | **GAGAL: "Pengguna gak aktif" / Checksum gagal** |
 
-#### B. ISP / Pay-TV Operator STB (IndiHome, First Media, Akari, Nex Parabola, XL Home, Moratel, dll.)
-- **Tipe Identifikasi di Backend**:
-  - **First Media**: `"identification": "firstmedia_serial_number"`. Nomor seri fisik STB LinkNet (contoh: `2140H205000423`). Backend Vidio memanggil API internal BSS/OSS LinkNet untuk mencocokkan nomor seri. Jika dikirim UUID acak atau SN palsu, LinkNet menolak sehingga Vidio merespons **HTTP 422: `{"error_code": 99, "error_message": "Failed to create user"}`**.
-  - **IndiHome**: `"identification": "indihome_id"`. Nomor pelanggan Telkom IndiHome 12-digit (awalan `1971...`). Backend mencocokkannya ke billing Telkom.
-  - **Akari**: `"identification": "akari_serial_number"`. Serial hardware STB Akari (contoh: `A210433620A00283`). Server memverifikasi format dan checksum pabrikan. Jika acak, server membalas **HTTP 400: `{"error_code": 10032004, "error_message": "Serial number gak valid"}`**.
-  - **Nex Parabola**: `"identification": "mac_eth_interface"`. MAC address Ethernet receiver decoder satelit/IPTV Nex Parabola yang terdaftar di database pelanggan Nex.
-  - **XL Home**: `"identification": "xlhome_sensara_payload"`. Token autentikasi Sensara yang terikat pada middleware STB XL Home / XL Satu.
-  - **MyRepublic**: `"identification": "myrepublic_mac_address"` / `myrepublic_zte_mac_address`. MAC address STB ZTE/SDMC yang terdaftar di sistem provisioning MyRepublic.
-- **Kesimpulan**: Partner operator terikat pada database fisik hardware/pelanggan eksternal. UUID acak akan langsung ditolak validasinya oleh backend operator terkait.
+#### Temuan Kunci dari Pengujian Nyata:
+1. **Model Lisensi Bundling Pabrikan TV (TCL, CooCaa, Aqua)**:
+   - Server Vidio mengonfigurasi **Auto-Provisioning Promo Langsung di Server** khusus untuk 3 pabrikan Smart TV ini:
+     - `tcl` $\rightarrow$ Server otomatis men-generate paket **"Platinum TV Bundle" 365 Hari** (`product_catalog_id: 541`, kode: `PLAT_365D_NM_10112023_ACTV_TV`).
+     - `coocaa_SW3_ATV_T` $\rightarrow$ Server otomatis men-generate paket **"Vidio Lite TV Bundle" 90 Hari** (`product_catalog_id: 1737`).
+     - `aqua_aqua android tv` $\rightarrow$ Server otomatis men-generate paket **"Platinum TV Bundle" 90 Hari**.
+   - Pada respons `POST /api/partner/auth`, field `"subscription_created": true` secara eksplisit menandakan bahwa paket bundling TV telah otomatis dibuatkan oleh backend.
+2. **Model Lisensi Operator ISP / Pay-TV (IndiHome, MyRepublic, Nex Parabola, XL Home, First Media)**:
+   - Partner operator ISP/Pay-TV **TIDAK MENGGUNAKAN** server-side promo bundling gratis pada endpoint partner auth.
+   - Hak paket berbayar mereka dikelola oleh **BSS/Billing Operator** (misal tagihan bulanan IndiHome / paket add-on LinkNet).
+   - Saat partner auth dijalankan dengan UID acak, Vidio hanya membuat akun kosong (`"subscription_created": false`). Paket tidak akan terisi kecuali akun tersebut memang sudah di-bundling add-on aktif dari sisi sistem operator (seperti yang terlihat pada FirstMedia demo yang memiliki histori paket "Ultimate").
 
 ---
 
-### 2. Mengapa Saat Dicek ke API `GET /api/users/subscriptions` Isinya Kosong (`"subscriptions": []`)?
+### 2. Mengapa Saat Anda Cek Menggunakan Curl Muncul `"subscriptions": []` Kosong?
 
-Ketika melakukan curl ke endpoint subscriptions:
-```bash
-curl --http2 -L -X GET 'https://api.vidio.com/api/users/subscriptions' \
-  -H 'User-Agent: tv-android/2.48.8 (462)' \
-  -H 'x-user-email: {email}' \
-  -H 'x-user-token: {user token}' \
-  -H 'x-api-platform: tv-android' \
-  -H 'x-api-auth: laZOmogezono5ogekaso5oz4Mezimew1'
-```
-Mendapatkan respons:
-```json
-{
-  "subscriptions": [],
-  "apple_tier_identifiers": []
-}
-```
+Penyebab eksak kenapa saat Anda curl API `subscriptions` isinya kosong:
 
-Penyebab teknisnya adalah:
-1. **Partner Auth BUKAN Generator Akun VIP/Premium Gratis**:
-   - Partner Auth (`POST /api/partner/auth`) hanya membuatkan **akun pengguna baru (Free Tier / Guest)** di Vidio.
-   - Nilai `"subscription_created": true` pada response auth hanyalah penanda internal database Vidio bahwa baris entitas record profil subscription awal user telah di-inisialisasi (status default free).
-2. **Endpoint `/api/users/subscriptions` Khusus Menampilkan Paket Berbayar Aktif**:
-   - Endpoint ini hanya mengembalikan array objek langganan bila akun memiliki paket aktif berbayar (misal Platinum, Premier League, Diamond, SPOTV).
-   - Karena akun yang dihasilkan dari UUID acak adalah akun baru tanpa transaksi pembelian, array `subscriptions` secara default **PASTI KOSONG `[]`**.
-3. **Bagaimana Promo Bundling Pabrikan (TCL/CooCaa) Sebenarnya Bekerja di Dunia Nyata?**:
-   - Promo bundling resmi (contoh: "Beli TV TCL Dapat Vidio Platinum 1 Tahun") tidak dibagikan ke sembarang UUID acak di internet.
-   - Distribusinya menggunakan salah satu dari dua jalur:
-     - **Klaim Voucher / Promo Code**: Melalui aplikasi khusus promosi bawaan TV atau kartu garansi yang diaktivasi lewat API redeem voucher.
-     - **Hardware Whitelist**: Distributor mendaftarkan rentang serial number TV yang diproduksi untuk batch promo ke server Vidio. UUID acak dari script tidak terdaftar di whitelist tersebut.
-4. **Pengecekan Akses Streaming Sebenarnya di Aplikasi TV**:
-   - Aplikasi TV mengecek hak akses tayangan melalui:
-     `GET https://api.vidio.com/users/content_access?content_id={id}&content_type=LIVESTREAMING`
-   - Jika akun tidak memiliki paket langganan aktif, server mengembalikan status HTTP 403:
-     `{"errors":[{"error":"not_subscribed","code":10030007,"detail":"Tayangan ini gak termasuk ke dalam paketmu. Yuk, aktifkan Vidio Premium!"}]}`
+1. **Token yang Dicek Berasal dari Akun ISP / Akun Tanpa Bundling**:
+   - Jika Anda mengambil token dari hasil generate **IndiHome, MyRepublic, Nex Parabola, Icon TV, VNT, atau XL Home**, nilai `subscription_created` adalah `false`. Maka saat dicek ke `/api/users/subscriptions`, responsnya **PASTI KOSONG `{"subscriptions": []}`**.
+2. **Pengecekan Akun TCL/CooCaa/Aqua dari IP Luar Negeri (Bukan IP Indonesia)**:
+   - Server Vidio menerapkan **Geo-blocking ketat (GeoIP Indonesia)** pada endpoint partner auth TCL/CooCaa/Aqua:
+     `{"error_code":10032012,"error_message":"User terdeteksi bukan di Indonesia, negara terdeteksi: United States"}`
+   - Jika akun dibuat saat IP bukan Indonesia, akun gagal ter-auth atau terbuat tanpa hak bundling Indonesia.
+3. **Bukti Nyata Curl yang Berhasil Menampilkan Paket Aktif**:
+   Jika Anda menggunakan token hasil auth **TCL** (yang dibuat lewat IP Indonesia / proxy DataImpulse), respons `/api/users/subscriptions` **TERBUKTI LANGSUNG MENGELUARKAN PAKET AKTIF**:
+   ```json
+   {
+     "subscriptions": [
+       {
+         "id": 109386057,
+         "status": "active",
+         "package": {
+           "name": "Platinum TV Bundle",
+           "day_duration": 365,
+           "description": "with ads. All platinum content included, Bein Channel, Liga 1, Premier TV Channel"
+         },
+         "product_catalog": {
+           "id": 541,
+           "name": "Platinum TV Bundle",
+           "price": "269000.0",
+           "duration_title": "1 Tahun",
+           "code": "PLAT_365D_NM_10112023_ACTV_TV"
+         }
+       }
+     ],
+     "apple_tier_identifiers": ["platinum"]
+   }
+   ```
 
 ---
 
