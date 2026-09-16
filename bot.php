@@ -1,4 +1,5 @@
 <?php
+date_default_timezone_set('Asia/Jakarta');
 // Konfigurasi
 define('BOT_TOKEN', '8569904110:AAFK3BHsKbyYcWegcVJfzlWbbkOnhO6x6_c');
 define('DATA_FILE', 'bot_data.json');
@@ -30,19 +31,19 @@ define('ULTIMATE_DURATION', 30 * 24 * 60 * 60); // 30 hari
 $CREDENTIALS = [
     [
         'nomor' => 1,
-        'email' => 'hwiwjwjw@gmail.com',
-        'token' => 'hwhwhwjw',
+        'email' => '2233e0ef-8db4-43f4-9246-33662d62494c-tcl@fake-tcl.com',
+        'token' => '4xRLroRrmcoBsVzioTaz',
     ],
     [
-        'nomor' => 370,
-        'email' => 'whjwjwhwiw@gmail.com',
-        'token' => 'whwjwuwuwu',
+        'nomor' => 482,
+        'email' => '434d5b48-7e39-4c80-b806-563641a72d59-tcl@fake-tcl.com',
+        'token' => 'iCgCRZLDzkbWczNH23Gk',
     ],
 ];
 
 // Konfigurasi Auto Limit Gratis
 define('DEFAULT_LIMIT_GRATIS_DURATION', 10); // 10 menit default
-define('DEFAULT_MAX_CLAIM_PER_DAY', 3); // Maksimal 3 user per hari
+define('DEFAULT_MAX_CLAIM_PER_DAY', 20); // Maksimal 20 user per hari (reset jam 12 malam WIB)
 
 // Data sementara per pengguna
 $user_temp_data = [];
@@ -1113,7 +1114,7 @@ function getAccountPackageDefinitions() {
             'level' => 2
         ],
         'ultimate' => [
-            'name' => 'Akun + Ultimate ( ultimate 30 hari )',
+            'name' => 'Akun + Ultimate non official ( ultimate 30 hari )',
             'description' => 'Bisa akses seluruh stream paket Ultimate, kecuali PPV dan layanan lainnya.',
             'level' => 3
         ]
@@ -1125,34 +1126,120 @@ function isValidAccountPackage($package) {
 }
 
 function getPackageInformationText($package = 'biasa') {
-    if ($package === 'ultimate') {
-        return "INFORMASI :\n" .
-            "BRI Super League Pegadaian Championship Vidio Original Series Vidio Eksklusif\n" .
-            "Korean Drama Hollywood Movies Indonesian Movies Anime Film, TV, dan Series Internasional\n" .
-            "Timnas Match\n" .
-            "UEFA Champions League\n" .
-            "LaLiga Eredivisie Carabao Cup ProLiga\n" .
-            "VNL\n" .
-            "AVC\n" .
-            "Sea V-League\n" .
-            "WTA Serie A\n" .
-            "FA Cup\n" .
-            "BWF\n" .
-            "MotoGP\n" .
-            "Formula 1\n" .
-            "Premier League";
-    }
-
     return "INFORMASI :\n" .
         "BRI Super League Pegadaian Championship Vidio Original Series Vidio Eksklusif\n" .
-        "Korean Drama Hollywood Movies Indonesian Movies Anime Film, TV, dan Series Internasional\n" .
-        "Timnas Match\n" .
-        "UEFA Champions League\n" .
-        "LaLiga Eredivisie Carabao Cup ProLiga\n" .
-        "VNL\n" .
-        "AVC\n" .
-        "Sea V-League\n" .
-        "WTA";
+        "Korean Drama Hollywood Movies Indonesian Movies Anime";
+}
+
+function getAccountSubPackageDefinitions() {
+    return [
+        'coocaa' => [
+            'name' => '3 Bulan Lite',
+            'agent' => 'coocaa_SW3_ATV_T',
+            'id_type' => 'android_id',
+            'default_user' => 10000,
+            'default_reseller' => 5000,
+            'durasi' => 90,
+            'description' => 'Paket 3 Bulan Premium Lite'
+        ],
+        'aqua' => [
+            'name' => '3 Bulan Premium',
+            'agent' => 'aqua_aqua android tv',
+            'id_type' => 'android_id',
+            'default_user' => 15000,
+            'default_reseller' => 8000,
+            'durasi' => 90,
+            'description' => 'Paket 3 Bulan Premium'
+        ],
+        'tcl' => [
+            'name' => '1 Tahun',
+            'agent' => 'tcl',
+            'id_type' => 'android_id',
+            'default_user' => 20000,
+            'default_reseller' => 10000,
+            'durasi' => 365,
+            'description' => 'Paket 1 Tahun'
+        ],
+    ];
+}
+
+function isValidAccountSubPackage($sub_package) {
+    return isset(getAccountSubPackageDefinitions()[$sub_package]);
+}
+
+function getAccountSubPackagePriceFromData($data, $package, $sub_package, $tier) {
+    if (!isValidAccountPackage($package) || !isValidAccountSubPackage($sub_package) || !in_array($tier, ['user', 'reseller'], true)) {
+        return 0;
+    }
+
+    if (isset($data['settings']['package_sub_prices'][$package][$sub_package][$tier])) {
+        return (int)$data['settings']['package_sub_prices'][$package][$sub_package][$tier];
+    }
+
+    // Pertahankan harga Akun Biasa yang sudah tersimpan sebelum semua jenis paket memiliki pilihan durasi.
+    if ($package === 'biasa' && isset($data['settings']['biasa_sub_prices'][$sub_package][$tier])) {
+        return (int)$data['settings']['biasa_sub_prices'][$sub_package][$tier];
+    }
+
+    if ($package === 'biasa') {
+        $sub_packages = getAccountSubPackageDefinitions();
+        $default_key = $tier === 'reseller' ? 'default_reseller' : 'default_user';
+        return (int)($sub_packages[$sub_package][$default_key] ?? 0);
+    }
+
+    // Harga Mobile/Ultimate lama menjadi harga awal seluruh durasi sampai admin mengaturnya satu per satu.
+    return getAccountPackagePriceFromData($data, $package, $tier);
+}
+
+function getAccountSubPackagePrice($chat_id, $package, $sub_package, $tier = null) {
+    $data = loadData();
+    return getAccountSubPackagePriceFromData($data, $package, $sub_package, $tier ?: getAccountBuyerTier($chat_id));
+}
+
+function updateAccountSubPackagePrice($package, $sub_package, $tier, $price) {
+    if (!isValidAccountPackage($package) || !isValidAccountSubPackage($sub_package) || !in_array($tier, ['user', 'reseller'], true) || $price < 0) {
+        return ['success' => false, 'error' => 'Data harga tidak valid.'];
+    }
+
+    $data = loadData();
+    $prices = [];
+    foreach (array_keys(getAccountPackageDefinitions()) as $package_code) {
+        $prices[$package_code] = getAccountSubPackagePriceFromData($data, $package_code, $sub_package, $tier);
+    }
+    $prices[$package] = (int)$price;
+
+    $configured_prices = array_values(array_filter($prices, function($value) {
+        return $value > 0;
+    }));
+    $sorted_prices = $configured_prices;
+    sort($sorted_prices, SORT_NUMERIC);
+    if ($configured_prices !== $sorted_prices || count($configured_prices) !== count(array_unique($configured_prices))) {
+        releaseDataLock();
+        return ['success' => false, 'error' => 'Untuk durasi yang sama, urutan harga harus Biasa < Mobile < Ultimate.'];
+    }
+
+    if (!isset($data['settings']['package_sub_prices']) || !is_array($data['settings']['package_sub_prices'])) {
+        $data['settings']['package_sub_prices'] = [];
+    }
+    if (!isset($data['settings']['package_sub_prices'][$package]) || !is_array($data['settings']['package_sub_prices'][$package])) {
+        $data['settings']['package_sub_prices'][$package] = [];
+    }
+    if (!isset($data['settings']['package_sub_prices'][$package][$sub_package]) || !is_array($data['settings']['package_sub_prices'][$package][$sub_package])) {
+        $data['settings']['package_sub_prices'][$package][$sub_package] = [];
+    }
+    $data['settings']['package_sub_prices'][$package][$sub_package][$tier] = (int)$price;
+
+    // Harga 1 Tahun tetap disinkronkan ke harga paket lama untuk akun lama dan jalur kompatibilitas.
+    if ($sub_package === 'tcl') {
+        $data['settings']['package_prices'][$package][$tier] = (int)$price;
+        if ($package === 'biasa') {
+            $legacy_key = $tier === 'reseller' ? 'harga_satu_akun_reseller' : 'harga_satu_akun_user';
+            $data['settings'][$legacy_key] = (int)$price;
+        }
+    }
+
+    saveData($data);
+    return ['success' => true];
 }
 
 function getUltimateCredentials() {
@@ -1204,7 +1291,7 @@ function reserveUltimateCredential($chat_id) {
     $credential = getAvailableUltimateCredentialFromData($data);
     if (!$credential) {
         releaseDataLock();
-        return ['success' => false, 'error' => 'Credential Ultimate sedang habis. Transaksi tidak diproses dan saldo tidak dipotong.'];
+        return ['success' => false, 'error' => ' Ultimate sedang habis. Transaksi tidak diproses dan saldo tidak dipotong.'];
     }
 
     $reservation_id = 'ULT_' . time() . '_' . substr(md5($chat_id . microtime(true)), 0, 8);
@@ -1215,7 +1302,7 @@ function reserveUltimateCredential($chat_id) {
     ];
     $saved = saveData($data);
     if (!$saved) {
-        return ['success' => false, 'error' => 'Gagal memesan credential Ultimate.'];
+        return ['success' => false, 'error' => 'Gagal memesan Ultimate.'];
     }
     return ['success' => true, 'reservation_id' => $reservation_id, 'credential' => $credential];
 }
@@ -1269,14 +1356,14 @@ function isAccountPackageActive($package, $data = null) {
     return !empty($data['settings']['package_active'][$package]);
 }
 
-function isAccountUpgradeAvailableFromData($data, $current_package, $target_package, $tier) {
+function isAccountUpgradeAvailableFromData($data, $current_package, $target_package, $tier, $sub_package = 'tcl') {
     $definitions = getAccountPackageDefinitions();
-    if (!isset($definitions[$current_package], $definitions[$target_package])) {
+    if (!isset($definitions[$current_package], $definitions[$target_package]) || !isValidAccountSubPackage($sub_package)) {
         return false;
     }
 
     return $definitions[$target_package]['level'] > $definitions[$current_package]['level']
-        && getAccountPackagePriceFromData($data, $target_package, $tier) > getAccountPackagePriceFromData($data, $current_package, $tier);
+        && getAccountSubPackagePriceFromData($data, $target_package, $sub_package, $tier) > getAccountSubPackagePriceFromData($data, $current_package, $sub_package, $tier);
 }
 
 function hasActiveAccountPackage() {
@@ -1326,10 +1413,13 @@ function setAccountPackageActive($package, $active) {
 
     $data = loadData();
     if ($active) {
-        foreach (['user', 'reseller'] as $tier) {
-            $price = getAccountPackagePriceFromData($data, $package, $tier);
-            if ($price <= 0) {
-                return ['success' => false, 'error' => 'Atur harga user dan reseller terlebih dahulu.'];
+        foreach (array_keys(getAccountSubPackageDefinitions()) as $sub_package) {
+            foreach (['user', 'reseller'] as $tier) {
+                $price = getAccountSubPackagePriceFromData($data, $package, $sub_package, $tier);
+                if ($price <= 0) {
+                    releaseDataLock();
+                    return ['success' => false, 'error' => 'Atur seluruh harga durasi untuk User dan Reseller/Pro terlebih dahulu.'];
+                }
             }
         }
     }
@@ -2376,10 +2466,18 @@ function cekLimitGratis($chat_id) {
     
     // Jika fitur limit gratis dimatikan, selalu return 'habis'
     if (!isLimitGratisActive()) {
-        return ['status' => 'habis', 'sisa_limit' => 0];
+        return ['status' => 'habis', 'sisa_limit' => 0, 'reason' => 'Fitur limit gratis sedang tidak aktif'];
     }
     
-    // Cek apakah user bisa claim hari ini
+    // Cek apakah user sudah pernah klaim gratis (maks 1 akun per user)
+    if (isset($data['users'][$chat_id])) {
+        $user_data = $data['users'][$chat_id];
+        if (!empty($user_data['claimed_free']) || !empty($user_data['limit_gratis_used'])) {
+            return ['status' => 'habis', 'sisa_limit' => 0, 'reason' => 'Maksimal klaim gratis 1 akun per user'];
+        }
+    }
+
+    // Cek apakah user bisa claim hari ini (maks 20 user per hari, reset 12 malam WIB)
     $claim_check = canUserClaimToday($chat_id);
     if (!$claim_check['can_claim']) {
         return ['status' => 'habis', 'sisa_limit' => 0, 'reason' => $claim_check['reason']];
@@ -2409,13 +2507,13 @@ function cekLimitGratis($chat_id) {
         $user_data['limit_gratis'] = 1;
     }
     
-    $sisa_limit = $user_data['limit_gratis'] - $user_data['akun_dibuat'];
+    $sisa_limit = $user_data['limit_gratis'] - ($user_data['claimed_free'] ?? 0 ? 1 : 0);
     
     if ($sisa_limit <= 0) {
-        return ['status' => 'habis', 'sisa_limit' => 0];
+        return ['status' => 'habis', 'sisa_limit' => 0, 'reason' => 'Maksimal klaim gratis 1 akun per user'];
     }
     
-    return ['status' => 'ok', 'sisa_limit' => $sisa_limit];
+    return ['status' => 'ok', 'sisa_limit' => 1];
 }
 
 // Fungsi tambah akun dibuat
@@ -2526,12 +2624,31 @@ function kembalikanSaldo($chat_id, $jumlah) {
 }
 
 // FUNGSI BARU: Buat token langsung dari endpoint partner
-function updateTokenPool() {
-    // Isi sendiri sesuai kredensial resmi Anda.
+function updateTokenPool($brand = 'tcl') {
+    // Kredensial resmi partner Vidio
     $endpoint = '';
     $aes_key_base64 = '';
     $key_id = '';
     $x_api_auth = '';
+
+    $brand_catalog = [
+        'tcl' => [
+            'agent' => 'tcl',
+            'id_type' => 'android_id',
+        ],
+        'coocaa' => [
+            'agent' => 'coocaa_SW3_ATV_T',
+            'id_type' => 'android_id',
+        ],
+        'aqua' => [
+            'agent' => 'aqua_aqua android tv',
+            'id_type' => 'android_id',
+        ],
+    ];
+
+    $brand = strtolower(trim((string)$brand));
+    $config = $brand_catalog[$brand] ?? $brand_catalog['tcl'];
+    $partner_agent = $config['agent'];
 
     if ($endpoint === '' || $aes_key_base64 === '' || $key_id === '' || $x_api_auth === '') {
         return ['success' => false, 'error' => 'Konfigurasi partner belum lengkap'];
@@ -2578,7 +2695,7 @@ function updateTokenPool() {
         try {
             $plain_payload = json_encode([
                 'unique_id' => $uuid_v4(),
-                'partner_agent' => 'tcl'
+                'partner_agent' => $partner_agent
             ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 
             $nonce = $random_nonce(12);
@@ -2676,19 +2793,38 @@ function updateTokenPool() {
         }
 
         $data = loadData();
-        $data['token_pool'] = [[
+        if (!isset($data['token_pools'])) {
+            $data['token_pools'] = [];
+        }
+        if (!isset($data['token_pools'][$brand])) {
+            $data['token_pools'][$brand] = [];
+        }
+
+        $token_item = [
             'token' => $token,
             'email' => $email,
-            'no' => 1,
-            'last_used' => 0,
-            'used_count' => 0
-        ]];
+            'brand' => $brand,
+            'created_at' => time()
+        ];
+        $data['token_pools'][$brand][] = $token_item;
+
+        if ($brand === 'tcl') {
+            $data['token_pool'] = [[
+                'token' => $token,
+                'email' => $email,
+                'no' => 1,
+                'last_used' => 0,
+                'used_count' => 0
+            ]];
+        }
         saveData($data);
 
         return [
             'success' => true,
             'count' => 1,
-            'tokens' => $data['token_pool']
+            'token' => $token,
+            'email' => $email,
+            'brand' => $brand
         ];
     }
 
@@ -2696,7 +2832,7 @@ function updateTokenPool() {
 }
 
 // FUNGSI BARU: Dapatkan token FRESH yang BELUM PERNAH digunakan - DIACAK/RANDOM
-function getFreshPartnerToken() {
+function getFreshPartnerToken($brand = 'tcl') {
     $data = loadData();
     $now = time();
     
@@ -2704,49 +2840,55 @@ function getFreshPartnerToken() {
     if (!isBotActive()) {
         return ['success' => false, 'error' => 'Bot sedang dalam perbaikan'];
     }
-    
-    // Cek apakah perlu update token pool (lebih dari 5 menit)
-    $needs_update = true;
-    if (isset($data['token_pool_last_update'])) {
-        if (($now - $data['token_pool_last_update']) < 300) { // 5 menit
-            $needs_update = false;
-        }
+
+    $brand = strtolower(trim((string)$brand));
+    if (!in_array($brand, ['coocaa', 'aqua', 'tcl'], true)) {
+        $brand = 'tcl';
     }
     
-    // Jika token pool kosong atau perlu update
-    if ($needs_update || empty($data['token_pool'])) {
-        $update_result = updateTokenPool();
+    // Cek apakah pool brand ada isinya
+    if (empty($data['token_pools'][$brand])) {
+        // Fallback untuk tcl jika token_pool lama ada isinya
+        if ($brand === 'tcl' && !empty($data['token_pool'])) {
+            $random_index = array_rand($data['token_pool']);
+            $selected = $data['token_pool'][$random_index];
+            unset($data['token_pool'][$random_index]);
+            $data['token_pool'] = array_values($data['token_pool']);
+            saveData($data);
+            return [
+                'success' => true,
+                'token' => $selected['token'],
+                'email' => $selected['email'],
+                'brand' => 'tcl'
+            ];
+        }
+
+        $update_result = updateTokenPool($brand);
         if (!$update_result['success']) {
-            return ['success' => false, 'error' => 'Gagal update token pool'];
+            return ['success' => false, 'error' => 'Gagal mengambil token partner'];
         }
         $data = loadData();
-        $data['token_pool_last_update'] = $now;
-        saveData($data);
     }
     
-    if (empty($data['token_pool'])) {
+    if (empty($data['token_pools'][$brand])) {
         return ['success' => false, 'error' => 'Tidak ada token fresh yang tersedia'];
     }
     
-    // DIACAK/RANDOM: Ambil token secara random dari yang tersedia
-    $random_index = array_rand($data['token_pool']);
-    $selected = $data['token_pool'][$random_index];
+    // Ambil token secara random dari pool brand
+    $random_index = array_rand($data['token_pools'][$brand]);
+    $selected = $data['token_pools'][$brand][$random_index];
     $selected_token = $selected['token'];
     $selected_email = $selected['email'];
     
-    // Hapus token yang terpilih dari pool (agar tidak dipakai lagi dalam window ini)
-    // CATATAN: token TIDAK ditandai "terpakai" di akun.json di sini.
-    // Penandaan hanya dilakukan setelah login partner BERHASIL,
-    // agar token yang klaimnya gagal tetap bisa dipakai lagi (tidak hangus).
-    unset($data['token_pool'][$random_index]);
-    // Reindex array
-    $data['token_pool'] = array_values($data['token_pool']);
+    unset($data['token_pools'][$brand][$random_index]);
+    $data['token_pools'][$brand] = array_values($data['token_pools'][$brand]);
     saveData($data);
     
     return [
         'success' => true,
         'token' => $selected_token,
-        'email' => $selected_email
+        'email' => $selected_email,
+        'brand' => $brand
     ];
 }
 
@@ -3234,9 +3376,9 @@ function patchProfile($email, $token, $nama_depan, $nama_belakang) {
 }
 
 // FUNGSI BARU: Dapatkan token partner fresh untuk setiap request
-function getPartnerTokenForUser($chat_id, $email_akun = '') {
+function getPartnerTokenForUser($chat_id, $email_akun = '', $brand = 'tcl') {
     // Untuk setiap request, ambil token fresh yang BELUM PERNAH digunakan
-    $token_result = getFreshPartnerToken();
+    $token_result = getFreshPartnerToken($brand);
     
     if (!$token_result['success']) {
         return $token_result;
@@ -3248,6 +3390,7 @@ function getPartnerTokenForUser($chat_id, $email_akun = '') {
     $data['partner_tokens'][$chat_id] = [
         'token' => $token_result['token'],
         'email' => $token_result['email'],
+        'brand' => $brand,
         'timestamp' => time()
     ];
     
@@ -3675,7 +3818,7 @@ function removeAccountRecordFromData(&$data, $chat_id, $account_id) {
 }
 
 // FUNGSI BARU: Simpan akun yang dibuat ke riwayat
-function saveCreatedAccount($chat_id, $email, $password, $status, $created_at = null, $is_free = false, $warranty_source = null, $package = null, $price = 0, $buyer_tier = null, $ultimate_credential = null, $ultimate_reservation_id = null) {
+function saveCreatedAccount($chat_id, $email, $password, $status, $created_at = null, $is_free = false, $warranty_source = null, $package = null, $price = 0, $buyer_tier = null, $ultimate_credential = null, $ultimate_reservation_id = null, $sub_package = null) {
     $data = loadData();
     
     if (!isset($data['created_accounts'][$chat_id])) {
@@ -3697,6 +3840,11 @@ function saveCreatedAccount($chat_id, $email, $password, $status, $created_at = 
         'warranty_source' => $warranty_source,
         'account_id' => $account_id
     ];
+
+    if ($sub_package !== null) {
+        $record['sub_package'] = $sub_package;
+        $record['brand'] = $sub_package;
+    }
 
     if ($package !== null && isValidAccountPackage($package)) {
         $record['package'] = $package;
@@ -3764,19 +3912,22 @@ function showAccountUpgradeMenu($chat_id, $account_id, $return_page = 1) {
 
     $account = $accounts[$account_id];
     $current_package = $account['package'] ?? 'biasa';
+    $sub_package = isValidAccountSubPackage($account['sub_package'] ?? '') ? $account['sub_package'] : 'tcl';
     $definitions = getAccountPackageDefinitions();
+    $sub_definitions = getAccountSubPackageDefinitions();
     $tier = $account['buyer_tier'] ?? getAccountBuyerTierFromData($data, $chat_id);
-    $current_price = getAccountPackagePriceFromData($data, $current_package, $tier);
+    $current_price = getAccountSubPackagePriceFromData($data, $current_package, $sub_package, $tier);
     $rows = [];
     $response = "UPGRADE PAKET AKUN\n\n";
     $response .= "Email: " . $account['email'] . "\n";
-    $response .= "Paket saat ini: " . $definitions[$current_package]['name'] . "\n\n";
+    $response .= "Paket saat ini: " . $definitions[$current_package]['name'] . "\n";
+    $response .= "Durasi: " . $sub_definitions[$sub_package]['name'] . "\n\n";
 
     foreach ($definitions as $package => $definition) {
-        if (!isAccountUpgradeAvailableFromData($data, $current_package, $package, $tier)) {
+        if (!isAccountUpgradeAvailableFromData($data, $current_package, $package, $tier, $sub_package)) {
             continue;
         }
-        $target_price = getAccountPackagePriceFromData($data, $package, $tier);
+        $target_price = getAccountSubPackagePriceFromData($data, $package, $sub_package, $tier);
         $difference = $target_price - $current_price;
         if ($difference <= 0) {
             continue;
@@ -3810,22 +3961,23 @@ function processAccountPackageUpgrade($chat_id, $account_id, $target_package) {
 
     $account = $accounts[$account_id];
     $current_package = $account['package'] ?? 'biasa';
+    $sub_package = isValidAccountSubPackage($account['sub_package'] ?? '') ? $account['sub_package'] : 'tcl';
     $definitions = getAccountPackageDefinitions();
     $tier = $account['buyer_tier'] ?? getAccountBuyerTierFromData($data, $chat_id);
-    if (!isAccountUpgradeAvailableFromData($data, $current_package, $target_package, $tier)) {
+    if (!isAccountUpgradeAvailableFromData($data, $current_package, $target_package, $tier, $sub_package)) {
         releaseDataLock();
         return ['success' => false, 'error' => 'Paket sudah berubah atau harga upgrade belum valid.'];
     }
 
-    $current_price = getAccountPackagePriceFromData($data, $current_package, $tier);
-    $target_price = getAccountPackagePriceFromData($data, $target_package, $tier);
+    $current_price = getAccountSubPackagePriceFromData($data, $current_package, $sub_package, $tier);
+    $target_price = getAccountSubPackagePriceFromData($data, $target_package, $sub_package, $tier);
     $difference = $target_price - $current_price;
     $ultimate_credential = null;
     if ($target_package === 'ultimate') {
         $ultimate_credential = getAvailableUltimateCredentialFromData($data);
         if (!$ultimate_credential) {
             releaseDataLock();
-            return ['success' => false, 'error' => 'Credential Ultimate sedang habis. Saldo tidak dipotong.'];
+            return ['success' => false, 'error' => ' Ultimate sedang habis. Saldo tidak dipotong.'];
         }
     }
     $balance = (int)($data['users'][$chat_id]['saldo'] ?? 0);
@@ -3952,7 +4104,11 @@ function showAccountHistory($chat_id, $page = 1, $upgrade_mode = false) {
         $response .= $counter . ". " . $account['email'] . "\n";
         $package = $account['package'] ?? 'biasa';
         $package_definitions = getAccountPackageDefinitions();
+        $sub_definitions = getAccountSubPackageDefinitions();
         $response .= "   Paket: " . $package_definitions[$package]['name'] . "\n";
+        if (isset($sub_definitions[$account['sub_package'] ?? ''])) {
+            $response .= "   Durasi: " . $sub_definitions[$account['sub_package']]['name'] . "\n";
+        }
         if ($package === 'ultimate' && !empty($account['ultimate_expires_at'])) {
             $response .= "   Ultimate sampai: " . date('d/m/Y H:i', (int)$account['ultimate_expires_at']) . "\n";
         }
@@ -3996,9 +4152,10 @@ function showAccountHistory($chat_id, $page = 1, $upgrade_mode = false) {
                 continue;
             }
             $current_package = $account['package'] ?? 'biasa';
+            $sub_package = isValidAccountSubPackage($account['sub_package'] ?? '') ? $account['sub_package'] : 'tcl';
             $tier = $account['buyer_tier'] ?? getAccountBuyerTierFromData($data, $chat_id);
             foreach ($package_definitions as $target_package => $definition) {
-                if (isAccountUpgradeAvailableFromData($data, $current_package, $target_package, $tier)) {
+                if (isAccountUpgradeAvailableFromData($data, $current_package, $target_package, $tier, $sub_package)) {
                     $keyboard_rows[] = [[
                         'text' => 'Upgrade ' . $account['email'],
                         'callback_data' => 'upgrade_account_' . $account['account_id'] . '_' . $page
@@ -4634,8 +4791,9 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
 
     $processing_msg = sendMessage($chat_id, "Membuat akun garansi, harap tunggu...");
     
-    // Dapatkan token partner fresh
-    $partner_result = getPartnerTokenForUser($chat_id, $email);
+    // Dapatkan token partner fresh sesuai brand akun awal (coocaa / aqua / tcl)
+    $original_sub_package = $original_account['sub_package'] ?? $original_account['brand'] ?? 'tcl';
+    $partner_result = getPartnerTokenForUser($chat_id, $email, $original_sub_package);
     
     if (!$partner_result['success']) {
         $data = loadData();
@@ -4692,7 +4850,7 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
                     $data['warranty_claims'][$account_id]['claimed_at'] = time();
                     saveData($data);
                     deleteMessage($chat_id, $processing_msg['result']['message_id']);
-                    sendMessage($chat_id, "Credential Ultimate sedang habis. Klaim belum diselesaikan.");
+                    sendMessage($chat_id, " Ultimate sedang habis. Klaim belum diselesaikan.");
                     return;
                 }
             }
@@ -4708,7 +4866,8 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
                 (int)($original_account['purchase_price'] ?? 0),
                 $original_account['buyer_tier'] ?? getAccountBuyerTier($chat_id),
                 $ultimate_credential,
-                $ultimate_reservation_id
+                $ultimate_reservation_id,
+                $original_sub_package
             );
             if (!$new_account_id) {
                 releaseUltimateCredentialReservation($ultimate_reservation_id);
@@ -4753,6 +4912,7 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
 	            $response .= getPackageInformationText($original_package) . "\n\n";
 	            $response .= "Apk TV: https://t.me/hwiwhwiweveu/8\n\n";
             $response .= "Apk HP: https://t.me/hwiwhwiweveu/9\n\n";
+            $response .= "Untuk paket mobile atau ultimate harus pakai aplikasi ini jika memakai apk official dijamin 100% tidak akan bisa\n";
             $response .= "Akun siap digunakan!\n";
             $response .= "By : @vidiotvbot";
             
@@ -5624,26 +5784,61 @@ function showAccountPackageAdmin($chat_id) {
 
     $data = loadData();
     $definitions = getAccountPackageDefinitions();
+    $sub_definitions = getAccountSubPackageDefinitions();
     $response = "PENGATURAN PAKET SATU AKUN\n\n";
     $rows = [];
+
     foreach ($definitions as $package => $definition) {
         $active = isAccountPackageActive($package, $data);
-        $user_price = getAccountPackagePriceFromData($data, $package, 'user');
-        $reseller_price = getAccountPackagePriceFromData($data, $package, 'reseller');
-        $response .= $definition['name'] . ': ' . ($active ? 'AKTIF' : 'NONAKTIF') . "\n";
-        $response .= 'User: Rp ' . number_format($user_price, 0, ',', '.') . "\n";
-        $response .= 'Reseller/Pro: Rp ' . number_format($reseller_price, 0, ',', '.') . "\n\n";
+        $response .= $definition['name'] . ": " . ($active ? 'AKTIF' : 'NONAKTIF') . "\n";
+        $response .= "Pilihan durasi dan harga:\n";
+
+        foreach ($sub_definitions as $sub_key => $sub_definition) {
+            $user_price = getAccountSubPackagePriceFromData($data, $package, $sub_key, 'user');
+            $reseller_price = getAccountSubPackagePriceFromData($data, $package, $sub_key, 'reseller');
+            $response .= "• " . $sub_definition['name'] . "\n";
+            $response .= "  User: Rp " . number_format($user_price, 0, ',', '.') . " | Reseller: Rp " . number_format($reseller_price, 0, ',', '.') . "\n";
+            $rows[] = [
+                ['text' => $sub_definition['name'] . ' (User)', 'callback_data' => 'package_price_' . $package . '_' . $sub_key . '_user'],
+                ['text' => $sub_definition['name'] . ' (Reseller)', 'callback_data' => 'package_price_' . $package . '_' . $sub_key . '_reseller']
+            ];
+        }
+        $response .= "\n";
+
         $rows[] = [[
             'text' => ($active ? 'Nonaktifkan ' : 'Aktifkan ') . $definition['name'],
             'callback_data' => 'package_toggle_' . $package
         ]];
-        $rows[] = [
-            ['text' => 'Harga User', 'callback_data' => 'package_price_' . $package . '_user'],
-            ['text' => 'Harga Reseller', 'callback_data' => 'package_price_' . $package . '_reseller']
-        ];
     }
+
     $rows[] = [['text' => 'Kembali ke Admin Panel', 'callback_data' => 'admin_panel']];
-    sendMessage($chat_id, $response . "Urutan harga wajib Biasa < Mobile < Ultimate.", ['inline_keyboard' => $rows]);
+    sendMessage($chat_id, $response . "Setiap jenis akun memiliki harga User dan Reseller/Pro sendiri untuk semua pilihan durasi.", ['inline_keyboard' => $rows]);
+}
+
+function startAccountSubPackagePriceEdit($chat_id, $package, $sub_package, $tier) {
+    if (!isAdmin($chat_id) || !isValidAccountPackage($package) || !isValidAccountSubPackage($sub_package) || !in_array($tier, ['user', 'reseller'], true)) {
+        sendMessage($chat_id, "Permintaan tidak valid.");
+        return;
+    }
+
+    $definitions = getAccountPackageDefinitions();
+    $sub_definitions = getAccountSubPackageDefinitions();
+    $current_price = getAccountSubPackagePrice($chat_id, $package, $sub_package, $tier);
+    $response = "EDIT HARGA " . strtoupper($definitions[$package]['name']) . "\n";
+    $response .= strtoupper($sub_definitions[$sub_package]['name']) . "\n\n";
+    $response .= "Tier: " . ($tier === 'reseller' ? 'Reseller/Pro' : 'User') . "\n";
+    $response .= "Harga saat ini: Rp " . number_format($current_price, 0, ',', '.') . "\n\n";
+    $response .= "Kirim harga baru berupa angka. Harga 0 hanya boleh untuk paket nonaktif.";
+    $sent_msg = sendMessage($chat_id, $response, [
+        'inline_keyboard' => [[['text' => 'Batalkan', 'callback_data' => 'admin_packages']]]
+    ]);
+    file_put_contents('temp_state_' . $chat_id . '.json', json_encode([
+        'step' => 'admin_waiting_package_price',
+        'package' => $package,
+        'sub_package' => $sub_package,
+        'tier' => $tier,
+        'last_message_id' => $sent_msg['result']['message_id']
+    ]));
 }
 
 function startAccountPackagePriceEdit($chat_id, $package, $tier) {
@@ -5664,6 +5859,7 @@ function startAccountPackagePriceEdit($chat_id, $package, $tier) {
     file_put_contents('temp_state_' . $chat_id . '.json', json_encode([
         'step' => 'admin_waiting_package_price',
         'package' => $package,
+        'sub_package' => '',
         'tier' => $tier,
         'last_message_id' => $sent_msg['result']['message_id']
     ]));
@@ -5692,9 +5888,14 @@ function processAccountPackagePriceEdit($chat_id, $text, $message_id) {
         showAccountPackageAdmin($chat_id);
         return;
     }
-    $result = updateAccountPackagePrice($state['package'], $state['tier'], $price);
+
+    if (!empty($state['sub_package'])) {
+        $result = updateAccountSubPackagePrice($state['package'], $state['sub_package'], $state['tier'], $price);
+    } else {
+        $result = updateAccountPackagePrice($state['package'], $state['tier'], $price);
+    }
     unlink($state_file);
-    sendMessage($chat_id, $result['success'] ? "Harga paket berhasil disimpan." : $result['error']);
+    sendMessage($chat_id, $result['success'] ? "Harga berhasil disimpan." : $result['error']);
     showAccountPackageAdmin($chat_id);
 }
 
@@ -6341,11 +6542,11 @@ function requestSingleAkun($chat_id) {
         if (!isAccountPackageActive($package)) {
             continue;
         }
-        $price = getAccountPackagePrice($chat_id, $package);
-        $response .= $definition['name'] . " — Rp " . number_format($price, 0, ',', '.') . "\n";
+
+        $response .= $definition['name'] . "\n";
         $response .= $definition['description'] . "\n\n";
         $rows[] = [[
-            'text' => $definition['name'] . ' • Rp ' . number_format($price, 0, ',', '.'),
+            'text' => $definition['name'] . ' • Pilih Durasi',
             'callback_data' => 'single_package_' . $package
         ]];
     }
@@ -6357,11 +6558,50 @@ function requestSingleAkun($chat_id) {
         return;
     }
     $rows[] = [['text' => 'Kembali', 'callback_data' => 'back_start']];
-    sendMessage($chat_id, $response . "Silakan pilih paket:", ['inline_keyboard' => $rows]);
+    sendMessage($chat_id, $response . "Silakan pilih jenis akun, lalu pilih durasinya:", ['inline_keyboard' => $rows]);
 }
 
-function requestSingleAkunForPackage($chat_id, $package) {
-    if (!isSatuAkunActive() || !isAccountPackageActive($package)) {
+function requestSingleAkunSubOptions($chat_id, $package) {
+    if (!isValidAccountPackage($package)) {
+        sendMessage($chat_id, "Paket tidak valid.");
+        return;
+    }
+    if ((!isSatuAkunActive() && !isAdmin($chat_id)) || !isAccountPackageActive($package)) {
+        sendMessage($chat_id, "Paket sedang dinonaktifkan oleh admin.");
+        return;
+    }
+
+    $definitions = getAccountPackageDefinitions();
+    $sub_packages = getAccountSubPackageDefinitions();
+    $limit_info = cekLimitGratis($chat_id);
+    $free_active = $package === 'biasa' && isLimitGratisActive() && $limit_info['status'] === 'ok';
+    $rows = [];
+    $response = "PILIH DURASI — " . strtoupper($definitions[$package]['name']) . "\n\n";
+
+    foreach ($sub_packages as $sub_package => $sub_definition) {
+        $price = getAccountSubPackagePrice($chat_id, $package, $sub_package);
+        $is_this_free = $free_active && $sub_package === 'coocaa';
+        $price_label = $is_this_free ? "GRATIS" : "Rp " . number_format($price, 0, ',', '.');
+
+        $response .= "• " . $sub_definition['name'] . " — " . $price_label . "\n";
+        $response .= $sub_definition['description'] . "\n\n";
+
+        $rows[] = [[
+            'text' => $sub_definition['name'] . ' • ' . $price_label,
+            'callback_data' => 'single_sub_' . $package . '_' . $sub_package
+        ]];
+    }
+
+    $rows[] = [['text' => '« Kembali ke Paket', 'callback_data' => 'clone_single']];
+    sendMessage($chat_id, $response . "Silakan pilih salah satu opsi:", ['inline_keyboard' => $rows]);
+}
+
+function requestSingleAkunForPackage($chat_id, $package, $sub_package = 'tcl') {
+    if (!isValidAccountPackage($package) || !isValidAccountSubPackage($sub_package)) {
+        sendMessage($chat_id, "Paket atau durasi tidak valid.");
+        return;
+    }
+    if ((!isSatuAkunActive() && !isAdmin($chat_id)) || !isAccountPackageActive($package)) {
         sendMessage($chat_id, "Paket tidak tersedia atau baru saja dinonaktifkan admin.");
         return;
     }
@@ -6377,32 +6617,48 @@ function requestSingleAkunForPackage($chat_id, $package) {
     }
 
     $limit_info = cekLimitGratis($chat_id);
-    $can_use_free = $package === 'biasa' && isLimitGratisActive() && $limit_info['status'] === 'ok';
+    // Gratis hanya untuk Akun Biasa 3 Bulan Lite; agent yang dipakai selalu coocaa.
+    $can_use_free = $package === 'biasa' && $sub_package === 'coocaa' && isLimitGratisActive() && $limit_info['status'] === 'ok';
     $saldo = cekSaldo($chat_id);
-    $harga_per_akun = getAccountPackagePrice($chat_id, $package);
-    if ($harga_per_akun <= 0 || (!$can_use_free && $saldo < $harga_per_akun)) {
-        $response = "Saldo tidak cukup atau harga paket belum valid!\n\n";
+    $harga_per_akun = getAccountSubPackagePrice($chat_id, $package, $sub_package);
+
+    if ($harga_per_akun <= 0 && !$can_use_free) {
+        $response = "Harga paket belum diatur atau dinonaktifkan oleh admin.\n\n";
+        sendMessage($chat_id, $response, [
+            'inline_keyboard' => [[['text' => 'Kembali', 'callback_data' => 'single_package_' . $package]]]
+        ]);
+        return;
+    }
+
+    if (!$can_use_free && $saldo < $harga_per_akun) {
+        $response = "Saldo tidak cukup!\n\n";
         $response .= "Saldo Anda: Rp " . number_format($saldo, 0, ',', '.') . "\n";
         $response .= "Harga paket: Rp " . number_format($harga_per_akun, 0, ',', '.') . "\n\n";
         $response .= "Silakan top up saldo terlebih dahulu.";
         sendMessage($chat_id, $response, [
             'inline_keyboard' => [[
                 ['text' => 'Top Up Saldo', 'callback_data' => 'topup'],
-                ['text' => 'Kembali', 'callback_data' => 'back_start']
+                ['text' => 'Kembali', 'callback_data' => 'single_package_' . $package]
             ]]
         ]);
         return;
     }
 
     $definitions = getAccountPackageDefinitions();
+    $sub_definitions = getAccountSubPackageDefinitions();
+    $sub_name = $sub_definitions[$sub_package]['name'];
+    $back_callback = 'single_package_' . $package;
+
     $keyboard = ['inline_keyboard' => [[
         ['text' => 'Batalkan', 'callback_data' => 'cancel_process'],
-        ['text' => 'Kembali', 'callback_data' => 'back_start']
+        ['text' => 'Kembali', 'callback_data' => $back_callback]
     ]]];
-    $pesan = "SATU AKUN — " . $definitions[$package]['name'] . "\n\n";
-    $pesan .= $definitions[$package]['description'] . "\n\n";
+    $pesan = "SATU AKUN — " . $definitions[$package]['name'] . " (" . $sub_name . ")\n\n";
+    $pesan .= $definitions[$package]['description'] . "\n";
+    $pesan .= $sub_definitions[$sub_package]['description'] . "\n\n";
+
     if ($can_use_free) {
-        $pesan .= "Anda masih memiliki " . $limit_info['sisa_limit'] . " akun gratis.\n\n";
+        $pesan .= "Fitur Gratis Aktif: Akun ini GRATIS (kuota harian tersedia).\n\n";
     } else {
         $pesan .= "Biaya: Rp " . number_format($harga_per_akun, 0, ',', '.') . " akan dipotong dari saldo.\n\n";
     }
@@ -6415,6 +6671,7 @@ function requestSingleAkunForPackage($chat_id, $package) {
         'step' => 'waiting_email_single',
         'mode' => 'single',
         'package' => $package,
+        'sub_package' => $sub_package,
         'last_message_id' => $sent_msg['result']['message_id']
     ]));
 }
@@ -6919,7 +7176,7 @@ function cekSemuaPembayaran($chat_id) {
 }
 
 // Fungsi kloning TV untuk single akun dengan token fresh
-function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa') {
+function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa', $sub_package = 'tcl', $nama_depan = 'User', $nama_belakang = 'Vidio') {
     if (!isAccountPackageActive($package)) {
         sendMessage($chat_id, "Paket tidak tersedia atau baru saja dinonaktifkan admin.");
         return;
@@ -6946,8 +7203,18 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
     $verif_message = '';
     $wrong_password = false;
     $buyer_tier = getAccountBuyerTier($chat_id);
-    $harga_per_akun = getAccountPackagePrice($chat_id, $package, $buyer_tier);
-    if ($harga_per_akun <= 0) {
+
+    $sub_definitions = getAccountSubPackageDefinitions();
+    $brand = isset($sub_definitions[$sub_package]) ? $sub_package : 'tcl';
+    $harga_per_akun = getAccountSubPackagePrice($chat_id, $package, $brand, $buyer_tier);
+
+    // Gratis hanya berlaku untuk Akun Biasa 3 Bulan Lite dan selalu mengambil agent coocaa.
+    if ($package === 'biasa' && $brand === 'coocaa' && isLimitGratisActive() && $limit_info_awal['status'] == 'ok' && $limit_info_awal['sisa_limit'] > 0) {
+        $is_free = true;
+        addUserToDailyClaim($chat_id);
+    }
+
+    if ($harga_per_akun <= 0 && !$is_free) {
         releaseUltimateCredentialReservation($ultimate_reservation_id);
         sendMessage($chat_id, "Harga paket belum diatur admin.");
         return;
@@ -6957,14 +7224,7 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
     $data = loadData();
     $username = isset($data['users'][$chat_id]['username']) ? $data['users'][$chat_id]['username'] : '';
     
-    // Cek apakah akan menggunakan saldo atau limit gratis
-    if ($package === 'biasa' && isLimitGratisActive() && $limit_info_awal['status'] == 'ok' && $limit_info_awal['sisa_limit'] > 0) {
-        $is_free = true;
-        
-        // Tambah user ke daily claim
-        addUserToDailyClaim($chat_id);
-        
-    } else {
+    if (!$is_free) {
         // Potong saldo dulu (akan dikembalikan jika gagal)
         if (!kurangiSaldo($chat_id, $harga_per_akun)) {
             releaseUltimateCredentialReservation($ultimate_reservation_id);
@@ -6983,8 +7243,8 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
     $checkout_description = "";
     
     try {
-        // Dapatkan token partner fresh
-        $partner_result = getPartnerTokenForUser($chat_id, $email);
+        // Dapatkan token partner fresh sesuai brand
+        $partner_result = getPartnerTokenForUser($chat_id, $email, $brand);
         
         if (!$partner_result['success']) {
             releaseUltimateCredentialReservation($ultimate_reservation_id);
@@ -7028,13 +7288,17 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
                     $expired_timestamp = $now + ($info['durasi'] * 24 * 60 * 60);
                     $expired_date = date('d F Y', $expired_timestamp);
                     
+                    $package_definitions = getAccountPackageDefinitions();
+                    $paket_label = $package_definitions[$package]['name'] . " — " . $sub_definitions[$brand]['name'];
+                    $durasi_label = $sub_definitions[$brand]['durasi'] . " hari";
+
                     $account_details = [
                         'email' => $email,
                         'password' => $password_to_use,
                         'profil' => $profile_name,
-                        'paket' => $info['name'] ?? 'N/A',
+                        'paket' => $paket_label,
                         'kode' => $info['code'] ?? 'N/A',
-                        'durasi' => $info['durasi'] . " hari",
+                        'durasi' => $durasi_label,
                         'expired' => $expired_date,
                         'checkout_description' => $checkout_description
                     ];
@@ -7088,7 +7352,7 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
         if ($has_subscription) {
             // AKUN SUKSES DENGAN SUBSCRIPTION
             // Simpan ke riwayat akun dan ikat credential sebelum transaksi dinyatakan selesai.
-            $created_account_id = saveCreatedAccount($chat_id, $email, $password_to_use, 'sukses', time(), $is_free, null, $package, $is_free ? 0 : $harga_per_akun, $buyer_tier, $ultimate_credential, $ultimate_reservation_id);
+            $created_account_id = saveCreatedAccount($chat_id, $email, $password_to_use, 'sukses', time(), $is_free, null, $package, $is_free ? 0 : $harga_per_akun, $buyer_tier, $ultimate_credential, $ultimate_reservation_id, $brand);
             if (!$created_account_id) {
                 releaseUltimateCredentialReservation($ultimate_reservation_id);
                 if ($pakai_saldo) kembalikanSaldo($chat_id, $harga_per_akun);
@@ -7096,6 +7360,12 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
                 return;
             }
             tambahAkunDibuat($chat_id, 1);
+            if ($is_free) {
+                $data = loadData();
+                $data['users'][$chat_id]['claimed_free'] = true;
+                $data['users'][$chat_id]['limit_gratis_used'] = true;
+                saveData($data);
+            }
             if (!$is_free) {
                 notifyPrivateGroup('PEMBELIAN AKUN BERHASIL', $chat_id, [
                     'Jumlah' => '1 akun',
@@ -7114,9 +7384,9 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
             $response .= "Profil: " . $account_details['profil'] . "\n";
             $response .= "Paket: " . $account_details['paket'] . "\n";
             $response .= "Kode: " . $account_details['kode'] . "\n";
-	            $response .= "Durasi: " . $account_details['durasi'] . "\n";
-	            $response .= "Expired: " . $account_details['expired'] . "\n\n";
-	            $response .= getPackageInformationText($package) . "\n\n";
+            $response .= "Durasi: " . $account_details['durasi'] . "\n";
+            $response .= "Expired: " . $account_details['expired'] . "\n\n";
+            $response .= getPackageInformationText($package) . "\n\n";
 	            
 	            if ($is_free) {
                 $response .= "TERIMAKASIH.\n";
@@ -7125,6 +7395,7 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
             }
             $response .= "Apk TV: https://t.me/hwiwhwiweveu/8\n\n";
             $response .= "Apk HP: https://t.me/hwiwhwiweveu/8\n\n";
+            $response .= "Untuk paket mobile atau ultimate harus pakai aplikasi ini jika memakai apk official dijamin 100% tidak akan bisa\n";
             $response .= "Akun siap digunakan!\n";
             $response .= "By : @vidiotvbot";
             
@@ -8027,7 +8298,15 @@ function processPassword($chat_id, $text, $message_id) {
         unlink($state_file);
         
         // Jalankan login single
-        cloneTvTaskSingle($chat_id, $email, $password_to_use, $state['package'] ?? 'biasa');
+        cloneTvTaskSingle(
+        $chat_id,
+        $email,
+        $password_to_use,
+        $state['package'] ?? 'biasa',
+        $state['sub_package'] ?? 'tcl',
+        $state['nama_depan'] ?? 'User',
+        $state['nama_belakang'] ?? 'Vidio'
+    );
         
     } else {
         // Untuk multiple akun
@@ -8346,11 +8625,16 @@ function handleCallbackQuery($callback_query) {
         deleteMessage($chat_id, $message_id);
         requestSingleAkun($chat_id);
 
+    } elseif (preg_match('/^single_sub_(biasa|mobile|ultimate)_(coocaa|aqua|tcl)$/', $callback_data, $single_sub_matches)) {
+        answerCallbackQuery($callback_id);
+        deleteMessage($chat_id, $message_id);
+        requestSingleAkunForPackage($chat_id, $single_sub_matches[1], $single_sub_matches[2]);
+
     } elseif (strpos($callback_data, 'single_package_') === 0) {
         answerCallbackQuery($callback_id);
         $package = str_replace('single_package_', '', $callback_data);
         deleteMessage($chat_id, $message_id);
-        requestSingleAkunForPackage($chat_id, $package);
+        requestSingleAkunSubOptions($chat_id, $package);
         
     } elseif ($callback_data == "clone_multiple") {
         answerCallbackQuery($callback_id);
@@ -8482,6 +8766,11 @@ function handleCallbackQuery($callback_query) {
     } elseif (strpos($callback_data, 'package_price_') === 0) {
         answerCallbackQuery($callback_id);
         $payload = str_replace('package_price_', '', $callback_data);
+        if (preg_match('/^(biasa|mobile|ultimate)_(coocaa|aqua|tcl)_(user|reseller)$/', $payload, $sub_matches)) {
+            deleteMessage($chat_id, $message_id);
+            startAccountSubPackagePriceEdit($chat_id, $sub_matches[1], $sub_matches[2], $sub_matches[3]);
+            return;
+        }
         if (!preg_match('/^(biasa|mobile|ultimate)_(user|reseller)$/', $payload, $matches)) {
             sendMessage($chat_id, "Data harga paket tidak valid.");
             return;
