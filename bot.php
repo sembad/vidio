@@ -30,14 +30,15 @@ define('ULTIMATE_DURATION', 30 * 24 * 60 * 60); // 30 hari
 
 $CREDENTIALS = [
     [
-        'nomor' => 1,
-        'email' => '2233e0ef-8db4-43f4-9246-33662d62494c-tcl@fake-tcl.com',
-        'token' => '4xRLroRrmcoBsVzioTaz',
+        'nomor' => 27,
+        'email' => 'jekeke.com',
+        'token' => 'heheheuw',
     ],
+    
     [
         'nomor' => 482,
-        'email' => '434d5b48-7e39-4c80-b806-563641a72d59-tcl@fake-tcl.com',
-        'token' => 'iCgCRZLDzkbWczNH23Gk',
+        'email' => 'ieeihwbwl.com',
+        'token' => 'heueue',
     ],
 ];
 
@@ -1639,16 +1640,29 @@ function addUserToDailyClaim($chat_id) {
         $data['settings']['daily_claim_count'] = 0;
     }
     
-    // Tambah user jika belum ada
-    if (!in_array($chat_id, $data['settings']['claimed_users'])) {
-        $data['settings']['claimed_users'][] = $chat_id;
-        $data['settings']['daily_claim_count'] = count($data['settings']['claimed_users']);
-        $data['settings']['last_claim_date'] = $today;
-        saveData($data);
-        return true;
+    $max_claim = (int)($data['settings']['max_claim_per_day'] ?? DEFAULT_MAX_CLAIM_PER_DAY);
+    $current_count = count($data['settings']['claimed_users']);
+
+    // Pemeriksaan dan pencatatan dilakukan saat lock data masih aktif agar kuota tidak terlewati.
+    if (in_array($chat_id, $data['settings']['claimed_users']) || $current_count >= $max_claim) {
+        releaseDataLock();
+        return false;
     }
-    
-    return false;
+
+    $data['settings']['claimed_users'][] = $chat_id;
+    $data['settings']['daily_claim_count'] = count($data['settings']['claimed_users']);
+    $data['settings']['last_claim_date'] = $today;
+    return saveData($data);
+}
+
+function releaseUserDailyClaim($chat_id) {
+    $data = loadData();
+    $claimed_users = $data['settings']['claimed_users'] ?? [];
+    $data['settings']['claimed_users'] = array_values(array_filter($claimed_users, function($claimed_chat_id) use ($chat_id) {
+        return (string)$claimed_chat_id !== (string)$chat_id;
+    }));
+    $data['settings']['daily_claim_count'] = count($data['settings']['claimed_users']);
+    return saveData($data);
 }
 
 // Fungsi untuk cek apakah bot aktif
@@ -2644,6 +2658,10 @@ function updateTokenPool($brand = 'tcl') {
             'agent' => 'aqua_aqua android tv',
             'id_type' => 'android_id',
         ],
+        'polytron' => [
+            'agent' => 'polytron_PDBM11ADL',
+            'id_type' => 'android_id',
+        ],
     ];
 
     $brand = strtolower(trim((string)$brand));
@@ -2842,7 +2860,7 @@ function getFreshPartnerToken($brand = 'tcl') {
     }
 
     $brand = strtolower(trim((string)$brand));
-    if (!in_array($brand, ['coocaa', 'aqua', 'tcl'], true)) {
+    if (!in_array($brand, ['coocaa', 'aqua', 'tcl', 'polytron'], true)) {
         $brand = 'tcl';
     }
     
@@ -5670,6 +5688,14 @@ if (!empty($row_akun)) {
     $keyboard_rows[] = $row_akun;
 }
 
+// Tombol Gratis berdiri sendiri dan hilang saat nonaktif, kuota habis, atau sudah pernah diklaim.
+if ($limit_info['status'] === 'ok') {
+    $keyboard_rows[] = [[
+        'text' => 'Gratis',
+        'callback_data' => 'clone_free'
+    ]];
+}
+
 // Tombol lainnya
 // Baris 1: Top Up dan Klaim Garansi
 $keyboard_rows[] = [
@@ -5711,6 +5737,7 @@ function showAdminPanel($chat_id) {
     $satu_akun_status = isSatuAkunActive() ? "AKTIF" : "NONAKTIF";
     $multi_akun_status = isMultiAkunActive() ? "AKTIF" : "NONAKTIF";
     $limit_gratis_status = isLimitGratisActive() ? "AKTIF" : "NONAKTIF";
+    $max_claim_per_day = getMaxClaimPerDay();
     $harga_satu_akun_user = getHargaSatuAkunUser();
     $harga_satu_akun_reseller = getHargaSatuAkunReseller();
     $harga_multi_akun = getHargaMultiAkun();
@@ -5722,7 +5749,8 @@ function showAdminPanel($chat_id) {
     $response .= "Status Bot: " . $bot_status . "\n";
     $response .= "Status Satu Akun: " . $satu_akun_status . "\n";
     $response .= "Status Multi Akun: " . $multi_akun_status . "\n";
-    $response .= "Status Limit Gratis: " . $limit_gratis_status . "\n\n";
+    $response .= "Status Limit Gratis: " . $limit_gratis_status . "\n";
+    $response .= "Maks Klaim Gratis/Hari: " . $max_claim_per_day . " user\n\n";
     $response .= "Harga Satu Akun (User): Rp " . number_format($harga_satu_akun_user, 0, ',', '.') . "\n";
     $response .= "Harga Satu Akun (Reseller/Pro): Rp " . number_format($harga_satu_akun_reseller, 0, ',', '.') . "\n";
     $response .= "Harga Multi Akun (Pro): Rp " . number_format($harga_multi_akun, 0, ',', '.') . "\n\n";
@@ -5744,6 +5772,9 @@ function showAdminPanel($chat_id) {
             ],
             [
                 ['text' => 'ON/OFF LIMIT GRATIS', 'callback_data' => 'admin_toggle_limit_gratis']
+            ],
+            [
+                ['text' => 'SET MAKS KLAIM GRATIS/HARI', 'callback_data' => 'auto_limit_set_maxclaim']
             ],
             [
                 ['text' => 'Paket Satu Akun', 'callback_data' => 'admin_packages']
@@ -6573,15 +6604,12 @@ function requestSingleAkunSubOptions($chat_id, $package) {
 
     $definitions = getAccountPackageDefinitions();
     $sub_packages = getAccountSubPackageDefinitions();
-    $limit_info = cekLimitGratis($chat_id);
-    $free_active = $package === 'biasa' && isLimitGratisActive() && $limit_info['status'] === 'ok';
     $rows = [];
     $response = "PILIH DURASI — " . strtoupper($definitions[$package]['name']) . "\n\n";
 
     foreach ($sub_packages as $sub_package => $sub_definition) {
         $price = getAccountSubPackagePrice($chat_id, $package, $sub_package);
-        $is_this_free = $free_active && $sub_package === 'coocaa';
-        $price_label = $is_this_free ? "GRATIS" : "Rp " . number_format($price, 0, ',', '.');
+        $price_label = "Rp " . number_format($price, 0, ',', '.');
 
         $response .= "• " . $sub_definition['name'] . " — " . $price_label . "\n";
         $response .= $sub_definition['description'] . "\n\n";
@@ -6616,13 +6644,10 @@ function requestSingleAkunForPackage($chat_id, $package, $sub_package = 'tcl') {
         return;
     }
 
-    $limit_info = cekLimitGratis($chat_id);
-    // Gratis hanya untuk Akun Biasa 3 Bulan Lite; agent yang dipakai selalu coocaa.
-    $can_use_free = $package === 'biasa' && $sub_package === 'coocaa' && isLimitGratisActive() && $limit_info['status'] === 'ok';
     $saldo = cekSaldo($chat_id);
     $harga_per_akun = getAccountSubPackagePrice($chat_id, $package, $sub_package);
 
-    if ($harga_per_akun <= 0 && !$can_use_free) {
+    if ($harga_per_akun <= 0) {
         $response = "Harga paket belum diatur atau dinonaktifkan oleh admin.\n\n";
         sendMessage($chat_id, $response, [
             'inline_keyboard' => [[['text' => 'Kembali', 'callback_data' => 'single_package_' . $package]]]
@@ -6630,7 +6655,7 @@ function requestSingleAkunForPackage($chat_id, $package, $sub_package = 'tcl') {
         return;
     }
 
-    if (!$can_use_free && $saldo < $harga_per_akun) {
+    if ($saldo < $harga_per_akun) {
         $response = "Saldo tidak cukup!\n\n";
         $response .= "Saldo Anda: Rp " . number_format($saldo, 0, ',', '.') . "\n";
         $response .= "Harga paket: Rp " . number_format($harga_per_akun, 0, ',', '.') . "\n\n";
@@ -6657,11 +6682,7 @@ function requestSingleAkunForPackage($chat_id, $package, $sub_package = 'tcl') {
     $pesan .= $definitions[$package]['description'] . "\n";
     $pesan .= $sub_definitions[$sub_package]['description'] . "\n\n";
 
-    if ($can_use_free) {
-        $pesan .= "Fitur Gratis Aktif: Akun ini GRATIS (kuota harian tersedia).\n\n";
-    } else {
-        $pesan .= "Biaya: Rp " . number_format($harga_per_akun, 0, ',', '.') . " akan dipotong dari saldo.\n\n";
-    }
+    $pesan .= "Biaya: Rp " . number_format($harga_per_akun, 0, ',', '.') . " akan dipotong dari saldo.\n\n";
     $pesan .= "Silakan input Email akun vidio Anda:\nHarus @gmail.com\n\n";
     $pesan .= "PENTING:\n- Akun WAJIB SUDAH TERDAFTAR di vidio\n";
     $pesan .= "- Belum punya akun? Daftar dulu di https://m.vidio.com/users/login atau lewat aplikasi vidio di HP\n";
@@ -6672,6 +6693,48 @@ function requestSingleAkunForPackage($chat_id, $package, $sub_package = 'tcl') {
         'mode' => 'single',
         'package' => $package,
         'sub_package' => $sub_package,
+        'is_free' => false,
+        'last_message_id' => $sent_msg['result']['message_id']
+    ]));
+}
+
+function requestFreeAccount($chat_id) {
+    $limit_info = cekLimitGratis($chat_id);
+    if ($limit_info['status'] !== 'ok') {
+        sendMessage($chat_id, "Klaim gratis tidak tersedia. " . ($limit_info['reason'] ?? 'Silakan coba lagi nanti.'), [
+            'inline_keyboard' => [[['text' => 'Kembali ke Menu', 'callback_data' => 'back_start']]]
+        ]);
+        return;
+    }
+
+    $data = loadData();
+    $username = $data['users'][$chat_id]['username'] ?? '';
+    releaseDataLock();
+    $purchase_check = canUsernamePurchase($username);
+    if (!$purchase_check['allowed']) {
+        sendMessage($chat_id, $purchase_check['reason'], [
+            'inline_keyboard' => [[['text' => 'Kembali ke Menu', 'callback_data' => 'back_start']]]
+        ]);
+        return;
+    }
+
+    $keyboard = ['inline_keyboard' => [[
+        ['text' => 'Batalkan', 'callback_data' => 'cancel_process'],
+        ['text' => 'Kembali', 'callback_data' => 'back_start']
+    ]]];
+    $message = "AKUN GRATIS\n\n";
+    $message .= "Klaim ini gratis, hanya dapat digunakan 1 kali, dan tidak mendapat garansi.\n\n";
+    $message .= "Silakan input Email akun vidio Anda:\nHarus @gmail.com\n\n";
+    $message .= "PENTING:\n- Akun WAJIB SUDAH TERDAFTAR di vidio\n";
+    $message .= "- Belum punya akun? Daftar dulu di https://m.vidio.com/users/login atau lewat aplikasi vidio di HP\n";
+
+    $sent_msg = sendMessage($chat_id, $message, $keyboard);
+    file_put_contents('temp_state_' . $chat_id . '.json', json_encode([
+        'step' => 'waiting_email_single',
+        'mode' => 'single',
+        'package' => 'biasa',
+        'sub_package' => 'coocaa',
+        'is_free' => true,
         'last_message_id' => $sent_msg['result']['message_id']
     ]));
 }
@@ -7176,8 +7239,23 @@ function cekSemuaPembayaran($chat_id) {
 }
 
 // Fungsi kloning TV untuk single akun dengan token fresh
-function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa', $sub_package = 'tcl', $nama_depan = 'User', $nama_belakang = 'Vidio') {
-    if (!isAccountPackageActive($package)) {
+function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa', $sub_package = 'tcl', $nama_depan = 'User', $nama_belakang = 'Vidio', $is_free_request = false) {
+    if (!isValidAccountPackage($package) || !isValidAccountSubPackage($sub_package)) {
+        sendMessage($chat_id, "Paket atau durasi tidak valid.");
+        return;
+    }
+
+    if ($is_free_request) {
+        if ($package !== 'biasa' || $sub_package !== 'coocaa') {
+            sendMessage($chat_id, "Data klaim gratis tidak valid.");
+            return;
+        }
+        $limit_info_awal = cekLimitGratis($chat_id);
+        if ($limit_info_awal['status'] !== 'ok') {
+            sendMessage($chat_id, "Klaim gratis tidak tersedia. " . ($limit_info_awal['reason'] ?? 'Silakan coba lagi nanti.'));
+            return;
+        }
+    } elseif (!isAccountPackageActive($package)) {
         sendMessage($chat_id, "Paket tidak tersedia atau baru saja dinonaktifkan admin.");
         return;
     }
@@ -7196,22 +7274,23 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
 
     // Simpan saldo awal untuk mengembalikan jika gagal
     $saldo_awal = cekSaldo($chat_id);
-    $limit_info_awal = cekLimitGratis($chat_id);
     $pakai_saldo = false;
-    $is_free = false;
+    $is_free = (bool)$is_free_request;
     $needs_verification = false;
     $verif_message = '';
     $wrong_password = false;
     $buyer_tier = getAccountBuyerTier($chat_id);
 
     $sub_definitions = getAccountSubPackageDefinitions();
-    $brand = isset($sub_definitions[$sub_package]) ? $sub_package : 'tcl';
-    $harga_per_akun = getAccountSubPackagePrice($chat_id, $package, $brand, $buyer_tier);
+    $partner_brand = $sub_package === 'tcl'
+        ? (random_int(0, 1) === 0 ? 'tcl' : 'polytron')
+        : $sub_package;
+    $harga_per_akun = getAccountSubPackagePrice($chat_id, $package, $sub_package, $buyer_tier);
 
-    // Gratis hanya berlaku untuk Akun Biasa 3 Bulan Lite dan selalu mengambil agent coocaa.
-    if ($package === 'biasa' && $brand === 'coocaa' && isLimitGratisActive() && $limit_info_awal['status'] == 'ok' && $limit_info_awal['sisa_limit'] > 0) {
-        $is_free = true;
-        addUserToDailyClaim($chat_id);
+    if ($is_free && !addUserToDailyClaim($chat_id)) {
+        releaseUltimateCredentialReservation($ultimate_reservation_id);
+        sendMessage($chat_id, "Klaim gratis sudah digunakan atau kuota baru saja habis.");
+        return;
     }
 
     if ($harga_per_akun <= 0 && !$is_free) {
@@ -7244,10 +7323,11 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
     
     try {
         // Dapatkan token partner fresh sesuai brand
-        $partner_result = getPartnerTokenForUser($chat_id, $email, $brand);
+        $partner_result = getPartnerTokenForUser($chat_id, $email, $partner_brand);
         
         if (!$partner_result['success']) {
             releaseUltimateCredentialReservation($ultimate_reservation_id);
+            if ($is_free) releaseUserDailyClaim($chat_id);
             // Jika gagal mendapatkan token, kembalikan saldo jika menggunakan saldo
             if ($pakai_saldo) {
                 kembalikanSaldo($chat_id, $harga_per_akun);
@@ -7289,8 +7369,8 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
                     $expired_date = date('d F Y', $expired_timestamp);
                     
                     $package_definitions = getAccountPackageDefinitions();
-                    $paket_label = $package_definitions[$package]['name'] . " — " . $sub_definitions[$brand]['name'];
-                    $durasi_label = $sub_definitions[$brand]['durasi'] . " hari";
+                    $paket_label = $package_definitions[$package]['name'] . " — " . $sub_definitions[$sub_package]['name'];
+                    $durasi_label = $sub_definitions[$sub_package]['durasi'] . " hari";
 
                     $account_details = [
                         'email' => $email,
@@ -7352,9 +7432,10 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
         if ($has_subscription) {
             // AKUN SUKSES DENGAN SUBSCRIPTION
             // Simpan ke riwayat akun dan ikat credential sebelum transaksi dinyatakan selesai.
-            $created_account_id = saveCreatedAccount($chat_id, $email, $password_to_use, 'sukses', time(), $is_free, null, $package, $is_free ? 0 : $harga_per_akun, $buyer_tier, $ultimate_credential, $ultimate_reservation_id, $brand);
+            $created_account_id = saveCreatedAccount($chat_id, $email, $password_to_use, 'sukses', time(), $is_free, null, $package, $is_free ? 0 : $harga_per_akun, $buyer_tier, $ultimate_credential, $ultimate_reservation_id, $sub_package);
             if (!$created_account_id) {
                 releaseUltimateCredentialReservation($ultimate_reservation_id);
+                if ($is_free) releaseUserDailyClaim($chat_id);
                 if ($pakai_saldo) kembalikanSaldo($chat_id, $harga_per_akun);
                 sendMessage($chat_id, "Gagal menyimpan akun. Saldo dikembalikan, silakan coba lagi.");
                 return;
@@ -7366,16 +7447,14 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
                 $data['users'][$chat_id]['limit_gratis_used'] = true;
                 saveData($data);
             }
-            if (!$is_free) {
-                notifyPrivateGroup('PEMBELIAN AKUN BERHASIL', $chat_id, [
-                    'Jumlah' => '1 akun',
-                    'Nominal' => 'Rp ' . number_format($harga_per_akun, 0, ',', '.'),
-                    'Email' => $email,
-                    'Password' => $password_to_use,
-                    'Paket' => $account_details['paket'] ?? 'N/A',
-                    'Status' => 'SUKSES'
-                ]);
-            }
+            notifyPrivateGroup($is_free ? 'KLAIM AKUN GRATIS BERHASIL' : 'PEMBELIAN AKUN BERHASIL', $chat_id, [
+                'Jumlah' => '1 akun',
+                'Nominal' => $is_free ? 'GRATIS' : 'Rp ' . number_format($harga_per_akun, 0, ',', '.'),
+                'Email' => $email,
+                'Password' => $password_to_use,
+                'Paket' => $account_details['paket'] ?? 'N/A',
+                'Status' => 'SUKSES'
+            ]);
             
             // Kirim detail akun
             $response = "AKUN BERHASIL DIBUAT\n\n";
@@ -7404,6 +7483,7 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
         } else {
             // AKUN SUKSES TAPI TANPA SUBSCRIPTION
             releaseUltimateCredentialReservation($ultimate_reservation_id);
+            if ($is_free) releaseUserDailyClaim($chat_id);
             // Kembalikan saldo jika menggunakan saldo
             if ($pakai_saldo) {
                 kembalikanSaldo($chat_id, $harga_per_akun);
@@ -7432,6 +7512,7 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
     } else {
         // AKUN GAGAL
         releaseUltimateCredentialReservation($ultimate_reservation_id);
+        if ($is_free) releaseUserDailyClaim($chat_id);
         // Kembalikan saldo jika menggunakan saldo
         if ($pakai_saldo) {
             kembalikanSaldo($chat_id, $harga_per_akun);
@@ -8293,20 +8374,31 @@ function processPassword($chat_id, $text, $message_id) {
     // Login saja (tidak ada registrasi). Akun harus sudah terdaftar manual di vidio.
     if ($state['mode'] == 'single') {
         $email = isset($state['email']) ? $state['email'] : '';
+        $is_free_request = !empty($state['is_free']);
+
+        if ($is_free_request) {
+            $limit_info = cekLimitGratis($chat_id);
+            if ($limit_info['status'] !== 'ok') {
+                unlink($state_file);
+                sendMessage($chat_id, "Klaim gratis tidak tersedia. " . ($limit_info['reason'] ?? 'Silakan coba lagi nanti.'));
+                return;
+            }
+        }
         
         // Hapus file state
         unlink($state_file);
         
         // Jalankan login single
         cloneTvTaskSingle(
-        $chat_id,
-        $email,
-        $password_to_use,
-        $state['package'] ?? 'biasa',
-        $state['sub_package'] ?? 'tcl',
-        $state['nama_depan'] ?? 'User',
-        $state['nama_belakang'] ?? 'Vidio'
-    );
+            $chat_id,
+            $email,
+            $password_to_use,
+            $state['package'] ?? 'biasa',
+            $state['sub_package'] ?? 'tcl',
+            $state['nama_depan'] ?? 'User',
+            $state['nama_belakang'] ?? 'Vidio',
+            $is_free_request
+        );
         
     } else {
         // Untuk multiple akun
@@ -8620,6 +8712,11 @@ function handleCallbackQuery($callback_query) {
         // Tampilkan menu start
         handleStart($chat_id, $from_first_name, $username);
         
+    } elseif ($callback_data == "clone_free") {
+        answerCallbackQuery($callback_id);
+        deleteMessage($chat_id, $message_id);
+        requestFreeAccount($chat_id);
+
     } elseif ($callback_data == "clone_single") {
         answerCallbackQuery($callback_id);
         deleteMessage($chat_id, $message_id);
@@ -8978,8 +9075,8 @@ function handleCallbackQuery($callback_query) {
         deleteMessage($chat_id, $message_id);
         setAutoLimitMaxClaim($chat_id);
         
-    } elseif (strpos($callback_data, 'auto_limit_maxclaim_') === 0) {
-        $maxclaim = intval(str_replace('auto_limit_maxclaim_', '', $callback_data));
+    } elseif (preg_match('/^auto_limit_maxclaim_(\d+)$/', $callback_data, $maxclaim_matches)) {
+        $maxclaim = (int)$maxclaim_matches[1];
         if ($maxclaim > 0) {
             updateMaxClaimPerDay($maxclaim);
             answerCallbackQuery($callback_id, "Maksimal claim diubah menjadi $maxclaim user per hari");
