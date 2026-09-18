@@ -545,6 +545,54 @@ if hook_count != 1:
     raise SystemExit(f"Expected exactly one login gate request hook, found {hook_count}")
 login_gate_hooked = True
 
+qr_email_gate_hooked = False
+if profile == "tv":
+    qr_login_suffix = "com/vidio/platform/identity/TvCodeLogin$check$2.smali"
+    qr_login_matches = list(root.glob(f"smali*/**/{qr_login_suffix}"))
+    if len(qr_login_matches) != 1:
+        raise SystemExit(f"Expected one TV QR login response handler, found {len(qr_login_matches)}")
+    qr_login_path = qr_login_matches[0]
+    qr_login_text = qr_login_path.read_text()
+    qr_hook_marker = "Lcom/vidio/android/patch/LoginGate;->enforceQrEmail(Ljava/lang/String;)V"
+    qr_hook_count = qr_login_text.count(qr_hook_marker)
+    if qr_hook_count == 0:
+        invoke_suspend = re.search(
+            r"(?ms)^\.method public final invokeSuspend\(Ljava/lang/Object;\)Ljava/lang/Object;\n"
+            r"    \.locals (\d+)\n.*?^\.end method$",
+            qr_login_text,
+        )
+        if invoke_suspend is None or int(invoke_suspend.group(1)) < 5:
+            raise SystemExit(f"TV QR login handler has no safe v4 scratch register: {qr_login_path}")
+        qr_response_pattern = re.compile(
+            r"(    invoke-static \{(?P<response>[vp]\d+)\}, "
+            r"Lcom/vidio/platform/gateway/responses/LoginResponseKt;->"
+            r"asLoginResponse\(Lretrofit2/Response;\)"
+            r"Lcom/vidio/platform/identity/LoginGateway\$Response;\n"
+            r"(?:\n|    \.line \d+\n)*"
+            r"    move-result-object (?P=response)\n)"
+        )
+
+        def inject_qr_email_gate(match):
+            response_register = match.group("response")
+            return match.group(1) + (
+                f"\n    invoke-virtual {{{response_register}}}, "
+                "Lcom/vidio/platform/identity/LoginGateway$Response;->getProfile()Lbw/d;\n\n"
+                "    move-result-object v4\n\n"
+                "    invoke-virtual {v4}, Lbw/d;->i()Ljava/lang/String;\n\n"
+                "    move-result-object v4\n\n"
+                "    invoke-static {v4}, " + qr_hook_marker + "\n"
+            )
+
+        qr_login_text, inserted = qr_response_pattern.subn(inject_qr_email_gate, qr_login_text, count=1)
+        if inserted != 1:
+            raise SystemExit(f"TV QR login response hook point not found in {qr_login_path}")
+        qr_login_path.write_text(qr_login_text)
+        changed_files.add(qr_login_path.relative_to(root))
+        qr_hook_count = 1
+    if qr_hook_count != 1:
+        raise SystemExit(f"Expected exactly one TV QR email gate hook, found {qr_hook_count}")
+    qr_email_gate_hooked = True
+
 # Set the stream API host in the KMM request builder itself. This is the primary
 # route selection and ensures the request is born with the proxy URL before any
 # OkHttp application or network interceptor can observe it.
@@ -958,6 +1006,8 @@ print(f"Required stream header hook present: {stream_headers_hook_done}")
 print(f"Stream proxy fallback hook present: {stream_proxy_hook_done}")
 print(f"Login gate context initializer present: {login_gate_initialized}")
 print(f"Login gate request hook present: {login_gate_hooked}")
+if profile == "tv":
+    print(f"TV QR response email gate hook present: {qr_email_gate_hooked}")
 print("Preserved stream header append calls:")
 for header in preserved_stream_headers:
     print(f"  {header}: {preserved_counts[header]}")

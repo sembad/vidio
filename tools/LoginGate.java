@@ -282,16 +282,22 @@ public final class LoginGate {
             showToast(ERROR_MESSAGE);
             throw exception;
         }
+        enforceEmailPermission(email);
+    }
 
+    public static void enforceQrEmail(String email) throws IOException {
+        enforceEmailPermission(email);
+    }
+
+    private static void enforceEmailPermission(String email) throws IOException {
         if (!isEmail(email)) {
             deny(DENIED_MESSAGE);
             return;
         }
 
-        boolean allowed;
+        boolean allowed = false;
         boolean ultimate = false;
         try {
-            allowed = false;
             for (String query : ACCOUNT_QUERIES) {
                 if (fetchPermission(query, email)) {
                     allowed = true;
