@@ -1,0 +1,648 @@
+package com.vidio.android.patch;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.Gravity;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.MultiFormatWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public final class QrLoginActivity extends Activity {
+    private static final String LEGACY_CODE_ENDPOINT = "https://api.vidio.com/api/tv_login_codes";
+    private static final String VERIFY_ENDPOINT = "https://api.vidio.com/api/tv/verify_code";
+    private static final String QR_LINK = "https://www.vidio.com/tv/login?code=";
+    private static final String TV_API_AUTH = "laZOmogezono5ogekaso5oz4Mezimew1";
+    private static final String TV_APP_INFO = "tv-android/16/2608.2.4-1020";
+    private static final String TV_USER_AGENT = "tv-android/2608.2.4 (1020)";
+    private static final String TV_REFERER = "androidtv-app://com.vidio.android.tv";
+    private static final long CODE_LIFETIME_MS = 240_000L;
+    private static final long POLL_DELAY_MS = 2_000L;
+
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final ScheduledExecutorService worker = Executors.newSingleThreadScheduledExecutor();
+
+    private ImageView qrImage;
+    private TextView codeText;
+    private TextView statusText;
+    private Button retryButton;
+    private volatile boolean stopped;
+    private volatile int generation;
+    private Object tvCodeLogin;
+    private Object vidioAuth;
+    private Object okHttpClient;
+    private Object accessTokenRepository;
+    private long codeCreatedAt;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getWindow().setStatusBarColor(Color.rgb(7, 9, 15));
+        getWindow().setNavigationBarColor(Color.rgb(7, 9, 15));
+        buildScreen();
+        requestNewCode();
+    }
+
+    private void buildScreen() {
+        ScrollView scrollView = new ScrollView(this);
+        scrollView.setFillViewport(true);
+        scrollView.setBackgroundColor(Color.rgb(7, 9, 15));
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setGravity(Gravity.CENTER_HORIZONTAL);
+        content.setPadding(dp(24), dp(18), dp(24), dp(28));
+        scrollView.addView(content, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT,
+                ScrollView.LayoutParams.WRAP_CONTENT));
+
+        Button backButton = new Button(this);
+        backButton.setText("Kembali");
+        backButton.setTextColor(Color.rgb(205, 210, 221));
+        backButton.setTextSize(14);
+        backButton.setAllCaps(false);
+        backButton.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        backButton.setPadding(0, 0, 0, 0);
+        backButton.setBackgroundColor(Color.TRANSPARENT);
+        backButton.setOnClickListener(view -> finish());
+        LinearLayout.LayoutParams backParams = matchWrap();
+        backParams.gravity = Gravity.START;
+        content.addView(backButton, backParams);
+
+        TextView brand = text("vidio", 24, Color.rgb(239, 32, 65), Typeface.BOLD);
+        LinearLayout.LayoutParams brandParams = wrapWrap();
+        brandParams.topMargin = dp(8);
+        content.addView(brand, brandParams);
+
+        TextView title = text("Masuk dengan Kode QR", 24, Color.WHITE, Typeface.BOLD);
+        title.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams titleParams = wrapWrap();
+        titleParams.topMargin = dp(12);
+        content.addView(title, titleParams);
+
+        TextView subtitle = text(
+                "Pindai kode ini untuk menghubungkan akun Vidio secara aman.",
+                14,
+                Color.rgb(166, 174, 190),
+                Typeface.NORMAL);
+        subtitle.setGravity(Gravity.CENTER);
+        subtitle.setLineSpacing(0, 1.12f);
+        LinearLayout.LayoutParams subtitleParams = matchWrap();
+        subtitleParams.topMargin = dp(8);
+        content.addView(subtitle, subtitleParams);
+
+        qrImage = new ImageView(this);
+        qrImage.setContentDescription("Kode QR untuk masuk ke akun Vidio");
+        qrImage.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        qrImage.setPadding(dp(12), dp(12), dp(12), dp(12));
+        qrImage.setBackground(rounded(Color.WHITE, 18));
+        LinearLayout.LayoutParams qrParams = new LinearLayout.LayoutParams(dp(238), dp(238));
+        qrParams.topMargin = dp(20);
+        content.addView(qrImage, qrParams);
+
+        codeText = text("Kode: ------", 20, Color.WHITE, Typeface.BOLD);
+        codeText.setGravity(Gravity.CENTER);
+        codeText.setLetterSpacing(0.12f);
+        codeText.setTextIsSelectable(true);
+        codeText.setPadding(dp(18), dp(10), dp(18), dp(10));
+        codeText.setBackground(rounded(Color.rgb(27, 31, 43), 14));
+        LinearLayout.LayoutParams codeParams = wrapWrap();
+        codeParams.topMargin = dp(14);
+        content.addView(codeText, codeParams);
+
+        statusText = text("Membuat kode aman...", 13, Color.rgb(166, 174, 190), Typeface.NORMAL);
+        statusText.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams statusParams = matchWrap();
+        statusParams.topMargin = dp(12);
+        content.addView(statusText, statusParams);
+
+        TextView instructions = text(
+                "1. Pindai QR dengan kamera perangkat lain, atau buka vidio.com/tv.\n" +
+                        "2. Masuk ke akun Vidio lalu konfirmasi.",
+                13,
+                Color.rgb(205, 210, 221),
+                Typeface.NORMAL);
+        instructions.setLineSpacing(dp(3), 1.05f);
+        instructions.setGravity(Gravity.START);
+        instructions.setPadding(dp(16), dp(14), dp(16), dp(14));
+        instructions.setBackground(rounded(Color.rgb(17, 20, 29), 14));
+        LinearLayout.LayoutParams instructionParams = matchWrap();
+        instructionParams.topMargin = dp(18);
+        content.addView(instructions, instructionParams);
+
+        retryButton = new Button(this);
+        retryButton.setText("Coba lagi");
+        retryButton.setTextColor(Color.WHITE);
+        retryButton.setTextSize(14);
+        retryButton.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        retryButton.setAllCaps(false);
+        retryButton.setBackground(rounded(Color.rgb(223, 35, 66), 14));
+        retryButton.setVisibility(View.GONE);
+        retryButton.setOnClickListener(view -> requestNewCode());
+        LinearLayout.LayoutParams retryParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
+        retryParams.topMargin = dp(16);
+        content.addView(retryButton, retryParams);
+
+        setContentView(scrollView);
+    }
+
+    private void requestNewCode() {
+        final int requestGeneration = ++generation;
+        retryButton.setVisibility(View.GONE);
+        qrImage.setImageDrawable(null);
+        codeText.setText("Kode: ------");
+        setStatus("Membuat kode aman...", Color.rgb(166, 174, 190));
+
+        worker.execute(() -> {
+            try {
+                if (tvCodeLogin == null) {
+                    tvCodeLogin = createTvCodeLogin();
+                }
+                String legacyCode = requestLegacyCode();
+                if (legacyCode != null) {
+                    onCodeReady(requestGeneration, legacyCode);
+                    return;
+                }
+                callSuspend(tvCodeLogin, "get", new Object[0], (result, error) -> {
+                    if (error != null) {
+                        onCodeError(requestGeneration);
+                        return;
+                    }
+                    try {
+                        onCodeReady(requestGeneration, readStringField(result));
+                    } catch (Throwable ignored) {
+                        onCodeError(requestGeneration);
+                    }
+                });
+            } catch (Throwable ignored) {
+                onCodeError(requestGeneration);
+            }
+        });
+    }
+
+    private void onCodeReady(int requestGeneration, String code) {
+        if (stopped || requestGeneration != generation || code == null || code.length() < 4) {
+            return;
+        }
+        codeCreatedAt = System.currentTimeMillis();
+        final Bitmap bitmap;
+        try {
+            bitmap = createQr(QR_LINK + code);
+        } catch (Throwable ignored) {
+            onCodeError(requestGeneration);
+            return;
+        }
+        mainHandler.post(() -> {
+            if (stopped || requestGeneration != generation) {
+                return;
+            }
+            qrImage.setImageBitmap(bitmap);
+            codeText.setText("Kode: " + code);
+            setStatus("Menunggu konfirmasi...", Color.rgb(166, 174, 190));
+        });
+        schedulePoll(requestGeneration, code, 400L);
+    }
+
+    private void schedulePoll(int requestGeneration, String code, long delayMs) {
+        worker.schedule(() -> poll(requestGeneration, code), delayMs, TimeUnit.MILLISECONDS);
+    }
+
+    private void poll(int requestGeneration, String code) {
+        if (stopped || requestGeneration != generation) {
+            return;
+        }
+        if (System.currentTimeMillis() - codeCreatedAt >= CODE_LIFETIME_MS) {
+            mainHandler.post(() -> {
+                if (!stopped && requestGeneration == generation) {
+                    setStatus("Kode kedaluwarsa, membuat yang baru...", Color.rgb(255, 184, 77));
+                    requestNewCode();
+                }
+            });
+            return;
+        }
+        try {
+            if (verifyAndSaveSession(code)) {
+                onLoginSuccess(requestGeneration);
+            } else {
+                schedulePoll(requestGeneration, code, POLL_DELAY_MS);
+            }
+        } catch (Throwable ignored) {
+            schedulePoll(requestGeneration, code, POLL_DELAY_MS);
+        }
+    }
+
+    /**
+     * Menukar kode dengan sesi memakai identitas platform TV (header tv-android).
+     * Klien Retrofit bawaan aplikasi memakai header platform android, dan server
+     * menolak akun TV-only pada platform itu, jadi pertukaran dilakukan manual.
+     */
+    private boolean verifyAndSaveSession(String code) {
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) new URL(VERIFY_ENDPOINT).openConnection();
+            connection.setRequestMethod("POST");
+            connection.setConnectTimeout(8_000);
+            connection.setReadTimeout(8_000);
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            connection.setRequestProperty("X-API-Platform", "tv-android");
+            connection.setRequestProperty("X-API-Auth", TV_API_AUTH);
+            connection.setRequestProperty("X-API-App-Info", TV_APP_INFO);
+            connection.setRequestProperty("User-Agent", TV_USER_AGENT);
+            connection.setRequestProperty("Referer", TV_REFERER);
+            connection.setRequestProperty("X-VISITOR-ID", String.valueOf(java.util.UUID.randomUUID()));
+            connection.setDoOutput(true);
+            java.io.OutputStream output = connection.getOutputStream();
+            output.write(("code=" + java.net.URLEncoder.encode(code, "UTF-8")).getBytes("UTF-8"));
+            output.close();
+            int status = connection.getResponseCode();
+            if (status < 200 || status >= 300) {
+                return false;
+            }
+            String body = readStream(connection.getInputStream());
+            saveSession(body);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    /**
+     * Menyimpan sesi dengan jalur yang sama seperti TvLogin.login bawaan aplikasi.
+     * Nama kelas mengikuti hasil minifikasi APK: okhttp3.ResponseBody = td0.m0,
+     * okhttp3.MediaType = td0.a0. asLoginResponse hanya membaca body respons,
+     * jadi retrofit2.Response.success(Object) (kode 200) sudah cukup.
+     */
+    private void saveSession(String body) throws Exception {
+        ClassLoader loader = getClassLoader();
+        Class<?> responseBodyClass = Class.forName("td0.m0", true, loader);
+        Class<?> mediaTypeClass = Class.forName("td0.a0", true, loader);
+        Method createBody = responseBodyClass.getMethod("create", String.class, mediaTypeClass);
+        Object responseBody = createBody.invoke(null, body, null);
+
+        Class<?> retrofitResponseClass = Class.forName("retrofit2.Response", true, loader);
+        Method success = retrofitResponseClass.getMethod("success", Object.class);
+        Object retrofitResponse = success.invoke(null, responseBody);
+
+        Class<?> loginResponseKt = Class.forName(
+                "com.vidio.platform.gateway.responses.LoginResponseKt", true, loader);
+        Method asLoginResponse = loginResponseKt.getMethod("asLoginResponse", retrofitResponseClass);
+        Object gatewayResponse = asLoginResponse.invoke(null, retrofitResponse);
+
+        Object authentication = invokeNoArg(gatewayResponse, "toAuthentication");
+        Object accessToken = invokeNoArg(gatewayResponse, "getAccessToken");
+
+        Method saveAuth = vidioAuth.getClass().getMethod("a",
+                Class.forName("d10.b", true, loader),
+                Class.forName("d10.a", true, loader));
+        saveAuth.invoke(vidioAuth, authentication, accessToken);
+
+        try {
+            Object cache = invokeNoArg(okHttpClient, "h");
+            if (cache != null) {
+                invokeNoArg(cache, "b");
+            }
+        } catch (Throwable ignored) {
+            // Cache HTTP tidak wajib dibersihkan.
+        }
+
+        if (accessToken == null && accessTokenRepository != null) {
+            try {
+                callSuspend(accessTokenRepository, "b", new Object[0], (result, error) -> {
+                });
+            } catch (Throwable ignored) {
+                // Refresh token akses opsional; sesi sudah tersimpan di vidioAuth.
+            }
+        }
+    }
+
+    private void onLoginSuccess(int requestGeneration) {
+        mainHandler.post(() -> {
+            if (stopped || requestGeneration != generation) {
+                return;
+            }
+            setStatus("Berhasil masuk. Membuka Vidio...", Color.rgb(88, 214, 141));
+            mainHandler.postDelayed(this::restartApp, 700L);
+        });
+    }
+
+    private void restartApp() {
+        if (stopped) {
+            return;
+        }
+        Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+        if (launchIntent != null) {
+            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            try {
+                startActivity(launchIntent);
+            } catch (Throwable ignored) {
+                // Gagal meluncurkan ulang: tutup activity, pengguna kembali ke aplikasi.
+                finishAffinity();
+                return;
+            }
+        }
+        finish();
+    }
+
+    private void onCodeError(int requestGeneration) {
+        mainHandler.post(() -> {
+            if (stopped || requestGeneration != generation) {
+                return;
+            }
+            setStatus("Kode belum bisa dibuat. Periksa koneksi lalu coba lagi.", Color.rgb(255, 138, 138));
+            retryButton.setVisibility(View.VISIBLE);
+        });
+    }
+
+    private Object createTvCodeLogin() throws Exception {
+        Object application = getApplication();
+        Method generatedComponent = application.getClass().getMethod("generatedComponent");
+        Object component = generatedComponent.invoke(application);
+
+        Object tvUseCase = invokeNoArg(component, "K2");
+        Object gateway = readField(tvUseCase, "a");
+        Object api = readField(gateway, "a");
+        Object vidioAuth = providerValue(readField(component, "s1"));
+        Object networkProvider = providerValue(readField(component, "T2"));
+        Object okHttpClient = providerValue(readField(component, "C1"));
+        Object accessTokenRepository = providerValue(readField(component, "v1"));
+        this.vidioAuth = vidioAuth;
+        this.okHttpClient = okHttpClient;
+        this.accessTokenRepository = accessTokenRepository;
+
+        ClassLoader loader = getClassLoader();
+        Class<?> loginClass = Class.forName("com.vidio.platform.identity.TvCodeLogin", true, loader);
+        Constructor<?> constructor = loginClass.getConstructor(
+                Class.forName("com.vidio.platform.api.TvLoginApi", true, loader),
+                Class.forName("e10.e", true, loader),
+                Class.forName("y00.a", true, loader),
+                Class.forName("td0.d0", true, loader),
+                Class.forName("i10.a", true, loader));
+        return constructor.newInstance(api, vidioAuth, networkProvider, okHttpClient, accessTokenRepository);
+    }
+
+    private void callSuspend(Object target, String methodName, Object[] arguments, Completion completion) throws Exception {
+        ClassLoader loader = getClassLoader();
+        Class<?> continuationClass = Class.forName("tb0.c", true, loader);
+        AtomicBoolean completed = new AtomicBoolean(false);
+        InvocationHandler handler = (proxy, method, args) -> {
+            String name = method.getName();
+            if ("getContext".equals(name)) {
+                Class<?> emptyContext = Class.forName("kotlin.coroutines.e", true, loader);
+                return emptyContext.getField("c").get(null);
+            }
+            if ("resumeWith".equals(name)) {
+                Object value = args == null || args.length == 0 ? null : args[0];
+                if (completed.compareAndSet(false, true)) {
+                    completion.complete(value, extractFailure(value));
+                }
+                return null;
+            }
+            if ("toString".equals(name)) {
+                return "QrLoginContinuation";
+            }
+            if ("hashCode".equals(name)) {
+                return System.identityHashCode(proxy);
+            }
+            if ("equals".equals(name)) {
+                return proxy == args[0];
+            }
+            return null;
+        };
+        Object continuation = Proxy.newProxyInstance(loader, new Class<?>[]{continuationClass}, handler);
+        Method suspendMethod = findMethod(target.getClass(), methodName, arguments.length + 1);
+        Object[] invocationArguments = new Object[arguments.length + 1];
+        System.arraycopy(arguments, 0, invocationArguments, 0, arguments.length);
+        invocationArguments[arguments.length] = continuation;
+        Object immediate = suspendMethod.invoke(target, invocationArguments);
+        if (!isCoroutineSuspended(immediate) && completed.compareAndSet(false, true)) {
+            completion.complete(immediate, extractFailure(immediate));
+        }
+    }
+
+    private String requestLegacyCode() {
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) new URL(LEGACY_CODE_ENDPOINT).openConnection();
+            connection.setRequestMethod("POST");
+            connection.setConnectTimeout(4_000);
+            connection.setReadTimeout(4_000);
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("X-API-Platform", "tv-android");
+            connection.setRequestProperty("User-Agent", "tv-android/2608.2.4 (1020)");
+            connection.setDoOutput(true);
+            connection.getOutputStream().close();
+            int status = connection.getResponseCode();
+            if (status < 200 || status >= 300) {
+                return null;
+            }
+            String body = readStream(connection.getInputStream());
+            Matcher matcher = Pattern.compile("\\\"code\\\"\\s*:\\s*\\\"?(\\d{4,10})\\\"?").matcher(body);
+            return matcher.find() ? matcher.group(1) : null;
+        } catch (Throwable ignored) {
+            return null;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    private static String readStream(InputStream inputStream) throws Exception {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+        StringBuilder value = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            value.append(line);
+        }
+        reader.close();
+        return value.toString();
+    }
+
+    private Bitmap createQr(String payload) throws Exception {
+        Map<EncodeHintType, Object> hints = new EnumMap<>(EncodeHintType.class);
+        hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M);
+        hints.put(EncodeHintType.MARGIN, 1);
+        int size = dp(216);
+        BitMatrix matrix = new MultiFormatWriter().encode(payload, BarcodeFormat.QR_CODE, size, size, hints);
+        int[] pixels = new int[size * size];
+        for (int y = 0; y < size; y++) {
+            int offset = y * size;
+            for (int x = 0; x < size; x++) {
+                pixels[offset + x] = matrix.get(x, y) ? Color.BLACK : Color.WHITE;
+            }
+        }
+        Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        bitmap.setPixels(pixels, 0, size, 0, 0, size, size);
+        return bitmap;
+    }
+
+    private static Object providerValue(Object provider) throws Exception {
+        return findMethod(provider.getClass(), "get", 0).invoke(provider);
+    }
+
+    private static Object invokeNoArg(Object target, String name) throws Exception {
+        return findMethod(target.getClass(), name, 0).invoke(target);
+    }
+
+    private static Method findMethod(Class<?> type, String name, int parameterCount) throws NoSuchMethodException {
+        Class<?> cursor = type;
+        while (cursor != null) {
+            for (Method method : cursor.getDeclaredMethods()) {
+                if (method.getName().equals(name) && method.getParameterTypes().length == parameterCount) {
+                    method.setAccessible(true);
+                    return method;
+                }
+            }
+            cursor = cursor.getSuperclass();
+        }
+        throw new NoSuchMethodException(type.getName() + "." + name);
+    }
+
+    private static Object readField(Object target, String name) throws Exception {
+        Class<?> cursor = target.getClass();
+        while (cursor != null) {
+            try {
+                Field field = cursor.getDeclaredField(name);
+                field.setAccessible(true);
+                return field.get(target);
+            } catch (NoSuchFieldException ignored) {
+                cursor = cursor.getSuperclass();
+            }
+        }
+        throw new NoSuchFieldException(target.getClass().getName() + "." + name);
+    }
+
+    private static String readStringField(Object target) throws Exception {
+        if (target == null) {
+            return null;
+        }
+        Class<?> cursor = target.getClass();
+        while (cursor != null) {
+            for (Field field : cursor.getDeclaredFields()) {
+                if (field.getType() == String.class) {
+                    field.setAccessible(true);
+                    Object value = field.get(target);
+                    if (value instanceof String) {
+                        return (String) value;
+                    }
+                }
+            }
+            cursor = cursor.getSuperclass();
+        }
+        return null;
+    }
+
+    private static Throwable extractFailure(Object value) {
+        if (value == null) {
+            return null;
+        }
+        Class<?> cursor = value.getClass();
+        while (cursor != null) {
+            for (Field field : cursor.getDeclaredFields()) {
+                if (Throwable.class.isAssignableFrom(field.getType())) {
+                    try {
+                        field.setAccessible(true);
+                        return (Throwable) field.get(value);
+                    } catch (Throwable ignored) {
+                        return new IllegalStateException("Login belum dikonfirmasi");
+                    }
+                }
+            }
+            cursor = cursor.getSuperclass();
+        }
+        return null;
+    }
+
+    private static boolean isCoroutineSuspended(Object value) {
+        return value != null && "ub0.a".equals(value.getClass().getName());
+    }
+
+    private void setStatus(String value, int color) {
+        statusText.setText(value);
+        statusText.setTextColor(color);
+    }
+
+    private TextView text(String value, int sizeSp, int color, int style) {
+        TextView textView = new TextView(this);
+        textView.setText(value);
+        textView.setTextSize(sizeSp);
+        textView.setTextColor(color);
+        textView.setTypeface(Typeface.create("sans-serif", style));
+        return textView;
+    }
+
+    private GradientDrawable rounded(int color, int radiusDp) {
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setColor(color);
+        drawable.setCornerRadius(dp(radiusDp));
+        return drawable;
+    }
+
+    private static LinearLayout.LayoutParams matchWrap() {
+        return new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+    }
+
+    private static LinearLayout.LayoutParams wrapWrap() {
+        return new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    @Override
+    protected void onDestroy() {
+        stopped = true;
+        generation++;
+        worker.shutdownNow();
+        super.onDestroy();
+    }
+
+    private interface Completion {
+        void complete(Object result, Throwable error);
+    }
+}
