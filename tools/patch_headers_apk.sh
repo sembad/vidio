@@ -332,6 +332,91 @@ if playback_counts != expected_playback_counts:
         f"Unexpected playback patch counts: expected {dict(expected_playback_counts)}, got {dict(playback_counts)}"
     )
 
+if profile == "mobile":
+    cast_d_matches = list(root.glob("smali*/**/dx/d.smali"))
+    if cast_d_matches:
+        d_path = cast_d_matches[0]
+        d_text = d_path.read_text()
+        old_invokesuspend = re.compile(
+            r"\.method public final invokeSuspend\(Ljava/lang/Object;\)Ljava/lang/Object;\n.*?\n\.end method",
+            re.DOTALL
+        )
+        new_invokesuspend = (""".method public final invokeSuspend(Ljava/lang/Object;)Ljava/lang/Object;
+    .locals 1
+
+    iget-object v0, p0, Ldx/d;->d:Ldx/f;
+
+    invoke-static {v0}, Ldx/f;->G(Ldx/f;)V
+
+    sget-object p1, Lkotlin/Unit;->a:Lkotlin/Unit;
+
+    return-object p1
+.end method""")
+        d_text, c_cnt = old_invokesuspend.subn(new_invokesuspend, d_text, count=1)
+        if c_cnt == 1:
+            d_path.write_text(d_text)
+            changed_files.add(d_path.relative_to(root))
+
+    cast_ex_d_matches = list(root.glob("smali*/**/ex/d.smali"))
+    if cast_ex_d_matches:
+        ex_d_path = cast_ex_d_matches[0]
+        ex_d_text = ex_d_path.read_text()
+        old_r = re.compile(r"\.method public final r\(\)V\n.*?\n\.end method", re.DOTALL)
+        new_r = ".method public final r()V\n    .locals 0\n\n    return-void\n.end method"
+        ex_d_text, r_cnt = old_r.subn(new_r, ex_d_text, count=1)
+        if r_cnt == 1:
+            ex_d_path.write_text(ex_d_text)
+            changed_files.add(ex_d_path.relative_to(root))
+
+    layout_path = root / "res/layout/bottom_sheet_chrome_cast_chooser.xml"
+    if layout_path.exists():
+        l_text = layout_path.read_text()
+        if 'android:id="@id/castGroup" android:visibility="gone"' in l_text:
+            layout_path.write_text(l_text.replace(
+                'android:id="@id/castGroup" android:visibility="gone"',
+                'android:id="@id/castGroup" android:visibility="visible"'
+            ))
+            changed_files.add(layout_path.relative_to(root))
+
+    j10_d_matches = list(root.glob("smali*/**/j10/d.smali"))
+    if j10_d_matches:
+        j10_path = j10_d_matches[0]
+        j10_text = j10_path.read_text()
+        old_a = re.compile(r"\.method public final a\(\)Z\n.*?\n\.end method", re.DOTALL)
+        new_a = ".method public final a()Z\n    .locals 1\n\n    const/4 v0, 0x1\n\n    return v0\n.end method"
+        j10_text, a_cnt = old_a.subn(new_a, j10_text, count=1)
+        if a_cnt == 1:
+            j10_path.write_text(j10_text)
+            changed_files.add(j10_path.relative_to(root))
+
+    b30_x_matches = list(root.glob("smali*/**/b30/x.smali"))
+    if b30_x_matches:
+        b30_path = b30_x_matches[0]
+        b30_text = b30_path.read_text()
+        old_b = re.compile(r"\.method public final b\(\)Z\n.*?\n\.end method", re.DOTALL)
+        new_b = ".method public final b()Z\n    .locals 1\n\n    const/4 v0, 0x1\n\n    return v0\n.end method"
+        b30_text, b_cnt = old_b.subn(new_b, b30_text, count=1)
+        if b_cnt == 1:
+            b30_path.write_text(b30_text)
+            changed_files.add(b30_path.relative_to(root))
+
+    sub_resp_matches = list(root.glob("smali*/**/com/vidio/kmm/api/SubscriptionPackageResponse.smali"))
+    if sub_resp_matches:
+        sub_path = sub_resp_matches[0]
+        sub_text = sub_path.read_text()
+        old_sub = re.compile(r"\.method public final getScreencastEnabled\(\)Ljava/lang/Boolean;\n.*?\n\.end method", re.DOTALL)
+        new_sub = (".method public final getScreencastEnabled()Ljava/lang/Boolean;\n"
+                   "    .locals 1\n"
+                   "    .annotation build Lorg/jetbrains/annotations/Nullable;\n"
+                   "    .end annotation\n\n"
+                   "    sget-object v0, Ljava/lang/Boolean;->TRUE:Ljava/lang/Boolean;\n\n"
+                   "    return-object v0\n"
+                   ".end method")
+        sub_text, s_cnt = old_sub.subn(new_sub, sub_text, count=1)
+        if s_cnt == 1:
+            sub_path.write_text(sub_text)
+            changed_files.add(sub_path.relative_to(root))
+
 manifest = root / "AndroidManifest.xml"
 manifest_text = manifest.read_text()
 expected_package = "com.vidio.android" if profile == "mobile" else "com.vidio.android.tv"
