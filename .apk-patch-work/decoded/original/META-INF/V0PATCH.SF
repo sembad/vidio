@@ -1,6 +1,6 @@
 Signature-Version: 1.0
 Created-By: 1.0 (Android)
-SHA-256-Digest-Manifest: Ko8buM4Pv8i3VnHX353qKXw8rUYu7e34ACIuV0Noq6w=
+SHA-256-Digest-Manifest: 5a6s7h9szmuPE0HrVvgLcq1PNZNYWJe8NXFCA85Vt9w=
 X-Android-APK-Signed: 2, 3
 
 Name: AndroidManifest.xml
@@ -546,9 +546,6 @@ SHA-256-Digest: Zz/iFkU0zqFNbkUDpyWyNtJ2/TMtvzNNMrwixUQGZro=
 Name: app-update.properties
 SHA-256-Digest: 6R/EyuyByt0L0SsrqTYqnxZDMf+vOCsNnkuc28bKlsk=
 
-Name: assets.dex
-SHA-256-Digest: dbfkiA9EdKJU5NYz6TfH7LTEtmWO3+jwMKwheoFeicw=
-
 Name: assets/audience_network.dex
 SHA-256-Digest: 8kRupVmrkzZWp4qhHz8AjwP+5ZZf1T0yW24ohwBHb2M=
 
@@ -589,7 +586,7 @@ Name: classes10.dex
 SHA-256-Digest: ZwMxPw0FYzMoye1I/Z9NeB08OdQI8JFuZTAB/6L3nNo=
 
 Name: classes11.dex
-SHA-256-Digest: 7vvZz44O/ZGAsSP46oIkCIHmHElKRT9MzCeneOWPEbE=
+SHA-256-Digest: 2MNe7VD1brcSU7vmwNmsru5riESyiWsxilAqRcKc9BQ=
 
 Name: classes2.dex
 SHA-256-Digest: a5BUIGQaCl43eRvUEYSpMur+N6scfKs7/ySBf7CGFd4=
@@ -604,7 +601,7 @@ Name: classes5.dex
 SHA-256-Digest: N2KpNjtpiwr6KRnbnt40dcBz5VoScqo50D/38xnOEG8=
 
 Name: classes6.dex
-SHA-256-Digest: Ra4yW0DAbQ4SpwA8lxRqJqOWHdO5KjKG3jy8lpmrrmY=
+SHA-256-Digest: Hf0IAvlitT/kQlByUJpWsLAs/y9g3VknRWrP0UtuiIg=
 
 Name: classes7.dex
 SHA-256-Digest: pwGnX1wS6lfWZSSRLkhhmQjl2HBqCuePpwVH6iU3ZNY=

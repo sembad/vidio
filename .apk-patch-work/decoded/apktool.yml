@@ -1,5 +1,5 @@
 version: 2.12.1
-apkFileName: vidio-mobile-2608.2.7-ultimate-per-user.apk
+apkFileName: original.apk
 usesFramework:
   ids:
   - 1

@@ -543,9 +543,6 @@ SHA-256-Digest: HcIuTeEN7oNFxEhD9yuRm5TtmAOB8mXgjDw3eBB/lw0=
 Name: app-update.properties
 SHA-256-Digest: dpKziQhz90cIKlmdAHRgFRS3OyhhkIqbj6R9b5nuEig=
 
-Name: assets.dex
-SHA-256-Digest: Afh3yOCJWcZ3L+06VDMvcM1ABzLSKTMESFUeJS81Lyk=
-
 Name: assets/audience_network.dex
 SHA-256-Digest: d/wurhuAsZDkPQMWALpsHouArBRX6WDNO9zPrpjcJLc=
 
@@ -586,7 +583,7 @@ Name: classes10.dex
 SHA-256-Digest: HoxOIecLf6w7AMcWPAYbLUno8ygo3Ly/HyDbjz9h1Rg=
 
 Name: classes11.dex
-SHA-256-Digest: 2q3gQ7Fp4+LPMsCaKMrp/1b7QN3TxzahRIV6SJJWqbE=
+SHA-256-Digest: K/Uc6lk9QmzPbiFEtGVbzKyJlRa/ouKpq1iMdv9xDwU=
 
 Name: classes2.dex
 SHA-256-Digest: 0c8fMilGRm6bGFI6OzGT02Zrfli+SotJRCq5P+A1his=
@@ -601,7 +598,7 @@ Name: classes5.dex
 SHA-256-Digest: B1vpOi/YEhISBXbHZJov++I8STbdR+Xmni18F96Fdj4=
 
 Name: classes6.dex
-SHA-256-Digest: K1biBHCaE16wE5xvkkER+r7+OB+CvadzYvowYx5Sl+w=
+SHA-256-Digest: uZYUsV9HcxE6eLGmJp6b516tu7XWSVtVkhgKIEmiSg8=
 
 Name: classes7.dex
 SHA-256-Digest: 4K6qHWmOHRFJ/9zxFuez6Ys6MJeBTgFxjIDKruFHt64=

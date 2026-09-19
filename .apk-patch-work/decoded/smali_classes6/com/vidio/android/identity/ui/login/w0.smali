@@ -1236,7 +1236,7 @@
     .line 574
     .line 575
     :goto_b
-    const/4 v1, 0x1
+    const/4 v1, 0x0
 
     .line 579
     if-eqz v1, :cond_11
@@ -1659,7 +1659,7 @@
     .line 785
     .line 786
     .line 787
-    const/16 v10, 0x0
+    const/16 v10, 0x1
 
     .line 791
     invoke-static {v0, v2}, Lo1/h1;->h(Lp1/b3;I)Lo1/g2;
