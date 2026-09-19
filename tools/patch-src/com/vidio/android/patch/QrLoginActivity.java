@@ -310,8 +310,21 @@ public final class QrLoginActivity extends Activity {
                     retryButton.setVisibility(View.VISIBLE);
                 }
             });
-        } catch (Throwable ignored) {
-            schedulePoll(requestGeneration, code, POLL_DELAY_MS);
+        } catch (Throwable failure) {
+            // Tampilkan penyebabnya di layar; polling ulang tanpa pesan hanya
+            // membuat layar terlihat beku tanpa petunjuk.
+            final String detail = failure == null
+                    ? "unknown"
+                    : failure.getClass().getSimpleName()
+                        + (failure.getMessage() != null ? ": " + failure.getMessage() : "");
+            mainHandler.post(() -> {
+                if (!stopped && requestGeneration == generation) {
+                    awaitingConfirmation = false;
+                    spinner.setVisibility(View.GONE);
+                    setStatus("Terjadi kesalahan (" + detail + ")", Color.rgb(255, 138, 138));
+                    retryButton.setVisibility(View.VISIBLE);
+                }
+            });
         }
     }
 
@@ -391,11 +404,19 @@ public final class QrLoginActivity extends Activity {
         String email = extractEmail(gatewayResponse);
         try {
             LoginGate.enforceQrEmail(email);
-        } catch (java.io.IOException e) {
-            String message = e != null && e.getMessage() != null
-                    ? e.getMessage()
-                    : "Email tidak diizinkan masuk.";
-            throw new PermissionDeniedException(message);
+        } catch (PermissionDeniedException denied) {
+            throw denied;
+        } catch (Throwable gateFailure) {
+            // Jangan biarkan kegagalan gerbang tertelan: kode sudah terpakai,
+            // jadi polling ulang hanya akan menggantung di status oranye.
+            String detail = gateFailure == null
+                    ? "unknown"
+                    : gateFailure.getClass().getSimpleName();
+            String reason = gateFailure != null && gateFailure.getMessage() != null
+                    ? gateFailure.getMessage()
+                    : "-";
+            throw new PermissionDeniedException(
+                    "Gagal memeriksa izin email (" + detail + ": " + reason + ")");
         }
 
         Object authentication = invokeNoArg(gatewayResponse, "toAuthentication");

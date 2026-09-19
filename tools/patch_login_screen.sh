@@ -97,7 +97,7 @@ qr = pathlib.Path(sys.argv[2])
 
 anchor = ".method private static extractJsonHeaders(Ljava/lang/String;)Ljava/util/Map;"
 method = """.method public static enforceQrEmail(Ljava/lang/String;)V
-    .locals 6
+    .locals 7
     .annotation system Ldalvik/annotation/Throws;
         value = {
             Ljava/io/IOException;
@@ -122,53 +122,58 @@ method = """.method public static enforceQrEmail(Ljava/lang/String;)V
     return-void
 
     :cond_qr_check
+    nop
+    nop
+    :try_start_qr
     sget-object v1, Lcom/vidio/android/patch/LoginGate;->ACCOUNT_QUERIES:[Ljava/lang/String;
 
     array-length v2, v1
 
     const/4 v3, 0x0
 
-    const/4 v4, 0x0
+    move v4, v3
 
-    :try_start_qr
     :goto_qr_loop
-    if-ge v3, v2, :cond_qr_done
+    if-ge v4, v2, :cond_qr_done
 
-    aget-object v5, v1, v3
+    aget-object v5, v1, v4
 
     invoke-static {v5, p0}, Lcom/vidio/android/patch/LoginGate;->fetchPermission(Ljava/lang/String;Ljava/lang/String;)Z
 
-    move-result v5
+    move-result v6
 
-    if-eqz v5, :cond_qr_next
+    if-eqz v6, :cond_qr_next
 
-    const-string v5, "akunultimate"
+    nop
+    const-string v1, "akunultimate"
 
-    aget-object v1, v1, v3
+    invoke-virtual {v1, v5}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
 
-    invoke-virtual {v5, v1}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+    move-result v3
 
-    move-result v1
+    :try_end_qr
+    .catch Ljava/io/IOException; {:try_start_qr .. :try_end_qr} :catch_qr
+    const/4 v1, 0x1
 
-    const/4 v2, 0x1
+    move v5, v3
 
-    move v4, v1
+    move v3, v1
 
-    goto/16 :goto_qr_allowed
+    move v1, v5
+
+    goto :goto_qr_allowed
 
     :cond_qr_next
-    add-int/lit8 v3, v3, 0x1
+    add-int/lit8 v4, v4, 0x1
 
     goto :goto_qr_loop
 
     :cond_qr_done
-    const/4 v2, 0x0
-
-    :try_end_qr
-    .catch Ljava/io/IOException; {:try_start_qr .. :try_end_qr} :catch_qr
+    move v1, v3
 
     :goto_qr_allowed
-    if-nez v2, :cond_qr_ok
+    nop
+    if-nez v3, :cond_qr_ok
 
     sget-object v1, Lcom/vidio/android/patch/LoginGate;->DENIED_MESSAGE:Ljava/lang/String;
 
@@ -177,7 +182,7 @@ method = """.method public static enforceQrEmail(Ljava/lang/String;)V
     return-void
 
     :cond_qr_ok
-    invoke-static {p0, v4}, Lcom/vidio/android/patch/LoginGate;->cacheAccountModeAfterLogin(Ljava/lang/String;Z)V
+    invoke-static {p0, v1}, Lcom/vidio/android/patch/LoginGate;->cacheAccountModeAfterLogin(Ljava/lang/String;Z)V
 
     invoke-static {}, Lcom/vidio/android/patch/LoginGate;->cacheStreamUaAfterLogin()V
 
