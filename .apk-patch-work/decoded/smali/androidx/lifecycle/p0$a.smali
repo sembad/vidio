@@ -1,0 +1,75 @@
+.class public final Landroidx/lifecycle/p0$a;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+# interfaces
+.implements Landroidx/lifecycle/b1$c;
+
+
+# annotations
+.annotation system Ldalvik/annotation/EnclosingMethod;
+    value = Landroidx/lifecycle/p0;->c(Landroidx/lifecycle/e1;)Landroidx/lifecycle/s0;
+.end annotation
+
+.annotation system Ldalvik/annotation/InnerClass;
+    accessFlags = 0x19
+    name = null
+.end annotation
+
+
+# virtual methods
+.method public final a(Ljava/lang/Class;Lf9/b;)Landroidx/lifecycle/y0;
+    .locals 0
+
+    .line 1
+    invoke-virtual {p0, p1}, Landroidx/lifecycle/p0$a;->b(Ljava/lang/Class;)Landroidx/lifecycle/y0;
+
+    .line 2
+    .line 3
+    .line 4
+    const/4 p1, 0x0
+
+    .line 5
+    throw p1
+.end method
+
+.method public final b(Ljava/lang/Class;)Landroidx/lifecycle/y0;
+    .locals 1
+
+    .line 1
+    new-instance p1, Ljava/lang/UnsupportedOperationException;
+
+    .line 2
+    .line 3
+    const-string v0, "`Factory.create(String, CreationExtras)` is not implemented. You may need to override the method and provide a custom implementation. Note that using `Factory.create(String)` is not supported and considered an error."
+
+    .line 4
+    .line 5
+    invoke-direct {p1, v0}, Ljava/lang/UnsupportedOperationException;-><init>(Ljava/lang/String;)V
+
+    .line 6
+    .line 7
+    .line 8
+    throw p1
+.end method
+
+.method public final c(Lkotlin/reflect/d;Lf9/b;)Landroidx/lifecycle/y0;
+    .locals 0
+
+    .line 1
+    invoke-virtual {p1}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 2
+    .line 3
+    .line 4
+    new-instance p1, Landroidx/lifecycle/s0;
+
+    .line 5
+    .line 6
+    invoke-direct {p1}, Landroidx/lifecycle/s0;-><init>()V
+
+    .line 7
+    .line 8
+    .line 9
+    return-object p1
+.end method

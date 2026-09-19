@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="common_general_collection_plural_without_value">
+        <item quantity="other">Koleksi</item>
+    </plurals>
+    <plurals name="common_general_video_plural_without_value">
+        <item quantity="other">Video</item>
+    </plurals>
+    <plurals name="content_counter_title">
+        <item quantity="other">%d konten</item>
+    </plurals>
+    <plurals name="cpp_episodes_format">
+        <item quantity="other">(%d Episode)</item>
+    </plurals>
+    <plurals name="disco_collection_see_videos">
+        <item quantity="other">Lihat semua (%d video)</item>
+    </plurals>
+    <plurals name="episodes_format">
+        <item quantity="other">%d Episode</item>
+    </plurals>
+    <plurals name="exo_controls_fastforward_by_amount_description">
+        <item quantity="other">Maju cepat %d detik</item>
+        <item quantity="one">Maju cepat %d detik</item>
+    </plurals>
+    <plurals name="exo_controls_rewind_by_amount_description">
+        <item quantity="other">Mundur %d detik</item>
+        <item quantity="one">Mundur %d detik</item>
+    </plurals>
+    <plurals name="mtrl_badge_content_description">
+        <item quantity="other">%d notifikasi baru</item>
+        <item quantity="one">%d notifikasi baru</item>
+    </plurals>
+    <plurals name="new_episode_count">
+        <item quantity="other">{{count}} episode baru</item>
+    </plurals>
+    <plurals name="remaining_day">
+        <item quantity="other">%d Hari</item>
+    </plurals>
+    <plurals name="remaining_hour">
+        <item quantity="other">%d Jam</item>
+    </plurals>
+    <plurals name="remaining_minute">
+        <item quantity="other">%d Menit</item>
+    </plurals>
+    <plurals name="remaining_second">
+        <item quantity="other">%d Detik</item>
+    </plurals>
+    <plurals name="rental_countdown_ends_in_days">
+        <item quantity="other">Akses rental berakhir dalam %d hari</item>
+    </plurals>
+    <plurals name="rental_countdown_ends_in_hours">
+        <item quantity="other">Akses rental berakhir dalam %d jam</item>
+    </plurals>
+    <plurals name="rental_countdown_ends_in_minutes">
+        <item quantity="other">Akses rental berakhir dalam %d menit</item>
+    </plurals>
+    <plurals name="seasons_format">
+        <item quantity="other">%d Season</item>
+    </plurals>
+    <plurals name="selected_deleted_video">
+        <item quantity="other">%d konten dipilih</item>
+    </plurals>
+    <plurals name="time_days_ago_count">
+        <item quantity="other">%d hari yang lalu</item>
+    </plurals>
+    <plurals name="time_hours_ago_count">
+        <item quantity="other">%d jam yang lalu</item>
+    </plurals>
+    <plurals name="time_minutes_ago_count">
+        <item quantity="other">%d menit yang lalu</item>
+    </plurals>
+    <plurals name="watchpage_detail_comment_watchpage_like_plural">
+        <item quantity="other">%d suka</item>
+    </plurals>
+</resources>

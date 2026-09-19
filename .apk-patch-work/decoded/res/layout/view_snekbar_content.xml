@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <ImageView android:id="@id/snekbar_action" android:background="?selectableItemBackgroundBorderless" android:visibility="gone" android:layout_width="wrap_content" android:layout_height="wrap_content" android:src="@drawable/ic_clear_fill" android:layout_alignParentRight="true" android:layout_centerVertical="true" android:layout_alignParentEnd="true" app:tint="#ffffffff" />
+    <TextView android:textColor="@color/blue30" android:id="@id/snekbar_action_text" android:visibility="gone" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_alignParentRight="true" android:layout_centerVertical="true" android:layout_alignParentEnd="true" />
+    <TextView android:textSize="14.0sp" android:textColor="#ffffffff" android:id="@id/snekbar_text" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_toLeftOf="@id/snekbar_action" android:layout_alignParentLeft="true" android:layout_centerVertical="true" android:layout_toStartOf="@id/snekbar_action" android:layout_alignParentStart="true" />
+</merge>

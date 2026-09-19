@@ -1,0 +1,121 @@
+.class final Ly7/o$b;
+.super Ljava/io/OutputStream;
+.source "SourceFile"
+
+
+# annotations
+.annotation system Ldalvik/annotation/EnclosingClass;
+    value = Ly7/o;
+.end annotation
+
+.annotation system Ldalvik/annotation/InnerClass;
+    accessFlags = 0x1a
+    name = "b"
+.end annotation
+
+
+# instance fields
+.field private final c:Ljava/io/FileOutputStream;
+    .annotation build Lorg/jetbrains/annotations/NotNull;
+    .end annotation
+.end field
+
+
+# direct methods
+.method public constructor <init>(Ljava/io/FileOutputStream;)V
+    .locals 0
+    .param p1    # Ljava/io/FileOutputStream;
+        .annotation build Lorg/jetbrains/annotations/NotNull;
+        .end annotation
+    .end param
+
+    .line 1
+    invoke-direct {p0}, Ljava/io/OutputStream;-><init>()V
+
+    .line 2
+    .line 3
+    .line 4
+    iput-object p1, p0, Ly7/o$b;->c:Ljava/io/FileOutputStream;
+
+    .line 5
+    .line 6
+    return-void
+.end method
+
+
+# virtual methods
+.method public final close()V
+    .locals 0
+
+    .line 1
+    return-void
+.end method
+
+.method public final flush()V
+    .locals 1
+
+    .line 1
+    iget-object v0, p0, Ly7/o$b;->c:Ljava/io/FileOutputStream;
+
+    .line 2
+    .line 3
+    invoke-virtual {v0}, Ljava/io/OutputStream;->flush()V
+
+    .line 4
+    .line 5
+    .line 6
+    return-void
+.end method
+
+.method public final write(I)V
+    .locals 1
+
+    .line 10
+    iget-object v0, p0, Ly7/o$b;->c:Ljava/io/FileOutputStream;
+
+    invoke-virtual {v0, p1}, Ljava/io/FileOutputStream;->write(I)V
+
+    return-void
+.end method
+
+.method public final write([B)V
+    .locals 1
+    .param p1    # [B
+        .annotation build Lorg/jetbrains/annotations/NotNull;
+        .end annotation
+    .end param
+
+    .line 1
+    invoke-virtual {p1}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 2
+    .line 3
+    .line 4
+    iget-object v0, p0, Ly7/o$b;->c:Ljava/io/FileOutputStream;
+
+    .line 5
+    .line 6
+    invoke-virtual {v0, p1}, Ljava/io/FileOutputStream;->write([B)V
+
+    .line 7
+    .line 8
+    .line 9
+    return-void
+.end method
+
+.method public final write([BII)V
+    .locals 1
+    .param p1    # [B
+        .annotation build Lorg/jetbrains/annotations/NotNull;
+        .end annotation
+    .end param
+
+    invoke-virtual {p1}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 11
+    iget-object v0, p0, Ly7/o$b;->c:Ljava/io/FileOutputStream;
+
+    invoke-virtual {v0, p1, p2, p3}, Ljava/io/FileOutputStream;->write([BII)V
+
+    return-void
+.end method
