@@ -172,12 +172,6 @@ public final class QrLoginActivity extends Activity {
         instructionParams.topMargin = dp(18);
         content.addView(instructions, instructionParams);
 
-        TextView buildTag = text("build tvcode-r6", 10, Color.rgb(96, 102, 116), Typeface.NORMAL);
-        buildTag.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams buildTagParams = matchWrap();
-        buildTagParams.topMargin = dp(10);
-        content.addView(buildTag, buildTagParams);
-
         retryButton = new Button(this);
         retryButton.setText("Coba lagi");
         retryButton.setTextColor(Color.WHITE);
