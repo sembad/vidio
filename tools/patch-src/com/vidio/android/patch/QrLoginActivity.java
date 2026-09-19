@@ -172,6 +172,12 @@ public final class QrLoginActivity extends Activity {
         instructionParams.topMargin = dp(18);
         content.addView(instructions, instructionParams);
 
+        TextView buildTag = text("build tvcode-r2", 10, Color.rgb(96, 102, 116), Typeface.NORMAL);
+        buildTag.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams buildTagParams = matchWrap();
+        buildTagParams.topMargin = dp(10);
+        content.addView(buildTag, buildTagParams);
+
         retryButton = new Button(this);
         retryButton.setText("Coba lagi");
         retryButton.setTextColor(Color.WHITE);
@@ -201,15 +207,16 @@ public final class QrLoginActivity extends Activity {
         worker.execute(() -> {
             try {
                 String code = requestTvCode();
-                if (code == null) {
-                    onCodeError(requestGeneration);
-                    return;
-                }
                 onCodeReady(requestGeneration, code);
-            } catch (Throwable ignored) {
-                onCodeError(requestGeneration);
+            } catch (Throwable error) {
+                onCodeError(requestGeneration, describe(error));
             }
         });
+    }
+
+    private static String describe(Throwable error) {
+        String message = error.getMessage();
+        return error.getClass().getSimpleName() + (message == null ? "" : ": " + message);
     }
 
     /**
@@ -232,13 +239,20 @@ public final class QrLoginActivity extends Activity {
             connection.setRequestProperty("Referer", TV_REFERER);
             int status = connection.getResponseCode();
             if (status < 200 || status >= 300) {
-                return null;
+                throw new IllegalStateException("HTTP " + status + " dari " + CODE_ENDPOINT);
             }
             String body = readStream(connection.getInputStream());
             Matcher matcher = Pattern.compile("\\\"code\\\"\\s*:\\s*\\\"?(\\d{4,10})\\\"?").matcher(body);
-            return matcher.find() ? matcher.group(1) : null;
-        } catch (Throwable ignored) {
-            return null;
+            if (!matcher.find()) {
+                throw new IllegalStateException("Respons tanpa kode: " + body.substring(0, Math.min(body.length(), 120)));
+            }
+            return matcher.group(1);
+        } catch (java.io.IOException error) {
+            throw new IllegalStateException("Koneksi gagal: " + error);
+        } catch (RuntimeException error) {
+            throw error;
+        } catch (Exception error) {
+            throw new IllegalStateException("Koneksi gagal: " + error);
         } finally {
             if (connection != null) {
                 connection.disconnect();
@@ -254,8 +268,8 @@ public final class QrLoginActivity extends Activity {
         final Bitmap bitmap;
         try {
             bitmap = createQr(QR_LINK + code);
-        } catch (Throwable ignored) {
-            onCodeError(requestGeneration);
+        } catch (Throwable error) {
+            onCodeError(requestGeneration, describe(error));
             return;
         }
         mainHandler.post(() -> {
@@ -493,13 +507,21 @@ public final class QrLoginActivity extends Activity {
     }
 
     private void onCodeError(int requestGeneration) {
+        onCodeError(requestGeneration, null);
+    }
+
+    private void onCodeError(int requestGeneration, String detail) {
         mainHandler.post(() -> {
             if (stopped || requestGeneration != generation) {
                 return;
             }
             awaitingConfirmation = false;
             spinner.setVisibility(View.GONE);
-            setStatus("Kode belum bisa dibuat. Periksa koneksi lalu coba lagi.", Color.rgb(255, 138, 138));
+            String message = "Kode belum bisa dibuat.";
+            if (detail != null && !detail.isEmpty()) {
+                message += " (" + detail + ")";
+            }
+            setStatus(message, Color.rgb(255, 138, 138));
             retryButton.setVisibility(View.VISIBLE);
         });
     }
