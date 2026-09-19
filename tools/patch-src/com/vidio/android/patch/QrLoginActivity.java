@@ -172,7 +172,7 @@ public final class QrLoginActivity extends Activity {
         instructionParams.topMargin = dp(18);
         content.addView(instructions, instructionParams);
 
-        TextView buildTag = text("build tvcode-r3", 10, Color.rgb(96, 102, 116), Typeface.NORMAL);
+        TextView buildTag = text("build tvcode-r4", 10, Color.rgb(96, 102, 116), Typeface.NORMAL);
         buildTag.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams buildTagParams = matchWrap();
         buildTagParams.topMargin = dp(10);
@@ -426,29 +426,13 @@ public final class QrLoginActivity extends Activity {
         awaitingConfirmation = false;
         mainHandler.post(() -> {
             if (!stopped) {
-                setStatus("Konfirmasi diterima. Memeriksa izin email...",
+                setStatus("Konfirmasi diterima. Menyimpan sesi...",
                         Color.rgb(255, 184, 77));
             }
         });
 
-        // Gerbang izin email: alur yang sama dengan login email/kata sandi.
-        String email = extractEmail(gatewayResponse);
-        try {
-            LoginGate.enforceQrEmail(email);
-        } catch (PermissionDeniedException denied) {
-            throw denied;
-        } catch (Throwable gateFailure) {
-            // Jangan biarkan kegagalan gerbang tertelan: kode sudah terpakai,
-            // jadi polling ulang hanya akan menggantung di status oranye.
-            String detail = gateFailure == null
-                    ? "unknown"
-                    : gateFailure.getClass().getSimpleName();
-            String reason = gateFailure != null && gateFailure.getMessage() != null
-                    ? gateFailure.getMessage()
-                    : "-";
-            throw new PermissionDeniedException(
-                    "Gagal memeriksa izin email (" + detail + ": " + reason + ")");
-        }
+        // Perilaku sama dengan aplikasi TV: tanpa gerbang izin email,
+        // sesi langsung disimpan setelah konfirmasi kode.
 
         Object authentication = invokeNoArg(gatewayResponse, "toAuthentication");
         Object accessToken = invokeNoArg(gatewayResponse, "getAccessToken");
