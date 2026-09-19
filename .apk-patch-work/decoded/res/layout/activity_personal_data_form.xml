@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout android:layout_width="fill_parent" android:layout_height="fill_parent"
-  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
-    <WebView android:id="@id/webView" android:layout_width="0.0dip" android:layout_height="0.0dip" android:layout_marginTop="@dimen/large_margin" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@id/btnClose" />
-    <androidx.appcompat.widget.AppCompatImageView android:id="@id/btnClose" android:layout_width="24.0dip" android:layout_height="24.0dip" android:layout_margin="@dimen/large_margin" android:tint="@color/textPrimary" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintTop_toTopOf="parent" app:srcCompat="@drawable/ic_button_close" />
-    <com.vidio.common.ui.customview.VidioAnimationLoader android:layout_gravity="center" android:id="@id/loadingView" android:layout_width="@dimen/vidio_loader_width" android:layout_height="@dimen/vidio_loader_height" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" app:lottie_autoPlay="true" app:lottie_loop="true" app:lottie_rawRes="@raw/vidio_icon_animation_red" app:lottie_repeatMode="reverse" />
-</androidx.constraintlayout.widget.ConstraintLayout>

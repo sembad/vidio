@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<FrameLayout android:padding="@dimen/medium_padding" android:layout_width="fill_parent" android:layout_height="wrap_content" style="@style/RippleEffectOnClick"
-  xmlns:android="http://schemas.android.com/apk/res/android">
-    <include android:id="@id/content" layout="@layout/item_content_portrait" />
-</FrameLayout>

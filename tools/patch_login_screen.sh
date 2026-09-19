@@ -232,3 +232,42 @@ if "enforceQrEmail" not in text:
     qr.write_text(text.replace(save_old, save_new, 1))
     print("patched:", qr)
 PY
+
+# ---------------------------------------------------------------------------
+# QrLoginActivity is rebuilt from Java source instead of being smali-patched.
+#
+# Source of truth: tools/patch-src/com/vidio/android/patch/QrLoginActivity.java
+# It now includes (beyond the original QR flow):
+#   - red indeterminate spinner under the code chip
+#   - live status "Menunggu konfirmasi... (N detik)" via a 1s ticker
+#   - staged status: "Konfirmasi diterima. Memeriksa izin email..." then
+#     "Berhasil masuk. Membuka Vidio..."
+#   - PermissionDeniedException: LoginGate.enforceQrEmail rejections surface
+#     on screen (red text + retry button) instead of being swallowed by the
+#     poll loop, which previously left the screen stuck on "Menunggu..."
+#
+# Rebuild steps (run from repo root):
+#   W=/tmp/qrbuild && rm -rf $W && mkdir -p $W/stub/com/vidio/android/patch $W/out $W/dex
+#   printf 'package com.vidio.android.patch;\npublic final class LoginGate {\n  public static void enforceQrEmail(String email) throws java.io.IOException {}\n}\n' > $W/stub/com/vidio/android/patch/LoginGate.java
+#   .apk-patch-tools/jdk/bin/javac -source 8 -target 8 \
+#     -cp .apk-patch-tools/android.jar:.apk-patch-tools/zxing-core.jar:$W/stub \
+#     -d $W/out tools/patch-src/com/vidio/android/patch/QrLoginActivity.java
+#   .apk-patch-tools/build-tools/d8 --release --lib .apk-patch-tools/android.jar \
+#     --classpath .apk-patch-tools/zxing-core.jar --classpath $W/stub \
+#     --output $W/dex $W/out/com/vidio/android/patch/QrLoginActivity*.class
+#   (cd $W/dex && zip -q $W/mini.apk classes.dex)
+#   java -jar .apk-patch-tools/apktool.jar d -f --no-res -o $W/smali $W/mini.apk
+#   rm -f $DIR/smali_classes11/com/vidio/android/patch/QrLoginActivity*.smali
+#   cp $W/smali/smali/com/vidio/android/patch/QrLoginActivity*.smali \
+#      $DIR/smali_classes11/com/vidio/android/patch/
+#
+# Compile-time deps (cached in .apk-patch-tools/): android.jar (platform 35),
+# zxing-core 3.5.3. The LoginGate stub is compile-time only; the real
+# implementation is the smali method injected above.
+#
+# NOTE on rebuilding a previously patched APK: decoding an APK that was built
+# by apktool duplicates the audience_network dex classes into BOTH
+# smali_assets root and smali_assets/audience_network/. The root copy is
+# redundant and breaks the build with "has already been interned". If
+# smali_assets root contains com/javax/kotlin trees identical to the
+# audience_network/ tree, delete the root copies before `apktool b`.

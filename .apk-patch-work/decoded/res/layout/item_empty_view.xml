@@ -1,3 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<com.vidio.common.ui.customview.GeneralLoadFailed android:layout_width="fill_parent" android:layout_height="fill_parent" app:image="@drawable/ilustrasi_error_huh" app:message="@string/my_list_empty_subtitle_your_list_empty" app:primaryActionText="@string/cta_okay" app:title="@string/my_list_empty_title_your_list_empty"
-  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" />

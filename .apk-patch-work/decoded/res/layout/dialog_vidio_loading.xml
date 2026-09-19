@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout android:layout_width="fill_parent" android:layout_height="fill_parent"
-  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
-    <com.vidio.common.ui.customview.VidioAnimationLoader android:id="@id/progress_bar" android:layout_width="72.0dip" android:layout_height="72.0dip" app:layout_constraintBottom_toTopOf="@id/space" app:layout_constraintLeft_toLeftOf="parent" app:layout_constraintRight_toRightOf="parent" app:layout_constraintTop_toTopOf="parent" app:layout_constraintVertical_chainStyle="packed" app:lottie_autoPlay="true" app:lottie_loop="true" app:lottie_rawRes="@raw/vidio_icon_animation_red" app:lottie_repeatMode="reverse" />
-    <Space android:id="@id/space" android:layout_width="0.0dip" android:layout_height="@dimen/large_margin" app:layout_constraintBottom_toTopOf="@id/tv_please_wait" app:layout_constraintLeft_toLeftOf="parent" app:layout_constraintRight_toRightOf="parent" app:layout_constraintTop_toBottomOf="@id/progress_bar" />
-    <TextView android:textStyle="bold" android:textColor="@color/gray30" android:id="@id/tv_please_wait" android:layout_width="wrap_content" android:layout_height="wrap_content" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintLeft_toLeftOf="parent" app:layout_constraintRight_toRightOf="parent" app:layout_constraintTop_toBottomOf="@id/space" app:layout_constraintVertical_chainStyle="packed" />
-</androidx.constraintlayout.widget.ConstraintLayout>
