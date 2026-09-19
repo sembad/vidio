@@ -6,3 +6,8 @@
 *.pk8
 *.der
 *.idsig
+
+# toolchain lokal (tidak untuk repo)
+android.jar
+zxing-core.jar
+hshsha-*.txt

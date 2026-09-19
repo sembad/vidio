@@ -28,11 +28,8 @@ import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.EnumMap;
@@ -41,12 +38,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class QrLoginActivity extends Activity {
-    private static final String LEGACY_CODE_ENDPOINT = "https://api.vidio.com/api/tv_login_codes";
+    private static final String CODE_ENDPOINT = "https://api.vidio.com/api/tv/code";
     private static final String VERIFY_ENDPOINT = "https://api.vidio.com/api/tv/verify_code";
     private static final String QR_LINK = "https://www.vidio.com/tv/login?code=";
     private static final String TV_API_AUTH = "laZOmogezono5ogekaso5oz4Mezimew1";
@@ -69,7 +65,6 @@ public final class QrLoginActivity extends Activity {
     private volatile boolean awaitingConfirmation;
     private volatile long waitStartMs;
     private ScheduledFuture<?> waitingTicker;
-    private Object tvCodeLogin;
     private Object vidioAuth;
     private Object okHttpClient;
     private Object accessTokenRepository;
@@ -205,29 +200,50 @@ public final class QrLoginActivity extends Activity {
 
         worker.execute(() -> {
             try {
-                if (tvCodeLogin == null) {
-                    tvCodeLogin = createTvCodeLogin();
-                }
-                String legacyCode = requestLegacyCode();
-                if (legacyCode != null) {
-                    onCodeReady(requestGeneration, legacyCode);
+                String code = requestTvCode();
+                if (code == null) {
+                    onCodeError(requestGeneration);
                     return;
                 }
-                callSuspend(tvCodeLogin, "get", new Object[0], (result, error) -> {
-                    if (error != null) {
-                        onCodeError(requestGeneration);
-                        return;
-                    }
-                    try {
-                        onCodeReady(requestGeneration, readStringField(result));
-                    } catch (Throwable ignored) {
-                        onCodeError(requestGeneration);
-                    }
-                });
+                onCodeReady(requestGeneration, code);
             } catch (Throwable ignored) {
                 onCodeError(requestGeneration);
             }
         });
+    }
+
+    /**
+     * Membuat kode pairing lewat endpoint yang sama dengan aplikasi TV asli
+     * (GET /api/tv/code, identitas platform tv-android). Responsnya berbentuk
+     * {"code":123456} — angka, bukan string, jadi diparse dengan regex.
+     */
+    private String requestTvCode() {
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) new URL(CODE_ENDPOINT).openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(8_000);
+            connection.setReadTimeout(8_000);
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("X-API-Platform", "tv-android");
+            connection.setRequestProperty("X-API-Auth", TV_API_AUTH);
+            connection.setRequestProperty("X-API-App-Info", TV_APP_INFO);
+            connection.setRequestProperty("User-Agent", TV_USER_AGENT);
+            connection.setRequestProperty("Referer", TV_REFERER);
+            int status = connection.getResponseCode();
+            if (status < 200 || status >= 300) {
+                return null;
+            }
+            String body = readStream(connection.getInputStream());
+            Matcher matcher = Pattern.compile("\\\"code\\\"\\s*:\\s*\\\"?(\\d{4,10})\\\"?").matcher(body);
+            return matcher.find() ? matcher.group(1) : null;
+        } catch (Throwable ignored) {
+            return null;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
     }
 
     private void onCodeReady(int requestGeneration, String code) {
@@ -377,6 +393,7 @@ public final class QrLoginActivity extends Activity {
      * jadi retrofit2.Response.success(Object) (kode 200) sudah cukup.
      */
     private void saveSession(String body) throws Exception {
+        ensureAppHandles();
         ClassLoader loader = getClassLoader();
         Class<?> responseBodyClass = Class.forName("td0.m0", true, loader);
         Class<?> mediaTypeClass = Class.forName("td0.a0", true, loader);
@@ -438,8 +455,7 @@ public final class QrLoginActivity extends Activity {
 
         if (accessToken == null && accessTokenRepository != null) {
             try {
-                callSuspend(accessTokenRepository, "b", new Object[0], (result, error) -> {
-                });
+                findMethod(accessTokenRepository.getClass(), "b", 0).invoke(accessTokenRepository);
             } catch (Throwable ignored) {
                 // Refresh token akses opsional; sesi sudah tersimpan di vidioAuth.
             }
@@ -488,98 +504,21 @@ public final class QrLoginActivity extends Activity {
         });
     }
 
-    private Object createTvCodeLogin() throws Exception {
+    /**
+     * Mengambil handle internal aplikasi (vidioAuth, OkHttp, repository token)
+     * yang dipakai saveSession. Nama field DI (s1, C1, v1) mengikuti hasil
+     * minifikasi APK mobile 2608.2.7.
+     */
+    private void ensureAppHandles() throws Exception {
+        if (vidioAuth != null) {
+            return;
+        }
         Object application = getApplication();
         Method generatedComponent = application.getClass().getMethod("generatedComponent");
         Object component = generatedComponent.invoke(application);
-
-        Object tvUseCase = invokeNoArg(component, "K2");
-        Object gateway = readField(tvUseCase, "a");
-        Object api = readField(gateway, "a");
-        Object vidioAuth = providerValue(readField(component, "s1"));
-        Object networkProvider = providerValue(readField(component, "T2"));
-        Object okHttpClient = providerValue(readField(component, "C1"));
-        Object accessTokenRepository = providerValue(readField(component, "v1"));
-        this.vidioAuth = vidioAuth;
-        this.okHttpClient = okHttpClient;
-        this.accessTokenRepository = accessTokenRepository;
-
-        ClassLoader loader = getClassLoader();
-        Class<?> loginClass = Class.forName("com.vidio.platform.identity.TvCodeLogin", true, loader);
-        Constructor<?> constructor = loginClass.getConstructor(
-                Class.forName("com.vidio.platform.api.TvLoginApi", true, loader),
-                Class.forName("e10.e", true, loader),
-                Class.forName("y00.a", true, loader),
-                Class.forName("td0.d0", true, loader),
-                Class.forName("i10.a", true, loader));
-        return constructor.newInstance(api, vidioAuth, networkProvider, okHttpClient, accessTokenRepository);
-    }
-
-    private void callSuspend(Object target, String methodName, Object[] arguments, Completion completion) throws Exception {
-        ClassLoader loader = getClassLoader();
-        Class<?> continuationClass = Class.forName("tb0.c", true, loader);
-        AtomicBoolean completed = new AtomicBoolean(false);
-        InvocationHandler handler = (proxy, method, args) -> {
-            String name = method.getName();
-            if ("getContext".equals(name)) {
-                Class<?> emptyContext = Class.forName("kotlin.coroutines.e", true, loader);
-                return emptyContext.getField("c").get(null);
-            }
-            if ("resumeWith".equals(name)) {
-                Object value = args == null || args.length == 0 ? null : args[0];
-                if (completed.compareAndSet(false, true)) {
-                    completion.complete(value, extractFailure(value));
-                }
-                return null;
-            }
-            if ("toString".equals(name)) {
-                return "QrLoginContinuation";
-            }
-            if ("hashCode".equals(name)) {
-                return System.identityHashCode(proxy);
-            }
-            if ("equals".equals(name)) {
-                return proxy == args[0];
-            }
-            return null;
-        };
-        Object continuation = Proxy.newProxyInstance(loader, new Class<?>[]{continuationClass}, handler);
-        Method suspendMethod = findMethod(target.getClass(), methodName, arguments.length + 1);
-        Object[] invocationArguments = new Object[arguments.length + 1];
-        System.arraycopy(arguments, 0, invocationArguments, 0, arguments.length);
-        invocationArguments[arguments.length] = continuation;
-        Object immediate = suspendMethod.invoke(target, invocationArguments);
-        if (!isCoroutineSuspended(immediate) && completed.compareAndSet(false, true)) {
-            completion.complete(immediate, extractFailure(immediate));
-        }
-    }
-
-    private String requestLegacyCode() {
-        HttpURLConnection connection = null;
-        try {
-            connection = (HttpURLConnection) new URL(LEGACY_CODE_ENDPOINT).openConnection();
-            connection.setRequestMethod("POST");
-            connection.setConnectTimeout(4_000);
-            connection.setReadTimeout(4_000);
-            connection.setRequestProperty("Accept", "application/json");
-            connection.setRequestProperty("X-API-Platform", "tv-android");
-            connection.setRequestProperty("User-Agent", "tv-android/2608.2.4 (1020)");
-            connection.setDoOutput(true);
-            connection.getOutputStream().close();
-            int status = connection.getResponseCode();
-            if (status < 200 || status >= 300) {
-                return null;
-            }
-            String body = readStream(connection.getInputStream());
-            Matcher matcher = Pattern.compile("\\\"code\\\"\\s*:\\s*\\\"?(\\d{4,10})\\\"?").matcher(body);
-            return matcher.find() ? matcher.group(1) : null;
-        } catch (Throwable ignored) {
-            return null;
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
-            }
-        }
+        vidioAuth = providerValue(readField(component, "s1"));
+        okHttpClient = providerValue(readField(component, "C1"));
+        accessTokenRepository = providerValue(readField(component, "v1"));
     }
 
     private static String readStream(InputStream inputStream) throws Exception {
@@ -647,51 +586,6 @@ public final class QrLoginActivity extends Activity {
         throw new NoSuchFieldException(target.getClass().getName() + "." + name);
     }
 
-    private static String readStringField(Object target) throws Exception {
-        if (target == null) {
-            return null;
-        }
-        Class<?> cursor = target.getClass();
-        while (cursor != null) {
-            for (Field field : cursor.getDeclaredFields()) {
-                if (field.getType() == String.class) {
-                    field.setAccessible(true);
-                    Object value = field.get(target);
-                    if (value instanceof String) {
-                        return (String) value;
-                    }
-                }
-            }
-            cursor = cursor.getSuperclass();
-        }
-        return null;
-    }
-
-    private static Throwable extractFailure(Object value) {
-        if (value == null) {
-            return null;
-        }
-        Class<?> cursor = value.getClass();
-        while (cursor != null) {
-            for (Field field : cursor.getDeclaredFields()) {
-                if (Throwable.class.isAssignableFrom(field.getType())) {
-                    try {
-                        field.setAccessible(true);
-                        return (Throwable) field.get(value);
-                    } catch (Throwable ignored) {
-                        return new IllegalStateException("Login belum dikonfirmasi");
-                    }
-                }
-            }
-            cursor = cursor.getSuperclass();
-        }
-        return null;
-    }
-
-    private static boolean isCoroutineSuspended(Object value) {
-        return value != null && "ub0.a".equals(value.getClass().getName());
-    }
-
     private static String extractEmail(Object gatewayResponse) {
         try {
             Object auth = readField(gatewayResponse, "auth");
@@ -748,10 +642,6 @@ public final class QrLoginActivity extends Activity {
         generation++;
         worker.shutdownNow();
         super.onDestroy();
-    }
-
-    private interface Completion {
-        void complete(Object result, Throwable error);
     }
 
     /** Ditampilkan sebagai pesan di layar (bukan loop senyap) saat izin email menolak. */
