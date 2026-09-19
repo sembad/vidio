@@ -172,7 +172,7 @@ public final class QrLoginActivity extends Activity {
         instructionParams.topMargin = dp(18);
         content.addView(instructions, instructionParams);
 
-        TextView buildTag = text("build tvcode-r4", 10, Color.rgb(96, 102, 116), Typeface.NORMAL);
+        TextView buildTag = text("build tvcode-r5", 10, Color.rgb(96, 102, 116), Typeface.NORMAL);
         buildTag.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams buildTagParams = matchWrap();
         buildTagParams.topMargin = dp(10);
@@ -426,13 +426,32 @@ public final class QrLoginActivity extends Activity {
         awaitingConfirmation = false;
         mainHandler.post(() -> {
             if (!stopped) {
-                setStatus("Konfirmasi diterima. Menyimpan sesi...",
+                setStatus("Konfirmasi diterima. Memeriksa izin email...",
                         Color.rgb(255, 184, 77));
             }
         });
 
-        // Perilaku sama dengan aplikasi TV: tanpa gerbang izin email,
-        // sesi langsung disimpan setelah konfirmasi kode.
+        // Gerbang izin email: logika yang sama dengan LoginGate.enforceQrEmail
+        // di APK TV (QrEmailGate memakai primitif LoginGate mobile via refleksi).
+        String email = extractEmail(gatewayResponse);
+        try {
+            QrEmailGate.enforce(email);
+        } catch (QrEmailGate.DeniedException denied) {
+            throw new PermissionDeniedException(denied.getMessage());
+        } catch (PermissionDeniedException denied) {
+            throw denied;
+        } catch (Throwable gateFailure) {
+            // Jangan biarkan kegagalan gerbang tertelan: kode sudah terpakai,
+            // jadi polling ulang hanya akan menggantung di status oranye.
+            String detail = gateFailure == null
+                    ? "unknown"
+                    : gateFailure.getClass().getSimpleName();
+            String reason = gateFailure != null && gateFailure.getMessage() != null
+                    ? gateFailure.getMessage()
+                    : "-";
+            throw new PermissionDeniedException(
+                    "Gagal memeriksa izin email (" + detail + ": " + reason + ")");
+        }
 
         Object authentication = invokeNoArg(gatewayResponse, "toAuthentication");
         Object accessToken = invokeNoArg(gatewayResponse, "getAccessToken");
