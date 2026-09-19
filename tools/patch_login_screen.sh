@@ -7,8 +7,10 @@
 #   2. The authentication form branch was disabled (const/4 v1, 0x0 before
 #      if-eqz v1, :cond_11), leaving only the "Lihat opsi lain" expand button.
 #
-# This script restores the form branch (0x1) and hides the overlay (0x0),
-# keeping the Google SSO branch dead as intended.
+# This script restores the form branch (0x1) and drives the loading overlay
+# from AuthenticationStateHolder.isLoading (h()) so the animated
+# "Tunggu sebentar ya" scrim (Lottie + text via wy/j3.a) shows only while a
+# login request is in flight, keeping the Google SSO branch dead as intended.
 #
 # Usage: tools/patch_login_screen.sh <apktool-decoded-dir>
 # Rebuild afterwards with:
@@ -40,14 +42,18 @@ form_fixed = """    :goto_b
     .line 579
     if-eqz v1, :cond_11"""
 
-overlay_forced = """    :goto_c
+overlay_prefix = """    :goto_c
     invoke-virtual {v15}, Landroidx/compose/runtime/a1;->r()V
 
     .line 785
     .line 786
     .line 787
-    const/16 v10, 0x1"""
-overlay_fixed = overlay_forced.replace("const/16 v10, 0x1", "const/16 v10, 0x0")
+"""
+overlay_forced = overlay_prefix + "    const/16 v10, 0x1"
+overlay_hidden = overlay_prefix + "    const/16 v10, 0x0"
+overlay_fixed = overlay_prefix + """    invoke-virtual/range {p0 .. p0}, Lcom/vidio/common/ui/stateholder/AuthenticationStateHolder;->h()Z
+
+    move-result v10"""
 
 if form_fixed in text and overlay_fixed in text:
     print("login screen already patched, nothing to do")
@@ -59,6 +65,8 @@ text = text.replace(form_dead, form_fixed, 1)
 
 if overlay_forced in text:
     text = text.replace(overlay_forced, overlay_fixed, 1)
+elif overlay_hidden in text:
+    text = text.replace(overlay_hidden, overlay_fixed, 1)
 elif overlay_fixed not in text:
     sys.exit("loading overlay pattern not found; smali may differ from expected build")
 
@@ -84,7 +92,10 @@ QR="$DIR/smali_classes11/com/vidio/android/patch/QrLoginActivity.smali"
 
 [[ -f "$GATE" && -f "$QR" ]] || { echo "LoginGate.smali or QrLoginActivity.smali not found under $DIR" >&2; exit 1; }
 
-if grep -q "enforceQrEmail" "$GATE" && grep -q "enforceQrEmail" "$QR"; then
+# The gate ships in two forms: the smali patch below (LoginGate.enforceQrEmail
+# called from QrLoginActivity) and the recompiled-Java form where
+# QrLoginActivity calls QrEmailGate.enforce instead. Accept either.
+if grep -q "enforceQrEmail" "$GATE" && { grep -q "enforceQrEmail" "$QR" || grep -q "QrEmailGate;->enforce" "$QR"; }; then
     echo "QR email gate already patched, nothing to do"
     exit 0
 fi
