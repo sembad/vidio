@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<menu
-  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
-    <item android:icon="@drawable/ic_pip_largetosmall" android:id="@id/menu_pip" android:visible="true" android:orderInCategory="102" android:title="@string/pip" app:showAsAction="always" />
-    <item android:id="@id/media_route_menu_item" android:orderInCategory="102" android:title="@string/cast" app:actionProviderClass="com.vidio.android.watch.chromecast.VidioCastMediaRouteProvider" app:showAsAction="always" />
-    <item android:icon="@drawable/ic_flag" android:id="@id/menu_send_feedback" android:orderInCategory="102" android:title="@string/report_top_navigation_report_a_problem" app:showAsAction="always" />
-</menu>

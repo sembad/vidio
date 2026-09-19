@@ -1,3 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<RadioButton android:textColor="@color/textPrimary" android:layout_width="fill_parent" android:layout_height="48.0dip" android:button="@drawable/bg_radio_feedback" android:paddingStart="@dimen/medium_padding" android:paddingEnd="@dimen/medium_padding" android:buttonTint="@color/textPrimary"
-  xmlns:android="http://schemas.android.com/apk/res/android" />

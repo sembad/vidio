@@ -65,3 +65,170 @@ elif overlay_fixed not in text:
 path.write_text(text)
 print("patched:", path)
 PY
+
+# ---------------------------------------------------------------------------
+# QR login email permission gate.
+#
+# QrLoginActivity.saveSession stored the TV-login session without ever calling
+# LoginGate, so accounts without email permission could log in via QR while
+# the email/password flow correctly rejected them. Two changes fix this:
+#   1. LoginGate gains enforceQrEmail(email): same ACCOUNT_QUERIES permission
+#      check as the password flow; denies via deny() when the email is
+#      missing/invalid or no query grants permission; caches account mode and
+#      stream UA on success.
+#   2. QrLoginActivity.saveSession reads auth.email from the parsed login
+#      response (readField helper) and calls enforceQrEmail before saving.
+# ---------------------------------------------------------------------------
+GATE="$DIR/smali_classes10/com/vidio/android/patch/LoginGate.smali"
+QR="$DIR/smali_classes11/com/vidio/android/patch/QrLoginActivity.smali"
+
+[[ -f "$GATE" && -f "$QR" ]] || { echo "LoginGate.smali or QrLoginActivity.smali not found under $DIR" >&2; exit 1; }
+
+if grep -q "enforceQrEmail" "$GATE" && grep -q "enforceQrEmail" "$QR"; then
+    echo "QR email gate already patched, nothing to do"
+    exit 0
+fi
+
+python3 - "$GATE" "$QR" <<'PY'
+import pathlib, sys
+
+gate = pathlib.Path(sys.argv[1])
+qr = pathlib.Path(sys.argv[2])
+
+anchor = ".method private static extractJsonHeaders(Ljava/lang/String;)Ljava/util/Map;"
+method = """.method public static enforceQrEmail(Ljava/lang/String;)V
+    .locals 6
+    .annotation system Ldalvik/annotation/Throws;
+        value = {
+            Ljava/io/IOException;
+        }
+    .end annotation
+
+    const-string v0, "Tidak dapat memeriksa izin email, silakan coba lagi"
+
+    if-eqz p0, :cond_qr_deny
+
+    invoke-static {p0}, Lcom/vidio/android/patch/LoginGate;->isEmail(Ljava/lang/String;)Z
+
+    move-result v1
+
+    if-nez v1, :cond_qr_check
+
+    :cond_qr_deny
+    sget-object v1, Lcom/vidio/android/patch/LoginGate;->DENIED_MESSAGE:Ljava/lang/String;
+
+    invoke-static {v1}, Lcom/vidio/android/patch/LoginGate;->deny(Ljava/lang/String;)V
+
+    return-void
+
+    :cond_qr_check
+    sget-object v1, Lcom/vidio/android/patch/LoginGate;->ACCOUNT_QUERIES:[Ljava/lang/String;
+
+    array-length v2, v1
+
+    const/4 v3, 0x0
+
+    const/4 v4, 0x0
+
+    :try_start_qr
+    :goto_qr_loop
+    if-ge v3, v2, :cond_qr_done
+
+    aget-object v5, v1, v3
+
+    invoke-static {v5, p0}, Lcom/vidio/android/patch/LoginGate;->fetchPermission(Ljava/lang/String;Ljava/lang/String;)Z
+
+    move-result v5
+
+    if-eqz v5, :cond_qr_next
+
+    const-string v5, "akunultimate"
+
+    aget-object v1, v1, v3
+
+    invoke-virtual {v5, v1}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+
+    move-result v1
+
+    const/4 v2, 0x1
+
+    move v4, v1
+
+    goto/16 :goto_qr_allowed
+
+    :cond_qr_next
+    add-int/lit8 v3, v3, 0x1
+
+    goto :goto_qr_loop
+
+    :cond_qr_done
+    const/4 v2, 0x0
+
+    :try_end_qr
+    .catch Ljava/io/IOException; {:try_start_qr .. :try_end_qr} :catch_qr
+
+    :goto_qr_allowed
+    if-nez v2, :cond_qr_ok
+
+    sget-object v1, Lcom/vidio/android/patch/LoginGate;->DENIED_MESSAGE:Ljava/lang/String;
+
+    invoke-static {v1}, Lcom/vidio/android/patch/LoginGate;->deny(Ljava/lang/String;)V
+
+    return-void
+
+    :cond_qr_ok
+    invoke-static {p0, v4}, Lcom/vidio/android/patch/LoginGate;->cacheAccountModeAfterLogin(Ljava/lang/String;Z)V
+
+    invoke-static {}, Lcom/vidio/android/patch/LoginGate;->cacheStreamUaAfterLogin()V
+
+    return-void
+
+    :catch_qr
+    move-exception v1
+
+    invoke-static {v0}, Lcom/vidio/android/patch/LoginGate;->showToast(Ljava/lang/String;)V
+
+    throw v1
+.end method
+
+"""
+
+text = gate.read_text()
+if "enforceQrEmail" not in text:
+    if anchor not in text:
+        sys.exit("LoginGate anchor not found; smali may differ from expected build")
+    gate.write_text(text.replace(anchor, method + anchor, 1))
+    print("patched:", gate)
+
+save_old = '''    move-result-object p1
+
+    .line 331
+    const-string v2, "toAuthentication"'''
+save_new = '''    move-result-object p1
+
+    const-string v2, "auth"
+
+    invoke-static {p1, v2}, Lcom/vidio/android/patch/QrLoginActivity;->readField(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;
+
+    move-result-object v2
+
+    const-string v4, "email"
+
+    invoke-static {v2, v4}, Lcom/vidio/android/patch/QrLoginActivity;->readField(Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;
+
+    move-result-object v2
+
+    check-cast v2, Ljava/lang/String;
+
+    invoke-static {v2}, Lcom/vidio/android/patch/LoginGate;->enforceQrEmail(Ljava/lang/String;)V
+
+    .line 331
+    const-string v2, "toAuthentication"'''
+
+text = qr.read_text()
+if "enforceQrEmail" not in text:
+    if save_old not in text:
+        sys.exit("QrLoginActivity saveSession anchor not found; smali may differ from expected build")
+    qr.write_text(text.replace(save_old, save_new, 1))
+    print("patched:", qr)
+PY
