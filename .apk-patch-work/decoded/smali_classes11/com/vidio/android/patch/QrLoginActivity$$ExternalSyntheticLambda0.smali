@@ -42,7 +42,7 @@
 
     iget-object v2, p0, Lcom/vidio/android/patch/QrLoginActivity$$ExternalSyntheticLambda0;->f$2:Ljava/lang/String;
 
-    invoke-virtual {v0, v1, v2}, Lcom/vidio/android/patch/QrLoginActivity;->lambda$5$com-vidio-android-patch-QrLoginActivity(ILjava/lang/String;)V
+    invoke-virtual {v0, v1, v2}, Lcom/vidio/android/patch/QrLoginActivity;->lambda$schedulePoll$7$com-vidio-android-patch-QrLoginActivity(ILjava/lang/String;)V
 
     return-void
 .end method

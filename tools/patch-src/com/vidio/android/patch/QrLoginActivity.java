@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
@@ -14,6 +15,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
@@ -37,6 +39,7 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
@@ -59,9 +62,13 @@ public final class QrLoginActivity extends Activity {
     private ImageView qrImage;
     private TextView codeText;
     private TextView statusText;
+    private ProgressBar spinner;
     private Button retryButton;
     private volatile boolean stopped;
     private volatile int generation;
+    private volatile boolean awaitingConfirmation;
+    private volatile long waitStartMs;
+    private ScheduledFuture<?> waitingTicker;
     private Object tvCodeLogin;
     private Object vidioAuth;
     private Object okHttpClient;
@@ -144,6 +151,12 @@ public final class QrLoginActivity extends Activity {
         codeParams.topMargin = dp(14);
         content.addView(codeText, codeParams);
 
+        spinner = new ProgressBar(this);
+        spinner.getIndeterminateDrawable().setColorFilter(0xEF2041, PorterDuff.Mode.SRC_IN);
+        LinearLayout.LayoutParams spinnerParams = wrapWrap();
+        spinnerParams.topMargin = dp(10);
+        content.addView(spinner, spinnerParams);
+
         statusText = text("Membuat kode aman...", 13, Color.rgb(166, 174, 190), Typeface.NORMAL);
         statusText.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams statusParams = matchWrap();
@@ -186,6 +199,8 @@ public final class QrLoginActivity extends Activity {
         retryButton.setVisibility(View.GONE);
         qrImage.setImageDrawable(null);
         codeText.setText("Kode: ------");
+        awaitingConfirmation = false;
+        spinner.setVisibility(View.VISIBLE);
         setStatus("Membuat kode aman...", Color.rgb(166, 174, 190));
 
         worker.execute(() -> {
@@ -233,9 +248,31 @@ public final class QrLoginActivity extends Activity {
             }
             qrImage.setImageBitmap(bitmap);
             codeText.setText("Kode: " + code);
-            setStatus("Menunggu konfirmasi...", Color.rgb(166, 174, 190));
+            waitStartMs = System.currentTimeMillis();
+            awaitingConfirmation = true;
+            setStatus("Menunggu konfirmasi... (0 detik)", Color.rgb(166, 174, 190));
         });
         schedulePoll(requestGeneration, code, 400L);
+        startWaitingTicker(requestGeneration);
+    }
+
+    /** Pembaruh status tiap detik agar pengguna tahu proses masih berjalan. */
+    private void startWaitingTicker(final int requestGeneration) {
+        if (waitingTicker != null) {
+            waitingTicker.cancel(false);
+        }
+        waitingTicker = worker.scheduleAtFixedRate(() -> {
+            if (stopped || requestGeneration != generation || !awaitingConfirmation) {
+                return;
+            }
+            final long seconds = (System.currentTimeMillis() - waitStartMs) / 1000L;
+            mainHandler.post(() -> {
+                if (!stopped && requestGeneration == generation && awaitingConfirmation) {
+                    setStatus("Menunggu konfirmasi... (" + seconds + " detik)",
+                            Color.rgb(166, 174, 190));
+                }
+            });
+        }, 1_000L, 1_000L, TimeUnit.MILLISECONDS);
     }
 
     private void schedulePoll(int requestGeneration, String code, long delayMs) {
@@ -261,6 +298,18 @@ public final class QrLoginActivity extends Activity {
             } else {
                 schedulePoll(requestGeneration, code, POLL_DELAY_MS);
             }
+        } catch (PermissionDeniedException denied) {
+            final String message = denied.getMessage() != null
+                    ? denied.getMessage()
+                    : "Email tidak diizinkan masuk.";
+            mainHandler.post(() -> {
+                if (!stopped && requestGeneration == generation) {
+                    awaitingConfirmation = false;
+                    spinner.setVisibility(View.GONE);
+                    setStatus(message, Color.rgb(255, 138, 138));
+                    retryButton.setVisibility(View.VISIBLE);
+                }
+            });
         } catch (Throwable ignored) {
             schedulePoll(requestGeneration, code, POLL_DELAY_MS);
         }
@@ -297,6 +346,8 @@ public final class QrLoginActivity extends Activity {
             String body = readStream(connection.getInputStream());
             saveSession(body);
             return true;
+        } catch (PermissionDeniedException denied) {
+            throw denied;
         } catch (Throwable ignored) {
             return false;
         } finally {
@@ -327,6 +378,25 @@ public final class QrLoginActivity extends Activity {
                 "com.vidio.platform.gateway.responses.LoginResponseKt", true, loader);
         Method asLoginResponse = loginResponseKt.getMethod("asLoginResponse", retrofitResponseClass);
         Object gatewayResponse = asLoginResponse.invoke(null, retrofitResponse);
+
+        awaitingConfirmation = false;
+        mainHandler.post(() -> {
+            if (!stopped) {
+                setStatus("Konfirmasi diterima. Memeriksa izin email...",
+                        Color.rgb(255, 184, 77));
+            }
+        });
+
+        // Gerbang izin email: alur yang sama dengan login email/kata sandi.
+        String email = extractEmail(gatewayResponse);
+        try {
+            LoginGate.enforceQrEmail(email);
+        } catch (java.io.IOException e) {
+            String message = e != null && e.getMessage() != null
+                    ? e.getMessage()
+                    : "Email tidak diizinkan masuk.";
+            throw new PermissionDeniedException(message);
+        }
 
         Object authentication = invokeNoArg(gatewayResponse, "toAuthentication");
         Object accessToken = invokeNoArg(gatewayResponse, "getAccessToken");
@@ -360,6 +430,8 @@ public final class QrLoginActivity extends Activity {
             if (stopped || requestGeneration != generation) {
                 return;
             }
+            awaitingConfirmation = false;
+            spinner.setVisibility(View.GONE);
             setStatus("Berhasil masuk. Membuka Vidio...", Color.rgb(88, 214, 141));
             mainHandler.postDelayed(this::restartApp, 700L);
         });
@@ -388,6 +460,8 @@ public final class QrLoginActivity extends Activity {
             if (stopped || requestGeneration != generation) {
                 return;
             }
+            awaitingConfirmation = false;
+            spinner.setVisibility(View.GONE);
             setStatus("Kode belum bisa dibuat. Periksa koneksi lalu coba lagi.", Color.rgb(255, 138, 138));
             retryButton.setVisibility(View.VISIBLE);
         });
@@ -597,6 +671,19 @@ public final class QrLoginActivity extends Activity {
         return value != null && "ub0.a".equals(value.getClass().getName());
     }
 
+    private static String extractEmail(Object gatewayResponse) {
+        try {
+            Object auth = readField(gatewayResponse, "auth");
+            if (auth == null) {
+                return null;
+            }
+            Object email = readField(auth, "email");
+            return email instanceof String ? (String) email : null;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
     private void setStatus(String value, int color) {
         statusText.setText(value);
         statusText.setTextColor(color);
@@ -644,5 +731,12 @@ public final class QrLoginActivity extends Activity {
 
     private interface Completion {
         void complete(Object result, Throwable error);
+    }
+
+    /** Ditampilkan sebagai pesan di layar (bukan loop senyap) saat izin email menolak. */
+    private static final class PermissionDeniedException extends RuntimeException {
+        PermissionDeniedException(String message) {
+            super(message);
+        }
     }
 }

@@ -3,26 +3,34 @@
 .source "D8$$SyntheticClass"
 
 # interfaces
-.implements Lcom/vidio/android/patch/QrLoginActivity$Completion;
+.implements Landroid/view/View$OnClickListener;
+
+
+# instance fields
+.field public final synthetic f$0:Lcom/vidio/android/patch/QrLoginActivity;
 
 
 # direct methods
-.method public synthetic constructor <init>()V
+.method public synthetic constructor <init>(Lcom/vidio/android/patch/QrLoginActivity;)V
     .locals 0
 
     .line 0
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
+
+    iput-object p1, p0, Lcom/vidio/android/patch/QrLoginActivity$$ExternalSyntheticLambda5;->f$0:Lcom/vidio/android/patch/QrLoginActivity;
 
     return-void
 .end method
 
 
 # virtual methods
-.method public final complete(Ljava/lang/Object;Ljava/lang/Throwable;)V
-    .locals 0
+.method public final onClick(Landroid/view/View;)V
+    .locals 1
 
     .line 0
-    invoke-static {p1, p2}, Lcom/vidio/android/patch/QrLoginActivity;->lambda$7(Ljava/lang/Object;Ljava/lang/Throwable;)V
+    iget-object v0, p0, Lcom/vidio/android/patch/QrLoginActivity$$ExternalSyntheticLambda5;->f$0:Lcom/vidio/android/patch/QrLoginActivity;
+
+    invoke-virtual {v0, p1}, Lcom/vidio/android/patch/QrLoginActivity;->lambda$buildScreen$0$com-vidio-android-patch-QrLoginActivity(Landroid/view/View;)V
 
     return-void
 .end method

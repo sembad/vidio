@@ -3,34 +3,26 @@
 .source "D8$$SyntheticClass"
 
 # interfaces
-.implements Ljava/lang/Runnable;
-
-
-# instance fields
-.field public final synthetic f$0:Lcom/vidio/android/patch/QrLoginActivity;
+.implements Lcom/vidio/android/patch/QrLoginActivity$Completion;
 
 
 # direct methods
-.method public synthetic constructor <init>(Lcom/vidio/android/patch/QrLoginActivity;)V
+.method public synthetic constructor <init>()V
     .locals 0
 
     .line 0
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
-
-    iput-object p1, p0, Lcom/vidio/android/patch/QrLoginActivity$$ExternalSyntheticLambda8;->f$0:Lcom/vidio/android/patch/QrLoginActivity;
 
     return-void
 .end method
 
 
 # virtual methods
-.method public final run()V
-    .locals 1
+.method public final complete(Ljava/lang/Object;Ljava/lang/Throwable;)V
+    .locals 0
 
     .line 0
-    iget-object v0, p0, Lcom/vidio/android/patch/QrLoginActivity$$ExternalSyntheticLambda8;->f$0:Lcom/vidio/android/patch/QrLoginActivity;
-
-    invoke-static {v0}, Lcom/vidio/android/patch/QrLoginActivity;->$r8$lambda$RwcGvI7zxWLbb0QrYi6cZwWsQec(Lcom/vidio/android/patch/QrLoginActivity;)V
+    invoke-static {p1, p2}, Lcom/vidio/android/patch/QrLoginActivity;->lambda$saveSession$11(Ljava/lang/Object;Ljava/lang/Throwable;)V
 
     return-void
 .end method

@@ -36,7 +36,7 @@
 
     iget v1, p0, Lcom/vidio/android/patch/QrLoginActivity$$ExternalSyntheticLambda9;->f$1:I
 
-    invoke-virtual {v0, v1}, Lcom/vidio/android/patch/QrLoginActivity;->lambda$6$com-vidio-android-patch-QrLoginActivity(I)V
+    invoke-virtual {v0, v1}, Lcom/vidio/android/patch/QrLoginActivity;->lambda$onCodeError$13$com-vidio-android-patch-QrLoginActivity(I)V
 
     return-void
 .end method
