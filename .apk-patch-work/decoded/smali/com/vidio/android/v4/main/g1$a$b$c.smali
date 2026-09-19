@@ -1,0 +1,104 @@
+.class public final Lcom/vidio/android/v4/main/g1$a$b$c;
+.super Lcom/vidio/android/v4/main/g1$a$b;
+.source "SourceFile"
+
+
+# annotations
+.annotation system Ldalvik/annotation/EnclosingClass;
+    value = Lcom/vidio/android/v4/main/g1$a$b;
+.end annotation
+
+.annotation system Ldalvik/annotation/InnerClass;
+    accessFlags = 0x19
+    name = "c"
+.end annotation
+
+
+# static fields
+.field public static final e:Lcom/vidio/android/v4/main/g1$a$b$c;
+    .annotation build Lorg/jetbrains/annotations/NotNull;
+    .end annotation
+.end field
+
+
+# direct methods
+.method static constructor <clinit>()V
+    .locals 3
+
+    .line 1
+    new-instance v0, Lcom/vidio/android/v4/main/g1$a$b$c;
+
+    .line 2
+    .line 3
+    const-class v1, Lcom/vidio/android/content/category/j0;
+
+    .line 4
+    .line 5
+    invoke-static {v1}, Lkotlin/jvm/internal/r0;->b(Ljava/lang/Class;)Lkotlin/reflect/d;
+
+    .line 6
+    .line 7
+    .line 8
+    move-result-object v1
+
+    .line 9
+    const/4 v2, 0x2
+
+    .line 10
+    invoke-direct {v0, v2, v1}, Lcom/vidio/android/v4/main/g1$a$b;-><init>(ILkotlin/reflect/d;)V
+
+    .line 11
+    .line 12
+    .line 13
+    sput-object v0, Lcom/vidio/android/v4/main/g1$a$b$c;->e:Lcom/vidio/android/v4/main/g1$a$b$c;
+
+    .line 14
+    .line 15
+    return-void
+.end method
+
+
+# virtual methods
+.method public final equals(Ljava/lang/Object;)Z
+    .locals 1
+    .param p1    # Ljava/lang/Object;
+        .annotation build Lorg/jetbrains/annotations/Nullable;
+        .end annotation
+    .end param
+
+    const/4 v0, 0x1
+
+    if-ne p0, p1, :cond_0
+
+    return v0
+
+    :cond_0
+    instance-of p1, p1, Lcom/vidio/android/v4/main/g1$a$b$c;
+
+    if-nez p1, :cond_1
+
+    const/4 p1, 0x0
+
+    return p1
+
+    :cond_1
+    return v0
+.end method
+
+.method public final hashCode()I
+    .locals 1
+
+    const v0, 0x38c47e61
+
+    return v0
+.end method
+
+.method public final toString()Ljava/lang/String;
+    .locals 1
+    .annotation build Lorg/jetbrains/annotations/NotNull;
+    .end annotation
+
+    const-string v0, "MiniDrama"
+
+    return-object v0
+.end method

@@ -1,0 +1,14 @@
+.class public Landroidx/glance/appwidget/protobuf/InvalidProtocolBufferException$InvalidWireTypeException;
+.super Landroidx/glance/appwidget/protobuf/InvalidProtocolBufferException;
+.source "SourceFile"
+
+
+# annotations
+.annotation system Ldalvik/annotation/EnclosingClass;
+    value = Landroidx/glance/appwidget/protobuf/InvalidProtocolBufferException;
+.end annotation
+
+.annotation system Ldalvik/annotation/InnerClass;
+    accessFlags = 0x9
+    name = "InvalidWireTypeException"
+.end annotation

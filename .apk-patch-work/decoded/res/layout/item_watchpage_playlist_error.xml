@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:gravity="center_vertical" android:orientation="vertical" android:id="@id/errorState" android:background="@color/backgroundSurface" android:layout_width="fill_parent" android:layout_height="fill_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <ImageView android:layout_gravity="center" android:id="@id/failed_load_img" android:layout_width="wrap_content" android:layout_height="wrap_content" android:src="@drawable/ilustrasi_error_huh" />
+    <TextView android:textSize="@dimen/medium_text" android:textStyle="bold" android:textColor="@color/textPrimary" android:layout_gravity="center_horizontal" android:id="@id/failed_load_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/large_margin" android:text="@string/error_message_failed_to_load_playlist" android:fontFamily="@string/font_roboto_medium" />
+    <TextView android:textColor="@color/textSecondary" android:layout_gravity="center_horizontal" android:id="@id/failed_load_subtitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/small_margin" android:text="@string/error_subtitle" />
+    <com.google.android.material.floatingactionbutton.FloatingActionButton android:layout_gravity="center_horizontal" android:id="@id/actionReload" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/double_xl_24_margin" android:tint="@color/blue30" app:backgroundTint="@android:color/white" app:fabSize="mini" app:srcCompat="@drawable/icon_refresh" />
+</LinearLayout>

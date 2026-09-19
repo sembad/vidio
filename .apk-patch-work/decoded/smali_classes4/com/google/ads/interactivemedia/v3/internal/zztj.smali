@@ -1,0 +1,16 @@
+.class Lcom/google/ads/interactivemedia/v3/internal/zztj;
+.super Lcom/google/ads/interactivemedia/v3/internal/zztk;
+.source "SourceFile"
+
+# interfaces
+.implements Lcom/google/ads/interactivemedia/v3/internal/zzsr$zze;
+
+
+# direct methods
+.method constructor <init>()V
+    .locals 0
+
+    invoke-direct {p0}, Lcom/google/ads/interactivemedia/v3/internal/zztk;-><init>()V
+
+    return-void
+.end method

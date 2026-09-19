@@ -1,0 +1,46 @@
+.class public final Lv00/e0$f;
+.super Lv00/e0;
+.source "SourceFile"
+
+
+# annotations
+.annotation system Ldalvik/annotation/EnclosingClass;
+    value = Lv00/e0;
+.end annotation
+
+.annotation system Ldalvik/annotation/InnerClass;
+    accessFlags = 0x19
+    name = "f"
+.end annotation
+
+
+# static fields
+.field public static final a:Lv00/e0$f;
+    .annotation build Lorg/jetbrains/annotations/NotNull;
+    .end annotation
+.end field
+
+
+# direct methods
+.method static constructor <clinit>()V
+    .locals 2
+
+    .line 1
+    new-instance v0, Lv00/e0$f;
+
+    .line 2
+    .line 3
+    const/4 v1, 0x0
+
+    .line 4
+    invoke-direct {v0, v1}, Lv00/e0;-><init>(I)V
+
+    .line 5
+    .line 6
+    .line 7
+    sput-object v0, Lv00/e0$f;->a:Lv00/e0$f;
+
+    .line 8
+    .line 9
+    return-void
+.end method

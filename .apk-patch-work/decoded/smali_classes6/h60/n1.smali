@@ -1,0 +1,106 @@
+.class public final Lh60/n1;
+.super Lh60/m;
+.source "SourceFile"
+
+
+# instance fields
+.field private final b:Lwz/a;
+    .annotation build Lorg/jetbrains/annotations/NotNull;
+    .end annotation
+.end field
+
+
+# direct methods
+.method public constructor <init>(Lwz/a;Lsc0/f0;)V
+    .locals 0
+    .param p1    # Lwz/a;
+        .annotation build Lorg/jetbrains/annotations/NotNull;
+        .end annotation
+    .end param
+    .param p2    # Lsc0/f0;
+        .annotation build Lorg/jetbrains/annotations/NotNull;
+        .end annotation
+    .end param
+
+    .line 1
+    invoke-virtual {p1}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 2
+    .line 3
+    .line 4
+    invoke-virtual {p2}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 5
+    .line 6
+    .line 7
+    invoke-direct {p0, p2}, Lh60/m;-><init>(Lsc0/f0;)V
+
+    .line 8
+    .line 9
+    .line 10
+    iput-object p1, p0, Lh60/n1;->b:Lwz/a;
+
+    .line 11
+    .line 12
+    return-void
+.end method
+
+
+# virtual methods
+.method public final d()Lwz/a;
+    .locals 1
+    .annotation build Lorg/jetbrains/annotations/NotNull;
+    .end annotation
+
+    .line 1
+    iget-object v0, p0, Lh60/n1;->b:Lwz/a;
+
+    .line 2
+    .line 3
+    return-object v0
+.end method
+
+.method public final e(Ltb0/c;)Ljava/lang/Object;
+    .locals 2
+    .param p1    # Ltb0/c;
+        .annotation build Lorg/jetbrains/annotations/NotNull;
+        .end annotation
+    .end param
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Ltb0/c<",
+            "-",
+            "Ljava/util/List<",
+            "Ljava/lang/String;",
+            ">;>;)",
+            "Ljava/lang/Object;"
+        }
+    .end annotation
+
+    .annotation build Lorg/jetbrains/annotations/Nullable;
+    .end annotation
+
+    .line 1
+    new-instance v0, Lh60/n1$a;
+
+    .line 2
+    .line 3
+    const/4 v1, 0x0
+
+    .line 4
+    invoke-direct {v0, p0, v1}, Lh60/n1$a;-><init>(Lh60/n1;Ltb0/c;)V
+
+    .line 5
+    .line 6
+    .line 7
+    invoke-virtual {p0, v0, p1}, Lh60/m;->b(Lkotlin/jvm/functions/Function1;Ltb0/c;)Ljava/lang/Object;
+
+    .line 8
+    .line 9
+    .line 10
+    move-result-object p1
+
+    .line 11
+    return-object p1
+.end method

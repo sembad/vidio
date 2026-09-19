@@ -1,0 +1,622 @@
+.class public final Lcom/google/android/gms/cast/internal/zzac;
+.super Lcom/google/android/gms/common/internal/safeparcel/AbstractSafeParcelable;
+.source "SourceFile"
+
+
+# static fields
+.field public static final CREATOR:Landroid/os/Parcelable$Creator;
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "Landroid/os/Parcelable$Creator<",
+            "Lcom/google/android/gms/cast/internal/zzac;",
+            ">;"
+        }
+    .end annotation
+.end field
+
+
+# instance fields
+.field private H:D
+
+.field private c:D
+
+.field private d:Z
+
+.field private e:I
+
+.field private i:Lcom/google/android/gms/cast/ApplicationMetadata;
+
+.field private v:I
+
+.field private w:Lcom/google/android/gms/cast/zzao;
+
+
+# direct methods
+.method static constructor <clinit>()V
+    .locals 1
+
+    .line 1
+    new-instance v0, Lcom/google/android/gms/cast/internal/b;
+
+    .line 2
+    .line 3
+    invoke-direct {v0}, Ljava/lang/Object;-><init>()V
+
+    .line 4
+    .line 5
+    .line 6
+    sput-object v0, Lcom/google/android/gms/cast/internal/zzac;->CREATOR:Landroid/os/Parcelable$Creator;
+
+    .line 7
+    .line 8
+    return-void
+.end method
+
+.method public constructor <init>()V
+    .locals 10
+
+    const/4 v7, 0x0
+
+    const-wide/high16 v8, 0x7ff8000000000000L    # Double.NaN
+
+    const-wide/high16 v1, 0x7ff8000000000000L    # Double.NaN
+
+    const/4 v3, 0x0
+
+    const/4 v4, -0x1
+
+    const/4 v5, 0x0
+
+    const/4 v6, -0x1
+
+    move-object v0, p0
+
+    .line 19
+    invoke-direct/range {v0 .. v9}, Lcom/google/android/gms/cast/internal/zzac;-><init>(DZILcom/google/android/gms/cast/ApplicationMetadata;ILcom/google/android/gms/cast/zzao;D)V
+
+    return-void
+.end method
+
+.method constructor <init>(DZILcom/google/android/gms/cast/ApplicationMetadata;ILcom/google/android/gms/cast/zzao;D)V
+    .locals 0
+
+    .line 1
+    invoke-direct {p0}, Lcom/google/android/gms/common/internal/safeparcel/AbstractSafeParcelable;-><init>()V
+
+    .line 2
+    .line 3
+    .line 4
+    iput-wide p1, p0, Lcom/google/android/gms/cast/internal/zzac;->c:D
+
+    .line 5
+    .line 6
+    iput-boolean p3, p0, Lcom/google/android/gms/cast/internal/zzac;->d:Z
+
+    .line 7
+    .line 8
+    iput p4, p0, Lcom/google/android/gms/cast/internal/zzac;->e:I
+
+    .line 9
+    .line 10
+    iput-object p5, p0, Lcom/google/android/gms/cast/internal/zzac;->i:Lcom/google/android/gms/cast/ApplicationMetadata;
+
+    .line 11
+    .line 12
+    iput p6, p0, Lcom/google/android/gms/cast/internal/zzac;->v:I
+
+    .line 13
+    .line 14
+    iput-object p7, p0, Lcom/google/android/gms/cast/internal/zzac;->w:Lcom/google/android/gms/cast/zzao;
+
+    .line 15
+    .line 16
+    iput-wide p8, p0, Lcom/google/android/gms/cast/internal/zzac;->H:D
+
+    .line 17
+    .line 18
+    return-void
+.end method
+
+
+# virtual methods
+.method public final B0()D
+    .locals 2
+
+    .line 1
+    iget-wide v0, p0, Lcom/google/android/gms/cast/internal/zzac;->H:D
+
+    return-wide v0
+.end method
+
+.method public final equals(Ljava/lang/Object;)Z
+    .locals 7
+
+    .line 1
+    const/4 v0, 0x1
+
+    .line 2
+    if-ne p1, p0, :cond_0
+
+    .line 3
+    .line 4
+    return v0
+
+    .line 5
+    :cond_0
+    instance-of v1, p1, Lcom/google/android/gms/cast/internal/zzac;
+
+    .line 6
+    .line 7
+    const/4 v2, 0x0
+
+    .line 8
+    if-nez v1, :cond_1
+
+    .line 9
+    .line 10
+    return v2
+
+    .line 11
+    :cond_1
+    check-cast p1, Lcom/google/android/gms/cast/internal/zzac;
+
+    .line 12
+    .line 13
+    iget-wide v3, p0, Lcom/google/android/gms/cast/internal/zzac;->c:D
+
+    .line 14
+    .line 15
+    iget-wide v5, p1, Lcom/google/android/gms/cast/internal/zzac;->c:D
+
+    .line 16
+    .line 17
+    cmpl-double v1, v3, v5
+
+    .line 18
+    .line 19
+    if-nez v1, :cond_2
+
+    .line 20
+    .line 21
+    iget-boolean v1, p0, Lcom/google/android/gms/cast/internal/zzac;->d:Z
+
+    .line 22
+    .line 23
+    iget-boolean v3, p1, Lcom/google/android/gms/cast/internal/zzac;->d:Z
+
+    .line 24
+    .line 25
+    if-ne v1, v3, :cond_2
+
+    .line 26
+    .line 27
+    iget v1, p0, Lcom/google/android/gms/cast/internal/zzac;->e:I
+
+    .line 28
+    .line 29
+    iget v3, p1, Lcom/google/android/gms/cast/internal/zzac;->e:I
+
+    .line 30
+    .line 31
+    if-ne v1, v3, :cond_2
+
+    .line 32
+    .line 33
+    iget-object v1, p0, Lcom/google/android/gms/cast/internal/zzac;->i:Lcom/google/android/gms/cast/ApplicationMetadata;
+
+    .line 34
+    .line 35
+    iget-object v3, p1, Lcom/google/android/gms/cast/internal/zzac;->i:Lcom/google/android/gms/cast/ApplicationMetadata;
+
+    .line 36
+    .line 37
+    invoke-static {v1, v3}, Loh/a;->c(Ljava/lang/Object;Ljava/lang/Object;)Z
+
+    .line 38
+    .line 39
+    .line 40
+    move-result v1
+
+    .line 41
+    if-eqz v1, :cond_2
+
+    .line 42
+    .line 43
+    iget v1, p0, Lcom/google/android/gms/cast/internal/zzac;->v:I
+
+    .line 44
+    .line 45
+    iget v3, p1, Lcom/google/android/gms/cast/internal/zzac;->v:I
+
+    .line 46
+    .line 47
+    if-ne v1, v3, :cond_2
+
+    .line 48
+    .line 49
+    iget-object v1, p0, Lcom/google/android/gms/cast/internal/zzac;->w:Lcom/google/android/gms/cast/zzao;
+
+    .line 50
+    .line 51
+    invoke-static {v1, v1}, Loh/a;->c(Ljava/lang/Object;Ljava/lang/Object;)Z
+
+    .line 52
+    .line 53
+    .line 54
+    move-result v1
+
+    .line 55
+    if-eqz v1, :cond_2
+
+    .line 56
+    .line 57
+    iget-wide v3, p0, Lcom/google/android/gms/cast/internal/zzac;->H:D
+
+    .line 58
+    .line 59
+    iget-wide v5, p1, Lcom/google/android/gms/cast/internal/zzac;->H:D
+
+    .line 60
+    .line 61
+    cmpl-double p1, v3, v5
+
+    .line 62
+    .line 63
+    if-nez p1, :cond_2
+
+    .line 64
+    .line 65
+    return v0
+
+    .line 66
+    :cond_2
+    return v2
+.end method
+
+.method public final hashCode()I
+    .locals 7
+
+    .line 1
+    iget-wide v0, p0, Lcom/google/android/gms/cast/internal/zzac;->c:D
+
+    .line 2
+    .line 3
+    invoke-static {v0, v1}, Ljava/lang/Double;->valueOf(D)Ljava/lang/Double;
+
+    .line 4
+    .line 5
+    .line 6
+    move-result-object v0
+
+    .line 7
+    iget-boolean v1, p0, Lcom/google/android/gms/cast/internal/zzac;->d:Z
+
+    .line 8
+    .line 9
+    invoke-static {v1}, Ljava/lang/Boolean;->valueOf(Z)Ljava/lang/Boolean;
+
+    .line 10
+    .line 11
+    .line 12
+    move-result-object v1
+
+    .line 13
+    iget v2, p0, Lcom/google/android/gms/cast/internal/zzac;->e:I
+
+    .line 14
+    .line 15
+    invoke-static {v2}, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;
+
+    .line 16
+    .line 17
+    .line 18
+    move-result-object v2
+
+    .line 19
+    iget v3, p0, Lcom/google/android/gms/cast/internal/zzac;->v:I
+
+    .line 20
+    .line 21
+    invoke-static {v3}, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;
+
+    .line 22
+    .line 23
+    .line 24
+    move-result-object v3
+
+    .line 25
+    iget-wide v4, p0, Lcom/google/android/gms/cast/internal/zzac;->H:D
+
+    .line 26
+    .line 27
+    invoke-static {v4, v5}, Ljava/lang/Double;->valueOf(D)Ljava/lang/Double;
+
+    .line 28
+    .line 29
+    .line 30
+    move-result-object v4
+
+    .line 31
+    const/4 v5, 0x7
+
+    .line 32
+    new-array v5, v5, [Ljava/lang/Object;
+
+    .line 33
+    .line 34
+    const/4 v6, 0x0
+
+    .line 35
+    aput-object v0, v5, v6
+
+    .line 36
+    .line 37
+    const/4 v0, 0x1
+
+    .line 38
+    aput-object v1, v5, v0
+
+    .line 39
+    .line 40
+    const/4 v0, 0x2
+
+    .line 41
+    aput-object v2, v5, v0
+
+    .line 42
+    .line 43
+    const/4 v0, 0x3
+
+    .line 44
+    iget-object v1, p0, Lcom/google/android/gms/cast/internal/zzac;->i:Lcom/google/android/gms/cast/ApplicationMetadata;
+
+    .line 45
+    .line 46
+    aput-object v1, v5, v0
+
+    .line 47
+    .line 48
+    const/4 v0, 0x4
+
+    .line 49
+    aput-object v3, v5, v0
+
+    .line 50
+    .line 51
+    const/4 v0, 0x5
+
+    .line 52
+    iget-object v1, p0, Lcom/google/android/gms/cast/internal/zzac;->w:Lcom/google/android/gms/cast/zzao;
+
+    .line 53
+    .line 54
+    aput-object v1, v5, v0
+
+    .line 55
+    .line 56
+    const/4 v0, 0x6
+
+    .line 57
+    aput-object v4, v5, v0
+
+    .line 58
+    .line 59
+    invoke-static {v5}, Ljava/util/Arrays;->hashCode([Ljava/lang/Object;)I
+
+    .line 60
+    .line 61
+    .line 62
+    move-result v0
+
+    .line 63
+    return v0
+.end method
+
+.method public final s0()D
+    .locals 2
+
+    .line 1
+    iget-wide v0, p0, Lcom/google/android/gms/cast/internal/zzac;->c:D
+
+    return-wide v0
+.end method
+
+.method public final t0()Z
+    .locals 1
+
+    .line 1
+    iget-boolean v0, p0, Lcom/google/android/gms/cast/internal/zzac;->d:Z
+
+    return v0
+.end method
+
+.method public final toString()Ljava/lang/String;
+    .locals 4
+
+    .line 1
+    sget-object v0, Ljava/util/Locale;->ROOT:Ljava/util/Locale;
+
+    .line 2
+    .line 3
+    iget-wide v1, p0, Lcom/google/android/gms/cast/internal/zzac;->c:D
+
+    .line 4
+    .line 5
+    invoke-static {v1, v2}, Ljava/lang/Double;->valueOf(D)Ljava/lang/Double;
+
+    .line 6
+    .line 7
+    .line 8
+    move-result-object v1
+
+    .line 9
+    const/4 v2, 0x1
+
+    .line 10
+    new-array v2, v2, [Ljava/lang/Object;
+
+    .line 11
+    .line 12
+    const/4 v3, 0x0
+
+    .line 13
+    aput-object v1, v2, v3
+
+    .line 14
+    .line 15
+    const-string v1, "volume=%f"
+
+    .line 16
+    .line 17
+    invoke-static {v0, v1, v2}, Ljava/lang/String;->format(Ljava/util/Locale;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;
+
+    .line 18
+    .line 19
+    .line 20
+    move-result-object v0
+
+    .line 21
+    return-object v0
+.end method
+
+.method public final writeToParcel(Landroid/os/Parcel;I)V
+    .locals 4
+
+    .line 1
+    invoke-static {p1}, Lsh/a;->a(Landroid/os/Parcel;)I
+
+    .line 2
+    .line 3
+    .line 4
+    move-result v0
+
+    .line 5
+    const/4 v1, 0x2
+
+    .line 6
+    iget-wide v2, p0, Lcom/google/android/gms/cast/internal/zzac;->c:D
+
+    .line 7
+    .line 8
+    invoke-static {p1, v1, v2, v3}, Lsh/a;->m(Landroid/os/Parcel;ID)V
+
+    .line 9
+    .line 10
+    .line 11
+    const/4 v1, 0x3
+
+    .line 12
+    iget-boolean v2, p0, Lcom/google/android/gms/cast/internal/zzac;->d:Z
+
+    .line 13
+    .line 14
+    invoke-static {p1, v1, v2}, Lsh/a;->g(Landroid/os/Parcel;IZ)V
+
+    .line 15
+    .line 16
+    .line 17
+    const/4 v1, 0x4
+
+    .line 18
+    iget v2, p0, Lcom/google/android/gms/cast/internal/zzac;->e:I
+
+    .line 19
+    .line 20
+    invoke-static {p1, v1, v2}, Lsh/a;->s(Landroid/os/Parcel;II)V
+
+    .line 21
+    .line 22
+    .line 23
+    const/4 v1, 0x5
+
+    .line 24
+    iget-object v2, p0, Lcom/google/android/gms/cast/internal/zzac;->i:Lcom/google/android/gms/cast/ApplicationMetadata;
+
+    .line 25
+    .line 26
+    const/4 v3, 0x0
+
+    .line 27
+    invoke-static {p1, v1, v2, p2, v3}, Lsh/a;->B(Landroid/os/Parcel;ILandroid/os/Parcelable;IZ)V
+
+    .line 28
+    .line 29
+    .line 30
+    const/4 v1, 0x6
+
+    .line 31
+    iget v2, p0, Lcom/google/android/gms/cast/internal/zzac;->v:I
+
+    .line 32
+    .line 33
+    invoke-static {p1, v1, v2}, Lsh/a;->s(Landroid/os/Parcel;II)V
+
+    .line 34
+    .line 35
+    .line 36
+    const/4 v1, 0x7
+
+    .line 37
+    iget-object v2, p0, Lcom/google/android/gms/cast/internal/zzac;->w:Lcom/google/android/gms/cast/zzao;
+
+    .line 38
+    .line 39
+    invoke-static {p1, v1, v2, p2, v3}, Lsh/a;->B(Landroid/os/Parcel;ILandroid/os/Parcelable;IZ)V
+
+    .line 40
+    .line 41
+    .line 42
+    const/16 p2, 0x8
+
+    .line 43
+    .line 44
+    iget-wide v1, p0, Lcom/google/android/gms/cast/internal/zzac;->H:D
+
+    .line 45
+    .line 46
+    invoke-static {p1, p2, v1, v2}, Lsh/a;->m(Landroid/os/Parcel;ID)V
+
+    .line 47
+    .line 48
+    .line 49
+    invoke-static {p1, v0}, Lsh/a;->b(Landroid/os/Parcel;I)V
+
+    .line 50
+    .line 51
+    .line 52
+    return-void
+.end method
+
+.method public final y0()Lcom/google/android/gms/cast/ApplicationMetadata;
+    .locals 1
+
+    .line 1
+    iget-object v0, p0, Lcom/google/android/gms/cast/internal/zzac;->i:Lcom/google/android/gms/cast/ApplicationMetadata;
+
+    return-object v0
+.end method
+
+.method public final z0()Lcom/google/android/gms/cast/zzao;
+    .locals 1
+
+    .line 1
+    iget-object v0, p0, Lcom/google/android/gms/cast/internal/zzac;->w:Lcom/google/android/gms/cast/zzao;
+
+    return-object v0
+.end method
+
+.method public final zzc()I
+    .locals 1
+
+    iget v0, p0, Lcom/google/android/gms/cast/internal/zzac;->e:I
+
+    return v0
+.end method
+
+.method public final zzd()I
+    .locals 1
+
+    iget v0, p0, Lcom/google/android/gms/cast/internal/zzac;->v:I
+
+    return v0
+.end method
