@@ -417,6 +417,27 @@ if profile == "mobile":
             sub_path.write_text(sub_text)
             changed_files.add(sub_path.relative_to(root))
 
+    w0_matches = list(root.glob("smali*/**/com/vidio/android/identity/ui/login/w0.smali"))
+    if w0_matches:
+        w0_path = w0_matches[0]
+        w0_text = w0_path.read_text()
+        w0_changed = False
+        form_pattern = re.compile(r'(:goto_[0-9a-zA-Z_]+\s*\n\s*)const/4\s+v1,\s+0x0(\s*\n\s*(?:\.line\s*\d+\s*\n\s*)?if-eqz\s+v1,)', re.MULTILINE)
+        if form_pattern.search(w0_text):
+            w0_text = form_pattern.sub(r'\1const/4 v1, 0x1\2', w0_text)
+            w0_changed = True
+        overlay_target = "invoke-virtual {p0}, Lcom/vidio/common/ui/stateholder/AuthenticationStateHolder;->h()Z\n\n    move-result v10"
+        overlay_pattern = re.compile(
+            r'(invoke-virtual\s*\{v15\},\s*Landroidx/compose/runtime/a1;->r\(\)V\s*(?:\n\s*\.line\s*\d+\s*)*\n\s*)const/16\s*v10,\s*0x[01]',
+            re.MULTILINE
+        )
+        if overlay_pattern.search(w0_text):
+            w0_text = overlay_pattern.sub(r'\1' + overlay_target, w0_text, count=1)
+            w0_changed = True
+        if w0_changed:
+            w0_path.write_text(w0_text)
+            changed_files.add(w0_path.relative_to(root))
+
 manifest = root / "AndroidManifest.xml"
 manifest_text = manifest.read_text()
 expected_package = "com.vidio.android" if profile == "mobile" else "com.vidio.android.tv"

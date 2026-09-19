@@ -1080,7 +1080,6 @@ public final class LoginGate {
                     Class<?> frameLayoutClass = Class.forName("android.widget.FrameLayout");
                     Class<?> frameLpClass = Class.forName("android.widget.FrameLayout$LayoutParams");
                     Class<?> linearLayoutClass = Class.forName("android.widget.LinearLayout");
-                    Class<?> progressBarClass = Class.forName("android.widget.ProgressBar");
                     Class<?> textViewClass = Class.forName("android.widget.TextView");
 
                     int matchParent = -1;
@@ -1090,39 +1089,157 @@ public final class LoginGate {
                     Object overlay = frameLayoutClass.getConstructor(contextClass).newInstance(activity);
                     Object overlayLp = frameLpClass.getConstructor(int.class, int.class).newInstance(matchParent, matchParent);
                     viewClass.getMethod("setLayoutParams", Class.forName("android.view.ViewGroup$LayoutParams")).invoke(overlay, overlayLp);
-                    viewClass.getMethod("setBackgroundColor", int.class).invoke(overlay, 0x88000000);
-                    viewClass.getMethod("setClickable", boolean.class).invoke(overlay, false);
+                    viewClass.getMethod("setBackgroundColor", int.class).invoke(overlay, 0xB3000000);
+                    viewClass.getMethod("setClickable", boolean.class).invoke(overlay, true);
 
-                    Object box = linearLayoutClass.getConstructor(contextClass).newInstance(activity);
-                    linearLayoutClass.getMethod("setOrientation", int.class).invoke(box, 1);
-                    linearLayoutClass.getMethod("setGravity", int.class).invoke(box, gravityCenter);
-                    Object boxLp = frameLpClass.getConstructor(int.class, int.class, int.class).newInstance(wrapContent, wrapContent, gravityCenter);
-                    viewClass.getMethod("setLayoutParams", Class.forName("android.view.ViewGroup$LayoutParams")).invoke(box, boxLp);
+                    Object resources = activity.getClass().getMethod("getResources").invoke(activity);
+                    String packageName = (String) activity.getClass().getMethod("getPackageName").invoke(activity);
 
-                    Object spinner = progressBarClass.getConstructor(contextClass).newInstance(activity);
-                    viewGroupClass.getMethod("addView", viewClass).invoke(box, spinner);
+                    boolean contentAdded = false;
 
-                    Object text = textViewClass.getConstructor(contextClass).newInstance(activity);
-                    textViewClass.getMethod("setText", CharSequence.class).invoke(text, "Memuat siaran...");
-                    textViewClass.getMethod("setTextColor", int.class).invoke(text, 0xFFFFFFFF);
-                    textViewClass.getMethod("setTextSize", float.class).invoke(text, 15.0f);
-                    viewClass.getMethod("setPadding", int.class, int.class, int.class, int.class).invoke(text, 0, 20, 0, 0);
-                    viewGroupClass.getMethod("addView", viewClass).invoke(box, text);
+                    // 1. Primary: Inflate the official Vidio loading dialog layout (dialog_vidio_loading)
+                    try {
+                        int layoutId = (int) resources.getClass().getMethod("getIdentifier", String.class, String.class, String.class)
+                            .invoke(resources, "dialog_vidio_loading", "layout", packageName);
+                        if (layoutId != 0) {
+                            Class<?> layoutInflaterClass = Class.forName("android.view.LayoutInflater");
+                            Object inflater = layoutInflaterClass.getMethod("from", contextClass).invoke(null, activity);
+                            Object dialogView = layoutInflaterClass.getMethod("inflate", int.class, Class.forName("android.view.ViewGroup"), boolean.class)
+                                .invoke(inflater, layoutId, overlay, false);
 
-                    viewGroupClass.getMethod("addView", viewClass).invoke(overlay, box);
+                            if (dialogView != null) {
+                                Object centerLp = frameLpClass.getConstructor(int.class, int.class, int.class)
+                                    .newInstance(wrapContent, wrapContent, gravityCenter);
+                                viewClass.getMethod("setLayoutParams", Class.forName("android.view.ViewGroup$LayoutParams")).invoke(dialogView, centerLp);
 
-                    Object window = activity.getClass().getMethod("getWindow").invoke(activity);
-                    Object decorView = window.getClass().getMethod("getDecorView").invoke(window);
-                    viewGroupClass.getMethod("addView", viewClass).invoke(decorView, overlay);
+                                int tvId = (int) resources.getClass().getMethod("getIdentifier", String.class, String.class, String.class)
+                                    .invoke(resources, "tv_please_wait", "id", packageName);
+                                if (tvId != 0) {
+                                    Object tv = viewClass.getMethod("findViewById", int.class).invoke(dialogView, tvId);
+                                    if (tv != null) {
+                                        textViewClass.getMethod("setText", CharSequence.class).invoke(tv, "Memuat siaran...");
+                                        textViewClass.getMethod("setTextColor", int.class).invoke(tv, 0xFFFFFFFF);
+                                        textViewClass.getMethod("setTextSize", float.class).invoke(tv, 15.0f);
+                                    }
+                                }
 
-                    loadingView = overlay;
+                                int pbId = (int) resources.getClass().getMethod("getIdentifier", String.class, String.class, String.class)
+                                    .invoke(resources, "progress_bar", "id", packageName);
+                                if (pbId != 0) {
+                                    Object pb = viewClass.getMethod("findViewById", int.class).invoke(dialogView, pbId);
+                                    if (pb != null) {
+                                        for (java.lang.reflect.Method m : pb.getClass().getMethods()) {
+                                            if ((m.getName().equals("playAnimation") || m.getName().equals("l")) && m.getParameterTypes().length == 0) {
+                                                try { m.invoke(pb); } catch (Throwable ignored) {}
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
 
-                    postDelayedOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            hideStreamLoading();
+                                viewGroupClass.getMethod("addView", viewClass).invoke(overlay, dialogView);
+                                contentAdded = true;
+                            }
                         }
-                    }, 7000);
+                    } catch (Throwable ignored) {}
+
+                    // 2. Fallback: Programmatically instantiate VidioAnimationLoader or LottieAnimationView
+                    if (!contentAdded) {
+                        try {
+                            Object box = linearLayoutClass.getConstructor(contextClass).newInstance(activity);
+                            linearLayoutClass.getMethod("setOrientation", int.class).invoke(box, 1);
+                            linearLayoutClass.getMethod("setGravity", int.class).invoke(box, gravityCenter);
+                            Object boxLp = frameLpClass.getConstructor(int.class, int.class, int.class).newInstance(wrapContent, wrapContent, gravityCenter);
+                            viewClass.getMethod("setLayoutParams", Class.forName("android.view.ViewGroup$LayoutParams")).invoke(box, boxLp);
+
+                            int rawResId = (int) resources.getClass().getMethod("getIdentifier", String.class, String.class, String.class)
+                                .invoke(resources, "vidio_icon_animation_red", "raw", packageName);
+                            if (rawResId == 0) {
+                                rawResId = (int) resources.getClass().getMethod("getIdentifier", String.class, String.class, String.class)
+                                    .invoke(resources, "player_progress_bar", "raw", packageName);
+                            }
+
+                            Class<?> lottieClass = null;
+                            try {
+                                lottieClass = Class.forName("com.vidio.common.ui.customview.VidioAnimationLoader");
+                            } catch (Throwable t) {
+                                try {
+                                    lottieClass = Class.forName("com.airbnb.lottie.LottieAnimationView");
+                                } catch (Throwable ignored) {}
+                            }
+
+                            if (lottieClass != null && rawResId != 0) {
+                                Object animView = lottieClass.getConstructor(contextClass).newInstance(activity);
+
+                                Object displayMetrics = resources.getClass().getMethod("getDisplayMetrics").invoke(resources);
+                                float density = displayMetrics.getClass().getField("density").getFloat(displayMetrics);
+                                int sizePx = (int) (72.0f * density + 0.5f);
+
+                                Object animLp = linearLayoutClass.getConstructor(int.class, int.class).newInstance(sizePx, sizePx);
+                                viewClass.getMethod("setLayoutParams", Class.forName("android.view.ViewGroup$LayoutParams")).invoke(animView, animLp);
+
+                                for (java.lang.reflect.Method m : animView.getClass().getMethods()) {
+                                    if (m.getParameterTypes().length == 1 && m.getParameterTypes()[0] == int.class && !m.getName().equals("setImageResource") && m.getReturnType() == void.class) {
+                                        try { m.invoke(animView, rawResId); break; } catch (Throwable ignored) {}
+                                    }
+                                }
+
+                                try {
+                                    java.lang.reflect.Field hField = null;
+                                    Class<?> cur = animView.getClass();
+                                    while (cur != null && hField == null) {
+                                        try { hField = cur.getDeclaredField("H"); } catch (Throwable ignored) {}
+                                        cur = cur.getSuperclass();
+                                    }
+                                    if (hField != null) {
+                                        hField.setAccessible(true);
+                                        Object drawable = hField.get(animView);
+                                        if (drawable != null) {
+                                            for (java.lang.reflect.Method dm : drawable.getClass().getMethods()) {
+                                                if (dm.getName().equals("b0") && dm.getParameterTypes().length == 1 && dm.getParameterTypes()[0] == int.class) {
+                                                    dm.invoke(drawable, -1);
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                } catch (Throwable ignored) {}
+
+                                for (java.lang.reflect.Method m : animView.getClass().getMethods()) {
+                                    if ((m.getName().equals("playAnimation") || m.getName().equals("l")) && m.getParameterTypes().length == 0) {
+                                        try { m.invoke(animView); break; } catch (Throwable ignored) {}
+                                    }
+                                }
+
+                                viewGroupClass.getMethod("addView", viewClass).invoke(box, animView);
+                            }
+
+                            Object text = textViewClass.getConstructor(contextClass).newInstance(activity);
+                            textViewClass.getMethod("setText", CharSequence.class).invoke(text, "Memuat siaran...");
+                            textViewClass.getMethod("setTextColor", int.class).invoke(text, 0xFFFFFFFF);
+                            textViewClass.getMethod("setTextSize", float.class).invoke(text, 15.0f);
+                            viewClass.getMethod("setPadding", int.class, int.class, int.class, int.class).invoke(text, 0, 20, 0, 0);
+                            viewGroupClass.getMethod("addView", viewClass).invoke(box, text);
+
+                            viewGroupClass.getMethod("addView", viewClass).invoke(overlay, box);
+                            contentAdded = true;
+                        } catch (Throwable ignored) {}
+                    }
+
+                    if (contentAdded) {
+                        Object window = activity.getClass().getMethod("getWindow").invoke(activity);
+                        Object decorView = window.getClass().getMethod("getDecorView").invoke(window);
+                        viewGroupClass.getMethod("addView", viewClass).invoke(decorView, overlay);
+
+                        loadingView = overlay;
+
+                        postDelayedOnMainThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                hideStreamLoading();
+                            }
+                        }, 5000);
+                    }
                 } catch (Throwable t) {
                     showToast("Memuat siaran...");
                 }

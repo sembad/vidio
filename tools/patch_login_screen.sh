@@ -24,46 +24,31 @@ FILE="$DIR/smali_classes6/com/vidio/android/identity/ui/login/w0.smali"
 [[ -f "$FILE" ]] || { echo "w0.smali not found under $DIR" >&2; exit 1; }
 
 python3 - "$FILE" <<'PY'
-import sys, pathlib
+import sys, pathlib, re
 
 path = pathlib.Path(sys.argv[1])
 text = path.read_text()
 
-form_dead = """    :goto_b
-    const/4 v1, 0x0
+# 1. Restore form branch if disabled
+form_pattern = re.compile(r'(:goto_[0-9a-zA-Z_]+\s*\n\s*)const/4\s+v1,\s+0x0(\s*\n\s*(?:\.line\s*\d+\s*\n\s*)?if-eqz\s+v1,)', re.MULTILINE)
+text = form_pattern.sub(r'\1const/4 v1, 0x1\2', text)
 
-    .line 579
-    if-eqz v1, :cond_11"""
-form_fixed = """    :goto_b
-    const/4 v1, 0x1
+# 2. Restore loading overlay to read from AuthenticationStateHolder.isLoading (p0.h())
+# instead of being dead (0x0) or permanently stuck (0x1)
+overlay_target = "invoke-virtual {p0}, Lcom/vidio/common/ui/stateholder/AuthenticationStateHolder;->h()Z\n\n    move-result v10"
 
-    .line 579
-    if-eqz v1, :cond_11"""
+overlay_pattern = re.compile(
+    r'(invoke-virtual\s*\{v15\},\s*Landroidx/compose/runtime/a1;->r\(\)V\s*(?:\n\s*\.line\s*\d+\s*)*\n\s*)(?:const/16\s*v10,\s*0x[01]|invoke-virtual\s*\{p0\},\s*Lcom/vidio/common/ui/stateholder/AuthenticationStateHolder;->h\(\)Z\s*\n\s*move-result\s*v10)',
+    re.MULTILINE
+)
 
-overlay_forced = """    :goto_c
-    invoke-virtual {v15}, Landroidx/compose/runtime/a1;->r()V
+if not overlay_pattern.search(text):
+    sys.exit("loading overlay pattern not found in w0.smali; smali may differ from expected build")
 
-    .line 785
-    .line 786
-    .line 787
-    const/16 v10, 0x1"""
-overlay_fixed = overlay_forced.replace("const/16 v10, 0x1", "const/16 v10, 0x0")
-
-if form_fixed in text and overlay_fixed in text:
-    print("login screen already patched, nothing to do")
-    sys.exit(0)
-
-if form_dead not in text:
-    sys.exit("form branch pattern not found; smali may differ from expected build")
-text = text.replace(form_dead, form_fixed, 1)
-
-if overlay_forced in text:
-    text = text.replace(overlay_forced, overlay_fixed, 1)
-elif overlay_fixed not in text:
-    sys.exit("loading overlay pattern not found; smali may differ from expected build")
+text = overlay_pattern.sub(r'\1' + overlay_target, text, count=1)
 
 path.write_text(text)
-print("patched:", path)
+print("patched login screen:", path)
 PY
 
 # ---------------------------------------------------------------------------
