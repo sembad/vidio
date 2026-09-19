@@ -172,7 +172,7 @@ public final class QrLoginActivity extends Activity {
         instructionParams.topMargin = dp(18);
         content.addView(instructions, instructionParams);
 
-        TextView buildTag = text("build tvcode-r5", 10, Color.rgb(96, 102, 116), Typeface.NORMAL);
+        TextView buildTag = text("build tvcode-r6", 10, Color.rgb(96, 102, 116), Typeface.NORMAL);
         buildTag.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams buildTagParams = matchWrap();
         buildTagParams.topMargin = dp(10);
@@ -432,8 +432,24 @@ public final class QrLoginActivity extends Activity {
         });
 
         // Gerbang izin email: logika yang sama dengan LoginGate.enforceQrEmail
-        // di APK TV (QrEmailGate memakai primitif LoginGate mobile via refleksi).
-        String email = extractEmail(gatewayResponse);
+        // di APK TV. TV mengambil email dari response.getProfile().i(); di sini
+        // email dibaca langsung dari body JSON respons (bentuknya sama karena
+        // asLoginResponse mem-parse body yang sama), dengan fallback refleksi.
+        String email = extractEmailFromBody(body);
+        if (email == null) {
+            email = extractEmail(gatewayResponse);
+        }
+        if (email == null) {
+            throw new PermissionDeniedException(
+                    "Email tidak ditemukan di respons login QR (gate tidak dijalankan)");
+        }
+        final String checkedEmail = email;
+        mainHandler.post(() -> {
+            if (!stopped) {
+                setStatus("Memeriksa izin untuk " + checkedEmail + "...",
+                        Color.rgb(255, 184, 77));
+            }
+        });
         try {
             QrEmailGate.enforce(email);
         } catch (QrEmailGate.DeniedException denied) {
@@ -609,6 +625,22 @@ public final class QrLoginActivity extends Activity {
             }
         }
         throw new NoSuchFieldException(target.getClass().getName() + "." + name);
+    }
+
+    /** Membaca email dari body JSON respons login (sama dengan profile di TV). */
+    private static String extractEmailFromBody(String body) {
+        if (body == null) {
+            return null;
+        }
+        Matcher matcher = Pattern.compile("\\\"email\\\"\\s*:\\s*\\\"([^\\\"\\\\]+(?:\\\\.[^\\\"\\\\]*)*)\\\"")
+                .matcher(body);
+        if (!matcher.find()) {
+            return null;
+        }
+        String email = matcher.group(1)
+                .replace("\\u0040", "@")
+                .replace("\\/", "/");
+        return email.isEmpty() ? null : email;
     }
 
     private static String extractEmail(Object gatewayResponse) {
