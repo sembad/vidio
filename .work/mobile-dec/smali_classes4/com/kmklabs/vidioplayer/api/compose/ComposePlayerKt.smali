@@ -1375,15 +1375,7 @@
 
     .line 614
     .line 615
-    const v9, 0x7f12001c
-
-    move-object/from16 v10, v6
-
-    const/4 v11, 0x0
-
-    const/4 v12, 0x0
-
-    invoke-static/range {v9 .. v15}, Lwy/l3;->a(ILy3/k;Ly3/b;Lw4/i;Landroidx/compose/runtime/q;II)V
+    invoke-static/range {v6 .. v15}, Lw2/w6;->g(Ly3/k;JFJILandroidx/compose/runtime/q;II)V
 
     .line 616
     .line 617

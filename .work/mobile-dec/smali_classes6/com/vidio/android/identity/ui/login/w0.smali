@@ -1659,7 +1659,7 @@
     .line 785
     .line 786
     .line 787
-    invoke-virtual/range {p0 .. p0}, Lcom/vidio/common/ui/stateholder/AuthenticationStateHolder;->j()Z
+    invoke-virtual/range {p0 .. p0}, Lcom/vidio/common/ui/stateholder/AuthenticationStateHolder;->h()Z
 
     move-result v10
 
