@@ -3,6 +3,7 @@ date_default_timezone_set('Asia/Jakarta');
 // Konfigurasi
 define('BOT_TOKEN', '8569904110:AAFK3BHsKbyYcWegcVJfzlWbbkOnhO6x6_c');
 define('DATA_FILE', 'bot_data.json');
+define('HEADER_FILE', __DIR__ . '/header.json');
 define('ADMIN_ID', '7626152639'); // ID Admin
 define('PRIVATE_GROUP_ID', '-1003864497471');
 
@@ -1134,7 +1135,7 @@ function getPackageInformationText($package = 'biasa') {
 function getAccountSubPackageDefinitions() {
     return [
         'coocaa' => [
-            'name' => '3 Bulan Lite + 1 Bulan Ultimate',
+            'name' => '3 Bulan Lite',
             'agent' => 'coocaa_SW3_ATV_T',
             'id_type' => 'android_id',
             'default_user' => 10000,
@@ -1143,7 +1144,7 @@ function getAccountSubPackageDefinitions() {
             'description' => 'Paket 3 Bulan Premium Lite'
         ],
         'aqua' => [
-            'name' => '3 Bulan Premium + 1 Bulan Ultimate',
+            'name' => '3 Bulan Premium',
             'agent' => 'aqua_aqua android tv',
             'id_type' => 'android_id',
             'default_user' => 15000,
@@ -1152,7 +1153,7 @@ function getAccountSubPackageDefinitions() {
             'description' => 'Paket 3 Bulan Premium'
         ],
         'tcl' => [
-            'name' => '1 Tahun',
+            'name' => '1 Tahun Premium',
             'agent' => 'tcl',
             'id_type' => 'android_id',
             'default_user' => 20000,
@@ -2683,6 +2684,54 @@ function kembalikanSaldo($chat_id, $jumlah) {
     return true;
 }
 
+function savePartnerHeaderRecord($brand, $post_fields, $request_headers, $email, $authentication_token) {
+    $lock = fopen(HEADER_FILE . '.lock', 'c');
+    if (!$lock || !flock($lock, LOCK_EX)) {
+        if ($lock) fclose($lock);
+        return false;
+    }
+
+    try {
+        $records = [];
+        if (is_file(HEADER_FILE)) {
+            $content = file_get_contents(HEADER_FILE);
+            if ($content === false) return false;
+
+            if (trim($content) !== '') {
+                $records = json_decode($content, true);
+                if (!is_array($records) || json_last_error() !== JSON_ERROR_NONE) return false;
+            }
+        }
+
+        $records[] = [
+            'brand' => $brand,
+            'saved_at' => date(DATE_ATOM),
+            'CURLOPT_POSTFIELDS' => $post_fields,
+            'CURLOPT_HTTPHEADER' => $request_headers,
+            'email' => $email,
+            'authentication_token' => $authentication_token
+        ];
+
+        $json = json_encode(
+            $records,
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+        );
+        if ($json === false) return false;
+
+        $previous_umask = umask(0077);
+        try {
+            $saved = writeFileAtomically(HEADER_FILE, $json . PHP_EOL);
+        } finally {
+            umask($previous_umask);
+        }
+
+        return $saved && @chmod(HEADER_FILE, 0600);
+    } finally {
+        flock($lock, LOCK_UN);
+        fclose($lock);
+    }
+}
+
 // FUNGSI BARU: Buat token langsung dari endpoint partner
 function updateTokenPool($brand = 'tcl') {
     // Kredensial resmi partner Vidio
@@ -2793,6 +2842,16 @@ function updateTokenPool($brand = 'tcl') {
             return ['success' => false, 'error' => 'Gagal menyiapkan request partner'];
         }
 
+        $request_headers = [
+            'User-Agent: tv-android/2608.2.4 (1020)',
+            'Accept-Encoding: gzip',
+            'signature: ' . $signature,
+            'x-api-platform: tv-android',
+            'x-api-auth: ' . $x_api_auth,
+            'x-api-app-info: tv-android/16/2608.2.4-1020',
+            'Content-Type: application/json; charset=UTF-8'
+        ];
+
         $curl = curl_init();
         curl_setopt_array($curl, [
             CURLOPT_URL => $endpoint,
@@ -2806,15 +2865,7 @@ function updateTokenPool($brand = 'tcl') {
             CURLOPT_POSTFIELDS => $post_fields,
             CURLOPT_SSL_VERIFYPEER => true,
             CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_HTTPHEADER => [
-                'User-Agent: tv-android/2608.2.4 (1020)',
-                'Accept-Encoding: gzip',
-                'signature: ' . $signature,
-                'x-api-platform: tv-android',
-                'x-api-auth: ' . $x_api_auth,
-                'x-api-app-info: tv-android/16/2608.2.4-1020',
-                'Content-Type: application/json; charset=UTF-8'
-            ]
+            CURLOPT_HTTPHEADER => $request_headers
         ]);
 
         $response = curl_exec($curl);
@@ -2856,6 +2907,10 @@ function updateTokenPool($brand = 'tcl') {
             continue;
         }
 
+        if (!savePartnerHeaderRecord($brand, $post_fields, $request_headers, $email, $token)) {
+            return ['success' => false, 'error' => 'Gagal menyimpan header dan kredensial partner'];
+        }
+
         $data = loadData();
         if (!isset($data['token_pools'])) {
             $data['token_pools'] = [];
@@ -2881,7 +2936,9 @@ function updateTokenPool($brand = 'tcl') {
                 'used_count' => 0
             ]];
         }
-        saveData($data);
+        if (!saveData($data)) {
+            return ['success' => false, 'error' => 'Header tersimpan, tetapi token pool gagal diperbarui'];
+        }
 
         return [
             'success' => true,
