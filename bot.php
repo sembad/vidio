@@ -1893,6 +1893,7 @@ function sendMessage($chat_id, $text, $reply_markup = null, $parse_mode = null) 
     $params = [
         'chat_id' => $chat_id,
         'text' => $text,
+        'disable_web_page_preview' => true,
     ];
     
     if ($reply_markup) {
@@ -5446,7 +5447,8 @@ function sendMessageWithRetry($chat_id, $message, $max_attempts = 2) {
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
             'chat_id' => $chat_id,
             'text' => $message,
-            'parse_mode' => 'HTML'
+            'parse_mode' => 'HTML',
+            'disable_web_page_preview' => true
         ]));
         curl_setopt($ch, CURLOPT_TIMEOUT, 5);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
