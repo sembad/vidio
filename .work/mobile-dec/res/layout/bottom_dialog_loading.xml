@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:gravity="center" android:orientation="vertical" android:background="@drawable/rounded_bottom_sheet_background90" android:focusable="true" android:focusableInTouchMode="true" android:clickable="true" android:layout_width="fill_parent" android:layout_height="fill_parent" android:elevation="4.0dip"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <com.vidio.common.ui.customview.VidioAnimationLoader android:id="@id/progress_bar" android:layout_width="72.0dip" android:layout_height="72.0dip" app:lottie_autoPlay="true" app:lottie_loop="true" app:lottie_rawRes="@raw/vidio_icon_animation_red" app:lottie_repeatMode="reverse" />
+    <TextView android:textColor="@color/textSecondary" android:id="@id/tv_please_wait" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/please_wait" />
+</LinearLayout>

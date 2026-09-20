@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.vidio.common.ui.customview.ProgressBar android:id="@id/progress_bar" style="@style/ProgressBar.Indeterminate"
+  xmlns:android="http://schemas.android.com/apk/res/android" />

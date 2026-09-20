@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<set android:ordering="together"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt">
+    <objectAnimator android:interpolator="@drawable/$vidio_splashscreen__83" android:duration="960" android:startOffset="500" android:valueFrom="17" android:valueTo="17" android:valueType="floatType" android:propertyName="strokeWidth" />
+    <objectAnimator android:interpolator="@drawable/$vidio_splashscreen__84" android:duration="440" android:startOffset="1460" android:valueFrom="17" android:valueTo="38" android:valueType="floatType" android:propertyName="strokeWidth" />
+</set>

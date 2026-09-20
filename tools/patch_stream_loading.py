@@ -57,6 +57,30 @@ def replacement(raw_id: str, set_animation: str, ctor: str) -> str:
         f"    invoke-virtual {{v0, v9}}, Lcom/airbnb/lottie/LottieAnimationView;->{set_animation}(I)V\n"
         "\n"
         "    invoke-virtual {v0}, Lcom/airbnb/lottie/LottieAnimationView;->l()V\n"
+        "\n"
+        # The overlay adds the view via addView(View) with no params, so the
+        # Lottie would render at its 320px intrinsic size. Pin it to 96dp.
+        "    invoke-virtual {v11}, Landroid/content/Context;->getResources()Landroid/content/res/Resources;\n"
+        "\n"
+        "    move-result-object v9\n"
+        "\n"
+        "    invoke-virtual {v9}, Landroid/content/res/Resources;->getDisplayMetrics()Landroid/util/DisplayMetrics;\n"
+        "\n"
+        "    move-result-object v9\n"
+        "\n"
+        "    iget v10, v9, Landroid/util/DisplayMetrics;->density:F\n"
+        "\n"
+        "    const/high16 v11, 0x42c00000\n"
+        "\n"
+        "    mul-float v10, v10, v11\n"
+        "\n"
+        "    float-to-int v10, v10\n"
+        "\n"
+        "    new-instance v9, Landroid/widget/LinearLayout$LayoutParams;\n"
+        "\n"
+        "    invoke-direct {v9, v10, v10}, Landroid/widget/LinearLayout$LayoutParams;-><init>(II)V\n"
+        "\n"
+        "    invoke-virtual {v0, v9}, Landroid/view/View;->setLayoutParams(Landroid/view/ViewGroup$LayoutParams;)V\n"
     )
 
 

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout android:orientation="vertical" android:background="@color/background" android:layout_width="fill_parent" android:layout_height="fill_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <com.google.android.material.appbar.AppBarLayout android:id="@id/app_bar" android:background="@color/uiBackground1" android:layout_width="fill_parent" android:layout_height="wrap_content" app:elevation="0.0dip" app:layout_constraintLeft_toLeftOf="parent" app:layout_constraintRight_toRightOf="parent" app:layout_constraintTop_toTopOf="parent">
+        <androidx.compose.ui.platform.ComposeView android:id="@id/toolbarContainer" android:layout_width="fill_parent" android:layout_height="wrap_content" />
+        <com.google.android.material.tabs.TabLayout android:layout_gravity="top" android:id="@id/tab_layout" android:layout_width="fill_parent" android:layout_height="wrap_content" app:tabMode="scrollable" style="@style/TabLayout" />
+        <com.google.android.material.divider.MaterialDivider android:layout_width="fill_parent" android:layout_height="1.0dip" app:dividerColor="@color/separatorNavigation" />
+    </com.google.android.material.appbar.AppBarLayout>
+    <androidx.viewpager.widget.ViewPager android:id="@id/view_pager" android:background="@color/uiBackground" android:layout_width="fill_parent" android:layout_height="0.0dip" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintLeft_toLeftOf="parent" app:layout_constraintRight_toRightOf="parent" app:layout_constraintTop_toBottomOf="@id/app_bar" />
+    <com.vidio.android.commons.view.LoadingView android:id="@id/loading_view" android:visibility="gone" android:layout_width="fill_parent" android:layout_height="fill_parent" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintLeft_toLeftOf="parent" app:layout_constraintRight_toRightOf="parent" app:layout_constraintTop_toBottomOf="@id/app_bar" />
+    <com.vidio.android.commons.view.FailedToLoadView android:id="@id/error_view" android:visibility="gone" android:layout_width="0.0dip" android:layout_height="0.0dip" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@id/app_bar" />
+</androidx.constraintlayout.widget.ConstraintLayout>

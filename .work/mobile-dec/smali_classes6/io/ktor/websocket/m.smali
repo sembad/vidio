@@ -1,0 +1,87 @@
+.class public final Lio/ktor/websocket/m;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+# interfaces
+.implements Lsc0/c1;
+
+
+# static fields
+.field public static final c:Lio/ktor/websocket/m;
+    .annotation build Lorg/jetbrains/annotations/NotNull;
+    .end annotation
+.end field
+
+
+# direct methods
+.method static constructor <clinit>()V
+    .locals 1
+
+    .line 1
+    new-instance v0, Lio/ktor/websocket/m;
+
+    .line 2
+    .line 3
+    invoke-direct {v0}, Ljava/lang/Object;-><init>()V
+
+    .line 4
+    .line 5
+    .line 6
+    sput-object v0, Lio/ktor/websocket/m;->c:Lio/ktor/websocket/m;
+
+    .line 7
+    .line 8
+    return-void
+.end method
+
+
+# virtual methods
+.method public final dispose()V
+    .locals 0
+
+    return-void
+.end method
+
+.method public final equals(Ljava/lang/Object;)Z
+    .locals 1
+    .param p1    # Ljava/lang/Object;
+        .annotation build Lorg/jetbrains/annotations/Nullable;
+        .end annotation
+    .end param
+
+    const/4 v0, 0x1
+
+    if-ne p0, p1, :cond_0
+
+    return v0
+
+    :cond_0
+    instance-of p1, p1, Lio/ktor/websocket/m;
+
+    if-nez p1, :cond_1
+
+    const/4 p1, 0x0
+
+    return p1
+
+    :cond_1
+    return v0
+.end method
+
+.method public final hashCode()I
+    .locals 1
+
+    const v0, 0xc65a834
+
+    return v0
+.end method
+
+.method public final toString()Ljava/lang/String;
+    .locals 1
+    .annotation build Lorg/jetbrains/annotations/NotNull;
+    .end annotation
+
+    const-string v0, "NonDisposableHandle"
+
+    return-object v0
+.end method

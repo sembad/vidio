@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:background="@drawable/bg_redirect_timer" android:paddingLeft="@dimen/extra_large_padding" android:paddingTop="@dimen/medium_6_padding" android:paddingRight="@dimen/extra_large_padding" android:paddingBottom="@dimen/medium_6_padding" android:layout_width="wrap_content" android:layout_height="wrap_content" android:paddingHorizontal="@dimen/extra_large_padding" android:paddingVertical="@dimen/medium_6_padding"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <TextView android:textSize="14.0sp" android:textColor="@color/black" android:id="@id/redirectText" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/player_blocker_redirect_label" android:fontFamily="sans-serif-medium" />
+    <TextView android:textSize="14.0sp" android:textColor="@color/red30" android:gravity="center_vertical" android:id="@id/redirectTime" android:paddingLeft="@dimen/small_padding" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="sans-serif-medium" />
+</LinearLayout>

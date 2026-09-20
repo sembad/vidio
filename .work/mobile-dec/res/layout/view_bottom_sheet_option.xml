@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.AppCompatTextView android:textSize="@dimen/small_text" android:textColor="@color/textPrimary" android:gravity="center_vertical" android:id="@id/option" android:background="?selectableItemBackground" android:paddingTop="@dimen/medium_padding" android:paddingBottom="@dimen/medium_padding" android:focusable="true" android:clickable="true" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_marginBottom="@dimen/medium_margin" android:drawablePadding="@dimen/large_margin" android:paddingVertical="@dimen/medium_padding" app:drawableTint="@color/textPrimary"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" />

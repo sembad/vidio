@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout android:layout_width="fill_parent" android:layout_height="fill_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <com.vidio.android.base.webview.VidioWebView android:id="@id/gamesWebView" android:layout_width="fill_parent" android:layout_height="fill_parent" />
+    <com.vidio.android.commons.view.GamesErrorView android:id="@id/gamesErrorView" android:visibility="gone" android:layout_width="fill_parent" android:layout_height="fill_parent" />
+    <FrameLayout android:id="@id/progressBar" android:background="@color/dark_transparant" android:focusable="true" android:visibility="gone" android:clickable="true" android:layout_width="fill_parent" android:layout_height="fill_parent">
+        <com.vidio.common.ui.customview.VidioAnimationLoader android:layout_gravity="center" android:layout_width="72.0dip" android:layout_height="72.0dip" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" app:lottie_autoPlay="true" app:lottie_loop="true" app:lottie_rawRes="@raw/vidio_icon_animation_red" app:lottie_repeatMode="reverse" />
+    </FrameLayout>
+</FrameLayout>

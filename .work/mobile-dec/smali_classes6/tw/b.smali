@@ -1,0 +1,34 @@
+.class public final Ltw/b;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+# interfaces
+.implements La90/f;
+
+
+# annotations
+.annotation system Ldalvik/annotation/Signature;
+    value = {
+        "Ljava/lang/Object;",
+        "La90/f;"
+    }
+.end annotation
+
+
+# direct methods
+.method public static a(Ltw/a;Lzx/l;)V
+    .locals 0
+
+    .line 1
+    invoke-virtual {p0}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 2
+    .line 3
+    .line 4
+    invoke-virtual {p1}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 5
+    .line 6
+    .line 7
+    return-void
+.end method
