@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout android:layout_width="fill_parent" android:layout_height="fill_parent"
-  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
-    <include android:id="@id/nav_menu_header" layout="@layout/layout_nav_menu_header" />
-    <com.vidio.android.base.webview.VidioWebView android:id="@id/webView" android:layout_width="fill_parent" android:layout_height="0.0dip" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@id/nav_menu_header" />
-    <com.vidio.android.commons.view.GamesErrorView android:id="@id/errorView" android:visibility="gone" android:layout_width="fill_parent" android:layout_height="0.0dip" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@id/nav_menu_header" />
-    <com.vidio.common.ui.customview.VidioAnimationLoader android:layout_gravity="center" android:id="@id/progressBar" android:visibility="gone" android:layout_width="72.0dip" android:layout_height="72.0dip" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@id/nav_menu_header" app:lottie_autoPlay="true" app:lottie_loop="true" app:lottie_rawRes="@raw/vidio_icon_animation_red" app:lottie_repeatMode="reverse" />
-</androidx.constraintlayout.widget.ConstraintLayout>

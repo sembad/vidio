@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout android:orientation="vertical" android:id="@id/kidsHeader" android:background="@color/uiBackground1" android:layout_width="fill_parent" android:layout_height="wrap_content" app:layout_scrollFlags="scroll"
-  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
-    <androidx.appcompat.widget.AppCompatImageView android:layout_gravity="start" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/large_margin" android:layout_marginBottom="@dimen/large_margin" android:layout_marginStart="@dimen/large_margin" android:layout_marginVertical="@dimen/large_margin" app:srcCompat="@drawable/vidio_kids_logo" />
-</LinearLayout>
