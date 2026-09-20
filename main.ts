@@ -322,11 +322,17 @@ async function proxyUltimateStream(
     });
 }
 
-async function verifyLiveVidioSession(email: string, token: string): Promise<boolean> {
+async function verifyLiveVidioSession(
+  email: string,
+  token: string,
+  xAuthorization?: string | null,
+): Promise<boolean> {
   const normEmail = normalizeEmail(email);
   if (!normEmail) return false;
 
-  const testHeaders = {
+  // /profiles & /users/data menolak autentikasi (401) tanpa header
+  // x-authorization (JWT access token) — wajib diteruskan dari request klien.
+  const testHeaders: Record<string, string> = {
     accept: "application/vnd.api+json",
     "accept-encoding": "gzip",
     "x-api-auth": API_AUTH,
@@ -336,6 +342,10 @@ async function verifyLiveVidioSession(email: string, token: string): Promise<boo
     referer: "androidtv-app://com.vidio.android.tv",
     "cache-control": "no-cache, no-store",
   };
+  const jwt = xAuthorization?.trim();
+  if (jwt) {
+    testHeaders["x-authorization"] = jwt;
+  }
 
   try {
     const res = await fetch("https://api.vidio.com/profiles", {
@@ -448,7 +458,11 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   const trimmedToken = userToken.trim();
   const matchesDirectUltimate = trimmedToken === activeUltimate.token.trim();
   if (!matchesDirectUltimate) {
-    const isLiveValid = await verifyLiveVidioSession(requestedEmail, trimmedToken);
+    const isLiveValid = await verifyLiveVidioSession(
+      requestedEmail,
+      trimmedToken,
+      request.headers.get("x-authorization"),
+    );
     if (!isLiveValid) {
       return textResponse("forbidden", 403);
     }
@@ -608,7 +622,11 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
   const trimmedToken = userToken.trim();
   const matchesDirectUltimate = trimmedToken === activeUltimate.token.trim();
   if (!matchesDirectUltimate) {
-    const isLiveValid = await verifyLiveVidioSession(requestedEmail, trimmedToken);
+    const isLiveValid = await verifyLiveVidioSession(
+      requestedEmail,
+      trimmedToken,
+      request.headers.get("x-authorization"),
+    );
     if (!isLiveValid) {
       return textResponse("forbidden", 403);
     }
