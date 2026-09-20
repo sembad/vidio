@@ -638,7 +638,15 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
 async function handleRequest(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
-  if (url.searchParams.has("ua")) return textResponse(USER_AGENT);
+  if (url.searchParams.has("ua")) {
+    // The APK applies this UA only to playback requests (MPD/HLS/segments).
+    // The akamaized CDN rejects manifests unless the UA is "VidioPlayer/<app
+    // version>", so derive the player UA from the requesting app's own UA
+    // (tv-android/2608.2.4 (1020) -> VidioPlayer/2608.2.4).
+    const appUa = request.headers.get("user-agent") ?? "";
+    const version = appUa.match(/(\d+\.\d+\.\d+)/)?.[1] ?? "2608.2.4";
+    return textResponse(`VidioPlayer/${version}`);
+  }
 
   const streamMatch = url.pathname.match(STREAM_PATH);
   if (streamMatch) {
@@ -797,10 +805,22 @@ async function selfCheck(): Promise<void> {
     throw new Error("Video data path self-check failed");
   }
 
-  // Test UA endpoint returns tv-android UA
-  const uaRes = await handleRequest(new Request("https://vidiot.my.id/?ua"));
-  if (uaRes.status !== 200 || (await uaRes.text()) !== USER_AGENT) {
-    throw new Error("UA endpoint failed to return expected TV UA");
+  // Test UA endpoint returns VidioPlayer UA derived from the app's own UA
+  const uaRes = await handleRequest(
+    new Request("https://vidiot.my.id/?ua", {
+      headers: { "user-agent": "tv-android/2608.2.4 (1020)" },
+    }),
+  );
+  if (uaRes.status !== 200 || (await uaRes.text()) !== "VidioPlayer/2608.2.4") {
+    throw new Error("UA endpoint failed to return expected player UA");
+  }
+  const uaResMobile = await handleRequest(
+    new Request("https://vidiot.my.id/?ua", {
+      headers: { "user-agent": "com.vidio.android/2608.2.7-73babcffa4 (3191921)" },
+    }),
+  );
+  if ((await uaResMobile.text()) !== "VidioPlayer/2608.2.7") {
+    throw new Error("UA endpoint failed to return expected mobile player UA");
   }
   if (getSelectedQuery(new URL("https://vidiot.my.id/?akunultimate=a%40b.id")) !== "akunultimate") {
     throw new Error("Query selection self-check failed");
