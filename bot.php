@@ -4877,7 +4877,7 @@ function processDirectWarrantyClaim($chat_id, $account_id) {
     $response .= "Status: " . strtoupper($status) . "\n\n";
     $response .= "Sekarang Anda dapat memproses 1 akun secara GRATIS sebagai garansi.\n\n";
     $response .= "Silakan input Email akun vidio Anda:\n";
-    $response .= "Harus @gmail.com\n\n";
+    $response .= "Format: nama@domain\n\n";
     $response .= "PENTING:\n";
     $response .= "- Akun WAJIB SUDAH TERDAFTAR di vidio (proses ini hanya LOGIN, tidak register)\n";
     $response .= "- Belum punya akun? Daftar dulu di https://m.vidio.com/users/login atau lewat aplikasi vidio di HP\n";
@@ -6807,7 +6807,7 @@ function requestSingleAkunForPackage($chat_id, $package, $sub_package = 'tcl') {
     $pesan .= $sub_definitions[$sub_package]['description'] . "\n\n";
 
     $pesan .= "Biaya: Rp " . number_format($harga_per_akun, 0, ',', '.') . " akan dipotong dari saldo.\n\n";
-    $pesan .= "Silakan input Email akun vidio Anda:\nHarus @gmail.com\n\n";
+    $pesan .= "Silakan input Email akun vidio Anda:\nSemua domain email diizinkan\n\n";
     $pesan .= "PENTING:\n- Akun WAJIB SUDAH TERDAFTAR di vidio\n";
     $pesan .= "- Belum punya akun? Daftar dulu di https://m.vidio.com/users/login atau lewat aplikasi vidio di HP\n";
 
@@ -6848,7 +6848,7 @@ function requestFreeAccount($chat_id) {
     ]]];
     $message = "AKUN GRATIS\n\n";
     $message .= "Klaim ini gratis, hanya dapat digunakan 1 kali, dan tidak mendapat garansi.\n\n";
-    $message .= "Silakan input Email akun vidio Anda:\nHarus @gmail.com\n\n";
+    $message .= "Silakan input Email akun vidio Anda:\nSemua domain email diizinkan\n\n";
     $message .= "PENTING:\n- Akun WAJIB SUDAH TERDAFTAR di vidio\n";
     $message .= "- Belum punya akun? Daftar dulu di https://m.vidio.com/users/login atau lewat aplikasi vidio di HP\n";
 
@@ -7725,7 +7725,7 @@ function cloneTvTaskMultiple($chat_id, $emails, $password_to_use, $jumlah_akun) 
     
     foreach ($email_list as $index => $email) {
         try {
-            // Validasi email harus @gmail.com
+            // Validasi format email (semua domain diizinkan)
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $hasil_detail[] = [
                     'no' => $index + 1,
@@ -7738,19 +7738,7 @@ function cloneTvTaskMultiple($chat_id, $emails, $password_to_use, $jumlah_akun) 
                 continue;
             }
             
-            // Cek apakah email domainnya gmail.com
-            $email_parts = explode('@', $email);
-            if (count($email_parts) != 2 || strtolower($email_parts[1]) != 'gmail.com') {
-                $hasil_detail[] = [
-                    'no' => $index + 1,
-                    'email' => $email,
-                    'status' => 'gagal',
-                    'pesan' => 'Email harus @gmail.com'
-                ];
-                $gagal++;
-                $total_dikembalikan += $harga_per_akun;
-                continue;
-            }
+            // Semua domain email diizinkan (cukup validasi format)
             
             // Dapatkan token partner fresh untuk SETIAP akun
             $partner_result = getPartnerTokenForUser($chat_id, $email);
@@ -8093,7 +8081,7 @@ function processNamaBelakangSingle($chat_id, $text, $message_id) {
 
     $sent_msg = sendMessage(
         $chat_id,
-        "Nama Belakang diterima: " . $nama_belakang . "\n\nSilakan input Email:\nHarus @gmail.com dan SUDAH TERDAFTAR di vidio",
+        "Nama Belakang diterima: " . $nama_belakang . "\n\nSilakan input Email:\nSemua domain email diizinkan dan SUDAH TERDAFTAR di vidio",
         $keyboard
     );
     $state['last_message_id'] = $sent_msg['result']['message_id'];
@@ -8255,7 +8243,7 @@ function processEmailSingle($chat_id, $text, $message_id) {
     
     $email = trim($text);
     
-    // Validasi email harus @gmail.com
+    // Validasi format email (semua domain diizinkan)
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $keyboard = [
             'inline_keyboard' => [
@@ -8266,25 +8254,7 @@ function processEmailSingle($chat_id, $text, $message_id) {
             ]
         ];
         
-        $sent_msg = sendMessage($chat_id, "Format email tidak valid!\n\nSilakan input Email:\nHarus @gmail.com\nContoh: contoh@gmail.com", $keyboard);
-        $state['last_message_id'] = $sent_msg['result']['message_id'];
-        file_put_contents($state_file, json_encode($state));
-        return;
-    }
-    
-    // Cek apakah email domainnya gmail.com
-    $email_parts = explode('@', $email);
-    if (count($email_parts) != 2 || strtolower($email_parts[1]) != 'gmail.com') {
-        $keyboard = [
-            'inline_keyboard' => [
-                [
-                    ['text' => 'Batalkan', 'callback_data' => 'cancel_process'],
-                    ['text' => 'Kembali', 'callback_data' => 'back_start']
-                ]
-            ]
-        ];
-        
-        $sent_msg = sendMessage($chat_id, "Email harus @gmail.com!\n\nSilakan input Email:\nHarus @gmail.com\nContoh: contoh@gmail.com", $keyboard);
+        $sent_msg = sendMessage($chat_id, "Format email tidak valid!\n\nSilakan input Email:\nContoh: contoh@gmail.com / contoh@yahoo.com", $keyboard);
         $state['last_message_id'] = $sent_msg['result']['message_id'];
         file_put_contents($state_file, json_encode($state));
         return;
@@ -8394,8 +8364,8 @@ function processJumlahAkun($chat_id, $text, $message_id) {
     $pesan = "Jumlah akun diterima: " . $jumlah_akun . " akun\n";
     $pesan .= "Total: Rp " . number_format($total_harga, 0, ',', '.') . "\n\n";
     $pesan .= "Silakan input " . $jumlah_akun . " email (pisahkan dengan koma atau enter):\n";
-    $pesan .= "Harus @gmail.com dan SUDAH TERDAFTAR di vidio\n";
-    $pesan .= "Contoh:\nemail1@gmail.com\nemail2@gmail.com\nemail3@gmail.com";
+    $pesan .= "Semua domain email diizinkan dan SUDAH TERDAFTAR di vidio\n";
+    $pesan .= "Contoh:\nemail1@gmail.com\nemail2@yahoo.com\nemail3@outlook.com";
     
     $sent_msg = sendMessage($chat_id, $pesan, $keyboard);
     $state['last_message_id'] = $sent_msg['result']['message_id'];
@@ -8618,7 +8588,7 @@ function processWarrantyEmail($chat_id, $text, $message_id) {
     
     $email = trim($text);
     
-    // Validasi email harus @gmail.com
+    // Validasi format email (semua domain diizinkan)
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $keyboard = [
             'inline_keyboard' => [
@@ -8629,25 +8599,7 @@ function processWarrantyEmail($chat_id, $text, $message_id) {
             ]
         ];
         
-        $sent_msg = sendMessage($chat_id, "Format email tidak valid!\n\nSilakan input Email:\nHarus @gmail.com\nContoh: contoh@gmail.com", $keyboard);
-        $state['last_message_id'] = $sent_msg['result']['message_id'];
-        file_put_contents($state_file, json_encode($state));
-        return;
-    }
-    
-    // Cek apakah email domainnya gmail.com
-    $email_parts = explode('@', $email);
-    if (count($email_parts) != 2 || strtolower($email_parts[1]) != 'gmail.com') {
-        $keyboard = [
-            'inline_keyboard' => [
-                [
-                    ['text' => 'Batalkan', 'callback_data' => 'cancel_warranty'],
-                    ['text' => 'Kembali', 'callback_data' => 'account_history_page_1']
-                ]
-            ]
-        ];
-        
-        $sent_msg = sendMessage($chat_id, "Email harus @gmail.com!\n\nSilakan input Email:\nHarus @gmail.com\nContoh: contoh@gmail.com", $keyboard);
+        $sent_msg = sendMessage($chat_id, "Format email tidak valid!\n\nSilakan input Email:\nContoh: contoh@gmail.com / contoh@yahoo.com", $keyboard);
         $state['last_message_id'] = $sent_msg['result']['message_id'];
         file_put_contents($state_file, json_encode($state));
         return;
