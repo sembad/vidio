@@ -91,3 +91,31 @@ region_list=[global, id, my] -> region redeem voucher
 2. Kredensial AWS Kinesis tidak terekspos - hanya nama kunci yang ada di APK; nilainya diambil dari Firebase Remote Config yang menolak fetch anonim (terverifikasi 400 walau schema SDK direplikasi persis).
 3. Config publik membocorkan postur keamanan backend: OTP 4 digit via WhatsApp, reCAPTCHA aktif, otp_bypass=false, satu IP whitelist captcha.
 4. Tidak ada jalur login yang bisa dipalsukan tanpa kredensial asli (Google/Apple idToken diverifikasi signature di server, sama seperti temuan Vidio).
+
+## 6. Analisis HAR live traffic (Reqable, 123 request, sesi nonton RCTI)
+
+### 6.1 Kredensial Kinesis TERKONFIRMASI dari traffic
+Header Authorization pada POST ke kinesis.ap-southeast-3.amazonaws.com:
+`AWS4-HMAC-SHA256 Credential=AKIAUDSZSSO7XAE7YI5G/20260921/ap-southeast-3/kinesis/aws4_request`
+- Access Key ID: AKIAUDSZSSO7XAE7YI5G (inilah isi metrics.kinesisProd.accessKeyId dari Remote Config)
+- Stream: mnc-logiq-kinesis (PutRecord, payload base64 telemetry sesi)
+- Secret access key TIDAK ikut dikirim (hanya signature hasil HMAC) - jadi tetap tidak bisa dipakai pihak lain.
+
+### 6.2 Model entitlement playback (jawaban "key pembuka semua channel")
+Alur saat memutar channel RCTI (id 00000000000000000001):
+1. POST /concurrency/subscribers/MNC:57635107/devices/{hwId}/reservations -> 201, reservasi slot 900 detik per device (DELETE saat keluar).
+2. GET /streamlocators/multirights/getPlayableUrlAndLicense?drm=WV&drmLevel=L3&packaging=DASH&url=multirights:mediapackage/live/...&userSessionToken={JWT login}
+   -> server cek paket akun, lalu balas allowed:true + URL manifest + URL license Verimatrix.
+3. Manifest DASH (CloudFront/MediaPackage) diambil TANPA auth (path hash saja) - tapi track video terenkripsi CENC.
+4. License Widevine dari multidrm.core.verimatrixcloud.net dengan JWT ES256 (ditandatangani server, bukan klien):
+   - sub = channel id, izziCustomer = MNC:57635107, izziDeviceId = hwId perangkat, izziVIP = false
+   - policy: license_duration 14400s (4 jam), can_play true, can_renew true, can_persist FALSE (offline download tidak bisa)
+   - token license sendiri kedaluwarsa 600 detik setelah diterbitkan.
+
+### 6.3 Paket akun yang terlihat di HAR (MNC:57635107)
+- Free Bundle Linear (TIER, pid 33335) - "Free Package (28 channels)"
+- K Vision FILM (ADDON, pid 232618), KV_CLING1 (124308), FREE TO VIEW GOL LG (255531),
+  Promo SPOTV Pack 30 (227495), Paket Add On SPOTV 30 (227499), Kvision INDOVISION (1904856)
+
+### 6.4 Kesimpulan HAR
+Tidak ada master key. "Kunci" putar = JWT license per-sesi yang diterbitkan server, terikat subscriber + device + channel, berlaku 10 menit, dan policy DRM-nya melarang persist. Entitlement divalidasi murni server-side lewat daftar paket (purchase/filter + subscriptions/active). Manifest tanpa token tidak berguna karena konten terenkripsi Widevine L3.
