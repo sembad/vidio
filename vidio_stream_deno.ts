@@ -294,26 +294,6 @@ const SECRET_PATH = "hsiwgwiwvwoeveiwhe";
 
 type Kv = Awaited<ReturnType<typeof Deno.openKv>>;
 
-function extractDashUrl(data: Record<string, unknown>): string | null {
-  const inner = (data["data"] ?? {}) as Record<string, unknown>;
-  const attributes = (inner["attributes"] ?? {}) as Record<string, unknown>;
-  const dash = attributes["dash"];
-  return typeof dash === "string" && isValidHttpUrl(dash) ? dash : null;
-}
-
-// Ambil MPD dari CDN (tanpa kuota akun); token di URL masih < 5 menit
-async function fetchMpd(dashUrl: string): Promise<string | null> {
-  try {
-    const res = await fetch(dashUrl, {
-      headers: { "User-Agent": "tv-android/2608.2.4 (1020)" },
-    });
-    if (!res.ok) return null;
-    return await res.text();
-  } catch {
-    return null;
-  }
-}
-
 type StreamResult =
   | { ok: true; data: Record<string, unknown> }
   | { ok: false; response: Response };
@@ -457,46 +437,11 @@ async function handler(req: Request): Promise<Response> {
   const result = await getStreamData(kv, id);
   if (!result.ok) return result.response;
 
-  // type=dash -> PROXY manifest (bukan redirect). ExoPlayer Media3
-  // me-refresh manifest dari URL asli tiap update period, jadi
-  // tiap refresh dapat token segar dan playback tidak putus.
-  if (type === "dash") {
-    const dashUrl = extractDashUrl(result.data);
-    if (dashUrl === null) {
-      return json({ error: "DASH tidak tersedia." }, 404);
-    }
-
-    let xml = await fetchMpd(dashUrl);
-
-    if (xml === null) {
-      // token MPD kemungkinan expired -> paksa rotasi akun:
-      // buang cache, ambil akun berikutnya, coba sekali lagi
-      await kv.delete(["stream_cache", id]);
-      const retry = await getStreamData(kv, id);
-      if (!retry.ok) return retry.response;
-
-      const retryUrl = extractDashUrl(retry.data);
-      if (retryUrl === null) {
-        return json({ error: "DASH tidak tersedia." }, 404);
-      }
-      xml = await fetchMpd(retryUrl);
-      if (xml === null) {
-        return json({
-          error: "Gagal mengambil stream. Coba lagi nanti.",
-        }, 502);
-      }
-    }
-
-    return new Response(xml, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/dash+xml",
-        "Cache-Control": "no-store",
-        "Access-Control-Allow-Origin": "*",
-      },
-    });
-  }
-
+  // 307 redirect: ExoPlayer Media3 me-request ulang URL manifest
+  // ini tiap update period (bukan nempel ke URL Akamai), jadi tiap
+  // refresh dapat token segar selama cache < 4 menit < umur token.
+  // Bandwidth Deno Deploy cuma respon 307 (ratusan byte) —
+  // manifest & segmen diambil langsung dari CDN Akamai.
   return serveStream(result.data, type);
 }
 
