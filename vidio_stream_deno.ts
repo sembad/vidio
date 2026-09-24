@@ -302,6 +302,44 @@ const SECRET_PATH = "hsiwgwiwvwoeveiwhe";
 
 type Kv = Awaited<ReturnType<typeof Deno.openKv>>;
 
+function extractDashUrl(data: Record<string, unknown>): string | null {
+  const inner = (data["data"] ?? {}) as Record<string, unknown>;
+  const attributes = (inner["attributes"] ?? {}) as Record<string, unknown>;
+  const dash = attributes["dash"];
+  return typeof dash === "string" && isValidHttpUrl(dash) ? dash : null;
+}
+
+// Ambil MPD dari CDN Akamai (tanpa kuota akun); token di URL < 5 menit
+async function fetchMpd(dashUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(dashUrl, {
+      headers: { "User-Agent": "tv-android/2608.2.4 (1020)" },
+    });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  }
+}
+
+// Tulis ulang BaseURL jadi absolut ke CDN Akamai, supaya segmen video
+// diambil player LANGSUNG dari Akamai (bukan lewat Deno). Yang lewat
+// Deno cuma manifest-nya saja.
+function rewriteMpdBaseUrl(xml: string, dashUrl: string): string {
+  const base = dashUrl.slice(0, dashUrl.lastIndexOf("/") + 1)
+    .replace(/&/g, "&amp;");
+
+  if (/<BaseURL[^>]*>[\s\S]*?<\/BaseURL>/i.test(xml)) {
+    return xml.replace(
+      /<BaseURL[^>]*>[\s\S]*?<\/BaseURL>/i,
+      `<BaseURL>${base}</BaseURL>`,
+    );
+  }
+
+  // sisipkan tepat setelah tag pembuka <MPD ...>
+  return xml.replace(/(<MPD\b[^>]*>)/i, `$1<BaseURL>${base}</BaseURL>`);
+}
+
 type StreamResult =
   | { ok: true; data: Record<string, unknown> }
   | { ok: false; response: Response };
@@ -445,11 +483,48 @@ async function handler(req: Request): Promise<Response> {
   const result = await getStreamData(kv, id);
   if (!result.ok) return result.response;
 
-  // 307 redirect: ExoPlayer Media3 me-request ulang URL manifest
-  // ini tiap update period (bukan nempel ke URL Akamai), jadi tiap
-  // refresh dapat token segar selama cache < 4 menit < umur token.
-  // Bandwidth Deno Deploy cuma respon 307 (ratusan byte) —
-  // manifest & segmen diambil langsung dari CDN Akamai.
+  // type=dash -> proxy MANIFEST SAJA (bukan redirect). Player kamu
+  // menempel ke URL hasil 307, jadi token mati di menit ke-5 dan
+  // harus klik play ulang. Dengan proxy manifest, tiap refresh
+  // manifest lewat sini dan selalu dapat token segar. Segmen video
+  // TETAP langsung ke Akamai (BaseURL ditulis ulang jadi absolut).
+  if (type === "dash") {
+    const dashUrl = extractDashUrl(result.data);
+    if (dashUrl === null) {
+      return json({ error: "DASH tidak tersedia." }, 404);
+    }
+
+    let xml = await fetchMpd(dashUrl);
+
+    if (xml === null) {
+      // token MPD kemungkinan expired -> paksa rotasi akun:
+      // buang cache, ambil akun berikutnya, coba sekali lagi
+      await kv.delete(["stream_cache", id]);
+      const retry = await getStreamData(kv, id);
+      if (!retry.ok) return retry.response;
+
+      const retryUrl = extractDashUrl(retry.data);
+      if (retryUrl === null) {
+        return json({ error: "DASH tidak tersedia." }, 404);
+      }
+      xml = await fetchMpd(retryUrl);
+      if (xml === null) {
+        return json({
+          error: "Gagal mengambil stream. Coba lagi nanti.",
+        }, 502);
+      }
+    }
+
+    return new Response(rewriteMpdBaseUrl(xml, dashUrl), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/dash+xml",
+        "Cache-Control": "no-store",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+  }
+
   return serveStream(result.data, type);
 }
 
