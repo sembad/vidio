@@ -280,7 +280,10 @@ async function notifyDeadAccount(
 function isPermanentError(bodyText: string): string | null {
   if (bodyText.includes("user_deactivated")) return "user_deactivated";
   if (bodyText.includes("not_logged_in")) return "not_logged_in";
-  if (/email[_ ]?verif/i.test(bodyText)) return "verifikasi email";
+  if (
+    /email[_ ]?verif/i.test(bodyText) ||
+    /verifikasi email/i.test(bodyText)
+  ) return "verifikasi email";
   return null;
 }
 
