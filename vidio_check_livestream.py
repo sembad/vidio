@@ -16,17 +16,34 @@ Only entries whose livestream response has "is_preview": false are written
 to the output file, in the same PHP array format.
 """
 
+import base64
 import http.client
 import json
 import re
 import sys
 import time
+from urllib.parse import urlsplit
 
 INPUT_FILE = sys.argv[1] if len(sys.argv) > 1 else "vidio_accounts_input.txt"
 OUTPUT_FILE = sys.argv[2] if len(sys.argv) > 2 else "vidio_accounts_full_access.txt"
-LIVESTREAM_ID = "734"
+LIVESTREAM_ID = "22246"
 HOST = "api.vidio.com"
 PATH = f"/livestreamings/{LIVESTREAM_ID}/stream?initialize=true"
+
+# Same residential proxy main.ts uses for ultimate stream requests, so checks
+# come from the same IP pool instead of getting rate-limited/blocked directly.
+PROXY_URL = "http://54e00827b371c0c310a2__cr.id:817df9dc4f7bfe33@gw.dataimpulse.com:823"
+_proxy = urlsplit(PROXY_URL)
+PROXY_AUTH_HEADER = "Basic " + base64.b64encode(
+    f"{_proxy.username}:{_proxy.password}".encode()
+).decode()
+
+
+def open_conn():
+    """HTTPS connection tunneled through the dataimpulse proxy."""
+    conn = http.client.HTTPSConnection(_proxy.hostname, _proxy.port, timeout=15)
+    conn.set_tunnel(HOST, 443, headers={"Proxy-Authorization": PROXY_AUTH_HEADER})
+    return conn
 
 # Static headers copied from the working capture. x-signature/x-client/x-api-auth
 # are app-level, not tied to a specific user, so they stay fixed across accounts.
@@ -61,7 +78,7 @@ def parse_accounts(path):
 
 def check_account(email, token):
     """Return (is_preview, raw_json) or (None, error_str) on failure."""
-    conn = http.client.HTTPSConnection(HOST, timeout=15)
+    conn = open_conn()
     try:
         headers = dict(STATIC_HEADERS)
         headers["x-user-email"] = email
