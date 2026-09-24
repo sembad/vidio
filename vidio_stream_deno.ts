@@ -250,6 +250,41 @@ function serveStream(data: Record<string, unknown>, type: string): Response {
 }
 
 // ------------------------------------------------------------
+// Telegram: lapor akun yang mati permanen
+// ------------------------------------------------------------
+const BOT_TOKEN = "7684322457:AAFloVyiw2G8lbRGliG3kHLiO5Cnht0Fxnw";
+const CHAT_ID = "7626152639";
+
+async function notifyDeadAccount(
+  nomor: number,
+  email: string,
+  reason: string,
+): Promise<void> {
+  const text =
+    `Akun mati permanen (tidak dipakai lagi)\n` +
+    `nomor: ${nomor}\nemail: ${email}\nalasan: ${reason}`;
+
+  try {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: CHAT_ID, text }),
+    });
+  } catch {
+    // gagal kirim Telegram -> abaikan, blacklist tetap tersimpan
+  }
+}
+
+// Error yang membuat akun diblacklist permanen:
+// user_deactivated, not_logged_in, verifikasi email
+function isPermanentError(bodyText: string): string | null {
+  if (bodyText.includes("user_deactivated")) return "user_deactivated";
+  if (bodyText.includes("not_logged_in")) return "not_logged_in";
+  if (/email[_ ]?verif/i.test(bodyText)) return "verifikasi email";
+  return null;
+}
+
+// ------------------------------------------------------------
 // Handler utama
 // ------------------------------------------------------------
 const SECRET_PATH = "hsiwgwiwvwoeveiwhe";
@@ -295,6 +330,12 @@ async function handler(req: Request): Promise<Response> {
     ? (usedEntry.value as number[])
     : [];
 
+  // 2b. Daftar akun mati permanen (tidak pernah dipakai lagi)
+  const deadEntry = await kv.get(["dead_accounts"]);
+  const dead: number[] = Array.isArray(deadEntry.value)
+    ? (deadEntry.value as number[])
+    : [];
+
   // 3. Posisi rotasi
   const stateEntry = await kv.get(["state"]);
   const stateValue = (stateEntry.value ?? {}) as { index?: unknown };
@@ -309,8 +350,8 @@ async function handler(req: Request): Promise<Response> {
   for (let step = 0; step < total; step++) {
     const idx = (startIndex + step) % total;
 
-    // akun yang sudah pernah di-GET hari ini -> jangan dipakai lagi
-    if (used.includes(idx)) continue;
+    // akun mati permanen / sudah dipakai hari ini -> lewati
+    if (dead.includes(idx) || used.includes(idx)) continue;
 
     const cred = CREDENTIALS[idx];
     let res: Response;
@@ -343,10 +384,18 @@ async function handler(req: Request): Promise<Response> {
 
     const bodyText = await res.text();
 
-    if (res.status === 403 && bodyText.includes("user_deactivated")) {
-      // akun nonaktif -> tandai terpakai hari ini, lanjut akun berikutnya
+    const permanentReason = isPermanentError(bodyText);
+
+    if (permanentReason !== null) {
+      // akun mati permanen -> blacklist + lapor Telegram,
+      // lanjut ke akun berikutnya
+      if (!dead.includes(idx)) {
+        dead.push(idx);
+        await kv.set(["dead_accounts"], dead);
+      }
       used.push(idx);
       await kv.set(["used_today", today], used);
+      await notifyDeadAccount(cred[0], cred[1], permanentReason);
       continue;
     }
 
