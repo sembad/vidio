@@ -18,25 +18,54 @@ const PROXY_URL =
 const CACHE_TTL_MS = 4 * 60 * 1000; // 4 menit
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000; // UTC+7
 
-// Isi langsung di sini, format sama seperti versi PHP.
-// Format: [nomor, email, token]
-const CREDENTIALS: Array<[number, string, string]> = [
-  [
-    1704,
-    "ebbb326f-6872-49a4-8782-8487352b2f6c-coocaa@fake-coocaa.com",
-    "hekqnNz7tksBah11g8ae",
-  ],
-  [
-    1730,
-    "0982916c-00e8-4446-bee9-c7a72c5a7b04-coocaa@fake-coocaa.com",
-    "kEosFpdMv3CZCdfNwx_e",
-  ],
-  [
-    1731,
-    "2f2f7870-4f33-4d89-a4b6-cd63fc64f7f5-coocaa@fake-coocaa.com",
-    "YY3g8LVFvrFvxwo5f6NE",
-  ],
-];
+// Isi langsung di sini — format PHP array, diparse otomatis.
+const CREDENTIALS_RAW = `
+[
+    [
+        'nomor' => 1729,
+        'email' => 'ebbb326f-6872-49a4-8782-8487352b2f6c-coocaa@fake-coocaa.com',
+        'token' => 'hekqnNz7tksBah11g8ae',
+    ],
+    [
+        'nomor' => 1730,
+        'email' => '0982916c-00e8-4446-bee9-c7a72c5a7b04-coocaa@fake-coocaa.com',
+        'token' => 'kEosFpdMv3CZCdfNwx_e',
+    ],
+    [
+        'nomor' => 1731,
+        'email' => '2f2f7870-4f33-4d89-a4b6-cd63fc64f7f5-coocaa@fake-coocaa.com',
+        'token' => 'YY3g8LVFvrFvxwo5f6NE',
+    ],
+]
+`;
+
+// Parser format PHP array: 'nomor' => x, 'email' => '...', 'token' => '...'
+function parsePhpCredentials(raw: string): Array<[number, string, string]> {
+  const pattern =
+    /'nomor'\s*=>\s*(\d+)\s*,\s*'email'\s*=>\s*'([^']*)'\s*,\s*'token'\s*=>\s*'([^']*)'/g;
+
+  const result: Array<[number, string, string]> = [];
+
+  for (const match of raw.matchAll(pattern)) {
+    result.push([
+      Number(match[1]),
+      match[2],
+      match[3],
+    ]);
+  }
+
+  if (result.length === 0) {
+    throw new Error(
+      "CREDENTIALS_RAW kosong atau format PHP array tidak dikenali.",
+    );
+  }
+
+  return result;
+}
+
+const CREDENTIALS: Array<[number, string, string]> = parsePhpCredentials(
+  CREDENTIALS_RAW,
+);
 
 // ------------------------------------------------------------
 // Proxy client (Deno.createHttpClient dengan proxy)
