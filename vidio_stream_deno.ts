@@ -222,8 +222,16 @@ function serveStream(data: Record<string, unknown>, type: string): Response {
 // ------------------------------------------------------------
 // Handler utama
 // ------------------------------------------------------------
+const SECRET_PATH = "hsiwgwiwvwoeveiwhe";
+
 async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
+
+  // hanya jalankan di path rahasia; path lain -> 404 biasa
+  if (url.pathname !== `/${SECRET_PATH}`) {
+    return json({ error: "Not Found" }, 404);
+  }
+
   const id = (url.searchParams.get("id") ?? "").trim();
   const type = (url.searchParams.get("type") ?? "").trim().toLowerCase();
 
