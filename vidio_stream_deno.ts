@@ -220,6 +220,65 @@ function serveStream(data: Record<string, unknown>, type: string): Response {
 }
 
 // ------------------------------------------------------------
+// KV dengan fallback memori (kalau Deno.openKv tidak tersedia,
+// mis. KV belum diaktifkan di project Deno Deploy)
+// ------------------------------------------------------------
+interface AtomicChain {
+  set(key: unknown[], value: unknown): AtomicChain;
+  commit(): Promise<void>;
+}
+
+interface KvLike {
+  get(key: unknown[]): Promise<{ value: unknown }>;
+  set(key: unknown[], value: unknown): Promise<void>;
+  atomic(): AtomicChain;
+}
+
+class MemoryKv implements KvLike {
+  private map = new Map<string, unknown>();
+
+  async get(key: unknown[]): Promise<{ value: unknown }> {
+    return { value: this.map.get(JSON.stringify(key)) ?? null };
+  }
+
+  async set(key: unknown[], value: unknown): Promise<void> {
+    this.map.set(JSON.stringify(key), value);
+  }
+
+  atomic() {
+    const ops: Array<[unknown[], unknown]> = [];
+    const chain = {
+      set: (key: unknown[], value: unknown) => {
+        ops.push([key, value]);
+        return chain;
+      },
+      commit: async () => {
+        for (const [key, value] of ops) {
+          this.map.set(JSON.stringify(key), value);
+        }
+      },
+    };
+    return chain;
+  }
+}
+
+let kvInstance: KvLike | null = null;
+
+async function getKv(): Promise<KvLike> {
+  if (kvInstance !== null) return kvInstance;
+
+  try {
+    kvInstance = await Deno.openKv() as unknown as KvLike;
+  } catch {
+    // openKv tidak tersedia -> fallback memori (state hilang saat
+    // instance restart, tapi endpoint tetap berfungsi)
+    kvInstance = new MemoryKv();
+  }
+
+  return kvInstance;
+}
+
+// ------------------------------------------------------------
 // Handler utama
 // ------------------------------------------------------------
 async function handler(req: Request): Promise<Response> {
@@ -235,7 +294,7 @@ async function handler(req: Request): Promise<Response> {
     return json({ error: "Type hanya boleh dash, hls, atau drm." }, 400);
   }
 
-  const kv = await Deno.openKv();
+  const kv = await getKv();
 
   // 1. Cache respon stream 4 menit -> selama segar, tidak hit API
   const cacheEntry = await kv.get(["stream_cache", id]);
@@ -333,4 +392,14 @@ async function handler(req: Request): Promise<Response> {
   }, 503);
 }
 
-Deno.serve(handler);
+Deno.serve(async (req) => {
+  try {
+    return await handler(req);
+  } catch (error) {
+    // tampilkan penyebab asli, bukan "Internal Server Error" kosong
+    return json({
+      error: "Handler error.",
+      detail: error instanceof Error ? error.message : String(error),
+    }, 500);
+  }
+});
