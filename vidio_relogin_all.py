@@ -13,7 +13,7 @@ INPUT_FILE = sys.argv[1] if len(sys.argv) > 1 else "vidio_accounts_input.txt"
 OUTPUT_FILE = sys.argv[2] if len(sys.argv) > 2 else "vidio_accounts_relogin.txt"
 LIMIT = int(sys.argv[3]) if len(sys.argv) > 3 else None
 
-STREAM_ID = "22246"
+STREAM_ID = "9182"
 
 
 def parse_accounts(path):
@@ -64,6 +64,9 @@ def verify_stream(email, token):
         if resp.status != 200:
             return False, f"HTTP {resp.status}"
         data = json.loads(body.decode("utf-8", "replace"))
+        # ponytail: server kadang balas 200 dengan body errors — anggap gagal
+        if "errors" in data:
+            return False, data["errors"][0].get("title", "error")
         if data.get("is_preview") is False:
             return True, "FULL ACCESS"
         return False, "is_preview true"
@@ -80,10 +83,15 @@ def main():
     results = []
     ok = 0
     for i, (nomor, email, old_token) in enumerate(accounts, 1):
-        try:
-            new_token, err = relogin(email)
-        except Exception as e:  # noqa: BLE001
-            new_token, err = None, str(e)[:80]
+        new_token = None
+        err = ""
+        for attempt in (1, 2):  # ponytail: 1 retry, proxy kadang timeout
+            try:
+                new_token, err = relogin(email)
+                if new_token:
+                    break
+            except Exception as e:  # noqa: BLE001
+                err = str(e)[:80]
         if not new_token:
             print(f"[{i}/{len(accounts)}] #{nomor} RELOGIN GAGAL: {err}")
             continue
