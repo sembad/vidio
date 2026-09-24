@@ -12,7 +12,7 @@ const ACCOUNT_TTL = 240; // 4 menit
 // Isi langsung di sini, format sama seperti sebelumnya.
 $CREDENTIALS = [    
     [
-        'nomor' => 1729,
+        'nomor' => 1704,
         'email' => 'ebbb326f-6872-49a4-8782-8487352b2f6c-coocaa@fake-coocaa.com',
         'token' => 'hekqnNz7tksBah11g8ae',
     ],

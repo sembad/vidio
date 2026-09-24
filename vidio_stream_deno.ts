@@ -22,7 +22,7 @@ const WIB_OFFSET_MS = 7 * 60 * 60 * 1000; // UTC+7
 // Format: [nomor, email, token]
 const CREDENTIALS: Array<[number, string, string]> = [
   [
-    1729,
+    1704,
     "ebbb326f-6872-49a4-8782-8487352b2f6c-coocaa@fake-coocaa.com",
     "hekqnNz7tksBah11g8ae",
   ],
