@@ -26,7 +26,7 @@ from urllib.parse import urlsplit
 
 INPUT_FILE = sys.argv[1] if len(sys.argv) > 1 else "vidio_accounts_input.txt"
 OUTPUT_FILE = sys.argv[2] if len(sys.argv) > 2 else "vidio_accounts_full_access.txt"
-LIVESTREAM_ID = "22246"
+LIVESTREAM_ID = "22246"  # fallback only; ID aktif diambil dinamis di main()
 HOST = "api.vidio.com"
 PATH = f"/livestreamings/{LIVESTREAM_ID}/stream?initialize=true"
 
@@ -76,6 +76,31 @@ def parse_accounts(path):
     return accounts
 
 
+def fetch_live_stream_id():
+    """Ambil ID livestream aktif dari /livestreamings — ID lama bisa sudah
+    tidak ada (event selesai) dan bikin semua akun kelihatan 401."""
+    global PATH
+    conn = open_conn()
+    try:
+        conn.request("GET", "/livestreamings?page=1&per_page=1", headers=STATIC_HEADERS)
+        resp = conn.getresponse()
+        body = resp.read()
+        if resp.getheader("Content-Encoding") == "gzip":
+            import gzip
+
+            body = gzip.decompress(body)
+        data = json.loads(body.decode("utf-8", "replace"))
+        stream_id = data["data"][0]["id"]
+        PATH = f"/livestreamings/{stream_id}/stream?initialize=true"
+        print(f"[*] Livestream aktif: {stream_id}")
+        return True
+    except Exception as e:  # noqa: BLE001
+        print(f"[!] Gagal ambil livestream aktif ({e}), pakai fallback {LIVESTREAM_ID}")
+        return False
+    finally:
+        conn.close()
+
+
 def check_account(email, token):
     """Return (is_preview, raw_json) or (None, error_str) on failure."""
     conn = open_conn()
@@ -116,6 +141,7 @@ def format_entry(acc):
 def main():
     accounts = parse_accounts(INPUT_FILE)
     print(f"[*] {len(accounts)} akun ditemukan di {INPUT_FILE}")
+    fetch_live_stream_id()
 
     kept = []
     for i, acc in enumerate(accounts, 1):
