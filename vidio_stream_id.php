@@ -12,14 +12,19 @@ const ACCOUNT_TTL = 240; // 4 menit
 // Isi langsung di sini, format sama seperti sebelumnya.
 $CREDENTIALS = [    
     [
-        'nomor' => 426,
-        'email' => '8b1ab28d-ae84-4277-ac59-1f30ab68fb97-tcl@fake-tcl.com',
-        'token' => 'TBmhPj15NAUAe_nJVysK',
+        'nomor' => 1729,
+        'email' => 'ebbb326f-6872-49a4-8782-8487352b2f6c-coocaa@fake-coocaa.com',
+        'token' => 'hekqnNz7tksBah11g8ae',
     ],
     [
-        'nomor' => 2,
-        'email' => 'c01df64a-7e45-4baa-b35a-6407a21d725c-tcl@fake-tcl.com',
-        'token' => '_FXJjCJN3agcyxiCsWJ4',
+        'nomor' => 1730,
+        'email' => '0982916c-00e8-4446-bee9-c7a72c5a7b04-coocaa@fake-coocaa.com',
+        'token' => 'kEosFpdMv3CZCdfNwx_e',
+    ],
+    [
+        'nomor' => 1731,
+        'email' => '2f2f7870-4f33-4d89-a4b6-cd63fc64f7f5-coocaa@fake-coocaa.com',
+        'token' => 'YY3g8LVFvrFvxwo5f6NE',
     ],
 ];
 
