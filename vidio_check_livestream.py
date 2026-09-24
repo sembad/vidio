@@ -91,6 +91,8 @@ def check_account(email, token):
 
             body = gzip.decompress(body)
         data = json.loads(body.decode("utf-8", "replace"))
+        if resp.status == 401:
+            return None, "HTTP 401 (token invalid/expired, dilewati)"
         if resp.status != 200:
             return None, f"HTTP {resp.status}: {data}"
         is_preview = data["data"]["attributes"]["is_preview"]
