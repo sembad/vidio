@@ -2,9 +2,20 @@
 
 const STREAM_API_BASE = 'https://api.vidio.com';
 const ROTATION_COOKIE = 'credential_rotation';
-const ACCOUNTS_URL    = 'https://baru.pw/jsoegwies82u2bsishshwu.json';
-const CACHE_FILE      = __DIR__ . '/vidio_cache.json';
-const CACHE_TTL       = 240; // 4 menit
+
+// Isi langsung di sini, format sama seperti sebelumnya.
+$CREDENTIALS = [
+    [
+        'nomor' => 426,
+        'email' => '8b1ab28d-ae84-4277-ac59-1f30ab68fb97-tcl@fake-tcl.com',
+        'token' => 'TBmhPj15NAUAe_nJVysK',
+    ],
+    [
+        'nomor' => 2,
+        'email' => 'c01df64a-7e45-4baa-b35a-6407a21d725c-tcl@fake-tcl.com',
+        'token' => '_FXJjCJN3agcyxiCsWJ4',
+    ],
+];
 
 function sendJson($data, $status = 200)
 {
@@ -20,151 +31,60 @@ function sendJson($data, $status = 200)
     exit;
 }
 
-// ============================================================
-// Daftar akun: fetch dari ACCOUNTS_URL, disimpan di cache
-// selama 4 menit. Selama cache masih fresh, tidak fetch ulang.
-// Kalau fetch gagal, pakai cache lama kalau ada.
-// ============================================================
-function loadAccounts()
-{
-    $useCache = false;
-
-    if (is_readable(CACHE_FILE)) {
-        $cached = json_decode((string) file_get_contents(CACHE_FILE), true);
-
-        if (
-            is_array($cached) &&
-            isset($cached['fetched_at'], $cached['accounts']) &&
-            is_array($cached['accounts']) &&
-            (time() - (int) $cached['fetched_at']) < CACHE_TTL
-        ) {
-            $useCache = true;
-        }
-    }
-
-    if ($useCache) {
-        return $cached['accounts'];
-    }
-
-    $curl = curl_init(ACCOUNTS_URL);
-
-    curl_setopt_array($curl, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_TIMEOUT        => 30,
-        CURLOPT_SSL_VERIFYPEER => true,
-        CURLOPT_SSL_VERIFYHOST => 2,
-    ]);
-
-    $response = curl_exec($curl);
-    $error    = curl_error($curl);
-    curl_close($curl);
-
-    if ($response !== false) {
-        $parsed = parseAccounts($response);
-
-        if (!empty($parsed)) {
-            @file_put_contents(
-                CACHE_FILE,
-                json_encode([
-                    'fetched_at' => time(),
-                    'accounts'   => $parsed,
-                ])
-            );
-
-            return $parsed;
-        }
-    }
-
-    // fetch gagal -> fallback cache lama walau sudah expired
-    if (is_readable(CACHE_FILE)) {
-        $cached = json_decode((string) file_get_contents(CACHE_FILE), true);
-
-        if (is_array($cached) && !empty($cached['accounts'])) {
-            return $cached['accounts'];
-        }
-    }
-
-    throw new Exception('Gagal mengambil daftar akun: ' . $error);
-}
-
-// Format sumber bisa PHP-array text atau JSON; parse longgar.
-function parseAccounts($raw)
-{
-    $rows = json_decode($raw, true);
-
-    if (!is_array($rows)) {
-        // format PHP array text: 'nomor' => 1, 'email' => '...', 'token' => '...'
-        preg_match_all(
-            "/'nomor'\s*=>\s*'?(\d+)'?\s*,\s*'email'\s*=>\s*'?([^,'\r\n']*)'?\s*,\s*'token'\s*=>\s*'([^']*)'/",
-            (string) $raw,
-            $m,
-            PREG_SET_ORDER
-        );
-
-        $rows = [];
-
-        foreach ($m as $x) {
-            $rows[] = [
-                'nomor' => $x[1],
-                'email' => trim($x[2]),
-                'token' => $x[3],
-            ];
-        }
-
-        return $rows;
-    }
-
-    // JSON: dukung bentuk [ ['nomor'=>..], ... ] atau {'1': {...}}
-    $out = [];
-
-    foreach ($rows as $row) {
-        if (!is_array($row)) {
-            continue;
-        }
-
-        $out[] = [
-            'nomor' => (string) ($row['nomor'] ?? ''),
-            'email' => (string) ($row['email'] ?? ''),
-            'token' => (string) ($row['token'] ?? ''),
-        ];
-    }
-
-    return $out;
-}
-
-function requestStreamRaw($url, $headers)
+/**
+ * Sama seperti requestJson, tapi tidak melempar exception saat
+ * status HTTP bukan 2xx — status dan body dikembalikan apa adanya
+ * supaya bisa diperiksa (mis. 403 user_deactivated).
+ */
+function requestJsonRaw($url, $headers = [])
 {
     $curl = curl_init();
 
     curl_setopt_array($curl, [
-        CURLOPT_URL            => $url,
+        CURLOPT_URL => $url,
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => false,
-        CURLOPT_ENCODING       => '',
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 5,
         CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_TIMEOUT        => 30,
-        CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST  => 'GET',
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_SSL_VERIFYHOST => 2,
-        CURLOPT_HTTPHEADER     => $headers,
+        CURLOPT_HTTPHEADER => $headers,
     ]);
 
     $response = curl_exec($curl);
-    $error    = curl_error($curl);
-    $status   = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+    $error = curl_error($curl);
+    $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
 
     if (PHP_VERSION_ID < 80500) {
         curl_close($curl);
     }
 
-    return [
-        'code' => $status,
-        'body' => $response === false ? null : $response,
-        'err'  => $error,
-    ];
+    if ($response === false) {
+        throw new Exception('cURL error: ' . $error);
+    }
+
+    return ['status' => $status, 'body' => $response];
+}
+
+function requestJson($url, $headers = [])
+{
+    $response = requestJsonRaw($url, $headers);
+
+    if ($response['status'] < 200 || $response['status'] >= 300) {
+        throw new Exception('Upstream HTTP status: ' . $response['status']);
+    }
+
+    $json = json_decode($response['body'], true);
+
+    if (!is_array($json)) {
+        throw new Exception('Respons upstream bukan JSON valid.');
+    }
+
+    return $json;
 }
 
 function randomVisitorId()
@@ -354,14 +274,6 @@ function redirect307($url)
     exit;
 }
 
-function isUserDeactivated(array $res): bool
-{
-    return $res['code'] === 403
-        && $res['err'] === ''
-        && $res['body'] !== null
-        && strpos((string) $res['body'], 'user_deactivated') !== false;
-}
-
 try {
     $id = trim((string) ($_GET['id'] ?? ''));
     $type = strtolower(trim((string) ($_GET['type'] ?? '')));
@@ -378,8 +290,7 @@ try {
         ], 400);
     }
 
-    $rows       = loadAccounts();
-    $credential = selectCredential($rows);
+    $credential = selectCredential($CREDENTIALS);
 
     // https://api.domain.com/livestreamings/22213/stream?initialize=true
     $streamApiUrl = rtrim(STREAM_API_BASE, '/')
@@ -387,9 +298,11 @@ try {
         . rawurlencode($id)
         . '/stream?initialize=true';
 
-    $baseHeaders = [
+    $streamHeaders = [
         'Accept: application/vnd.api+json',
         'Content-Type: application/vnd.api+json',
+        'x-user-email: ' . $credential['email'],
+        'x-user-token: ' . $credential['token'],
         'User-Agent: tv-android/2608.2.4 (1020)',
         'Accept-Encoding: gzip',
         'x-client: 1788880138',
@@ -399,40 +312,36 @@ try {
         'x-api-auth: laZOmogezono5ogekaso5oz4Mezimew1',
         'x-api-app-info: tv-android/16/2608.2.4-1020',
         'accept-language: id',
+        'x-visitor-id: ' . randomVisitorId(),
     ];
 
-    // ============================================================
-    // Kalau 403 user_deactivated -> ULANGI AKUN YANG SAMA sampai
-    // dapat 200 OK (bukan rotasi ke akun lain). Error lain
-    // langsung diteruskan apa adanya.
-    // ============================================================
+    // Kalau respon 403 user_deactivated, ulangi AKUN YANG SAMA
+    // sampai dapat 200 OK (bukan rotasi ke akun lain).
     set_time_limit(0);
 
-    $attempts = 0;
-    $last     = null;
-
     while (true) {
-        $headers = $baseHeaders;
-        $headers[] = 'x-user-email: ' . $credential['email'];
-        $headers[] = 'x-user-token: ' . $credential['token'];
-        $headers[] = 'x-visitor-id: ' . randomVisitorId();
+        $raw = requestJsonRaw($streamApiUrl, $streamHeaders);
 
-        $last = requestStreamRaw($streamApiUrl, $headers);
-        $attempts++;
+        if ($raw['status'] >= 200 && $raw['status'] < 300) {
+            $streamJson = json_decode($raw['body'], true);
 
-        if ($last['code'] === 200 && $last['body'] !== null) {
+            if (!is_array($streamJson)) {
+                throw new Exception('Respons upstream bukan JSON valid.');
+            }
+
             break;
         }
 
-        if (!isUserDeactivated($last)) {
-            // bukan 403 user_deactivated -> teruskan respon asli
-            http_response_code($last['code'] > 0 ? $last['code'] : 502);
+        $isDeactivated =
+            $raw['status'] === 403 &&
+            strpos((string) $raw['body'], 'user_deactivated') !== false;
+
+        if (!$isDeactivated) {
+            // bukan 403 user_deactivated -> teruskan respon aslinya
+            http_response_code($raw['status'] ?: 502);
             header('Content-Type: application/json; charset=utf-8');
             header('Cache-Control: no-store');
-
-            echo ($last['body'] !== null)
-                ? $last['body']
-                : json_encode(['error' => 'cURL error: ' . $last['err']]);
+            echo $raw['body'];
             exit;
         }
 
@@ -440,11 +349,7 @@ try {
         usleep(500000); // jeda 0,5 detik biar tidak kena rate limit
     }
 
-    $streamData = json_decode((string) $last['body'], true);
-
-    if (!is_array($streamData)) {
-        throw new Exception('Respons upstream bukan JSON valid.');
-    }
+    $streamData = $streamJson;
 
     $attributes = $streamData['data']['attributes'] ?? [];
 
