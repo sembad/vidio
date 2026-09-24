@@ -33,6 +33,8 @@ from urllib.parse import urlsplit
 
 INPUT_FILE = sys.argv[1] if len(sys.argv) > 1 else "vidio_accounts_input.txt"
 OUTPUT_FILE = sys.argv[2] if len(sys.argv) > 2 else "vidio_accounts_full_access.txt"
+# ponytail: arg ke-3 = batasi jumlah akun yang dicek (sample), biar tidak lama
+LIMIT = int(sys.argv[3]) if len(sys.argv) > 3 else None
 HOST = "api.vidio.com"
 
 # Same residential proxy main.ts uses for ultimate stream requests, so checks
@@ -155,7 +157,9 @@ def format_entry(acc):
 
 def main():
     accounts = parse_accounts(INPUT_FILE)
-    print(f"[*] {len(accounts)} akun ditemukan di {INPUT_FILE}")
+    if LIMIT:
+        accounts = accounts[:LIMIT]
+    print(f"[*] {len(accounts)} akun ditemukan di {INPUT_FILE}" + (f" (dibatasi {LIMIT})" if LIMIT else ""))
     premium_id = find_premium_livestream_id()
 
     kept = []
