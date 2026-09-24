@@ -1,10 +1,14 @@
-import glob
 import json
 import os
 
-# File input: SEMUA file hasil*.json di folder script ini
-# (urut nama; file yang tidak ada/rusak dilewati)
-INPUT_FILES = sorted(glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "hasil*.json")))
+# File input: 5 file JSON hasil batch (urutan bebas, yang tidak ada dilewati)
+INPUT_FILES = [
+    "hasil1.json",
+    "hasil2.json",
+    "hasil3.json",
+    "hasil4.json",
+    "hasil5.json",
+]
 
 OUTPUT_FILE = "wowok.json"
 
