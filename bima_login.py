@@ -7,6 +7,7 @@ Flow:
   2. POST /api/v2/otp/send/v1         -> kirim OTP ke nomor (return transid)
   3. POST /api/v2/otp/validate/v2     -> validasi OTP (body AES-GCM terenkripsi)
                                        -> return tokenid LOGIN (JWT ~60 hari)
+  4. POST /api/v2/profile/get         -> data profil (pakai token LOGIN)
 
 Header dinamis (diverifikasi 113/113 match terhadap capture asli):
   X-IMI-HASH  = SHA512("parent$" + os + "$" + ver + "$" + tokenid + "&SALT=" + gv(uid))
@@ -21,6 +22,7 @@ import hashlib
 import http.client
 import json
 import os
+import sys
 import time
 import urllib.parse
 import uuid
@@ -28,7 +30,7 @@ import uuid
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 # ---------------- konfigurasi (ganti sesuai kebutuhan) ----------------
-MSISDN = "6289671276928"  # nomor tujuan OTP, format 62xxx
+DEFAULT_MSISDN = "6289671276928"  # default, bisa diganti saat diminta input
 DEVICE_ID = "a05dae0d4c80eb42"  # 16 hex, bebas tapi konsisten per "device"
 DEVICE_NAME = "Xiaomi M2006C3LG"
 DEVICE_OEM = "Xiaomi"
@@ -143,19 +145,44 @@ def validate_otp(tokenid: str, transid: str, otp: str) -> str:
     return resp["data"]["tokenid"]
 
 
+def get_profile(login_tokenid: str) -> dict:
+    resp = post(f"{BASE}/profile/get", "{}", login_tokenid)
+    if resp.get("status") != "0":
+        raise RuntimeError(f"profile/get gagal: {resp}")
+    return resp["data"]
+
+
+def ask_msisdn() -> str:
+    raw = input(f"[?] Nomor HP (format 62xxx, enter = {DEFAULT_MSISDN}): ").strip()
+    msisdn = raw or DEFAULT_MSISDN
+    if not msisdn.isdigit() or not msisdn.startswith("62") or len(msisdn) < 10:
+        raise SystemExit(f"nomor tidak valid: {msisdn} (harus diawali 62, contoh 6281234567890)")
+    return msisdn
+
+
 def main():
-    # reuse guest token yang masih valid kalau ada
-    guest = None
+    saved = {}
     if os.path.exists(TOKEN_FILE):
         with open(TOKEN_FILE) as f:
-            guest = json.load(f).get("guest_tokenid")
+            saved = json.load(f)
+
+    # mode profile saja kalau token login masih ada
+    if saved.get("login_tokenid") and "--profile" in sys.argv:
+        data = get_profile(saved["login_tokenid"])
+        print(json.dumps(data, indent=2, ensure_ascii=False))
+        return
+
+    msisdn = ask_msisdn()
+
+    # reuse guest token yang masih valid kalau ada
+    guest = saved.get("guest_tokenid")
     if not guest:
         print("[*] Mengambil guest token...")
         guest = get_guest_token()
         print("[+] Guest token OK")
 
-    print(f"[*] Mengirim OTP ke {MSISDN}...")
-    transid = send_otp(guest, MSISDN)
+    print(f"[*] Mengirim OTP ke {msisdn}...")
+    transid = send_otp(guest, msisdn)
 
     otp = input("[?] Masukkan OTP: ").strip()
 
@@ -168,6 +195,24 @@ def main():
     print("[+] LOGIN BERHASIL")
     print(f"    tokenid (login): {login_token}")
     print(f"    disimpan di: {TOKEN_FILE}")
+
+    print("[*] Mengambil profil...")
+    data = get_profile(login_token)
+    print(f"""[+] PROFIL
+    nama     : {data.get('fname', '-')}
+    nomor    : {data.get('mob', '-')}
+    tipe     : {data.get('utype', '-')}
+    segment  : {data.get('segment', '-')}
+    tier     : {data.get('currenttier', '-') or '-'}
+    email    : {data.get('email', '-') or '-'}""")
+    print(f"    (detail lengkap tersimpan di {TOKEN_FILE})")
+
+    # simpan profil juga
+    with open(TOKEN_FILE) as f:
+        store = json.load(f)
+    store["profile"] = data
+    with open(TOKEN_FILE, "w") as f:
+        json.dump(store, f, indent=2, ensure_ascii=False)
 
 
 if __name__ == "__main__":
