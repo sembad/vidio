@@ -1,20 +1,36 @@
-"""Cek satu akun secara manual: masukkan email + token lama.
+#!/usr/bin/env python3
+"""Cek 1 akun Vidio: verifikasi token lama + relogin (dapat token baru).
 
-1. Verifikasi token lama ke /api/tokens (respon asli ditampilkan)
-2. Relogin via partner auth (respon asli ditampilkan)
-3. Ringkasan: email + token lama (status) + token baru
+Standalone — tidak butuh file lain. Jalankan:
+    python3 vidio.py
+lalu masukkan email dan token saat diminta.
 
-Usage: python3 vidio_check_manual.py            (mode interaktif)
-       python3 vidio_check_manual.py email token
+Butuh: pip install pycryptodome
 """
+
+import base64
 import gzip
 import http.client
 import json
+import os
 import sys
+from urllib.parse import urlsplit
 
-from vidio_relogin import gen_payload, post_partner_auth, extract_auth
+from Crypto.Cipher import AES
+from Crypto.Hash import HMAC, SHA256
 
-API_HEADERS = {
+HOST = "api.vidio.com"
+PROXY_URL = "http://54e00827b371c0c310a2__cr.id:817df9dc4f7bfe33@gw.dataimpulse.com:823"
+_proxy = urlsplit(PROXY_URL)
+PROXY_AUTH = "Basic " + base64.b64encode(
+    f"{_proxy.username}:{_proxy.password}".encode()
+).decode()
+
+# kunci diekstrak dari libndkconfig.so APK 2608.2.4
+PARTNER_KEY = base64.b64decode("O8NAJlk7o7GNeNn01qUXxjezrD/Z2djOMjSizTRZt1U=")
+KEY_ID = "ZXhDgP7RixaP"
+
+STATIC_HEADERS = {
     "User-Agent": "tv-android/2608.2.4 (1020)",
     "Accept-Encoding": "gzip",
     "x-client": "1788880138",
@@ -29,55 +45,120 @@ API_HEADERS = {
 }
 
 
-def verify_old_token(email, token):
-    headers = dict(API_HEADERS)
-    headers["x-user-email"] = email
-    headers["x-user-token"] = token
-    conn = http.client.HTTPSConnection("api.vidio.com", 443, timeout=20)
+def _request(method, path, headers, body=None):
+    """Request lewat proxy ID. Return (status, body_bytes)."""
+    conn = http.client.HTTPSConnection(_proxy.hostname, _proxy.port, timeout=30)
     try:
-        conn.request("GET", "/api/tokens", headers=headers)
+        conn.set_tunnel(HOST, 443, headers={"Proxy-Authorization": PROXY_AUTH})
+        conn.request(method, path, body=body, headers=headers)
         resp = conn.getresponse()
-        body = resp.read()
+        raw = resp.read()
         if resp.getheader("Content-Encoding") == "gzip":
-            body = gzip.decompress(body)
-        return resp.status, body.decode("utf-8", "replace")
+            raw = gzip.decompress(raw)
+        return resp.status, raw
     finally:
         conn.close()
 
 
-def check(email, token):
-    print(f"[*] Verifikasi token lama {email} ...")
-    old_status, old_body = verify_old_token(email, token)
-    print(f"[*] Token lama -> HTTP {old_status}")
-    print("[*] Respon asli server:")
-    print(old_body)
+def verify_old_token(email, token):
+    """Cek token lama ke /api/tokens. Return (status, resp_dict)."""
+    headers = dict(STATIC_HEADERS)
+    headers.update({"x-user-email": email, "x-user-token": token})
+    status, raw = _request("GET", "/api/tokens", headers)
+    try:
+        return status, json.loads(raw.decode("utf-8", "replace"))
+    except ValueError:
+        return status, {"raw": raw[:300].decode("utf-8", "replace")}
 
-    print(f"[*] Relogin {email} ...")
-    body, headers = gen_payload(email.split("-tcl@")[0])
-    status, resp = post_partner_auth(body, headers)
-    print(f"[*] Relogin -> HTTP {status}")
-    print("[*] Respon asli server:")
-    print(json.dumps(resp, indent=2, ensure_ascii=False))
-    new_token = extract_auth(resp).get("token")
-    if new_token:
-        print("[+] Ringkasan:")
-        print(json.dumps({
-            "email": email,
-            "token_lama": token,
-            "status_token_lama": old_status,
-            "token_baru": new_token,
-        }, indent=2))
-    else:
-        print("[-] Tidak ada token di respon")
+
+def gen_payload(unique_id, partner_agent="coocaa_SW3_ATV_T"):
+    """Bikin (body, headers) untuk POST /api/partner/auth."""
+    iv = bytes(os.urandom(12)[i] % 95 + 32 for i in range(12))
+    plaintext = json.dumps(
+        {"unique_id": unique_id, "partner_agent": partner_agent},
+        separators=(",", ":"),
+    ).encode()
+
+    cipher = AES.new(PARTNER_KEY, AES.MODE_GCM, nonce=iv)
+    ct, tag = cipher.encrypt_and_digest(plaintext)
+    body = json.dumps({"data": base64.b64encode(ct + tag + iv).decode()},
+                      separators=(",", ":"))
+
+    # Java: new String(iv, UTF8).getBytes(UTF8) — lossy, tiru dengan 'replace'
+    iv_lossy = iv.decode("utf-8", "replace").encode("utf-8")
+    hmac2 = HMAC.new(
+        HMAC.new(PARTNER_KEY, iv_lossy, SHA256).digest(), plaintext, SHA256
+    ).digest()
+    iv_b64 = base64.b64encode(iv).decode()
+    signature = iv_b64[:-1] + base64.b64encode(hmac2).decode() + iv_b64[-1]
+
+    headers = {
+        "User-Agent": "tv-android/2608.2.4 (1020)",
+        "Accept-Encoding": "gzip",
+        "signature": f'keyId="{KEY_ID}",signature="{signature}"',
+        "x-api-platform": "tv-android",
+        "x-api-auth": "laZOmogezono5ogekaso5oz4Mezimew1",
+        "x-api-app-info": "tv-android/16/2608.2.4-1020",
+        "Content-Type": "application/json; charset=UTF-8",
+        "Content-Length": str(len(body)),
+    }
+    return body, headers
+
+
+def relogin(email):
+    """Relogin via partner auth. Return (status, resp_dict)."""
+    uid = email.split("-tcl@")[0]
+    body, headers = gen_payload(uid)
+    status, raw = _request("POST", "/api/partner/auth", headers, body)
+    try:
+        return status, json.loads(raw.decode("utf-8", "replace"))
+    except ValueError:
+        return status, {"raw": raw[:300].decode("utf-8", "replace")}
+
+
+def extract_token(resp):
+    """Cari authentication_token di respons login (rekursif)."""
+    result = {}
+
+    def walk(obj):
+        if isinstance(obj, dict):
+            if "authentication_token" in obj:
+                result.setdefault("token", obj["authentication_token"])
+            for v in obj.values():
+                walk(v)
+        elif isinstance(obj, list):
+            for v in obj:
+                walk(v)
+
+    walk(resp)
+    return result.get("token")
 
 
 def main():
     if len(sys.argv) >= 3:
-        check(sys.argv[1], sys.argv[2])
-        return
-    email = input("Email : ").strip()
-    token = input("Token : ").strip()
-    check(email, token)
+        email, token = sys.argv[1], sys.argv[2]
+    else:
+        email = input("Email : ").strip()
+        token = input("Token : ").strip()
+
+    print(f"\n[*] Verifikasi token lama {email} ...")
+    status, resp = verify_old_token(email, token)
+    print(f"    HTTP {status}")
+    print(json.dumps(resp, indent=2, ensure_ascii=False)[:500])
+
+    print(f"\n[*] Relogin {email} ...")
+    status, resp = relogin(email)
+    print(f"    HTTP {status}")
+    print(json.dumps(resp, indent=2, ensure_ascii=False))
+
+    new_token = extract_token(resp) if status == 200 else None
+    print("\n=== RINGKASAN ===")
+    print(json.dumps({
+        "email": email,
+        "token_lama": token,
+        "status_token_lama": verify_old_token(email, token)[0],
+        "token_baru": new_token,
+    }, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":
