@@ -188,9 +188,10 @@ function notifyTelegram(string $botToken, string $chatId, string $text): void
 }
 
 // ============================================================
-// 4. Coba akun saat ini. Retry (ganti akun) HANYA kalau respon
-//    HTTP 403 dengan error "user_deactivated" (Pengguna gak
-//    aktif). Error lain langsung diteruskan apa adanya.
+// 4. Coba akun saat ini. Kalau respon HTTP 403 dengan error
+//    "user_deactivated" (Pengguna gak aktif), ULANGI AKUN YANG
+//    SAMA sampai dapat 200 OK (bukan rotasi ke akun lain).
+//    Error lain langsung diteruskan apa adanya.
 // ============================================================
 header('Content-Type: application/json');
 set_time_limit(0);              // retry boleh jalan lama sampai dapat 200
@@ -205,19 +206,17 @@ function isUserDeactivated(array $res): bool
         && strpos((string) $res['body'], 'user_deactivated') !== false;
 }
 
-$attempts  = 0;
-$failures  = [];
-$last      = null;
+$attempts = 0;
+$last     = null;
 
 // ============================================================
-// Loop TANPA batas putaran: terus ganti akun sampai dapat
-// 200 OK. Bisa lebih dari 1 putaran penuh daftar akun.
+// Loop TANPA batas: akun yang sama diulang terus sampai 200 OK.
 // ============================================================
 while (true) {
     $acc = $accounts[$state['index']];
 
     if (empty($acc['email']) || empty($acc['token'])) {
-        // akun rusak -> langsung ganti
+        // akun rusak -> langsung ganti ke akun berikutnya
         $state['index']       = ($state['index'] + 1) % $total;
         $state['switched_at'] = time();
         saveState($STATE_FILE, $state['index'], $state['switched_at']);
@@ -244,19 +243,8 @@ while (true) {
         exit;
     }
 
-    // 403 user_deactivated -> catat, ganti akun, coba lagi
-    $failures[] = [
-        'nomor' => $acc['nomor'] ?? ($state['index'] + 1),
-        'email' => $acc['email'],
-        'code'  => $last['code'],
-        'err'   => $last['err'],
-    ];
-
-    $state['index']       = ($state['index'] + 1) % $total;
-    $state['switched_at'] = time();
-    saveState($STATE_FILE, $state['index'], $state['switched_at']);
-
-    // jeda kecil biar tidak kena rate limit API Vidio
+    // 403 user_deactivated -> ULANGI AKUN YANG SAMA (bukan ganti)
+    // jeda biar tidak kena rate limit API Vidio
     usleep(500000); // 0,5 detik
 }
 
