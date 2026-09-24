@@ -188,10 +188,20 @@ function notifyTelegram(string $botToken, string $chatId, string $text): void
 }
 
 // ============================================================
-// 4. Coba akun saat ini; kalau belum 200 OK, lanjut ke akun
-//    berikutnya sampai dapat 200 OK (maksimal 1 putaran penuh)
+// 4. Coba akun saat ini. Retry (ganti akun) HANYA kalau respon
+//    HTTP 403 dengan error "user_deactivated" (Pengguna gak
+//    aktif). Error lain langsung diteruskan apa adanya.
 // ============================================================
 header('Content-Type: application/json');
+
+function isUserDeactivated(array $res): bool
+{
+    return $res['code'] === 403
+        && $res['err'] === ''
+        && $res['body'] !== false
+        && $res['body'] !== null
+        && strpos((string) $res['body'], 'user_deactivated') !== false;
+}
 
 $attempts  = 0;
 $failures  = [];
@@ -219,7 +229,16 @@ while ($attempts < $total) {
         exit;
     }
 
-    // belum 200 -> catat, ganti akun, coba lagi
+    if (!isUserDeactivated($last)) {
+        // bukan 403 user_deactivated -> jangan retry,
+        // teruskan respon aslinya apa adanya
+        echo ($last['body'] !== false && $last['body'] !== null)
+            ? $last['body']
+            : json_encode(['error' => 'cURL: ' . $last['err']]);
+        exit;
+    }
+
+    // 403 user_deactivated -> catat, ganti akun, coba lagi
     $failures[] = [
         'nomor' => $acc['nomor'] ?? ($state['index'] + 1),
         'email' => $acc['email'],
