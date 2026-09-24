@@ -8,6 +8,11 @@ Flow:
   3. POST /api/v2/otp/validate/v2     -> validasi OTP (body AES-GCM terenkripsi)
                                        -> return tokenid LOGIN (JWT ~60 hari)
   4. POST /api/v2/profile/get         -> data profil (pakai token LOGIN)
+  5. POST /api/v2/vms/vouchers        -> daftar voucher (VIDIO dll)
+     POST /api/v2/vms/benefits        -> detail benefit + keyword claim
+     POST /api/v2/vms/claim           -> klaim benefit (aktifasi VIDIO)
+
+Token TIDAK disimpan ke file — murni di memori selama script jalan.
 
 Header dinamis (diverifikasi 113/113 match terhadap capture asli):
   X-IMI-HASH  = SHA512("parent$" + os + "$" + ver + "$" + tokenid + "&SALT=" + gv(uid))
@@ -46,7 +51,6 @@ AES_IV = "Rx4Cm9Pn2Vf8Kt6B"
 
 BASE = "https://bimaplus-api.ioh.co.id/api/v2"
 TOKEN_URL = "http://bimaplus.ioh.co.id/api/v2/token/app/v1"  # http, bukan https
-TOKEN_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bima_token.json")
 
 # ---------------- crypto / signing ----------------
 
@@ -152,6 +156,59 @@ def get_profile(login_tokenid: str) -> dict:
     return resp["data"]
 
 
+# ---------------- flow benefit VIDIO (VMS) ----------------
+
+
+def get_vms_vouchers(login_tokenid: str) -> list:
+    resp = post(f"{BASE}/vms/vouchers", "{}", login_tokenid)
+    if resp.get("status") != "0":
+        raise RuntimeError(f"vms/vouchers gagal: {resp}")
+    return resp.get("data") or []
+
+
+def get_vms_benefits(login_tokenid: str, referenceid: str, productid: str) -> list:
+    body = json.dumps({"referenceid": referenceid, "vouchercode": productid}, separators=(",", ":"))
+    resp = post(f"{BASE}/vms/benefits", body, login_tokenid)
+    if resp.get("status") != "0":
+        raise RuntimeError(f"vms/benefits gagal: {resp}")
+    return resp.get("data") or []
+
+
+def vms_claim(login_tokenid: str, referenceid: str, shortcode: str, keyword: str) -> dict:
+    body = json.dumps({"referenceid": referenceid, "shortcode": shortcode, "keyword": keyword},
+                      separators=(",", ":"))
+    resp = post(f"{BASE}/vms/claim", body, login_tokenid)
+    if resp.get("status") != "0":
+        raise RuntimeError(f"vms/claim gagal: {resp}")
+    return resp
+
+
+def claim_vidio_benefits(login_tokenid: str) -> None:
+    """Klaim semua voucher VMS berstatus ACTIVE (mis. VIDIO Ultimate)."""
+    vouchers = get_vms_vouchers(login_tokenid)
+    if not vouchers:
+        print("[-] Tidak ada voucher VMS di akun ini.")
+        return
+    for v in vouchers:
+        name = v.get("productname", "?")
+        status = v.get("voucherstatus", "?")
+        refid = v.get("referenceid", "")
+        print(f"[*] Voucher: {name} [{status}] (expiry {v.get('voucherexpriydate', '-')})")
+        if status != "ACTIVE":
+            print("    dilewati (bukan ACTIVE)")
+            continue
+        benefits = get_vms_benefits(login_tokenid, refid, v.get("productid", ""))
+        for b in benefits:
+            keyword = b.get("keyword", "")
+            shortcode = b.get("shortcode", "")
+            if keyword and shortcode:
+                vms_claim(login_tokenid, refid, shortcode, keyword)
+                print(f"[+] KLAIM BERHASIL: {b.get('benefitName', name)}")
+                print(f"    aktifkan via: {b.get('landingUrl', 'link di app BIMA+')}")
+            else:
+                print(f"[-] Tidak ada keyword klaim untuk {name}")
+
+
 def ask_msisdn() -> str:
     raw = input(f"[?] Nomor HP (format 62xxx, enter = {DEFAULT_MSISDN}): ").strip()
     msisdn = raw or DEFAULT_MSISDN
@@ -161,25 +218,11 @@ def ask_msisdn() -> str:
 
 
 def main():
-    saved = {}
-    if os.path.exists(TOKEN_FILE):
-        with open(TOKEN_FILE) as f:
-            saved = json.load(f)
-
-    # mode profile saja kalau token login masih ada
-    if saved.get("login_tokenid") and "--profile" in sys.argv:
-        data = get_profile(saved["login_tokenid"])
-        print(json.dumps(data, indent=2, ensure_ascii=False))
-        return
-
     msisdn = ask_msisdn()
 
-    # reuse guest token yang masih valid kalau ada
-    guest = saved.get("guest_tokenid")
-    if not guest:
-        print("[*] Mengambil guest token...")
-        guest = get_guest_token()
-        print("[+] Guest token OK")
+    print("[*] Mengambil guest token...")
+    guest = get_guest_token()
+    print("[+] Guest token OK")
 
     print(f"[*] Mengirim OTP ke {msisdn}...")
     transid = send_otp(guest, msisdn)
@@ -188,13 +231,8 @@ def main():
 
     print("[*] Validasi OTP...")
     login_token = validate_otp(guest, transid, otp)
-
-    with open(TOKEN_FILE, "w") as f:
-        json.dump({"guest_tokenid": guest, "login_tokenid": login_token}, f, indent=2)
-
     print("[+] LOGIN BERHASIL")
     print(f"    tokenid (login): {login_token}")
-    print(f"    disimpan di: {TOKEN_FILE}")
 
     print("[*] Mengambil profil...")
     data = get_profile(login_token)
@@ -205,14 +243,9 @@ def main():
     segment  : {data.get('segment', '-')}
     tier     : {data.get('currenttier', '-') or '-'}
     email    : {data.get('email', '-') or '-'}""")
-    print(f"    (detail lengkap tersimpan di {TOKEN_FILE})")
 
-    # simpan profil juga
-    with open(TOKEN_FILE) as f:
-        store = json.load(f)
-    store["profile"] = data
-    with open(TOKEN_FILE, "w") as f:
-        json.dump(store, f, indent=2, ensure_ascii=False)
+    print("[*] Cek voucher & klaim benefit (VIDIO dll)...")
+    claim_vidio_benefits(login_token)
 
 
 if __name__ == "__main__":
