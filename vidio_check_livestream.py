@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check Vidio livestream access per account and keep only non-preview (full access) ones.
+"""Check Vidio accounts: valid login + premium livestream access.
 
 Usage:
     python3 vidio_check_livestream.py [input_file] [output_file]
@@ -12,11 +12,18 @@ Input file format (PHP array, as pasted):
     ],
     ...
 
-Only entries whose livestream response has "is_preview": false are written
-to the output file, in the same PHP array format.
+Checks per account (through the residential proxy):
+  1. POST /auth            -> 200 = token masih valid/login; 401 = token mati.
+  2. GET /users/content_access?content_type=livestreaming&content_id=<premium>
+     -> 200 = full access (punya paket); 401 "Pilih paket" = login tapi
+        tanpa langganan premium.
+
+Only accounts that pass BOTH checks are written to the output file, in the
+same PHP array format.
 """
 
 import base64
+import gzip
 import http.client
 import json
 import re
@@ -26,9 +33,7 @@ from urllib.parse import urlsplit
 
 INPUT_FILE = sys.argv[1] if len(sys.argv) > 1 else "vidio_accounts_input.txt"
 OUTPUT_FILE = sys.argv[2] if len(sys.argv) > 2 else "vidio_accounts_full_access.txt"
-LIVESTREAM_ID = "22246"  # fallback only; ID aktif diambil dinamis di main()
 HOST = "api.vidio.com"
-PATH = f"/livestreamings/{LIVESTREAM_ID}/stream?initialize=true"
 
 # Same residential proxy main.ts uses for ultimate stream requests, so checks
 # come from the same IP pool instead of getting rate-limited/blocked directly.
@@ -76,56 +81,66 @@ def parse_accounts(path):
     return accounts
 
 
-def fetch_live_stream_id():
-    """Ambil ID livestream aktif dari /livestreamings — ID lama bisa sudah
-    tidak ada (event selesai) dan bikin semua akun kelihatan 401."""
-    global PATH
-    conn = open_conn()
-    try:
-        conn.request("GET", "/livestreamings?page=1&per_page=1", headers=STATIC_HEADERS)
-        resp = conn.getresponse()
-        body = resp.read()
-        if resp.getheader("Content-Encoding") == "gzip":
-            import gzip
-
-            body = gzip.decompress(body)
-        data = json.loads(body.decode("utf-8", "replace"))
-        stream_id = data["data"][0]["id"]
-        PATH = f"/livestreamings/{stream_id}/stream?initialize=true"
-        print(f"[*] Livestream aktif: {stream_id}")
-        return True
-    except Exception as e:  # noqa: BLE001
-        print(f"[!] Gagal ambil livestream aktif ({e}), pakai fallback {LIVESTREAM_ID}")
-        return False
-    finally:
-        conn.close()
-
-
-def check_account(email, token):
-    """Return (is_preview, raw_json) or (None, error_str) on failure."""
-    conn = open_conn()
-    try:
-        headers = dict(STATIC_HEADERS)
+def request(method, path, email=None, token=None):
+    """One proxied request; returns (status, parsed_body_or_text)."""
+    headers = dict(STATIC_HEADERS)
+    if email:
         headers["x-user-email"] = email
         headers["x-user-token"] = token
-        conn.request("GET", PATH, headers=headers)
+    conn = open_conn()
+    try:
+        conn.request(method, path, headers=headers)
         resp = conn.getresponse()
         body = resp.read()
         if resp.getheader("Content-Encoding") == "gzip":
-            import gzip
-
             body = gzip.decompress(body)
-        data = json.loads(body.decode("utf-8", "replace"))
-        if resp.status == 401:
-            return None, "HTTP 401 (token invalid/expired, dilewati)"
-        if resp.status != 200:
-            return None, f"HTTP {resp.status}: {data}"
-        is_preview = data["data"]["attributes"]["is_preview"]
-        return is_preview, data
-    except Exception as e:  # noqa: BLE001
-        return None, str(e)
+        text = body.decode("utf-8", "replace")
+        try:
+            return resp.status, json.loads(text)
+        except ValueError:
+            return resp.status, text
     finally:
         conn.close()
+
+
+def find_premium_livestream_id():
+    """Ambil ID livestream premium (is_preview=false) sebagai acuan cek akses."""
+    status, data = request("GET", "/livestreamings?page=1&per_page=20")
+    if status != 200:
+        print(f"[!] Gagal ambil daftar livestream (HTTP {status}), fallback 22246")
+        return "22246"
+    for item in data.get("data", []):
+        attrs = item.get("attributes", {})
+        if attrs.get("is_preview") is False:
+            print(f"[*] Livestream premium acuan: {item['id']} — {attrs.get('title', '')[:40]}")
+            return str(item["id"])
+    print("[!] Tidak ada is_preview=false di halaman 1, fallback 22246")
+    return "22246"
+
+
+def check_account(email, token, premium_id):
+    """Return (status_label, detail). status_label: 'full' | 'no_premium' | 'dead' | 'error'."""
+    # 1) validasi sesi
+    status, data = request("POST", "/auth", email, token)
+    if status == 401:
+        return "dead", "token invalid/expired (401)"
+    if status != 200:
+        return "error", f"POST /auth HTTP {status}: {data}"
+    # 2) cek akses livestream premium
+    status, data = request(
+        "GET",
+        f"/users/content_access?content_type=livestreaming&content_id={premium_id}",
+        email,
+        token,
+    )
+    if status == 200:
+        return "full", "full access"
+    if status == 401:
+        detail = ""
+        if isinstance(data, dict):
+            detail = (data.get("errors") or [{}])[0].get("detail") or ""
+        return "no_premium", f"login valid tapi tanpa paket ({detail[:60]})"
+    return "error", f"content_access HTTP {status}: {data}"
 
 
 def format_entry(acc):
@@ -141,24 +156,27 @@ def format_entry(acc):
 def main():
     accounts = parse_accounts(INPUT_FILE)
     print(f"[*] {len(accounts)} akun ditemukan di {INPUT_FILE}")
-    fetch_live_stream_id()
+    premium_id = find_premium_livestream_id()
 
     kept = []
+    stats = {"full": 0, "no_premium": 0, "dead": 0, "error": 0}
     for i, acc in enumerate(accounts, 1):
-        is_preview, info = check_account(acc["email"], acc["token"])
-        if is_preview is None:
-            print(f"[{i}/{len(accounts)}] nomor={acc['nomor']} ERROR: {info}")
-        elif is_preview is False:
+        label, info = check_account(acc["email"], acc["token"], premium_id)
+        stats[label] += 1
+        mark = "FULL ACCESS" if label == "full" else label.upper()
+        print(f"[{i}/{len(accounts)}] nomor={acc['nomor']} {mark}: {info}")
+        if label == "full":
             kept.append(acc)
-            print(f"[{i}/{len(accounts)}] nomor={acc['nomor']} FULL ACCESS (is_preview=false)")
-        else:
-            print(f"[{i}/{len(accounts)}] nomor={acc['nomor']} preview only, dilewati")
         time.sleep(0.2)  # ponytail: fixed delay to avoid rate-limit, tune if throttled
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write("[\n" + "\n".join(format_entry(a) for a in kept) + "\n]\n")
 
-    print(f"\n[+] {len(kept)}/{len(accounts)} akun full access disimpan ke {OUTPUT_FILE}")
+    print(
+        f"\n[+] Selesai: {stats['full']} full access, {stats['no_premium']} tanpa paket, "
+        f"{stats['dead']} token mati, {stats['error']} error. "
+        f"{len(kept)} akun disimpan ke {OUTPUT_FILE}"
+    )
 
 
 if __name__ == "__main__":
