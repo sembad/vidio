@@ -71,7 +71,7 @@ def verify_old_token(email, token):
         return status, {"raw": raw[:300].decode("utf-8", "replace")}
 
 
-def gen_payload(unique_id, partner_agent="coocaa_SW3_ATV_T"):
+def gen_payload(unique_id, partner_agent="tcl"):
     """Bikin (body, headers) untuk POST /api/partner/auth."""
     iv = bytes(os.urandom(12)[i] % 95 + 32 for i in range(12))
     plaintext = json.dumps(

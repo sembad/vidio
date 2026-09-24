@@ -26,7 +26,7 @@ def parse_accounts(path):
 
 def relogin(email):
     uid = email.split("-tcl@")[0]
-    body, headers = gen_payload(uid)
+    body, headers = gen_payload(uid, partner_agent="tcl")
     status, resp = post_partner_auth(body, headers)
     if status != 200:
         return None, f"HTTP {status}"
