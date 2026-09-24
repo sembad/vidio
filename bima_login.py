@@ -162,7 +162,8 @@ def get_profile(login_tokenid: str) -> dict:
 def get_vms_vouchers(login_tokenid: str) -> list:
     resp = post(f"{BASE}/vms/vouchers", "{}", login_tokenid)
     if resp.get("status") != "0":
-        raise RuntimeError(f"vms/vouchers gagal: {resp}")
+        # 900030 "gagal mendapatkan voucher" = akun belum punya voucher VMS
+        return []
     return resp.get("data") or []
 
 
@@ -201,12 +202,15 @@ def claim_vidio_benefits(login_tokenid: str) -> None:
         for b in benefits:
             keyword = b.get("keyword", "")
             shortcode = b.get("shortcode", "")
-            if keyword and shortcode:
+            if not (keyword and shortcode):
+                print(f"[-] Tidak ada keyword klaim untuk {name}")
+                continue
+            try:
                 vms_claim(login_tokenid, refid, shortcode, keyword)
                 print(f"[+] KLAIM BERHASIL: {b.get('benefitName', name)}")
                 print(f"    aktifkan via: {b.get('landingUrl', 'link di app BIMA+')}")
-            else:
-                print(f"[-] Tidak ada keyword klaim untuk {name}")
+            except RuntimeError as e:
+                print(f"[-] Klaim gagal: {e}")
 
 
 def ask_msisdn() -> str:
