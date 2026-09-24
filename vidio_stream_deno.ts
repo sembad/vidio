@@ -114,12 +114,15 @@ async function fetchViaProxy(
 // ------------------------------------------------------------
 // Util
 // ------------------------------------------------------------
-function json(data: unknown, status = 200): Response {
+function json(data: unknown, status = 200, cacheable = false): Response {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       "Content-Type": "application/json; charset=utf-8",
-      "Cache-Control": "no-store",
+      // respon sukses identik untuk semua user selama window cache
+      // 4 menit -> boleh di-cache CDN 15 detik (token umur 5 menit,
+      // worst case 4 menit 15 detik tetap valid)
+      "Cache-Control": cacheable ? "public, max-age=15" : "no-store",
     },
   });
 }
@@ -154,7 +157,12 @@ function isValidHttpUrl(url: unknown): url is string {
 function redirect307(url: string): Response {
   return new Response(null, {
     status: 307,
-    headers: { "Cache-Control": "no-store", Location: url },
+    headers: {
+      // redirect identik untuk semua user selama window cache 4 menit
+      // -> CDN di depan (mis. Cloudflare) bisa menyerap request player
+      "Cache-Control": "public, max-age=15",
+      Location: url,
+    },
   });
 }
 
@@ -246,7 +254,7 @@ function serveStream(data: Record<string, unknown>, type: string): Response {
     return redirect307(widevineUrl);
   }
 
-  return json({ mpd: dash, widevine: widevineUrl });
+  return json({ mpd: dash, widevine: widevineUrl }, 200, true);
 }
 
 // ------------------------------------------------------------
