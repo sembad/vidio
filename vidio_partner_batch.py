@@ -3,8 +3,8 @@
 
 """
 Script Partner Auth Vidio Android TV (APK 2608.2.4 Build 1020) - Batch Version
-- Pilih partner brand dari daftar (seperti ha.py)
-- Unique ID diacak sesuai tipe brand
+- Brand diambil ACAK dari 10 partner ISP/Pay-TV + Enterprise/Hospitality
+- Default ID tiap brand diganti RANDOM (pola sesuai brand)
 - ID yang sudah pernah dipakai tidak dipakai lagi (dicatat di used_ids.json)
 - Semua respons tersimpan di hasil1.json
 """
@@ -47,76 +47,144 @@ PROXIES = {
 OUTPUT_FILE = "hasil1.json"
 USED_IDS_FILE = "used_ids.json"
 
-# Daftar partner brand (dari ha.py)
+# Daftar partner brand yang dipakai (hanya 10 ini)
 BRANDS = [
-    {"id": 1,  "category": "Smart TV", "name": "TCL", "agent": "tcl", "type": "android_id", "default_id": None},
-    {"id": 2,  "category": "Smart TV", "name": "CooCaa", "agent": "coocaa_SW3_ATV_T", "type": "android_id", "default_id": None},
-    {"id": 3,  "category": "Smart TV", "name": "Aqua Android TV", "agent": "aqua_aqua android tv", "type": "android_id", "default_id": None},
-    {"id": 4,  "category": "Smart TV", "name": "Polytron", "agent": "polytron_PDBM11ADL", "type": "android_id", "default_id": None},
-    {"id": 5,  "category": "Smart TV", "name": "Changhong", "agent": "changhong", "type": "custom", "default_id": "CH_SN_94829104"},
-    {"id": 6,  "category": "Smart TV", "name": "Sony", "agent": "sony_bravia vu3", "type": "custom", "default_id": "SN_SONY_BRAVIA_VU3"},
-    {"id": 7,  "category": "Smart TV", "name": "Akari", "agent": "akari", "type": "custom", "default_id": "A210433620A00283"},
-    {"id": 8,  "category": "Smart TV", "name": "EROC", "agent": "eroc_android_tv", "type": "android_id", "default_id": None},
-    {"id": 9,  "category": "Smart TV", "name": "Advance", "agent": "advance", "type": "android_id", "default_id": None},
-    {"id": 10, "category": "Smart TV", "name": "CVTE", "agent": "cvte", "type": "custom", "default_id": "CVTE_MAINBOARD_ID"},
-    {"id": 11, "category": "Smart TV", "name": "Newlink", "agent": "newlink", "type": "custom", "default_id": "NEWLINK_CUS_01"},
-    {"id": 12, "category": "ISP/Pay-TV", "name": "IndiHome", "agent": "indihome", "type": "random_indihome", "default_id": "197180000020"},
-    {"id": 13, "category": "ISP/Pay-TV", "name": "MyRepublic", "agent": "myrepublic", "type": "random_mac", "default_id": "FC:D5:D9:D3:5B:56"},
-    {"id": 14, "category": "ISP/Pay-TV", "name": "Nex Parabola", "agent": "nex_parabola", "type": "random_mac", "default_id": "A8:21:09:F0:AC:C7"},
-    {"id": 15, "category": "ISP/Pay-TV", "name": "Icon TV", "agent": "icon_tv", "type": "random_icontv", "default_id": "sapo1"},
-    {"id": 16, "category": "ISP/Pay-TV", "name": "FirstMedia", "agent": "firstmedia", "type": "custom", "default_id": "2140H205000423"},
-    {"id": 17, "category": "ISP/Pay-TV", "name": "XL Home", "agent": "xlhome", "type": "custom", "default_id": "mo9Wus9uvxA09Mu22qBBNwWy4w+vcYg8gADjnWuGQDk="},
-    {"id": 18, "category": "ISP/Pay-TV", "name": "VNT", "agent": "vnt", "type": "random_vnt", "default_id": "vnt_id_testing"},
-    {"id": 19, "category": "ISP/Pay-TV", "name": "Moratel", "agent": "moratel", "type": "random_moratel", "default_id": "MORA_019283"},
-    {"id": 20, "category": "Enterprise/Hospitality", "name": "Vlepo (Varnion)", "agent": "varnion", "type": "custom", "default_id": "VLEPO_001"},
-    {"id": 21, "category": "Enterprise/Hospitality", "name": "Melvar", "agent": "melvar", "type": "custom", "default_id": "MELVAR_001"},
-    {"id": 22, "category": "Enterprise/Hospitality", "name": "NontonPlus", "agent": "nontonplus", "type": "custom", "default_id": "NP_HOTEL_001"},
-    {"id": 23, "category": "Enterprise/Hospitality", "name": "Mandaya", "agent": "mandaya", "type": "custom", "default_id": "BED_101"},
-    {"id": 24, "category": "Enterprise/Hospitality", "name": "Hubmedia", "agent": "hubmedia", "type": "custom", "default_id": "HM_101"},
-    {"id": 25, "category": "Enterprise/Hospitality", "name": "Tivinity", "agent": "tivinity", "type": "custom", "default_id": "TIV_ROOM_101"},
+    {
+        "id": 12,
+        "category": "ISP/Pay-TV",
+        "name": "IndiHome",
+        "agent": "indihome",
+        "type": "random_indihome",
+        "default_id": "197180000020",
+        "status_tested": "200 OK (Akun Terbentuk, butuh ID aktif langganan)",
+        "desc": "Nomor Pelanggan 12-digit (bisa random baru)",
+    },
+    {
+        "id": 15,
+        "category": "ISP/Pay-TV",
+        "name": "Icon TV",
+        "agent": "icon_tv",
+        "type": "random_icontv",
+        "default_id": "sapo1",
+        "status_tested": "200 OK (Akun Terbentuk, butuh ID STB aktif)",
+        "desc": "Device ID STB IconNet (bisa random baru)",
+    },
+    {
+        "id": 18,
+        "category": "ISP/Pay-TV",
+        "name": "VNT",
+        "agent": "vnt",
+        "type": "random_vnt",
+        "default_id": "vnt_id_testing",
+        "status_tested": "200 OK (Akun Terbentuk, butuh ID aktivasi)",
+        "desc": "Partner ID VNT (bisa random baru)",
+    },
+    {
+        "id": 19,
+        "category": "ISP/Pay-TV",
+        "name": "Moratel",
+        "agent": "moratel",
+        "type": "random_moratel",
+        "default_id": "MORA_019283",
+        "status_tested": "200 OK (Akun Terbentuk, butuh ID Oxygen aktif)",
+        "desc": "Moratel Customer ID (bisa random baru)",
+    },
+    {
+        "id": 20,
+        "category": "Enterprise/Hospitality",
+        "name": "Vlepo (Varnion)",
+        "agent": "varnion",
+        "type": "custom",
+        "default_id": "VLEPO_001",
+        "status_tested": "200 OK (Akun Terbentuk, Cloud TV Hotel Varnion Vlepo)",
+        "desc": "Vlepo Intelligent TV Management by Varnion",
+    },
+    {
+        "id": 21,
+        "category": "Enterprise/Hospitality",
+        "name": "Melvar",
+        "agent": "melvar",
+        "type": "custom",
+        "default_id": "MELVAR_001",
+        "status_tested": "200 OK (Akun Terbentuk dgn ID Kamar/STB)",
+        "desc": "Melvar Hospitality IPTV System",
+    },
+    {
+        "id": 22,
+        "category": "Enterprise/Hospitality",
+        "name": "NontonPlus",
+        "agent": "nontonplus",
+        "type": "custom",
+        "default_id": "NP_HOTEL_001",
+        "status_tested": "200 OK (Akun Terbentuk dgn ID Kamar/STB)",
+        "desc": "Nonton+ Hotel & Hospitality OTT",
+    },
+    {
+        "id": 23,
+        "category": "Enterprise/Hospitality",
+        "name": "Mandaya",
+        "agent": "mandaya",
+        "type": "custom",
+        "default_id": "BED_101",
+        "status_tested": "200 OK (Akun Terbentuk dgn Bed/Room ID)",
+        "desc": "Mandaya Royal Hospital Patient Entertainment System",
+    },
+    {
+        "id": 24,
+        "category": "Enterprise/Hospitality",
+        "name": "Hubmedia",
+        "agent": "hubmedia",
+        "type": "custom",
+        "default_id": "HM_101",
+        "status_tested": "200 OK (Akun Terbentuk dgn ID B2B)",
+        "desc": "Hubmedia Hospitality OTT Platform",
+    },
+    {
+        "id": 25,
+        "category": "Enterprise/Hospitality",
+        "name": "Tivinity",
+        "agent": "tivinity",
+        "type": "custom",
+        "default_id": "TIV_ROOM_101",
+        "status_tested": "200 OK (Akun Terbentuk dgn Room ID)",
+        "desc": "PT Tivinity Teknologi Cloud-first Hotel IPTV",
+    },
 ]
 
 
 # ============================================================
-# Generator ID per tipe brand (dari ha.py)
+# Generator ID acak per tipe brand (default_id diganti random)
 # ============================================================
 
-def generate_uuid_v4():
-    return str(uuid.uuid4())
-
-
-def generate_random_mac():
-    return ":".join("%02X" % random.randint(0, 255) for _ in range(6))
-
-
 def generate_random_indihome():
+    # Nomor pelanggan 12-digit, pola asli diawali 1971
     return "1971" + "".join(str(random.randint(0, 9)) for _ in range(8))
 
 
 def generate_random_icontv():
+    # Device ID STB IconNet: sapo + 5 digit
     return "sapo" + str(random.randint(10000, 99999))
 
 
 def generate_random_vnt():
+    # Partner ID VNT: vnt_id_ + 8 hex acak
     return "vnt_id_" + "".join(random.choice("0123456789abcdef") for _ in range(8))
 
 
 def generate_random_moratel():
-    return "mora_" + "".join(random.choice("0123456789abcdef") for _ in range(8))
+    # Moratel Customer ID: MORA_ + 6 digit
+    return "MORA_" + "".join(str(random.randint(0, 9)) for _ in range(6))
 
 
 def generate_custom_id(base_id):
-    # custom: default_id + suffix acak biar tidak bentrok dengan yang lama
-    suffix = "".join(random.choice(string.digits) for _ in range(6))
-    return f"{base_id}_{suffix}"
+    # custom: pola default_id + nomor acak (ganti 001/101 jadi angka acak)
+    prefix = base_id.rsplit("_", 1)[0] if "_" in base_id else base_id
+    suffix = "".join(str(random.randint(0, 9)) for _ in range(3))
+    return f"{prefix}_{suffix}"
 
 
 def generate_id_for_brand(brand):
     btype = brand["type"]
-    if btype == "android_id":
-        return generate_uuid_v4()
-    if btype == "random_mac":
-        return generate_random_mac()
     if btype == "random_indihome":
         return generate_random_indihome()
     if btype == "random_icontv":
@@ -400,6 +468,7 @@ def send_request(request_number, total_requests, brand, unique_id):
 
         print(
             f"[{request_number}/{total_requests}] "
+            f"[{brand['name']}] "
             f"Status: {response.status_code}"
         )
 
@@ -499,57 +568,33 @@ def get_request_count():
             print("Masukkan angka yang valid.")
 
 
-def select_brand():
-    print("\n" + "-" * 60)
-    print("DAFTAR PARTNER BRAND:")
-    print("-" * 60)
-
-    current_category = None
-    for brand in BRANDS:
-        if brand["category"] != current_category:
-            current_category = brand["category"]
-            print(f"\n  [{current_category.upper()}]:")
-        print(
-            f"    [{brand['id']:2d}] {brand['name']:<20} "
-            f"(agent: {brand['agent']})"
-        )
-
-    while True:
-        choice = input(
-            "\nSilahkan pilih angka brand [1-25]: "
-        ).strip()
-
-        for brand in BRANDS:
-            if str(brand["id"]) == choice or brand["name"].lower() == choice.lower():
-                return brand
-
-        print("Pilihan tidak valid, silahkan masukkan angka 1 sampai 25.")
-
-
 def main():
     print("=" * 60)
     print("   VIDIO PARTNER AUTH BATCH - ANDROID TV 2608.2.4")
     print("=" * 60)
-
-    brand = select_brand()
-    print(f"\n-> Partner dipilih: {brand['name']} (agent: {brand['agent']})")
+    print()
+    print("Partner yang dipakai (dipilih ACAK per request):")
+    for brand in BRANDS:
+        print(f"  - {brand['name']} (agent: {brand['agent']})")
 
     request_count = get_request_count()
 
     print(
         f"\nMenjalankan {request_count} request "
-        f"dengan partner {brand['name']}..."
+        "dengan brand acak + ID acak..."
     )
 
     for request_number in range(
         1,
         request_count + 1,
     ):
+        brand = random.choice(BRANDS)
         unique_id = get_fresh_unique_id(brand)
 
         print(
             f"\nMenjalankan request "
             f"{request_number}/{request_count} "
+            f"[{brand['name']}] "
             f"(unique_id: {unique_id})..."
         )
 
