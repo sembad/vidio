@@ -292,27 +292,34 @@ function isPermanentError(bodyText: string): string | null {
 // ------------------------------------------------------------
 const SECRET_PATH = "hsiwgwiwvwoeveiwhe";
 
-async function handler(req: Request): Promise<Response> {
-  const url = new URL(req.url);
+type Kv = Awaited<ReturnType<typeof Deno.openKv>>;
 
-  // hanya jalankan di path rahasia; path lain -> 404 biasa
-  if (url.pathname !== `/${SECRET_PATH}`) {
-    return json({ error: "Not Found" }, 404);
+function extractDashUrl(data: Record<string, unknown>): string | null {
+  const inner = (data["data"] ?? {}) as Record<string, unknown>;
+  const attributes = (inner["attributes"] ?? {}) as Record<string, unknown>;
+  const dash = attributes["dash"];
+  return typeof dash === "string" && isValidHttpUrl(dash) ? dash : null;
+}
+
+// Ambil MPD dari CDN (tanpa kuota akun); token di URL masih < 5 menit
+async function fetchMpd(dashUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(dashUrl, {
+      headers: { "User-Agent": "tv-android/2608.2.4 (1020)" },
+    });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
   }
+}
 
-  const id = (url.searchParams.get("id") ?? "").trim();
-  const type = (url.searchParams.get("type") ?? "").trim().toLowerCase();
+type StreamResult =
+  | { ok: true; data: Record<string, unknown> }
+  | { ok: false; response: Response };
 
-  if (!/^[1-9][0-9]*$/.test(id)) {
-    return json({ error: "Parameter id wajib berupa angka." }, 400);
-  }
-
-  if (!["", "dash", "hls", "drm"].includes(type)) {
-    return json({ error: "Type hanya boleh dash, hls, atau drm." }, 400);
-  }
-
-  const kv = await Deno.openKv();
-
+// Cache 4 menit + rotasi akun (logika lama, dipindah ke sini)
+async function getStreamData(kv: Kv, id: string): Promise<StreamResult> {
   // 1. Cache respon stream 4 menit -> selama segar, tidak hit API
   const cacheEntry = await kv.get(["stream_cache", id]);
   const cache = cacheEntry.value as
@@ -323,7 +330,7 @@ async function handler(req: Request): Promise<Response> {
     cache && typeof cache.fetchedAt === "number" &&
     Date.now() - cache.fetchedAt < CACHE_TTL_MS
   ) {
-    return serveStream(cache.data, type);
+    return { ok: true, data: cache.data };
   }
 
   // 2. Daftar akun yang sudah dipakai hari ini (WIB)
@@ -382,7 +389,7 @@ async function handler(req: Request): Promise<Response> {
         .set(["state"], { index: (idx + 1) % total })
         .commit();
 
-      return serveStream(data, type);
+      return { ok: true, data };
     }
 
     const bodyText = await res.text();
@@ -409,15 +416,88 @@ async function handler(req: Request): Promise<Response> {
   }
 
   if (lastErrorBody !== null) {
-    return json({
-      error: "Gagal mengambil stream. Coba lagi nanti.",
-      status: lastErrorCode,
-    }, lastErrorCode);
+    return {
+      ok: false,
+      response: json({
+        error: "Gagal mengambil stream. Coba lagi nanti.",
+        status: lastErrorCode,
+      }, lastErrorCode),
+    };
   }
 
-  return json({
-    error: "Semua akun sudah dipakai hari ini. Reset jam 00:00 WIB.",
-  }, 503);
+  return {
+    ok: false,
+    response: json({
+      error: "Semua akun sudah dipakai hari ini. Reset jam 00:00 WIB.",
+    }, 503),
+  };
+}
+
+async function handler(req: Request): Promise<Response> {
+  const url = new URL(req.url);
+
+  // hanya jalankan di path rahasia; path lain -> 404 biasa
+  if (url.pathname !== `/${SECRET_PATH}`) {
+    return json({ error: "Not Found" }, 404);
+  }
+
+  const id = (url.searchParams.get("id") ?? "").trim();
+  const type = (url.searchParams.get("type") ?? "").trim().toLowerCase();
+
+  if (!/^[1-9][0-9]*$/.test(id)) {
+    return json({ error: "Parameter id wajib berupa angka." }, 400);
+  }
+
+  if (!["", "dash", "hls", "drm"].includes(type)) {
+    return json({ error: "Type hanya boleh dash, hls, atau drm." }, 400);
+  }
+
+  const kv = await Deno.openKv();
+
+  const result = await getStreamData(kv, id);
+  if (!result.ok) return result.response;
+
+  // type=dash -> PROXY manifest (bukan redirect). ExoPlayer Media3
+  // me-refresh manifest dari URL asli tiap update period, jadi
+  // tiap refresh dapat token segar dan playback tidak putus.
+  if (type === "dash") {
+    const dashUrl = extractDashUrl(result.data);
+    if (dashUrl === null) {
+      return json({ error: "DASH tidak tersedia." }, 404);
+    }
+
+    let xml = await fetchMpd(dashUrl);
+
+    if (xml === null) {
+      // token MPD kemungkinan expired -> paksa rotasi akun:
+      // buang cache, ambil akun berikutnya, coba sekali lagi
+      await kv.delete(["stream_cache", id]);
+      const retry = await getStreamData(kv, id);
+      if (!retry.ok) return retry.response;
+
+      const retryUrl = extractDashUrl(retry.data);
+      if (retryUrl === null) {
+        return json({ error: "DASH tidak tersedia." }, 404);
+      }
+      xml = await fetchMpd(retryUrl);
+      if (xml === null) {
+        return json({
+          error: "Gagal mengambil stream. Coba lagi nanti.",
+        }, 502);
+      }
+    }
+
+    return new Response(xml, {
+      status: 200,
+      headers: {
+        "Content-Type": "application/dash+xml",
+        "Cache-Control": "no-store",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
+  }
+
+  return serveStream(result.data, type);
 }
 
 Deno.serve(handler);
