@@ -19,22 +19,23 @@ const CACHE_TTL_MS = 4 * 60 * 1000; // 4 menit
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000; // UTC+7
 
 // Isi langsung di sini, format sama seperti versi PHP.
-const CREDENTIALS: Array<{ nomor: number; email: string; token: string }> = [
-  {
-    nomor: 1729,
-    email: "ebbb326f-6872-49a4-8782-8487352b2f6c-coocaa@fake-coocaa.com",
-    token: "hekqnNz7tksBah11g8ae",
-  },
-  {
-    nomor: 1730,
-    email: "0982916c-00e8-4446-bee9-c7a72c5a7b04-coocaa@fake-coocaa.com",
-    token: "kEosFpdMv3CZCdfNwx_e",
-  },
-  {
-    nomor: 1731,
-    email: "2f2f7870-4f33-4d89-a4b6-cd63fc64f7f5-coocaa@fake-coocaa.com",
-    token: "YY3g8LVFvrFvxwo5f6NE",
-  },
+// Format: [nomor, email, token]
+const CREDENTIALS: Array<[number, string, string]> = [
+  [
+    1729,
+    "ebbb326f-6872-49a4-8782-8487352b2f6c-coocaa@fake-coocaa.com",
+    "hekqnNz7tksBah11g8ae",
+  ],
+  [
+    1730,
+    "0982916c-00e8-4446-bee9-c7a72c5a7b04-coocaa@fake-coocaa.com",
+    "kEosFpdMv3CZCdfNwx_e",
+  ],
+  [
+    1731,
+    "2f2f7870-4f33-4d89-a4b6-cd63fc64f7f5-coocaa@fake-coocaa.com",
+    "YY3g8LVFvrFvxwo5f6NE",
+  ],
 ];
 
 // ------------------------------------------------------------
@@ -133,7 +134,7 @@ function redirect307(url: string): Response {
 // ------------------------------------------------------------
 async function fetchStream(
   id: string,
-  cred: { email: string; token: string },
+  cred: [number, string, string],
 ): Promise<Response> {
   const streamApiUrl =
     `${STREAM_API_BASE}/livestreamings/${encodeURIComponent(id)}/stream?initialize=true`;
@@ -141,8 +142,8 @@ async function fetchStream(
   return await fetchViaProxy(streamApiUrl, {
     "Accept": "application/vnd.api+json",
     "Content-Type": "application/vnd.api+json",
-    "x-user-email": cred.email,
-    "x-user-token": cred.token,
+    "x-user-email": cred[1],
+    "x-user-token": cred[2],
     "User-Agent": "tv-android/2608.2.4 (1020)",
     "Accept-Encoding": "gzip",
     "x-client": "1788880138",
