@@ -5,3 +5,5 @@
 [4] 14:16:22 HTTP 200 | {"mpd":"https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/9182/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790259501~acl=/stream/9182/res=10
 [5] 14:17:22 HTTP 200 | {"mpd":"https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/9182/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790259742~acl=/stream/9182/res=10
 [6] 14:18:22 HTTP 200 | {"mpd":"https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/9182/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790259742~acl=/stream/9182/res=10
+[7] 14:19:23 HTTP 200 | {"mpd":"https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/9182/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790259742~acl=/stream/9182/res=10
+[8] 14:20:23 HTTP 200 | {"mpd":"https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/9182/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790259742~acl=/stream/9182/res=10
