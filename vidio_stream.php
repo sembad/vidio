@@ -193,6 +193,8 @@ function notifyTelegram(string $botToken, string $chatId, string $text): void
 //    aktif). Error lain langsung diteruskan apa adanya.
 // ============================================================
 header('Content-Type: application/json');
+set_time_limit(0);              // retry boleh jalan lama sampai dapat 200
+ignore_user_abort(false);
 
 function isUserDeactivated(array $res): bool
 {
@@ -207,7 +209,11 @@ $attempts  = 0;
 $failures  = [];
 $last      = null;
 
-while ($attempts < $total) {
+// ============================================================
+// Loop TANPA batas putaran: terus ganti akun sampai dapat
+// 200 OK. Bisa lebih dari 1 putaran penuh daftar akun.
+// ============================================================
+while (true) {
     $acc = $accounts[$state['index']];
 
     if (empty($acc['email']) || empty($acc['token'])) {
@@ -249,6 +255,9 @@ while ($attempts < $total) {
     $state['index']       = ($state['index'] + 1) % $total;
     $state['switched_at'] = time();
     saveState($STATE_FILE, $state['index'], $state['switched_at']);
+
+    // jeda kecil biar tidak kena rate limit API Vidio
+    usleep(500000); // 0,5 detik
 }
 
 // ============================================================
