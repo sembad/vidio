@@ -350,20 +350,17 @@ async function handler(req: Request): Promise<Response> {
       continue;
     }
 
-    // error lain -> teruskan respon asli apa adanya
+    // error lain -> respon custom, jangan tampilkan aslinya
     lastErrorCode = res.status;
     lastErrorBody = bodyText;
     break;
   }
 
   if (lastErrorBody !== null) {
-    return new Response(lastErrorBody, {
+    return json({
+      error: "Gagal mengambil stream. Coba lagi nanti.",
       status: lastErrorCode,
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": "no-store",
-      },
-    });
+    }, lastErrorCode);
   }
 
   return json({
