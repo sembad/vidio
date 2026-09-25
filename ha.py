@@ -469,6 +469,7 @@ def main():
     print(f"\n-> Anda memilih: {selected_brand['name']} ({selected_brand['category']})")
 
     btype = selected_brand["type"]
+    additional_unique_id = None
     if btype == "android_id":
         unique_id = generate_uuid_v4()
         print(f"-> Unique ID yang digunakan (UUID acak): {unique_id}")
