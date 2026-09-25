@@ -60,6 +60,31 @@ const STAGING_ACCOUNTS = [
 ];
 let stagingIdx = 0;
 
+// 20 akun production (akun_production.txt): partner fresh + TCL + aqua
+const PRODUCTION_ACCOUNTS = [
+  { email: "mora_874950-moratel@fake-tv-bundle.com", token: "pmzhz2hEFhbN-MYmU_bi" },
+  { email: "np_hotel_790@fake-nontonplus.com", token: "bdpZzsM_xF_LtySQGbVJ" },
+  { email: "melvar_879-melvar@fake-tv-bundle.com", token: "Xxx2jBDGpcz39Svy4VEb" },
+  { email: "tiv_room_280tivinity@fake-tv-bundle.com", token: "45n1Va6fYxt-iCpaj4kJ" },
+  { email: "mora_827296-moratel@fake-tv-bundle.com", token: "2ZSh7X6_YBPMiPxdC2U2" },
+  { email: "e9adc82e-0d55-4e06-9a72-eac989a5e3ea-tcl@fake-tcl.com", token: "NXxS1rs2PVmhgiyPxRjV" },
+  { email: "b6cac2bf-ca25-4dfd-870a-ba5977c6d30c-aqua@fake-tv-bundle.com", token: "hzS4ezGXjKxfEjy6hnGF" },
+  { email: "d06c593e-c5be-45d7-8a37-386fdab706fd-aqua@fake-tv-bundle.com", token: "qZy6-YtpugZu5i5ZJkFw" },
+  { email: "a786dcf4-fb26-4c4b-bdc4-19bad7eef91b-aqua@fake-tv-bundle.com", token: "nuaTWWxmWpaHNqgix4fz" },
+  { email: "093b94c7-b0a8-4ef3-8acf-946425e74da2-aqua@fake-tv-bundle.com", token: "fDHB5j-QzdbbqiCyjsfj" },
+  { email: "5b47990c-4de5-440c-9f77-e014f2dfe7e7-aqua@fake-tv-bundle.com", token: "tT7aiCnMqss2QXHiKjzn" },
+  { email: "18228b9d-659b-42dc-906a-41405ecc010b-aqua@fake-tv-bundle.com", token: "R4WEAFs9sKZifndNQ4cX" },
+  { email: "90387b20-1842-447a-9fcb-10c5167476b8-aqua@fake-tv-bundle.com", token: "pi-ekNnSH1L5FTGsfyuJ" },
+  { email: "d11d62c4-41f5-4c5c-8849-42eb28aaa021-aqua@fake-tv-bundle.com", token: "-YbxzT34sncq1eWT5PsQ" },
+  { email: "4c45fc82-eba9-4ff5-b812-3d6062b6b615-aqua@fake-tv-bundle.com", token: "Pss47jLWpkBjND69Dyti" },
+  { email: "874c36dd-1247-40d8-b0a9-1111054ef710-aqua@fake-tv-bundle.com", token: "Nwzgu7QWQEU7UVqmK_Ma" },
+  { email: "9a800dc5-5e64-4444-b7b2-4627d252efe8-aqua@fake-tv-bundle.com", token: "rix3qHLyf8fq5NozuzxG" },
+  { email: "4bbf66c5-f431-459c-918a-c07cf51a14bb-aqua@fake-tv-bundle.com", token: "RFMff_xi6SEibxRfaAi6" },
+  { email: "210e621c-5419-4785-9e8d-8dc13f6b283f-aqua@fake-tv-bundle.com", token: "pGZZ2yMVDiZa9eTQEvC1" },
+  { email: "9c5def6d-d573-42e0-9a54-5ab8beec1012-aqua@fake-tv-bundle.com", token: "159Fw-iEwXpAE5A3yJm2" },
+];
+let prodIdx = 0;
+
 // x-client/x-signature dinamis staging: hmac(key="SECRET:ts", msg=ts)
 async function stagingSigHeaders(): Promise<Record<string, string>> {
   const ts = Math.floor(Date.now() / 1000).toString();
@@ -266,14 +291,29 @@ Deno.serve(async (req) => {
   const env = url.searchParams.get("env") ?? "production"; // staging | production
   try {
     let acct: { email: string; token: string };
+    let stream: { mpd: string; hls?: string; widevine?: string } | null = null;
     if (env === "staging") {
       // staging: rotasi akun biasa, hasil JSON ditampilkan langsung
       acct = STAGING_ACCOUNTS[stagingIdx++ % STAGING_ACCOUNTS.length];
+      stream = await getStreamInfo(env, id, acct);
     } else {
-      // production: akun TCL fresh (preview) tiap request untuk ambil widevine
-      acct = await createTclAccount();
+      // production: rotasi 20 akun production dulu (preview 1x GET per ID/hari
+      // per akun) — kalau semua kena limit, buat akun TCL fresh
+      let lastErr: unknown = null;
+      for (let i = 0; i < PRODUCTION_ACCOUNTS.length; i++) {
+        acct = PRODUCTION_ACCOUNTS[prodIdx++ % PRODUCTION_ACCOUNTS.length];
+        try {
+          stream = await getStreamInfo(env, id, acct);
+          break;
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+      if (!stream) {
+        acct = await createTclAccount();
+        stream = await getStreamInfo(env, id, acct);
+      }
     }
-    const stream = await getStreamInfo(env, id, acct);
     if (env === "staging") {
       // staging: cukup MPD/HLS saja, tanpa getkey
       return Response.json({ mpd: stream.mpd, hls: stream.hls });
