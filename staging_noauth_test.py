@@ -26,7 +26,7 @@ SIGNATURE_SECRET = "V1d10D3v"
 USER_AGENT = "tv-android/2608.2.4 (1020)"
 APP_INFO = "tv-android/16/2608.2.4-1020"
 
-PROXY_URL = os.environ.get("PROXY") or "http://66c757e644710948__cr.id:46b0ff892fc1d3075320@gw.dataimpulse.com:823"
+PROXY_URL = os.environ.get("PROXY") or "http://46b0ff892fc1d3075320__cr.id:66c757e644710948@gw.dataimpulse.com:823"
 
 # Akun kontrol (dari bulk_accounts.json, status sukses)
 CTRL_EMAIL = "kodywatts61@gmail.com"

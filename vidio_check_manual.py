@@ -20,7 +20,7 @@ from Crypto.Cipher import AES
 from Crypto.Hash import HMAC, SHA256
 
 HOST = "api.vidio.com"
-PROXY_URL = "http://66c757e644710948__cr.id:46b0ff892fc1d3075320@gw.dataimpulse.com:823"
+PROXY_URL = "http://46b0ff892fc1d3075320__cr.id:66c757e644710948@gw.dataimpulse.com:823"
 _proxy = urlsplit(PROXY_URL)
 PROXY_AUTH = "Basic " + base64.b64encode(
     f"{_proxy.username}:{_proxy.password}".encode()

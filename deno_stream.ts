@@ -3,7 +3,7 @@
 //       MPD -> PSSH -> go-widevine getkey -> clearkey
 // Semua request API & MPD lewat proxy Indonesia (DataImpulse cr.id)
 
-const PROXY_URL = "http://66c757e644710948__cr.id:46b0ff892fc1d3075320@gw.dataimpulse.com:823";
+const PROXY_URL = "http://46b0ff892fc1d3075320__cr.id:66c757e644710948@gw.dataimpulse.com:823";
 
 // --- konstanta partner auth (dari ha.py, APK 2608.2.4 build 1020) ---
 const KEY_ID = "ZXhDgP7RixaP";
@@ -282,7 +282,7 @@ async function stagingSigHeaders(): Promise<Record<string, string>> {
 const proxyClient = Deno.createHttpClient({
   proxy: { url: PROXY_URL },
   // DataImpulse pakai basic-auth di URL proxy
-  basicAuth: { username: "66c757e644710948__cr.id", password: "46b0ff892fc1d3075320" },
+  basicAuth: { username: "46b0ff892fc1d3075320__cr.id", password: "66c757e644710948" },
 } as Deno.CreateHttpClientOptions);
 
 function pfetch(url: string, init: RequestInit = {}): Promise<Response> {

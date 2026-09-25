@@ -45,7 +45,7 @@ HOST = "api.staging.vidio.com" if STAGING else "api.vidio.com"
 
 # Same residential proxy main.ts uses for ultimate stream requests, so checks
 # come from the same IP pool instead of getting rate-limited/blocked directly.
-PROXY_URL = "http://66c757e644710948__cr.id:46b0ff892fc1d3075320@gw.dataimpulse.com:823"
+PROXY_URL = "http://46b0ff892fc1d3075320__cr.id:66c757e644710948@gw.dataimpulse.com:823"
 _proxy = urlsplit(PROXY_URL)
 PROXY_AUTH_HEADER = "Basic " + base64.b64encode(
     f"{_proxy.username}:{_proxy.password}".encode()
