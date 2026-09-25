@@ -24,6 +24,15 @@ X_API_AUTH = "laZOmogezono5ogekaso5oz4Mezimew1"
 USER_AGENT = "tv-android/2608.2.4 (1020)"
 APP_INFO = "tv-android/16/2608.2.4-1020"
 
+# Token launcher Moratel (dekript dari blob moratelLauncherTokenBase64 di libndkconfig.so).
+# Di APK: token ini dipakai sebagai data URI pada implicit Intent dengan action
+# "com.oxygen.atv.action.API_GET_ID" ke app sistem Oxygen (middleware STB Moratelindo).
+# App Oxygen memvalidasi token lalu membalas extras "customerid" + "serialno"
+# (lihat g10/a.java + SplashScreenActivity line 683 + PartnerDeviceManager.MoratelInitialData).
+# Hasilnya dipakai sebagai: unique_id=customerid, additional_unique_id=serialno, partner_agent="moratel".
+MORATEL_LAUNCHER_TOKEN = "8ipCffxAnNUxSUjkXZScA6"
+MORATEL_OXYGEN_ACTION = "com.oxygen.atv.action.API_GET_ID"
+
 DEFAULT_DATAIMPULSE_PROXY = "http://54e00827b371c0c310a2__cr.id:817df9dc4f7bfe33@gw.dataimpulse.com:823"
 
 # Seluruh 25 Partner Brand yang teridentifikasi di DEX Vidio
@@ -221,6 +230,16 @@ BRANDS = [
         "status_tested": "200 OK (Akun Terbentuk, butuh ID Oxygen aktif)",
         "desc": "Moratel Customer ID (bisa random baru)",
     },
+    {
+        "id": 26,
+        "category": "ISP/Pay-TV",
+        "name": "Moratel Launcher (Oxygen STB)",
+        "agent": "moratel",
+        "type": "moratel_launcher",
+        "default_id": None,
+        "status_tested": "Flow launcher asli: token -> Intent Oxygen -> customerid+serialno",
+        "desc": "Flow launcher STB Oxygen: unique_id=customerid + additional_unique_id=serialno",
+    },
 
     # --- KELOMPOK 3: HOSPITALITY & ENTERPRISE IPTV ---
     {
@@ -314,6 +333,18 @@ def generate_random_vnt():
 def generate_random_moratel():
     import random
     return "mora_" + "".join([random.choice("0123456789abcdef") for _ in range(8)])
+
+
+def generate_random_moratel_launcher():
+    """Generate pasangan (customerid, serialno) meniru format app Oxygen STB Moratel.
+
+    Di perangkat asli, keduanya dikembalikan oleh app sistem Oxygen via Intent
+    'com.oxygen.atv.action.API_GET_ID' yang diotorisasi MORATEL_LAUNCHER_TOKEN.
+    """
+    import random
+    customer_id = "".join([str(random.randint(0, 9)) for _ in range(10)])
+    serial_no = "MO" + "".join([random.choice("0123456789ABCDEF") for _ in range(10)])
+    return customer_id, serial_no
 
 
 def build_encrypted_payload(plain_dict):
@@ -476,6 +507,28 @@ def main():
         ).strip()
         unique_id = custom_id if custom_id else suggested_id
         print(f"-> Unique ID yang digunakan: {unique_id}")
+    elif btype == "moratel_launcher":
+        print()
+        print("  FLOW LAUNCHER MORATEL (dari DEX):")
+        print(f"    1. APK dekrip token launcher : {MORATEL_LAUNCHER_TOKEN}")
+        print(f"    2. Kirim Intent action       : {MORATEL_OXYGEN_ACTION}")
+        print("    3. App sistem Oxygen (STB Moratel) balas extras: customerid + serialno")
+        print("    4. Partner auth: unique_id=customerid, additional_unique_id=serialno")
+        print("    (Script tidak bisa memanggil app Oxygen -> customerid/serialno di-generate/manual)")
+        print()
+        sug_cid, sug_sn = generate_random_moratel_launcher()
+        custom_cid = input(
+            f"Masukkan Customer ID (tekan Enter untuk random baru: {sug_cid}): "
+        ).strip()
+        customer_id = custom_cid if custom_cid else sug_cid
+        custom_sn = input(
+            f"Masukkan Serial Number (tekan Enter untuk random baru: {sug_sn}): "
+        ).strip()
+        serial_no = custom_sn if custom_sn else sug_sn
+        unique_id = customer_id
+        additional_unique_id = serial_no
+        print(f"-> Unique ID (customerid) yang digunakan : {unique_id}")
+        print(f"-> Additional Unique ID (serialno)       : {additional_unique_id}")
     else:
         def_id = selected_brand["default_id"]
         custom_id = input(
@@ -486,7 +539,7 @@ def main():
 
     payload = {
         "unique_id": unique_id,
-        "additional_unique_id": None,
+        "additional_unique_id": additional_unique_id,
         "partner_agent": selected_brand["agent"],
     }
 
