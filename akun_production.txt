@@ -1,0 +1,34 @@
+=== AKUN PRODUCTION (api.vidio.com) ===
+Header: x-client: 1788880138 | x-signature: da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4
+        x-api-auth: laZOmogezono5ogekaso5oz4Mezimew1 | x-api-app-info: tv-android/16/2608.2.4-1020
+
+--- Partner fresh (hasil generate, Premier aktif) ---
+1. [moratel]    mora_874950-moratel@fake-tv-bundle.com        token: pmzhz2hEFhbN-MYmU_bi
+2. [nontonplus] np_hotel_790@fake-nontonplus.com              token: bdpZzsM_xF_LtySQGbVJ
+3. [melvar]     melvar_879-melvar@fake-tv-bundle.com          token: Xxx2jBDGpcz39Svy4VEb
+4. [tivinity]   tiv_room_280tivinity@fake-tv-bundle.com       token: 45n1Va6fYxt-iCpaj4kJ
+5. [moratel]    mora_827296-moratel@fake-tv-bundle.com        token: 2ZSh7X6_YBPMiPxdC2U2
+
+--- TCL fresh (dibuat via ha.py, Premier Package 332) ---
+6. [tcl]        e9adc82e-0d55-4e06-9a72-eac989a5e3ea-tcl@fake-tcl.com  token: NXxS1rs2PVmhgiyPxRjV
+
+--- Aqua (dari PHP, 14 akun) ---
+7.  b6cac2bf-ca25-4dfd-870a-ba5977c6d30c-aqua@fake-tv-bundle.com  token: hzS4ezGXjKxfEjy6hnGF
+8.  d06c593e-c5be-45d7-8a37-386fdab706fd-aqua@fake-tv-bundle.com  token: qZy6-YtpugZu5i5ZJkFw
+9.  a786dcf4-fb26-4c4b-bdc4-19bad7eef91b-aqua@fake-tv-bundle.com  token: nuaTWWxmWpaHNqgix4fz
+10. 093b94c7-b0a8-4ef3-8acf-946425e74da2-aqua@fake-tv-bundle.com  token: fDHB5j-QzdbbqiCyjsfj
+11. 5b47990c-4de5-440c-9f77-e014f2dfe7e7-aqua@fake-tv-bundle.com  token: tT7aiCnMqss2QXHiKjzn
+12. 18228b9d-659b-42dc-906a-41405ecc010b-aqua@fake-tv-bundle.com  token: R4WEAFs9sKZifndNQ4cX
+13. 90387b20-1842-447a-9fcb-10c5167476b8-aqua@fake-tv-bundle.com  token: pi-ekNnSH1L5FTGsfyuJ
+14. d11d62c4-41f5-4c5c-8849-42eb28aaa021-aqua@fake-tv-bundle.com  token: -YbxzT34sncq1eWT5PsQ
+15. 4c45fc82-eba9-4ff5-b812-3d6062b6b615-aqua@fake-tv-bundle.com  token: Pss47jLWpkBjND69Dyti
+16. 874c36dd-1247-40d8-b0a9-1111054ef710-aqua@fake-tv-bundle.com  token: Nwzgu7QWQEU7UVqmK_Ma
+17. 9a800dc5-5e64-4444-b7b2-4627d252efe8-aqua@fake-tv-bundle.com  token: rix3qHLyf8fq5NozuzxG
+18. 4bbf66c5-f431-459c-918a-c07cf51a14bb-aqua@fake-tv-bundle.com  token: RFMff_xi6SEibxRfaAi6
+19. 210e621c-5419-4785-9e8d-8dc13f6b283f-aqua@fake-tv-bundle.com  token: pGZZ2yMVDiZa9eTQEvC1
+20. 9c5def6d-d573-42e0-9a54-5ab8beec1012-aqua@fake-tv-bundle.com  token: 159Fw-iEwXpAE5A3yJm2
+
+Catatan:
+- Akun partner/TCL fresh: preview 1x GET per ID per hari (22326 sudah terpakai hari ini untuk no. 1-6)
+- Akun aqua: sudah lama dipakai, preview kemungkinan sudah habis
+- Deno service (deno_stream.ts) production TIDAK pakai daftar ini — dia buat akun TCL baru tiap request
