@@ -1,0 +1,252 @@
+# Hasil scan semua channel livestream STAGING (api.staging.vidio.com)
+# Akun: 94841dfa-8cd3-4631-8293-f4b5393d4791-tcl@fake-tcl.com | Partner: tcl | Paket: Platinum TV Bundle (staging)
+# Link tokenized Akamai (hdnts) — expired ~5040 detik setelah diterbitkan
+
+[OK] Asian Games 6 (id 22245)
+  HLS: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/22245/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307664~acl=/stream/22245/res=1080p/file/drm/hls/master.m3u8!/stream/22245/file/drm/hls/*/aac/*!/stream/22245/file/drm/hls/*/*-1080p/*!/stream/22245/file/drm/hls/*/*-720p/*!/stream/22245/file/drm/hls/*/*-480p/*!/stream/22245/file/drm/hls/*/*-360p/*~id=1000000064~hmac=225d73c288f4a29b77dc736c662d54d131f1efc7a5492de2792f776a20b04fa8
+  MPD: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/22245/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307664~acl=/stream/22245/res=1080p/file/drm/dash/stream.mpd!/stream/22245/file/drm/dash/*/aac/*!/stream/22245/file/drm/dash/*/*-1080p/*!/stream/22245/file/drm/dash/*/*-720p/*!/stream/22245/file/drm/dash/*/*-480p/*!/stream/22245/file/drm/dash/*/*-360p/*~id=1000000064~hmac=4286ad8c1b954641718e83a2414130927928d986886c0f901e5b050c388d46a6
+
+[OK] Asian Games (id 22340)
+  HLS: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/22340/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307667~acl=/stream/22340/res=1080p/file/drm/hls/master.m3u8!/stream/22340/file/drm/hls/*/aac/*!/stream/22340/file/drm/hls/*/*-1080p/*!/stream/22340/file/drm/hls/*/*-720p/*!/stream/22340/file/drm/hls/*/*-480p/*!/stream/22340/file/drm/hls/*/*-360p/*~id=1000000064~hmac=b9b7f97923489805a3e796557ef86511997ed76554da51fb3618df9b45173e39
+  MPD: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/22340/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307667~acl=/stream/22340/res=1080p/file/drm/dash/stream.mpd!/stream/22340/file/drm/dash/*/aac/*!/stream/22340/file/drm/dash/*/*-1080p/*!/stream/22340/file/drm/dash/*/*-720p/*!/stream/22340/file/drm/dash/*/*-480p/*!/stream/22340/file/drm/dash/*/*-360p/*~id=1000000064~hmac=1c6ea18f3e79a9f808e02b4f0c32078f5fec47612642e56e621d8e0a36df0914
+
+[OK] Asian Games 5 (id 22244)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22244/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307526~acl=/stream/22244/res=1080p/file/drm/hls/master.m3u8!/stream/22244/file/drm/hls/*/aac/*!/stream/22244/file/drm/hls/*/*-1080p/*!/stream/22244/file/drm/hls/*/*-720p/*!/stream/22244/file/drm/hls/*/*-480p/*!/stream/22244/file/drm/hls/*/*-360p/*~id=1000000064~hmac=08970beb264f5511f37de3be53e04b62146011b7da30983f83285c6f751c0ea3
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22244/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307526~acl=/stream/22244/res=1080p/file/drm/dash/stream.mpd!/stream/22244/file/drm/dash/*/aac/*!/stream/22244/file/drm/dash/*/*-1080p/*!/stream/22244/file/drm/dash/*/*-720p/*!/stream/22244/file/drm/dash/*/*-480p/*!/stream/22244/file/drm/dash/*/*-360p/*~id=1000000064~hmac=24e27fc0ea354a5f6a46e2f3b68d8df26844cea4c0136d2df054e99a90ab475c
+
+[OK] Asian Games 10 (id 22329)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22329/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307528~acl=/stream/22329/res=1080p/file/drm/hls/master.m3u8!/stream/22329/file/drm/hls/*/aac/*!/stream/22329/file/drm/hls/*/*-1080p/*!/stream/22329/file/drm/hls/*/*-720p/*!/stream/22329/file/drm/hls/*/*-480p/*!/stream/22329/file/drm/hls/*/*-360p/*~id=1000000064~hmac=dbcf6b15fdde08bf8e3cdf2f2ceb333afaa862669876eb9a5e607258557d076e
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22329/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307528~acl=/stream/22329/res=1080p/file/drm/dash/stream.mpd!/stream/22329/file/drm/dash/*/aac/*!/stream/22329/file/drm/dash/*/*-1080p/*!/stream/22329/file/drm/dash/*/*-720p/*!/stream/22329/file/drm/dash/*/*-480p/*!/stream/22329/file/drm/dash/*/*-360p/*~id=1000000064~hmac=8c03b33bd923522857c8ba8c37ecbd27708cd93fdde0779e23c002c1b465af8c
+
+[OK] Asian Games (id 22326)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22326/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307529~acl=/stream/22326/res=1080p/file/drm/hls/master.m3u8!/stream/22326/file/drm/hls/*/aac/*!/stream/22326/file/drm/hls/*/*-1080p/*!/stream/22326/file/drm/hls/*/*-720p/*!/stream/22326/file/drm/hls/*/*-480p/*!/stream/22326/file/drm/hls/*/*-360p/*~id=1000000064~hmac=b2f1edc9a89cc69efe78570ee3a1751501234a0808e68f7f70e1bc5264511f52
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22326/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307529~acl=/stream/22326/res=1080p/file/drm/dash/stream.mpd!/stream/22326/file/drm/dash/*/aac/*!/stream/22326/file/drm/dash/*/*-1080p/*!/stream/22326/file/drm/dash/*/*-720p/*!/stream/22326/file/drm/dash/*/*-480p/*!/stream/22326/file/drm/dash/*/*-360p/*~id=1000000064~hmac=ec6fc7dca144daf8c88172521d13e3acbd3c366f27ebb9d4ab4c2241c638e60a
+
+[OK] Asian Games 1 (id 22240)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22240/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307532~acl=/stream/22240/res=1080p/file/drm/hls/master.m3u8!/stream/22240/file/drm/hls/*/aac/*!/stream/22240/file/drm/hls/*/*-1080p/*!/stream/22240/file/drm/hls/*/*-720p/*!/stream/22240/file/drm/hls/*/*-480p/*!/stream/22240/file/drm/hls/*/*-360p/*~id=1000000064~hmac=058b292a39ba9e373d642a3eaad8808b4276963c644bb5df4c6cb8f17f993ba1
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22240/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307532~acl=/stream/22240/res=1080p/file/drm/dash/stream.mpd!/stream/22240/file/drm/dash/*/aac/*!/stream/22240/file/drm/dash/*/*-1080p/*!/stream/22240/file/drm/dash/*/*-720p/*!/stream/22240/file/drm/dash/*/*-480p/*!/stream/22240/file/drm/dash/*/*-360p/*~id=1000000064~hmac=cc9dd45d3537172a02fe7539a05e0537b46f7e12dd6fd77afa24ea774919653c
+
+[OK] Asian Games (id 22330)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22330/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307534~acl=/stream/22330/res=1080p/file/drm/hls/master.m3u8!/stream/22330/file/drm/hls/*/aac/*!/stream/22330/file/drm/hls/*/*-1080p/*!/stream/22330/file/drm/hls/*/*-720p/*!/stream/22330/file/drm/hls/*/*-480p/*!/stream/22330/file/drm/hls/*/*-360p/*~id=1000000064~hmac=d6165b3268d963070a9fff2e4ccd59547bffe9c3542fc658eb6adb6214b80cda
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22330/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307534~acl=/stream/22330/res=1080p/file/drm/dash/stream.mpd!/stream/22330/file/drm/dash/*/aac/*!/stream/22330/file/drm/dash/*/*-1080p/*!/stream/22330/file/drm/dash/*/*-720p/*!/stream/22330/file/drm/dash/*/*-480p/*!/stream/22330/file/drm/dash/*/*-360p/*~id=1000000064~hmac=d58beaa0d3788644c84e2778c95cad021f9dd2b39cc82ede6aaaad3c0f4b7ca3
+
+[OK] Asian Games 9 (id 22328)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22328/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307535~acl=/stream/22328/res=1080p/file/drm/hls/master.m3u8!/stream/22328/file/drm/hls/*/aac/*!/stream/22328/file/drm/hls/*/*-1080p/*!/stream/22328/file/drm/hls/*/*-720p/*!/stream/22328/file/drm/hls/*/*-480p/*!/stream/22328/file/drm/hls/*/*-360p/*~id=1000000064~hmac=84d90dd9877aae8268a7db826bbbc5531582899150c2d8de83ed3352ffd07115
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22328/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307535~acl=/stream/22328/res=1080p/file/drm/dash/stream.mpd!/stream/22328/file/drm/dash/*/aac/*!/stream/22328/file/drm/dash/*/*-1080p/*!/stream/22328/file/drm/dash/*/*-720p/*!/stream/22328/file/drm/dash/*/*-480p/*!/stream/22328/file/drm/dash/*/*-360p/*~id=1000000064~hmac=64d7baaef2a2aa2f0bd4b1b333558d2d0eac1709ed1ca73d2a73529ecf6b03a6
+
+[OK] SCTV (id 204)
+  HLS: https://etslive-staging-v3-vidio-com-tokenized.akamaized.net/stream/204/res=1080p/file/master.m3u8?hdnts=exp=1790307688~acl=/stream/204/res=1080p/file/master.m3u8!/stream/204/file/*/aac/*!/stream/204/file/*/*-1080p/*!/stream/204/file/*/*-720p/*!/stream/204/file/*/*-480p/*!/stream/204/file/*/*-360p/*~id=1000000064~hmac=da28d5876823bc4a67350ec9ff55c89fb99dc02e8182028d23a28aa25a9a98ab
+  MPD: https://etslive-staging-v3-vidio-com-tokenized.akamaized.net/stream/204/res=1080p/file/stream.mpd?hdnts=exp=1790307688~acl=/stream/204/res=1080p/file/stream.mpd!/stream/204/file/*/aac/*!/stream/204/file/*/*-1080p/*!/stream/204/file/*/*-720p/*!/stream/204/file/*/*-480p/*!/stream/204/file/*/*-360p/*~id=1000000064~hmac=b9ee2a28f446937da05823a16929dd53bdcbbf75f4e6f3970f7a946dd1dab7a3
+
+[OK] Indosiar (id 205)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/205/res=1080p/file/master.m3u8?hdnts=exp=1790307695~acl=/stream/205/res=1080p/file/master.m3u8!/stream/205/file/*/aac/*!/stream/205/file/*/*-1080p/*!/stream/205/file/*/*-720p/*!/stream/205/file/*/*-480p/*!/stream/205/file/*/*-360p/*~id=1000000064~hmac=e9c90e095b973c369ba308be49f8eea9f2e053238cee05cd7c4c3a73bb216a4b
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/205/res=1080p/file/stream.mpd?hdnts=exp=1790307695~acl=/stream/205/res=1080p/file/stream.mpd!/stream/205/file/*/aac/*!/stream/205/file/*/*-1080p/*!/stream/205/file/*/*-720p/*!/stream/205/file/*/*-480p/*!/stream/205/file/*/*-360p/*~id=1000000064~hmac=dac70df3df8a2e7dbcb5f3fa9d95e71e65ca8f601fdc60e278ffdfb7f1cd2253
+
+[OK] Metro TV (id 777)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/777/res=1080p/file/master.m3u8?hdnts=exp=1790307696~acl=/stream/777/res=1080p/file/master.m3u8!/stream/777/file/*/aac/*!/stream/777/file/*/*-1080p/*!/stream/777/file/*/*-720p/*!/stream/777/file/*/*-480p/*!/stream/777/file/*/*-360p/*~id=1000000064~hmac=22ec83cc2599bfb6c106d73194f5f8fbf18e2517406b5e62f63e0884764a7bdf
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/777/res=1080p/file/stream.mpd?hdnts=exp=1790307696~acl=/stream/777/res=1080p/file/stream.mpd!/stream/777/file/*/aac/*!/stream/777/file/*/*-1080p/*!/stream/777/file/*/*-720p/*!/stream/777/file/*/*-480p/*!/stream/777/file/*/*-360p/*~id=1000000064~hmac=0c9f83e33275f5dc5fde8b8852545e8c17095ccb990a9605ae4b25e100163f2f
+
+[OK] TVRI (id 6441)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/6441/res=1080p/file/master.m3u8?hdnts=exp=1790307698~acl=/stream/6441/res=1080p/file/master.m3u8!/stream/6441/file/*/aac/*!/stream/6441/file/*/*-1080p/*!/stream/6441/file/*/*-720p/*!/stream/6441/file/*/*-480p/*!/stream/6441/file/*/*-360p/*~id=1000000064~hmac=eb8fb4b63bef5d928278ceec7ba9deb7027f55b13720309d78f3468d1895e30b
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/6441/res=1080p/file/stream.mpd?hdnts=exp=1790307698~acl=/stream/6441/res=1080p/file/stream.mpd!/stream/6441/file/*/aac/*!/stream/6441/file/*/*-1080p/*!/stream/6441/file/*/*-720p/*!/stream/6441/file/*/*-480p/*!/stream/6441/file/*/*-360p/*~id=1000000064~hmac=639acff41f76bc09392347afcb79aeb816c81d8ae47d110f10c3e4695db22f9c
+
+[OK] Moji (id 206)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/206/res=1080p/file/master.m3u8?hdnts=exp=1790307700~acl=/stream/206/res=1080p/file/master.m3u8!/stream/206/file/*/aac/*!/stream/206/file/*/*-1080p/*!/stream/206/file/*/*-720p/*!/stream/206/file/*/*-480p/*!/stream/206/file/*/*-360p/*~id=1000000064~hmac=09a9a7c2c03d8c02d518c9266da623ec0338f9a925ea4d918797ab2bcceb1c02
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/206/res=1080p/file/stream.mpd?hdnts=exp=1790307700~acl=/stream/206/res=1080p/file/stream.mpd!/stream/206/file/*/aac/*!/stream/206/file/*/*-1080p/*!/stream/206/file/*/*-720p/*!/stream/206/file/*/*-480p/*!/stream/206/file/*/*-360p/*~id=1000000064~hmac=df7693190e24e10b8741c0c195e43bec556af8d8632da2c28ff50a35522666d2
+
+[OK] TVOne (id 783)
+  HLS: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/783/res=1080p/file/master.m3u8?hdnts=exp=1790307701~acl=/stream/783/res=1080p/file/master.m3u8!/stream/783/file/*/aac/*!/stream/783/file/*/*-1080p/*!/stream/783/file/*/*-720p/*!/stream/783/file/*/*-480p/*!/stream/783/file/*/*-360p/*~id=1000000064~hmac=78ac04889a9a50980ec5dec7ffb348ca628d8098bc2fcaf0b52db1644ab0eee6
+  MPD: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/783/res=1080p/file/stream.mpd?hdnts=exp=1790307701~acl=/stream/783/res=1080p/file/stream.mpd!/stream/783/file/*/aac/*!/stream/783/file/*/*-1080p/*!/stream/783/file/*/*-720p/*!/stream/783/file/*/*-480p/*!/stream/783/file/*/*-360p/*~id=1000000064~hmac=f036518ed83875cff442b7386711d18864864ac90e7eaaaa245b4be48cdbb839
+
+[OK] BTV (id 6165)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/6165/res=1080p/file/master.m3u8?hdnts=exp=1790307702~acl=/stream/6165/res=1080p/file/master.m3u8!/stream/6165/file/*/aac/*!/stream/6165/file/*/*-1080p/*!/stream/6165/file/*/*-720p/*!/stream/6165/file/*/*-480p/*!/stream/6165/file/*/*-360p/*~id=1000000064~hmac=1a69650334a8077b1f8f56537bcdc01917af16bd20eb4175d43fe97c27e5c74d
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/6165/res=1080p/file/stream.mpd?hdnts=exp=1790307702~acl=/stream/6165/res=1080p/file/stream.mpd!/stream/6165/file/*/aac/*!/stream/6165/file/*/*-1080p/*!/stream/6165/file/*/*-720p/*!/stream/6165/file/*/*-480p/*!/stream/6165/file/*/*-360p/*~id=1000000064~hmac=f67ae42f4858eb30976cd83c52dfc1a4aff55d1694828961c4883aaae88efe65
+
+[OK] ANTV (id 782)
+  HLS: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/782/res=1080p/file/master.m3u8?hdnts=exp=1790307703~acl=/stream/782/res=1080p/file/master.m3u8!/stream/782/file/*/aac/*!/stream/782/file/*/*-1080p/*!/stream/782/file/*/*-720p/*!/stream/782/file/*/*-480p/*!/stream/782/file/*/*-360p/*~id=1000000064~hmac=a2554258cce4b8ad1b3a64d54481f74f7af4331e12a32f21929d66a66165592f
+  MPD: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/782/res=1080p/file/stream.mpd?hdnts=exp=1790307703~acl=/stream/782/res=1080p/file/stream.mpd!/stream/782/file/*/aac/*!/stream/782/file/*/*-1080p/*!/stream/782/file/*/*-720p/*!/stream/782/file/*/*-480p/*!/stream/782/file/*/*-360p/*~id=1000000064~hmac=24f6e6017728cbfc397672b02ee6b0e38805f352239076bcfb00a2e7a5706365
+
+[OK] Jaktv (id 5415)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/5415/res=1080p/file/master.m3u8?hdnts=exp=1790307705~acl=/stream/5415/res=1080p/file/master.m3u8!/stream/5415/file/*/aac/*!/stream/5415/file/*/*-1080p/*!/stream/5415/file/*/*-720p/*!/stream/5415/file/*/*-480p/*!/stream/5415/file/*/*-360p/*~id=1000000064~hmac=b7a8ec60623de1304fac375774b29cd4985f4959f21cb368541984a703478d9b
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/5415/res=1080p/file/stream.mpd?hdnts=exp=1790307705~acl=/stream/5415/res=1080p/file/stream.mpd!/stream/5415/file/*/aac/*!/stream/5415/file/*/*-1080p/*!/stream/5415/file/*/*-720p/*!/stream/5415/file/*/*-480p/*!/stream/5415/file/*/*-360p/*~id=1000000064~hmac=e494a5eb97bdb8f103f97fa55637a08f857cb88a0df47e03648f7133e5c5807a
+
+[OK] MDTV (id 875)
+  HLS: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/875/res=1080p/file/master.m3u8?hdnts=exp=1790307706~acl=/stream/875/res=1080p/file/master.m3u8!/stream/875/file/*/aac/*!/stream/875/file/*/*-1080p/*!/stream/875/file/*/*-720p/*!/stream/875/file/*/*-480p/*!/stream/875/file/*/*-360p/*~id=1000000064~hmac=9077bbd386d93e50c887d4b5ceb9d14bd9b725869d94befb6ab24a30ea5a17ba
+  MPD: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/875/res=1080p/file/stream.mpd?hdnts=exp=1790307706~acl=/stream/875/res=1080p/file/stream.mpd!/stream/875/file/*/aac/*!/stream/875/file/*/*-1080p/*!/stream/875/file/*/*-720p/*!/stream/875/file/*/*-480p/*!/stream/875/file/*/*-360p/*~id=1000000064~hmac=78ba20eee6dc0419944a04d895cfe870c76cbbee0739f57257b659c81958b9c8
+
+[OK] RTV (id 1561)
+  HLS: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/1561/res=1080p/file/master.m3u8?hdnts=exp=1790307708~acl=/stream/1561/res=1080p/file/master.m3u8!/stream/1561/file/*/aac/*!/stream/1561/file/*/*-1080p/*!/stream/1561/file/*/*-720p/*!/stream/1561/file/*/*-480p/*!/stream/1561/file/*/*-360p/*~id=1000000064~hmac=31c58e5a00b72c8bf806786dd02e29e642fe769799e9f26d0f6335431d62939f
+  MPD: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/1561/res=1080p/file/stream.mpd?hdnts=exp=1790307708~acl=/stream/1561/res=1080p/file/stream.mpd!/stream/1561/file/*/aac/*!/stream/1561/file/*/*-1080p/*!/stream/1561/file/*/*-720p/*!/stream/1561/file/*/*-480p/*!/stream/1561/file/*/*-360p/*~id=1000000064~hmac=76bdb852140c7871c71168d3cf4e3709b217b0cb17ff3f85041b40110474bcf1
+
+[OK] DAAI TV (id 6482)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/6482/res=1080p/file/master.m3u8?hdnts=exp=1790307710~acl=/stream/6482/res=1080p/file/master.m3u8!/stream/6482/file/*/aac/*!/stream/6482/file/*/*-1080p/*!/stream/6482/file/*/*-720p/*!/stream/6482/file/*/*-480p/*!/stream/6482/file/*/*-360p/*~id=1000000064~hmac=c2aaed75bb3e5af52e3be3a84186f23b436739e12f9820e778e4cd73d0174f36
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/6482/res=1080p/file/stream.mpd?hdnts=exp=1790307710~acl=/stream/6482/res=1080p/file/stream.mpd!/stream/6482/file/*/aac/*!/stream/6482/file/*/*-1080p/*!/stream/6482/file/*/*-720p/*!/stream/6482/file/*/*-480p/*!/stream/6482/file/*/*-360p/*~id=1000000064~hmac=0016eeaea4da74ebfa26088eb9a291a94b163f4cc0f2c3754a7143a94484e162
+
+[OK] CNA (id 6411)
+  HLS: https://d2e1asnsl7br7b.cloudfront.net/7782e205e72f43aeb4a48ec97f66ebbe/index.m3u8
+
+[OK] Aljazeera (id 6410)
+  HLS: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/6410/res=1080p/start=1790307000/file/dvr-master.m3u8?hdnts=exp=1790307713~acl=/stream/6410/res=1080p/start=1790307000/file/dvr-master.m3u8!/stream/6410/file/*/aac/*!/stream/6410/file/*/*-1080p/*!/stream/6410/file/*/*-720p/*!/stream/6410/file/*/*-480p/*!/stream/6410/file/*/*-360p/*~id=1000000064~hmac=2b127e591b0bbc01532b06361069bb3da5943b77bb5d619d6d6006d275207224
+  MPD: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/6410/res=1080p/start=1790307000/file/dvr-stream.mpd?hdnts=exp=1790307713~acl=/stream/6410/res=1080p/start=1790307000/file/dvr-stream.mpd!/stream/6410/file/*/aac/*!/stream/6410/file/*/*-1080p/*!/stream/6410/file/*/*-720p/*!/stream/6410/file/*/*-480p/*!/stream/6410/file/*/*-360p/*~id=1000000064~hmac=4eb0869793654942e5ee9daac722ce942a9cdd42d394218216e5ebaa934d1ef6
+
+[OK] Euronews (id 6412)
+  HLS: https://geo-ban-ca-etslive-v3-vidio-com-tokenized.akamaized.net/stream/6412/res=1080p/start=1790307000/file/dvr-master.m3u8?hdnts=exp=1790307715~acl=/stream/6412/res=1080p/start=1790307000/file/dvr-master.m3u8!/stream/6412/file/*/aac/*!/stream/6412/file/*/*-1080p/*!/stream/6412/file/*/*-720p/*!/stream/6412/file/*/*-480p/*!/stream/6412/file/*/*-360p/*~id=1000000064~hmac=282a4020c3a974414f0f102c0a6059cd4a293a7dd528b9f8151bffbea5a4e1e0
+  MPD: https://geo-ban-ca-etslive-v3-vidio-com-tokenized.akamaized.net/stream/6412/res=1080p/start=1790307000/file/dvr-stream.mpd?hdnts=exp=1790307715~acl=/stream/6412/res=1080p/start=1790307000/file/dvr-stream.mpd!/stream/6412/file/*/aac/*!/stream/6412/file/*/*-1080p/*!/stream/6412/file/*/*-720p/*!/stream/6412/file/*/*-480p/*!/stream/6412/file/*/*-360p/*~id=1000000064~hmac=c47f2919816601358a96aa5e01bea96e7cb8602de78c05e0fcf3c0e8f92ad01f
+
+[OK] DW English (id 5075)
+  HLS: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/5075/res=1080p/start=1790307000/file/dvr-master.m3u8?hdnts=exp=1790307717~acl=/stream/5075/res=1080p/start=1790307000/file/dvr-master.m3u8!/stream/5075/file/*/aac/*!/stream/5075/file/*/*-1080p/*!/stream/5075/file/*/*-720p/*!/stream/5075/file/*/*-480p/*!/stream/5075/file/*/*-360p/*~id=1000000064~hmac=c458de5faf17592982c6d314eaa890c49a6098e4873cd11f98c6cccd3a481f08
+  MPD: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/5075/res=1080p/start=1790307000/file/dvr-stream.mpd?hdnts=exp=1790307717~acl=/stream/5075/res=1080p/start=1790307000/file/dvr-stream.mpd!/stream/5075/file/*/aac/*!/stream/5075/file/*/*-1080p/*!/stream/5075/file/*/*-720p/*!/stream/5075/file/*/*-480p/*!/stream/5075/file/*/*-360p/*~id=1000000064~hmac=0aa49ea384c6764af8883fba9023cfa8d734a58ef1a8dfdf356cf5ef25c0e883
+
+[OK] Arirang (id 6784)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/6784/res=1080p/start=1790307000/file/dvr-master.m3u8?hdnts=exp=1790307718~acl=/stream/6784/res=1080p/start=1790307000/file/dvr-master.m3u8!/stream/6784/file/*/aac/*!/stream/6784/file/*/*-1080p/*!/stream/6784/file/*/*-720p/*!/stream/6784/file/*/*-480p/*!/stream/6784/file/*/*-360p/*~id=1000000064~hmac=d1e50bad8fda9f4b26bb8ae8ec158d7a1e4ba600cb9202f59e4706bdbbade54f
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/6784/res=1080p/start=1790307000/file/dvr-stream.mpd?hdnts=exp=1790307718~acl=/stream/6784/res=1080p/start=1790307000/file/dvr-stream.mpd!/stream/6784/file/*/aac/*!/stream/6784/file/*/*-1080p/*!/stream/6784/file/*/*-720p/*!/stream/6784/file/*/*-480p/*!/stream/6784/file/*/*-360p/*~id=1000000064~hmac=1f49caf2c964d9ee6276ccc2bab92a0f6da944b3cfe1770fd9d90147780b626e
+
+[OK] Makkah TV (id 6852)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/6852/res=1080p/file/master.m3u8?hdnts=exp=1790307721~acl=/stream/6852/res=1080p/file/master.m3u8!/stream/6852/file/*/aac/*!/stream/6852/file/*/*-1080p/*!/stream/6852/file/*/*-720p/*!/stream/6852/file/*/*-480p/*!/stream/6852/file/*/*-360p/*~id=1000000064~hmac=251b6eefe3d3849eef5e56004bbda00bf0929e145e4f65587e791b8efca7c97d
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/6852/res=1080p/file/stream.mpd?hdnts=exp=1790307721~acl=/stream/6852/res=1080p/file/stream.mpd!/stream/6852/file/*/aac/*!/stream/6852/file/*/*-1080p/*!/stream/6852/file/*/*-720p/*!/stream/6852/file/*/*-480p/*!/stream/6852/file/*/*-360p/*~id=1000000064~hmac=0e8b17d3e0ea33718ac2384eae83e4bd85327e3199ae3a419e61b2517ed90be7
+
+[OK] U-Channel TV (id 6898)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/6898/res=1080p/file/master.m3u8?hdnts=exp=1790307724~acl=/stream/6898/res=1080p/file/master.m3u8!/stream/6898/file/*/aac/*!/stream/6898/file/*/*-1080p/*!/stream/6898/file/*/*-720p/*!/stream/6898/file/*/*-480p/*!/stream/6898/file/*/*-360p/*~id=1000000064~hmac=157ccb806c43ff54f6cf99822fb5e622a231f608764c48438d5dd893bb8e5d61
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/6898/res=1080p/file/stream.mpd?hdnts=exp=1790307724~acl=/stream/6898/res=1080p/file/stream.mpd!/stream/6898/file/*/aac/*!/stream/6898/file/*/*-1080p/*!/stream/6898/file/*/*-720p/*!/stream/6898/file/*/*-480p/*!/stream/6898/file/*/*-360p/*~id=1000000064~hmac=605952d54eb3aaea87ec017ed2e1ed7b6bee0d27dd4b04a8781e3616b632c11c
+
+[OK] ABC Australia (id 7150)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/7150/res=1080p/file/master.m3u8?hdnts=exp=1790307726~acl=/stream/7150/res=1080p/file/master.m3u8!/stream/7150/file/*/aac/*!/stream/7150/file/*/*-1080p/*!/stream/7150/file/*/*-720p/*!/stream/7150/file/*/*-480p/*!/stream/7150/file/*/*-360p/*~id=1000000064~hmac=b84e7deb5ff3665686192d4a1893b3d7a7722c1ae9b695f3c2d791c9f6964fb1
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/7150/res=1080p/file/stream.mpd?hdnts=exp=1790307726~acl=/stream/7150/res=1080p/file/stream.mpd!/stream/7150/file/*/aac/*!/stream/7150/file/*/*-1080p/*!/stream/7150/file/*/*-720p/*!/stream/7150/file/*/*-480p/*!/stream/7150/file/*/*-360p/*~id=1000000064~hmac=77b011e34bf98202b923b2afc3878b18def57867d722794c77436c75d8d3c882
+
+[OK] Magna TV (id 7230)
+  HLS: https://edge.medcom.id/live-edge/smil:magna.smil/playlist.m3u8
+
+[OK] Nusantara TV (id 7432)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/7432/res=1080p/file/master.m3u8?hdnts=exp=1790307728~acl=/stream/7432/res=1080p/file/master.m3u8!/stream/7432/file/*/aac/*!/stream/7432/file/*/*-1080p/*!/stream/7432/file/*/*-720p/*!/stream/7432/file/*/*-480p/*!/stream/7432/file/*/*-360p/*~id=1000000064~hmac=5978454fadd9f54c2ef1c84b78d0a7c43840e2aad089902f76565ff0d7af1ce5
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/7432/res=1080p/file/stream.mpd?hdnts=exp=1790307728~acl=/stream/7432/res=1080p/file/stream.mpd!/stream/7432/file/*/aac/*!/stream/7432/file/*/*-1080p/*!/stream/7432/file/*/*-720p/*!/stream/7432/file/*/*-480p/*!/stream/7432/file/*/*-360p/*~id=1000000064~hmac=8feaf24da21f436914ba92aacbe58a284cd6f9bc51661f8c8ca84ce1dbfca4de
+
+[OK] AJWA TV (id 7464)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/7464/res=1080p/file/master.m3u8?hdnts=exp=1790307730~acl=/stream/7464/res=1080p/file/master.m3u8!/stream/7464/file/*/aac/*!/stream/7464/file/*/*-1080p/*!/stream/7464/file/*/*-720p/*!/stream/7464/file/*/*-480p/*!/stream/7464/file/*/*-360p/*~id=1000000064~hmac=67fe324301c96107d071729f537866da30def11b8f16b4042313b74f2b9bc0a3
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/7464/res=1080p/file/stream.mpd?hdnts=exp=1790307730~acl=/stream/7464/res=1080p/file/stream.mpd!/stream/7464/file/*/aac/*!/stream/7464/file/*/*-1080p/*!/stream/7464/file/*/*-720p/*!/stream/7464/file/*/*-480p/*!/stream/7464/file/*/*-360p/*~id=1000000064~hmac=da2432bbe402485371b7b9c2a8c9e3f1437e500decde13d2c90dbed98320a686
+
+[OK] MUSICA (id 7619)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/7619/res=1080p/file/master.m3u8?hdnts=exp=1790307731~acl=/stream/7619/res=1080p/file/master.m3u8!/stream/7619/file/*/aac/*!/stream/7619/file/*/*-1080p/*!/stream/7619/file/*/*-720p/*!/stream/7619/file/*/*-480p/*!/stream/7619/file/*/*-360p/*~id=1000000064~hmac=efc20501e35e6c697aedd54328debbc8cbef6762cae0d7f5591cb4992e925bce
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/7619/res=1080p/file/stream.mpd?hdnts=exp=1790307731~acl=/stream/7619/res=1080p/file/stream.mpd!/stream/7619/file/*/aac/*!/stream/7619/file/*/*-1080p/*!/stream/7619/file/*/*-720p/*!/stream/7619/file/*/*-480p/*!/stream/7619/file/*/*-360p/*~id=1000000064~hmac=bfaf23ba704454bf5f4cbe7e6989bf93fcaba48871604e3d1557fc9c430940de
+
+[OK] Mentari TV (id 8237)
+  HLS: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/8237/res=1080p/file/master.m3u8?hdnts=exp=1790307733~acl=/stream/8237/res=1080p/file/master.m3u8!/stream/8237/file/*/aac/*!/stream/8237/file/*/*-1080p/*!/stream/8237/file/*/*-720p/*!/stream/8237/file/*/*-480p/*!/stream/8237/file/*/*-360p/*~id=1000000064~hmac=93ceee338d721029bb676e4911ce10e042e3147e7f9dbe1d5757af5971ecd264
+  MPD: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/8237/res=1080p/file/stream.mpd?hdnts=exp=1790307733~acl=/stream/8237/res=1080p/file/stream.mpd!/stream/8237/file/*/aac/*!/stream/8237/file/*/*-1080p/*!/stream/8237/file/*/*-720p/*!/stream/8237/file/*/*-480p/*!/stream/8237/file/*/*-360p/*~id=1000000064~hmac=1a9479f205e95f6ec6d041754abd4f0c6b093e97d030dcc86d221ee12f6cb12e
+
+[OK] NHK World Japan (id 7968)
+  HLS: https://production-nhk-vidio-com.akamaized.net/00489ab02a9d71cc/wXfEzh7gCnHgIYYY/cfc0a62dTe93673d.m3u8
+
+[OK] JTV (id 9713)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/9713/res=1080p/file/master.m3u8?hdnts=exp=1790307736~acl=/stream/9713/res=1080p/file/master.m3u8!/stream/9713/file/*/aac/*!/stream/9713/file/*/*-1080p/*!/stream/9713/file/*/*-720p/*!/stream/9713/file/*/*-480p/*!/stream/9713/file/*/*-360p/*~id=1000000064~hmac=5b9668eafdbab6ac42a506982f36e25af80dec0b28b1e746b8618c4734e1a2d0
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/9713/res=1080p/file/stream.mpd?hdnts=exp=1790307736~acl=/stream/9713/res=1080p/file/stream.mpd!/stream/9713/file/*/aac/*!/stream/9713/file/*/*-1080p/*!/stream/9713/file/*/*-720p/*!/stream/9713/file/*/*-480p/*!/stream/9713/file/*/*-360p/*~id=1000000064~hmac=3c92acebdc0d3d46d94a96ea4c7467f9d118d371dbb8b3cdc23522db4c760eba
+
+[OK] jawaposTV (id 9714)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/9714/res=1080p/file/master.m3u8?hdnts=exp=1790307737~acl=/stream/9714/res=1080p/file/master.m3u8!/stream/9714/file/*/aac/*!/stream/9714/file/*/*-1080p/*!/stream/9714/file/*/*-720p/*!/stream/9714/file/*/*-480p/*!/stream/9714/file/*/*-360p/*~id=1000000064~hmac=2b9fb7d453f8a3b95e7862cc0daa10086e83b74681d32c33f71de46835b07029
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/9714/res=1080p/file/stream.mpd?hdnts=exp=1790307737~acl=/stream/9714/res=1080p/file/stream.mpd!/stream/9714/file/*/aac/*!/stream/9714/file/*/*-1080p/*!/stream/9714/file/*/*-720p/*!/stream/9714/file/*/*-480p/*!/stream/9714/file/*/*-360p/*~id=1000000064~hmac=ae9bf8c50183ad03c85c7d6dee5390e6e12f7754c060dad454ad7923a7663720
+
+[OK] DMI TV (id 12607)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/12607/res=1080p/file/master.m3u8?hdnts=exp=1790307739~acl=/stream/12607/res=1080p/file/master.m3u8!/stream/12607/file/*/aac/*!/stream/12607/file/*/*-1080p/*!/stream/12607/file/*/*-720p/*!/stream/12607/file/*/*-480p/*!/stream/12607/file/*/*-360p/*~id=1000000064~hmac=7a994d6d619081cb87889bbef4cfd446659646832e09080b24e9dc0f13ea8431
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/12607/res=1080p/file/stream.mpd?hdnts=exp=1790307739~acl=/stream/12607/res=1080p/file/stream.mpd!/stream/12607/file/*/aac/*!/stream/12607/file/*/*-1080p/*!/stream/12607/file/*/*-720p/*!/stream/12607/file/*/*-480p/*!/stream/12607/file/*/*-360p/*~id=1000000064~hmac=91bca9aeee18974545026419498bd410d84c1a5959278deff8b5fe08f91a15ed
+
+[OK] Africanews (id 12784)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/12784/res=1080p/file/master.m3u8?hdnts=exp=1790307740~acl=/stream/12784/res=1080p/file/master.m3u8!/stream/12784/file/*/aac/*!/stream/12784/file/*/*-1080p/*!/stream/12784/file/*/*-720p/*!/stream/12784/file/*/*-480p/*!/stream/12784/file/*/*-360p/*~id=1000000064~hmac=62b0d79444496f07ef54ea25b35f046ad113947cb9ed729bfac60f722ee1d955
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/12784/res=1080p/file/stream.mpd?hdnts=exp=1790307740~acl=/stream/12784/res=1080p/file/stream.mpd!/stream/12784/file/*/aac/*!/stream/12784/file/*/*-1080p/*!/stream/12784/file/*/*-720p/*!/stream/12784/file/*/*-480p/*!/stream/12784/file/*/*-360p/*~id=1000000064~hmac=a5838ae3c5621cbdd5f59ab7fb7d9d21ce376b31c5c959f384de03c105ca6007
+
+[OK] Elshinta TV (id 10975)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/10975/res=1080p/file/master.m3u8?hdnts=exp=1790307741~acl=/stream/10975/res=1080p/file/master.m3u8!/stream/10975/file/*/aac/*!/stream/10975/file/*/*-1080p/*!/stream/10975/file/*/*-720p/*!/stream/10975/file/*/*-480p/*!/stream/10975/file/*/*-360p/*~id=1000000064~hmac=e218770c523c5fb7533d63ddd6f6fce0aa19b1e0145457b4c235f269a48c9d66
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/10975/res=1080p/file/stream.mpd?hdnts=exp=1790307741~acl=/stream/10975/res=1080p/file/stream.mpd!/stream/10975/file/*/aac/*!/stream/10975/file/*/*-1080p/*!/stream/10975/file/*/*-720p/*!/stream/10975/file/*/*-480p/*!/stream/10975/file/*/*-360p/*~id=1000000064~hmac=fa1809098fc863862da73eb73166fbd7720f2089fd7d226cb2ea64fd7cee95fb
+
+[OK] TV5Monde (id 17278)
+  HLS: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/17278/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307742~acl=/stream/17278/res=1080p/file/drm/hls/master.m3u8!/stream/17278/file/drm/hls/*/aac/*!/stream/17278/file/drm/hls/*/*-1080p/*!/stream/17278/file/drm/hls/*/*-720p/*!/stream/17278/file/drm/hls/*/*-480p/*!/stream/17278/file/drm/hls/*/*-360p/*~id=1000000064~hmac=7fde1005b8cd7e85bbd3f5fc01314ac529b3b2d16fcc8e29dc3e689f1631f277
+  MPD: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/17278/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307742~acl=/stream/17278/res=1080p/file/drm/dash/stream.mpd!/stream/17278/file/drm/dash/*/aac/*!/stream/17278/file/drm/dash/*/*-1080p/*!/stream/17278/file/drm/dash/*/*-720p/*!/stream/17278/file/drm/dash/*/*-480p/*!/stream/17278/file/drm/dash/*/*-360p/*~id=1000000064~hmac=b4212c7df03dcd4ee7cfa4443f1e52ccfc688fb09600806c6e0e024fb4900da4
+
+[OK] Garuda TV (id 18162)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/18162/res=1080p/file/master.m3u8?hdnts=exp=1790307745~acl=/stream/18162/res=1080p/file/master.m3u8!/stream/18162/file/*/aac/*!/stream/18162/file/*/*-1080p/*!/stream/18162/file/*/*-720p/*!/stream/18162/file/*/*-480p/*!/stream/18162/file/*/*-360p/*~id=1000000064~hmac=cce186b42a2ed398f80db986cab356b108e5ead741ad887e342c679a72209518
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/18162/res=1080p/file/stream.mpd?hdnts=exp=1790307745~acl=/stream/18162/res=1080p/file/stream.mpd!/stream/18162/file/*/aac/*!/stream/18162/file/*/*-1080p/*!/stream/18162/file/*/*-720p/*!/stream/18162/file/*/*-480p/*!/stream/18162/file/*/*-360p/*~id=1000000064~hmac=78dcacc45eb8f4bec7707ce99fc34dd5bce1890331512b726f7c1a9de05b3340
+
+[OK] Berita Satu (id 18280)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/18280/res=1080p/file/master.m3u8?hdnts=exp=1790307747~acl=/stream/18280/res=1080p/file/master.m3u8!/stream/18280/file/*/aac/*!/stream/18280/file/*/*-1080p/*!/stream/18280/file/*/*-720p/*!/stream/18280/file/*/*-480p/*!/stream/18280/file/*/*-360p/*~id=1000000064~hmac=58bc0c5c357831ce1c21ae60675df1da313b99f297a2e39a060745c84e67850c
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/18280/res=1080p/file/stream.mpd?hdnts=exp=1790307747~acl=/stream/18280/res=1080p/file/stream.mpd!/stream/18280/file/*/aac/*!/stream/18280/file/*/*-1080p/*!/stream/18280/file/*/*-720p/*!/stream/18280/file/*/*-480p/*!/stream/18280/file/*/*-360p/*~id=1000000064~hmac=fee0567aba04a345e7217f1d4803db6a1dcd1a535be6edff0ddbccf540b5322a
+
+[OK] Test Upcoming Schedule (id 18441)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/204/res=1080p/file/live/204/master.m3u8?hdnts=exp=1790307749~acl=/stream/204/res=1080p/file/live/204/master.m3u8!/stream/204/file/*/aac/*!/stream/204/file/*/*-1080p/*!/stream/204/file/*/*-720p/*!/stream/204/file/*/*-480p/*!/stream/204/file/*/*-360p/*~id=1000000064~hmac=85d8180a0d8b7eb9d70dfaed80cf35887cbf8d14cb7388ecb2c8ca19636d38ee
+
+[OK] Daystar TV (id 18622)
+  HLS: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/18622/res=1080p/start=1790307000/file/dvr-master.m3u8?hdnts=exp=1790307750~acl=/stream/18622/res=1080p/start=1790307000/file/dvr-master.m3u8!/stream/18622/file/*/aac/*!/stream/18622/file/*/*-1080p/*!/stream/18622/file/*/*-720p/*!/stream/18622/file/*/*-480p/*!/stream/18622/file/*/*-360p/*~id=1000000064~hmac=d6d859efe11879aa5f9eb9d739349264df0645ecc9c0a2188493122e09f933e4
+  MPD: https://geo-id-etslive-v3-vidio-com-tokenized.akamaized.net/stream/18622/res=1080p/start=1790307000/file/dvr-stream.mpd?hdnts=exp=1790307750~acl=/stream/18622/res=1080p/start=1790307000/file/dvr-stream.mpd!/stream/18622/file/*/aac/*!/stream/18622/file/*/*-1080p/*!/stream/18622/file/*/*-720p/*!/stream/18622/file/*/*-480p/*!/stream/18622/file/*/*-360p/*~id=1000000064~hmac=cc0b53a75d09f696179d962f8f361e1f2098f6ec6eb9e9989686c69890ffa6ed
+
+[OK] Sin Po TV (id 19046)
+  HLS: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/19046/res=1080p/file/master.m3u8?hdnts=exp=1790307751~acl=/stream/19046/res=1080p/file/master.m3u8!/stream/19046/file/*/aac/*!/stream/19046/file/*/*-1080p/*!/stream/19046/file/*/*-720p/*!/stream/19046/file/*/*-480p/*!/stream/19046/file/*/*-360p/*~id=1000000064~hmac=b641581e8ebcf7fff831ef946d8b9010813d4804134137c3c172748943fd9947
+  MPD: https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/19046/res=1080p/file/stream.mpd?hdnts=exp=1790307751~acl=/stream/19046/res=1080p/file/stream.mpd!/stream/19046/file/*/aac/*!/stream/19046/file/*/*-1080p/*!/stream/19046/file/*/*-720p/*!/stream/19046/file/*/*-480p/*!/stream/19046/file/*/*-360p/*~id=1000000064~hmac=47bbaf5242828f274602bcaa55dc294bf4ab9a9e2872b5f7eed8e8dba0f4e9f1
+
+[OK] Bloomberg TV (id 22252)
+  HLS: https://production-btv-vidio-com.akamaized.net/btvphdvidio904/index.m3u8
+
+[OK] Bein 1 (id 6299)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/6299/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307611~acl=/stream/6299/res=1080p/file/drm/hls/master.m3u8!/stream/6299/file/drm/hls/*/aac/*!/stream/6299/file/drm/hls/*/*-1080p/*!/stream/6299/file/drm/hls/*/*-720p/*!/stream/6299/file/drm/hls/*/*-480p/*!/stream/6299/file/drm/hls/*/*-360p/*~id=1000000064~hmac=392dc7b2f1f5df997bbfaae790dec1e161ffe534c0e0e628e29d5401306ae306
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/6299/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307611~acl=/stream/6299/res=1080p/file/drm/dash/stream.mpd!/stream/6299/file/drm/dash/*/aac/*!/stream/6299/file/drm/dash/*/*-1080p/*!/stream/6299/file/drm/dash/*/*-720p/*!/stream/6299/file/drm/dash/*/*-480p/*!/stream/6299/file/drm/dash/*/*-360p/*~id=1000000064~hmac=a5993620602d7e779971f5b301527e211c3af54a86d2647a1435becb3b577260
+
+[OK] Champions TV 3 (id 6786)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/6786/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307620~acl=/stream/6786/res=1080p/file/drm/hls/master.m3u8!/stream/6786/file/drm/hls/*/aac/*!/stream/6786/file/drm/hls/*/*-1080p/*!/stream/6786/file/drm/hls/*/*-720p/*!/stream/6786/file/drm/hls/*/*-480p/*!/stream/6786/file/drm/hls/*/*-360p/*~id=1000000064~hmac=c52ad994dd0f4974002049d1409345deddd42ab94995543060f2daea972df464
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/6786/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307620~acl=/stream/6786/res=1080p/file/drm/dash/stream.mpd!/stream/6786/file/drm/dash/*/aac/*!/stream/6786/file/drm/dash/*/*-1080p/*!/stream/6786/file/drm/dash/*/*-720p/*!/stream/6786/file/drm/dash/*/*-480p/*!/stream/6786/file/drm/dash/*/*-360p/*~id=1000000064~hmac=dd675b6f4b41aa899ebef1758cf4f525fd9c7296a0e77b4240719c5974dc3ace
+
+[OK] Champions TV 6 (id 9183)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/9183/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307623~acl=/stream/9183/res=1080p/file/drm/hls/master.m3u8!/stream/9183/file/drm/hls/*/aac/*!/stream/9183/file/drm/hls/*/*-1080p/*!/stream/9183/file/drm/hls/*/*-720p/*!/stream/9183/file/drm/hls/*/*-480p/*!/stream/9183/file/drm/hls/*/*-360p/*~id=1000000064~hmac=5a6dba38b0af5e143e7b9c76ddc48eb57f446e97b65da9792adf7524d5d0017f
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/9183/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307623~acl=/stream/9183/res=1080p/file/drm/dash/stream.mpd!/stream/9183/file/drm/dash/*/aac/*!/stream/9183/file/drm/dash/*/*-1080p/*!/stream/9183/file/drm/dash/*/*-720p/*!/stream/9183/file/drm/dash/*/*-480p/*!/stream/9183/file/drm/dash/*/*-360p/*~id=1000000064~hmac=892440e489c0038bc84676c3aab5ac077e96bdd0007947f5b6d33f6a3854632a
+
+[OK] Champions TV 5 (id 9182)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/9182/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307624~acl=/stream/9182/res=1080p/file/drm/hls/master.m3u8!/stream/9182/file/drm/hls/*/aac/*!/stream/9182/file/drm/hls/*/*-1080p/*!/stream/9182/file/drm/hls/*/*-720p/*!/stream/9182/file/drm/hls/*/*-480p/*!/stream/9182/file/drm/hls/*/*-360p/*~id=1000000064~hmac=b7125ec84d18a2d3368ae40efcda852466bd6f98d926231bc700a07753971392
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/9182/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307624~acl=/stream/9182/res=1080p/file/drm/dash/stream.mpd!/stream/9182/file/drm/dash/*/aac/*!/stream/9182/file/drm/dash/*/*-1080p/*!/stream/9182/file/drm/dash/*/*-720p/*!/stream/9182/file/drm/dash/*/*-480p/*!/stream/9182/file/drm/dash/*/*-360p/*~id=1000000064~hmac=945ccbb11c5b82d1cdad7dc40acf718d6a725c8b2898544d83b24bd3bf7acb14
+
+[OK] Premier League TV (id 9353)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/9353/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307626~acl=/stream/9353/res=1080p/file/drm/hls/master.m3u8!/stream/9353/file/drm/hls/*/aac/*!/stream/9353/file/drm/hls/*/*-1080p/*!/stream/9353/file/drm/hls/*/*-720p/*!/stream/9353/file/drm/hls/*/*-480p/*!/stream/9353/file/drm/hls/*/*-360p/*~id=1000000064~hmac=d55c4a74cb8507c4100222cce00c64cbee2bbb069c9b1651e9224ac8d9061712
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/9353/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307626~acl=/stream/9353/res=1080p/file/drm/dash/stream.mpd!/stream/9353/file/drm/dash/*/aac/*!/stream/9353/file/drm/dash/*/*-1080p/*!/stream/9353/file/drm/dash/*/*-720p/*!/stream/9353/file/drm/dash/*/*-480p/*!/stream/9353/file/drm/dash/*/*-360p/*~id=1000000064~hmac=546e4e95e9064ffdd6d08692b246af72abe39b5c7b797e0b01545c5112b99d4a
+
+[OK] SPOTV 2 (id 17140)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/17140/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307627~acl=/stream/17140/res=1080p/file/drm/hls/master.m3u8!/stream/17140/file/drm/hls/*/aac/*!/stream/17140/file/drm/hls/*/*-1080p/*!/stream/17140/file/drm/hls/*/*-720p/*!/stream/17140/file/drm/hls/*/*-480p/*!/stream/17140/file/drm/hls/*/*-360p/*~id=1000000064~hmac=b88c1aa3abc5334cd8174262c167c33a1dac71be2d5413f40cd74ca7fc59d555
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/17140/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307627~acl=/stream/17140/res=1080p/file/drm/dash/stream.mpd!/stream/17140/file/drm/dash/*/aac/*!/stream/17140/file/drm/dash/*/*-1080p/*!/stream/17140/file/drm/dash/*/*-720p/*!/stream/17140/file/drm/dash/*/*-480p/*!/stream/17140/file/drm/dash/*/*-360p/*~id=1000000064~hmac=1164b3110e885cba564ee84f24c89650a65af98e722cf2b9b6c1057be524e9f8
+
+[OK] SPOTV (id 17139)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/17139/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307628~acl=/stream/17139/res=1080p/file/drm/hls/master.m3u8!/stream/17139/file/drm/hls/*/aac/*!/stream/17139/file/drm/hls/*/*-1080p/*!/stream/17139/file/drm/hls/*/*-720p/*!/stream/17139/file/drm/hls/*/*-480p/*!/stream/17139/file/drm/hls/*/*-360p/*~id=1000000064~hmac=211c2d62fbe4413dd793947c8b145df7090422cd0ed2db28757c4568371e9041
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/17139/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307628~acl=/stream/17139/res=1080p/file/drm/dash/stream.mpd!/stream/17139/file/drm/dash/*/aac/*!/stream/17139/file/drm/dash/*/*-1080p/*!/stream/17139/file/drm/dash/*/*-720p/*!/stream/17139/file/drm/dash/*/*-480p/*!/stream/17139/file/drm/dash/*/*-360p/*~id=1000000064~hmac=f90080812ef18e5a028babd6ad4624dd8ee1c743fb8a109bc69cce4614c35a13
+
+[OK] Champions Golf 2 (id 18190)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/18190/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307632~acl=/stream/18190/res=1080p/file/drm/hls/master.m3u8!/stream/18190/file/drm/hls/*/aac/*!/stream/18190/file/drm/hls/*/*-1080p/*!/stream/18190/file/drm/hls/*/*-720p/*!/stream/18190/file/drm/hls/*/*-480p/*!/stream/18190/file/drm/hls/*/*-360p/*~id=1000000064~hmac=4987e45d62716021db1d18181bc1b191caa1e411214d6fe5ee1cf3405cfb347a
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/18190/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307632~acl=/stream/18190/res=1080p/file/drm/dash/stream.mpd!/stream/18190/file/drm/dash/*/aac/*!/stream/18190/file/drm/dash/*/*-1080p/*!/stream/18190/file/drm/dash/*/*-720p/*!/stream/18190/file/drm/dash/*/*-480p/*!/stream/18190/file/drm/dash/*/*-360p/*~id=1000000064~hmac=77cc8cc15441030cfadceefefcc58c87e878b2990c3e12151c47d81a9b095b52
+
+[OK] Champions Golf 1 (id 18189)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/18189/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307633~acl=/stream/18189/res=1080p/file/drm/hls/master.m3u8!/stream/18189/file/drm/hls/*/aac/*!/stream/18189/file/drm/hls/*/*-1080p/*!/stream/18189/file/drm/hls/*/*-720p/*!/stream/18189/file/drm/hls/*/*-480p/*!/stream/18189/file/drm/hls/*/*-360p/*~id=1000000064~hmac=5a1e327aea19cb9fc6b92e9b4159d9edc8b018b68697a3b2328a7c2df7a6d398
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/18189/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307633~acl=/stream/18189/res=1080p/file/drm/dash/stream.mpd!/stream/18189/file/drm/dash/*/aac/*!/stream/18189/file/drm/dash/*/*-1080p/*!/stream/18189/file/drm/dash/*/*-720p/*!/stream/18189/file/drm/dash/*/*-480p/*!/stream/18189/file/drm/dash/*/*-360p/*~id=1000000064~hmac=b82ecb7d21cfaff25aa4522ff005c4841f49d4f4491b5b6c5f510966730b85b7
+
+[OK] Champions Fight (id 20216)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/20216/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307647~acl=/stream/20216/res=1080p/file/drm/hls/master.m3u8!/stream/20216/file/drm/hls/*/aac/*!/stream/20216/file/drm/hls/*/*-1080p/*!/stream/20216/file/drm/hls/*/*-720p/*!/stream/20216/file/drm/hls/*/*-480p/*!/stream/20216/file/drm/hls/*/*-360p/*~id=1000000064~hmac=94d2e33bcefafec73751152dce058b4603ac6c1e70d1af4830e5791a02274d30
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/20216/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307647~acl=/stream/20216/res=1080p/file/drm/dash/stream.mpd!/stream/20216/file/drm/dash/*/aac/*!/stream/20216/file/drm/dash/*/*-1080p/*!/stream/20216/file/drm/dash/*/*-720p/*!/stream/20216/file/drm/dash/*/*-480p/*!/stream/20216/file/drm/dash/*/*-360p/*~id=1000000064~hmac=cca708d74e1bdde7a280faceed6a7920537504ef8792db65eff81d17a73e7381
+
+[OK] Asian Games 7 (id 22246)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22246/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307651~acl=/stream/22246/res=1080p/file/drm/hls/master.m3u8!/stream/22246/file/drm/hls/*/aac/*!/stream/22246/file/drm/hls/*/*-1080p/*!/stream/22246/file/drm/hls/*/*-720p/*!/stream/22246/file/drm/hls/*/*-480p/*!/stream/22246/file/drm/hls/*/*-360p/*~id=1000000064~hmac=3846bccaa2061ed5a0db15334f6905a89360a88beb400621664fa708e97261c2
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22246/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307651~acl=/stream/22246/res=1080p/file/drm/dash/stream.mpd!/stream/22246/file/drm/dash/*/aac/*!/stream/22246/file/drm/dash/*/*-1080p/*!/stream/22246/file/drm/dash/*/*-720p/*!/stream/22246/file/drm/dash/*/*-480p/*!/stream/22246/file/drm/dash/*/*-360p/*~id=1000000064~hmac=73f66100e4d8a26d1ccb0825a71181c28a18d6fda6778477534103593170b022
+
+[OK] Asian Games 8 (id 22247)
+  HLS: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22247/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1790307653~acl=/stream/22247/res=1080p/file/drm/hls/master.m3u8!/stream/22247/file/drm/hls/*/aac/*!/stream/22247/file/drm/hls/*/*-1080p/*!/stream/22247/file/drm/hls/*/*-720p/*!/stream/22247/file/drm/hls/*/*-480p/*!/stream/22247/file/drm/hls/*/*-360p/*~id=1000000064~hmac=311609f2498b36bda21ddd0ede0fa87c138e7ae5c693d57ba82d28140c2e75f9
+  MPD: https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22247/res=1080p/file/drm/dash/stream.mpd?hdnts=exp=1790307653~acl=/stream/22247/res=1080p/file/drm/dash/stream.mpd!/stream/22247/file/drm/dash/*/aac/*!/stream/22247/file/drm/dash/*/*-1080p/*!/stream/22247/file/drm/dash/*/*-720p/*!/stream/22247/file/drm/dash/*/*-480p/*!/stream/22247/file/drm/dash/*/*-360p/*~id=1000000064~hmac=b7c1833f4d9e8e3ce50fe76c73457bb7438e599436ce753e5f806f173f2848e3
+
+== RINGKASAN: 58 channel HLS+MPD, 20 ditolak ==
+[HTTP 403] BRI LIGA 1 (id 8015)
+[HTTP 403] Asian Games 3 (id 22242)
+[HTTP 403] Hip Hip Horee! (id 7052)
+[HTTP 403] TRANS TV (id 733)
+[HTTP 403] Trans7 (id 734)
+[HTTP 403] Kompas TV (id 874)
+[HTTP 403] TVN (id 6362)
+[HTTP 403] Horee (id 6397)
+[HTTP 403] Champions TV 1 (id 6685)
+[HTTP 403] Bein 3 (id 6317)
+[HTTP 403] Champions TV 2 (id 6686)
+[HTTP 403] Rock Action (id 8121)
+[HTTP 403] Bein 2 (id 17875)
+[HTTP 403] Real Madrid TV (id 19538)
+[HTTP 403] GTV (id 778)
+[HTTP 403] MNCTV (id 870)
+[HTTP 403] RCTI (id 665)
+[HTTP 403] iNews (id 5409)
+[HTTP 403] Citra Drama (id 21179)
+[HTTP 403] Citra Plus (id 21289)
