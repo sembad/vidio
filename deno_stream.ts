@@ -402,8 +402,9 @@ async function getStreamInfo(env: string, id: string, acct: { email: string; tok
     : undefined;
   const mpd = (attrs.dash ?? attrs.mpd) as string | undefined;
   const hls = attrs.hls as string | undefined;
+  const expiresIn = (attrs.expires_in ?? attrs.expiresIn) as number | undefined;
   if (!mpd) throw new Error("dash kosong di respons stream");
-  return { mpd, hls, widevine };
+  return { mpd, hls, widevine, expiresIn };
 }
 
 // --- 2) fetch MPD -> ekstrak PSSH widevine ---
@@ -474,11 +475,11 @@ const SECRET_PATH = "haowhwowgwogieowgwi";
 // Cache di Deno KV:
 // - clearkey per channel ID, auto-hapus setelah 24 jam
 //   (biar nggak decrypt terus + nggak buang preview akun production tiap request)
-// - mpd/hls staging per channel ID, dengan exp token dari URL (hdnts=exp=...).
-//   Kalau masih >= 30 menit sebelum exp -> pakai cache;
-//   <= 30 menit sebelum exp -> ambil ulang dari staging buat perbarui token.
+// - mpd/hls staging per channel ID, pakai "expires_in" (detik) dari respons JSON.
+//   Kalau masih > 10 menit sebelum exp -> pakai cache;
+//   <= 10 menit sebelum exp -> ambil ulang dari staging buat perbarui token.
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const REFRESH_WINDOW_MS = 30 * 60 * 1000; // 30 menit sebelum exp
+const REFRESH_WINDOW_MS = 10 * 60 * 1000; // 10 menit sebelum exp
 const kv = await Deno.openKv();
 
 async function getCachedClearkey(id: string): Promise<string | undefined> {
@@ -490,25 +491,25 @@ async function cacheClearkey(id: string, clearkey: string): Promise<void> {
   await kv.set(["clearkey", id], clearkey, { expireIn: CACHE_TTL_MS });
 }
 
-// ambil exp (epoch detik) dari token URL akamai: hdnts=exp=1790322994~...
-function extractExp(url: string): number | undefined {
-  const m = url.match(/(?:[?&~])?exp=(\d{10})/);
-  return m ? Number(m[1]) : undefined;
-}
-
-type CachedStream = { mpd: string; hls?: string; exp: number };
+type CachedStream = { mpd: string; hls?: string; expiresAt: number };
 
 async function getCachedStream(id: string): Promise<CachedStream | undefined> {
   const entry = await kv.get<CachedStream>(["stream", id]);
   return entry.value ?? undefined;
 }
 
-async function cacheStream(id: string, mpd: string, hls?: string): Promise<CachedStream> {
-  const exp = extractExp(mpd) ?? Math.floor(Date.now() / 1000) + 3600;
-  const value: CachedStream = { mpd, hls, exp };
-  // KV expire pas exp token (plus buffer kecil), bukan fixed 24 jam
-  const ttlMs = Math.max((exp * 1000 - Date.now()) + 60_000, 60_000);
-  await kv.set(["stream", id], value, { expireIn: ttlMs });
+async function cacheStream(
+  id: string,
+  mpd: string,
+  hls?: string,
+  expiresIn?: number,
+): Promise<CachedStream> {
+  // expires_in dari respons JSON (detik); fallback 1 jam kalau tidak ada
+  const ttlSec = expiresIn && expiresIn > 0 ? expiresIn : 3600;
+  const expiresAt = Math.floor(Date.now() / 1000) + ttlSec;
+  const value: CachedStream = { mpd, hls, expiresAt };
+  // KV expire pas exp token (plus buffer kecil)
+  await kv.set(["stream", id], value, { expireIn: ttlSec * 1000 + 60_000 });
   return value;
 }
 
@@ -520,16 +521,16 @@ Deno.serve(async (req) => {
   }
   const id = url.searchParams.get("id") ?? "6686";
   try {
-    // --- staging mpd/hls: pakai cache kalau masih >= 30 menit sebelum exp ---
+    // --- staging mpd/hls: pakai cache kalau masih > 10 menit sebelum exp ---
     let staging: CachedStream;
     const cachedStream = await getCachedStream(id);
     const nowMs = Date.now();
-    if (cachedStream && cachedStream.exp * 1000 - nowMs > REFRESH_WINDOW_MS) {
+    if (cachedStream && cachedStream.expiresAt * 1000 - nowMs > REFRESH_WINDOW_MS) {
       staging = cachedStream;
     } else {
       const stagingAcct = STAGING_ACCOUNTS[stagingIdx++ % STAGING_ACCOUNTS.length];
       const fresh = await getStreamInfo("staging", id, stagingAcct);
-      staging = await cacheStream(id, fresh.mpd, fresh.hls);
+      staging = await cacheStream(id, fresh.mpd, fresh.hls, fresh.expiresIn);
     }
 
     // --- clearkey: pakai cache kalau ada (hemat preview akun production) ---
