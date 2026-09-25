@@ -467,7 +467,8 @@ async function getClearkey(pssh: string, licenseUrl: string, useProxy = false): 
   return `${content.kid}:${content.key}`;
 }
 
-// secret path: https://<domain>/haowhwowgwogieowgwi?id=...&env=staging|production
+// secret path: https://<domain>/haowhwowgwogieowgwi?id=...
+// Satu request -> staging (mpd/hls) + production (mpd + clearkey) sekaligus
 const SECRET_PATH = "haowhwowgwogieowgwi";
 
 Deno.serve(async (req) => {
@@ -477,43 +478,41 @@ Deno.serve(async (req) => {
     return Response.json({ error: "not found" }, { status: 404 });
   }
   const id = url.searchParams.get("id") ?? "6686";
-  const env = url.searchParams.get("env") ?? "production"; // staging | production
   try {
-    let acct: { email: string; token: string };
-    let stream: { mpd: string; hls?: string; widevine?: string } | null = null;
-    if (env === "staging") {
-      // staging: rotasi akun staging, hasil JSON ditampilkan langsung
-      acct = STAGING_ACCOUNTS[stagingIdx++ % STAGING_ACCOUNTS.length];
-      stream = await getStreamInfo(env, id, acct);
-    } else {
-      // production: rotasi akun production dulu (preview 1x GET
-      // per ID/hari per akun) — kalau semua kena limit, buat akun TCL fresh
-      let lastErr: unknown = null;
-      for (let i = 0; i < PRODUCTION_ACCOUNTS.length; i++) {
-        acct = PRODUCTION_ACCOUNTS[prodIdx++ % PRODUCTION_ACCOUNTS.length];
-        try {
-          stream = await getStreamInfo(env, id, acct);
-          break;
-        } catch (e) {
-          lastErr = e;
-        }
-      }
-      if (!stream) {
-        acct = await createTclAccount();
-        stream = await getStreamInfo(env, id, acct);
+    // --- staging: rotasi akun staging -> mpd/hls ---
+    const stagingAcct = STAGING_ACCOUNTS[stagingIdx++ % STAGING_ACCOUNTS.length];
+    const staging = await getStreamInfo("staging", id, stagingAcct);
+
+    // --- production: rotasi akun production (preview 1x GET per ID/hari
+    // per akun) — kalau semua kena limit, buat akun TCL fresh ---
+    let prodAcct: { email: string; token: string };
+    let prod: { mpd: string; hls?: string; widevine?: string } | null = null;
+    let lastErr: unknown = null;
+    for (let i = 0; i < PRODUCTION_ACCOUNTS.length; i++) {
+      prodAcct = PRODUCTION_ACCOUNTS[prodIdx++ % PRODUCTION_ACCOUNTS.length];
+      try {
+        prod = await getStreamInfo("production", id, prodAcct);
+        break;
+      } catch (e) {
+        lastErr = e;
       }
     }
-    if (env === "staging") {
-      // staging: cukup MPD/HLS saja, tanpa getkey
-      return Response.json({ mpd: stream.mpd, hls: stream.hls });
+    if (!prod) {
+      prodAcct = await createTclAccount();
+      prod = await getStreamInfo("production", id, prodAcct);
     }
-    if (!stream.widevine) {
-      return Response.json({ mpd: stream.mpd, note: "channel tidak pakai DRM" });
+
+    // --- production: MPD -> PSSH -> go-widevine -> clearkey ---
+    let clearkey: string | undefined;
+    if (prod.widevine) {
+      const pssh = await getPssh(prod.mpd);
+      clearkey = await getClearkey(pssh, prod.widevine);
     }
-    // production: MPD -> PSSH -> go-widevine -> clearkey
-    const pssh = await getPssh(stream.mpd);
-    const clearkey = await getClearkey(pssh, stream.widevine);
-    return Response.json({ mpd: stream.mpd, clearkey });
+
+    return Response.json({
+      staging: { mpd: staging.mpd, hls: staging.hls },
+      production: clearkey ? { mpd: prod.mpd, clearkey } : { mpd: prod.mpd, note: "channel tidak pakai DRM" },
+    });
   } catch (e) {
     const err = e as Error;
     const cause = err.cause ? ` (${String(err.cause)})` : "";
