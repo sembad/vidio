@@ -509,9 +509,11 @@ Deno.serve(async (req) => {
       clearkey = await getClearkey(pssh, prod.widevine);
     }
 
+    // MPD/HLS dari staging + clearkey dari production, satu objek
     return Response.json({
-      staging: { mpd: staging.mpd, hls: staging.hls },
-      production: clearkey ? { mpd: prod.mpd, clearkey } : { mpd: prod.mpd, note: "channel tidak pakai DRM" },
+      mpd: staging.mpd,
+      hls: staging.hls,
+      clearkey,
     });
   } catch (e) {
     const err = e as Error;
