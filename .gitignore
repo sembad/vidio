@@ -13,3 +13,7 @@ zxing-core.jar
 hshsha-*.txt
 bima_token.json
 __pycache__/
+
+# arsip APK/XAPK besar (tidak untuk repo)
+downloads/
+
