@@ -34,55 +34,237 @@ const STAGING_HOST = "api.staging.vidio.com";
 const STAGING_AUTH = "cubixarIhu8une5OP33upogocaTeWerU";
 const SIGNATURE_SECRET = "V1d10D3v"; // live_streaming_token_key (sama utk staging & production)
 
-// 21 akun staging (bulk_accounts.json, semua terverifikasi + merge bundling)
-const STAGING_ACCOUNTS = [
-  { email: "kodywatts61@gmail.com", token: "nwomRiv-s7Wp7FVuqNgL" },
-  { email: "modibpsupriyaur@gmail.com", token: "Fy6NhTHuey9HHxqvae8L" },
-  { email: "henry83diaz2614@gmail.com", token: "eTNEkbA9pyzPyt5dWyai" },
-  { email: "zachary33price3799@gmail.com", token: "6qWxrAEuXNAuYssfoB9y" },
-  { email: "fred.morgan21115@gmail.com", token: "vQwbPK_2zHbE_tHGdGHQ" },
-  { email: "jeanne.franklin27205@gmail.com", token: "8GgotikTT5JyDFsfh4R9" },
-  { email: "fuigui07@gmail.com", token: "V52HhZoV8bzHFrx52wW2" },
-  { email: "thanvi22060@gmail.com", token: "UVhrjEvRBxCWUXTx7K_U" },
-  { email: "scottalfonsina4293620@gmail.com", token: "RAeYKtM66PGmBnRGbgQP" },
-  { email: "kendrtrevino348@gmail.com", token: "UQyTkTxgaa8sgQmrzEnh" },
-  { email: "voraitworthwhile@gmail.com", token: "-_gR7JQx1meEkKrCw_p2" },
-  { email: "kiecmuychmuanhboach@gmail.com", token: "-ad1G26WrvxzzdUVwX4z" },
-  { email: "xungquangnguangsach@gmail.com", token: "aUgwRVBfoHnzr4B_mqxp" },
-  { email: "sanghvijxriddhiw2@gmail.com", token: "1rZLU3ynyGomiyzZcgsW" },
-  { email: "buaza0913@gmail.com", token: "LqE6Ur4yazxjsPNRtiYY" },
-  { email: "flowerslover626@gmail.com", token: "_gaqToVu9RssKQh-wCs_" },
-  { email: "phantoamnguyenphenh@gmail.com", token: "9-GwWu6KuSMb6sbFJTd8" },
-  { email: "jacqueline.mitchell38846@gmail.com", token: "HsZkzM9Z5n2z9Ecpa-6T" },
-  { email: "johnni.williams4069@gmail.com", token: "aAicZKL_8uY-_uXdeEvG" },
-  { email: "lapkhangvac@gmail.com", token: "o-NAcbvB2pZszxdjsDGn" },
-  { email: "ramonkent064@gmail.com", token: "e2nvPFXGVn9pBNG3gnUZ" },
-];
-let stagingIdx = 0;
+// Akun staging — format PHP, diparse saat runtime
+const STAGING_ACCOUNTS_PHP = `
+[
+    [
+        'nomor' => 1,
+        'email' => 'kodywatts61@gmail.com',
+        'token' => 'nwomRiv-s7Wp7FVuqNgL',
+    ],
+    [
+        'nomor' => 2,
+        'email' => 'modibpsupriyaur@gmail.com',
+        'token' => 'Fy6NhTHuey9HHxqvae8L',
+    ],
+    [
+        'nomor' => 3,
+        'email' => 'henry83diaz2614@gmail.com',
+        'token' => 'eTNEkbA9pyzPyt5dWyai',
+    ],
+    [
+        'nomor' => 4,
+        'email' => 'zachary33price3799@gmail.com',
+        'token' => '6qWxrAEuXNAuYssfoB9y',
+    ],
+    [
+        'nomor' => 5,
+        'email' => 'fred.morgan21115@gmail.com',
+        'token' => 'vQwbPK_2zHbE_tHGdGHQ',
+    ],
+    [
+        'nomor' => 6,
+        'email' => 'jeanne.franklin27205@gmail.com',
+        'token' => '8GgotikTT5JyDFsfh4R9',
+    ],
+    [
+        'nomor' => 7,
+        'email' => 'fuigui07@gmail.com',
+        'token' => 'V52HhZoV8bzHFrx52wW2',
+    ],
+    [
+        'nomor' => 8,
+        'email' => 'thanvi22060@gmail.com',
+        'token' => 'UVhrjEvRBxCWUXTx7K_U',
+    ],
+    [
+        'nomor' => 9,
+        'email' => 'scottalfonsina4293620@gmail.com',
+        'token' => 'RAeYKtM66PGmBnRGbgQP',
+    ],
+    [
+        'nomor' => 10,
+        'email' => 'kendrtrevino348@gmail.com',
+        'token' => 'UQyTkTxgaa8sgQmrzEnh',
+    ],
+    [
+        'nomor' => 11,
+        'email' => 'voraitworthwhile@gmail.com',
+        'token' => '-_gR7JQx1meEkKrCw_p2',
+    ],
+    [
+        'nomor' => 12,
+        'email' => 'kiecmuychmuanhboach@gmail.com',
+        'token' => '-ad1G26WrvxzzdUVwX4z',
+    ],
+    [
+        'nomor' => 13,
+        'email' => 'xungquangnguangsach@gmail.com',
+        'token' => 'aUgwRVBfoHnzr4B_mqxp',
+    ],
+    [
+        'nomor' => 14,
+        'email' => 'sanghvijxriddhiw2@gmail.com',
+        'token' => '1rZLU3ynyGomiyzZcgsW',
+    ],
+    [
+        'nomor' => 15,
+        'email' => 'buaza0913@gmail.com',
+        'token' => 'LqE6Ur4yazxjsPNRtiYY',
+    ],
+    [
+        'nomor' => 16,
+        'email' => 'flowerslover626@gmail.com',
+        'token' => '_gaqToVu9RssKQh-wCs_',
+    ],
+    [
+        'nomor' => 17,
+        'email' => 'phantoamnguyenphenh@gmail.com',
+        'token' => '9-GwWu6KuSMb6sbFJTd8',
+    ],
+    [
+        'nomor' => 18,
+        'email' => 'jacqueline.mitchell38846@gmail.com',
+        'token' => 'HsZkzM9Z5n2z9Ecpa-6T',
+    ],
+    [
+        'nomor' => 19,
+        'email' => 'johnni.williams4069@gmail.com',
+        'token' => 'aAicZKL_8uY-_uXdeEvG',
+    ],
+    [
+        'nomor' => 20,
+        'email' => 'lapkhangvac@gmail.com',
+        'token' => 'o-NAcbvB2pZszxdjsDGn',
+    ],
+    [
+        'nomor' => 21,
+        'email' => 'ramonkent064@gmail.com',
+        'token' => 'e2nvPFXGVn9pBNG3gnUZ',
+    ],
+]`;
 
-// 20 akun production (akun_production.txt): partner fresh + TCL + aqua
-const PRODUCTION_ACCOUNTS = [
-  { email: "mora_874950-moratel@fake-tv-bundle.com", token: "pmzhz2hEFhbN-MYmU_bi" },
-  { email: "np_hotel_790@fake-nontonplus.com", token: "bdpZzsM_xF_LtySQGbVJ" },
-  { email: "melvar_879-melvar@fake-tv-bundle.com", token: "Xxx2jBDGpcz39Svy4VEb" },
-  { email: "tiv_room_280tivinity@fake-tv-bundle.com", token: "45n1Va6fYxt-iCpaj4kJ" },
-  { email: "mora_827296-moratel@fake-tv-bundle.com", token: "2ZSh7X6_YBPMiPxdC2U2" },
-  { email: "e9adc82e-0d55-4e06-9a72-eac989a5e3ea-tcl@fake-tcl.com", token: "NXxS1rs2PVmhgiyPxRjV" },
-  { email: "b6cac2bf-ca25-4dfd-870a-ba5977c6d30c-aqua@fake-tv-bundle.com", token: "hzS4ezGXjKxfEjy6hnGF" },
-  { email: "d06c593e-c5be-45d7-8a37-386fdab706fd-aqua@fake-tv-bundle.com", token: "qZy6-YtpugZu5i5ZJkFw" },
-  { email: "a786dcf4-fb26-4c4b-bdc4-19bad7eef91b-aqua@fake-tv-bundle.com", token: "nuaTWWxmWpaHNqgix4fz" },
-  { email: "093b94c7-b0a8-4ef3-8acf-946425e74da2-aqua@fake-tv-bundle.com", token: "fDHB5j-QzdbbqiCyjsfj" },
-  { email: "5b47990c-4de5-440c-9f77-e014f2dfe7e7-aqua@fake-tv-bundle.com", token: "tT7aiCnMqss2QXHiKjzn" },
-  { email: "18228b9d-659b-42dc-906a-41405ecc010b-aqua@fake-tv-bundle.com", token: "R4WEAFs9sKZifndNQ4cX" },
-  { email: "90387b20-1842-447a-9fcb-10c5167476b8-aqua@fake-tv-bundle.com", token: "pi-ekNnSH1L5FTGsfyuJ" },
-  { email: "d11d62c4-41f5-4c5c-8849-42eb28aaa021-aqua@fake-tv-bundle.com", token: "-YbxzT34sncq1eWT5PsQ" },
-  { email: "4c45fc82-eba9-4ff5-b812-3d6062b6b615-aqua@fake-tv-bundle.com", token: "Pss47jLWpkBjND69Dyti" },
-  { email: "874c36dd-1247-40d8-b0a9-1111054ef710-aqua@fake-tv-bundle.com", token: "Nwzgu7QWQEU7UVqmK_Ma" },
-  { email: "9a800dc5-5e64-4444-b7b2-4627d252efe8-aqua@fake-tv-bundle.com", token: "rix3qHLyf8fq5NozuzxG" },
-  { email: "4bbf66c5-f431-459c-918a-c07cf51a14bb-aqua@fake-tv-bundle.com", token: "RFMff_xi6SEibxRfaAi6" },
-  { email: "210e621c-5419-4785-9e8d-8dc13f6b283f-aqua@fake-tv-bundle.com", token: "pGZZ2yMVDiZa9eTQEvC1" },
-  { email: "9c5def6d-d573-42e0-9a54-5ab8beec1012-aqua@fake-tv-bundle.com", token: "159Fw-iEwXpAE5A3yJm2" },
-];
+// Akun production — format PHP, diparse saat runtime
+const PRODUCTION_ACCOUNTS_PHP = `
+[
+    [
+        'nomor' => 1,
+        'email' => 'mora_874950-moratel@fake-tv-bundle.com',
+        'token' => 'pmzhz2hEFhbN-MYmU_bi',
+    ],
+    [
+        'nomor' => 2,
+        'email' => 'np_hotel_790@fake-nontonplus.com',
+        'token' => 'bdpZzsM_xF_LtySQGbVJ',
+    ],
+    [
+        'nomor' => 3,
+        'email' => 'melvar_879-melvar@fake-tv-bundle.com',
+        'token' => 'Xxx2jBDGpcz39Svy4VEb',
+    ],
+    [
+        'nomor' => 4,
+        'email' => 'tiv_room_280tivinity@fake-tv-bundle.com',
+        'token' => '45n1Va6fYxt-iCpaj4kJ',
+    ],
+    [
+        'nomor' => 5,
+        'email' => 'mora_827296-moratel@fake-tv-bundle.com',
+        'token' => '2ZSh7X6_YBPMiPxdC2U2',
+    ],
+    [
+        'nomor' => 6,
+        'email' => 'e9adc82e-0d55-4e06-9a72-eac989a5e3ea-tcl@fake-tcl.com',
+        'token' => 'NXxS1rs2PVmhgiyPxRjV',
+    ],
+    [
+        'nomor' => 7,
+        'email' => 'b6cac2bf-ca25-4dfd-870a-ba5977c6d30c-aqua@fake-tv-bundle.com',
+        'token' => 'hzS4ezGXjKxfEjy6hnGF',
+    ],
+    [
+        'nomor' => 8,
+        'email' => 'd06c593e-c5be-45d7-8a37-386fdab706fd-aqua@fake-tv-bundle.com',
+        'token' => 'qZy6-YtpugZu5i5ZJkFw',
+    ],
+    [
+        'nomor' => 9,
+        'email' => 'a786dcf4-fb26-4c4b-bdc4-19bad7eef91b-aqua@fake-tv-bundle.com',
+        'token' => 'nuaTWWxmWpaHNqgix4fz',
+    ],
+    [
+        'nomor' => 10,
+        'email' => '093b94c7-b0a8-4ef3-8acf-946425e74da2-aqua@fake-tv-bundle.com',
+        'token' => 'fDHB5j-QzdbbqiCyjsfj',
+    ],
+    [
+        'nomor' => 11,
+        'email' => '5b47990c-4de5-440c-9f77-e014f2dfe7e7-aqua@fake-tv-bundle.com',
+        'token' => 'tT7aiCnMqss2QXHiKjzn',
+    ],
+    [
+        'nomor' => 12,
+        'email' => '18228b9d-659b-42dc-906a-41405ecc010b-aqua@fake-tv-bundle.com',
+        'token' => 'R4WEAFs9sKZifndNQ4cX',
+    ],
+    [
+        'nomor' => 13,
+        'email' => '90387b20-1842-447a-9fcb-10c5167476b8-aqua@fake-tv-bundle.com',
+        'token' => 'pi-ekNnSH1L5FTGsfyuJ',
+    ],
+    [
+        'nomor' => 14,
+        'email' => 'd11d62c4-41f5-4c5c-8849-42eb28aaa021-aqua@fake-tv-bundle.com',
+        'token' => '-YbxzT34sncq1eWT5PsQ',
+    ],
+    [
+        'nomor' => 15,
+        'email' => '4c45fc82-eba9-4ff5-b812-3d6062b6b615-aqua@fake-tv-bundle.com',
+        'token' => 'Pss47jLWpkBjND69Dyti',
+    ],
+    [
+        'nomor' => 16,
+        'email' => '874c36dd-1247-40d8-b0a9-1111054ef710-aqua@fake-tv-bundle.com',
+        'token' => 'Nwzgu7QWQEU7UVqmK_Ma',
+    ],
+    [
+        'nomor' => 17,
+        'email' => '9a800dc5-5e64-4444-b7b2-4627d252efe8-aqua@fake-tv-bundle.com',
+        'token' => 'rix3qHLyf8fq5NozuzxG',
+    ],
+    [
+        'nomor' => 18,
+        'email' => '4bbf66c5-f431-459c-918a-c07cf51a14bb-aqua@fake-tv-bundle.com',
+        'token' => 'RFMff_xi6SEibxRfaAi6',
+    ],
+    [
+        'nomor' => 19,
+        'email' => '210e621c-5419-4785-9e8d-8dc13f6b283f-aqua@fake-tv-bundle.com',
+        'token' => 'pGZZ2yMVDiZa9eTQEvC1',
+    ],
+    [
+        'nomor' => 20,
+        'email' => '9c5def6d-d573-42e0-9a54-5ab8beec1012-aqua@fake-tv-bundle.com',
+        'token' => '159Fw-iEwXpAE5A3yJm2',
+    ],
+]`;
+
+type Account = { nomor: number; email: string; token: string };
+
+// parser format PHP: ['nomor' => 1, 'email' => '...', 'token' => '...']
+function parsePhpAccounts(src: string): Account[] {
+  const out: Account[] = [];
+  const re = /'nomor'\s*=>\s*(\d+)\s*,\s*'email'\s*=>\s*'([^']+)'\s*,\s*'token'\s*=>\s*'([^']+)'/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(src)) !== null) {
+    out.push({ nomor: Number(m[1]), email: m[2], token: m[3] });
+  }
+  return out;
+}
+
+const STAGING_ACCOUNTS = parsePhpAccounts(STAGING_ACCOUNTS_PHP);
+const PRODUCTION_ACCOUNTS = parsePhpAccounts(PRODUCTION_ACCOUNTS_PHP);
+let stagingIdx = 0;
 let prodIdx = 0;
 
 // x-client/x-signature dinamis staging: hmac(key="SECRET:ts", msg=ts)
@@ -285,20 +467,27 @@ async function getClearkey(pssh: string, licenseUrl: string, useProxy = false): 
   return `${content.kid}:${content.key}`;
 }
 
+// secret path: https://<domain>/haowhwowgwogieowgwi?id=...&env=staging|production
+const SECRET_PATH = "haowhwowgwogieowgwi";
+
 Deno.serve(async (req) => {
   const url = new URL(req.url);
+  const key = url.pathname.replace(/^\/+|\/+$/g, "");
+  if (key !== SECRET_PATH) {
+    return Response.json({ error: "not found" }, { status: 404 });
+  }
   const id = url.searchParams.get("id") ?? "6686";
   const env = url.searchParams.get("env") ?? "production"; // staging | production
   try {
     let acct: { email: string; token: string };
     let stream: { mpd: string; hls?: string; widevine?: string } | null = null;
     if (env === "staging") {
-      // staging: rotasi akun biasa, hasil JSON ditampilkan langsung
+      // staging: rotasi akun staging, hasil JSON ditampilkan langsung
       acct = STAGING_ACCOUNTS[stagingIdx++ % STAGING_ACCOUNTS.length];
       stream = await getStreamInfo(env, id, acct);
     } else {
-      // production: rotasi 20 akun production dulu (preview 1x GET per ID/hari
-      // per akun) — kalau semua kena limit, buat akun TCL fresh
+      // production: rotasi akun production dulu (preview 1x GET
+      // per ID/hari per akun) — kalau semua kena limit, buat akun TCL fresh
       let lastErr: unknown = null;
       for (let i = 0; i < PRODUCTION_ACCOUNTS.length; i++) {
         acct = PRODUCTION_ACCOUNTS[prodIdx++ % PRODUCTION_ACCOUNTS.length];
