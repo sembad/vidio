@@ -17,6 +17,7 @@ Hasil disimpan ke bulk_accounts.json
 """
 
 import json
+import os
 import re
 import sys
 import time
@@ -36,6 +37,16 @@ PARTNERS = ["tcl", "polytron_PDBM11ADL"]
 TEST_CHANNEL = "6686"  # Champions TV 2 — butuh email terverifikasi
 
 RESULTS_FILE = "bulk_accounts.json"
+
+# DIRECT=1 -> tanpa proxy (sandbox memblokir tunnel ke port 823)
+PROXY = None if os.environ.get("DIRECT") == "1" else st.PROXY_URL
+
+
+def http_opener():
+    if PROXY:
+        return urllib.request.build_opener(urllib.request.ProxyHandler(
+            {"http": PROXY, "https": PROXY}))
+    return urllib.request.build_opener()
 
 
 def rapid_get(path, params):
@@ -108,8 +119,7 @@ def api_req(method, path, body=None, ctype=None, token=None, email_hdr=None,
             data = json.dumps(body).encode()
     req = urllib.request.Request(f"https://{st.HOST}{path}", data=data,
                                  headers=headers, method=method)
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler(
-        {"http": st.PROXY_URL, "https": st.PROXY_URL})) if use_proxy else urllib.request.build_opener()
+    opener = http_opener() if use_proxy else urllib.request.build_opener()
     try:
         with opener.open(req, timeout=40) as resp:
             return resp.status, resp.read().decode("utf-8", "replace")
@@ -214,8 +224,7 @@ def merge_partner(email, token, partner):
         f"https://{st.HOST}/api/partner/auth",
         data=json.dumps({"data": data_b64}).encode(),
         headers=headers, method="POST")
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler(
-        {"http": st.PROXY_URL, "https": st.PROXY_URL}))
+    opener = http_opener()
     try:
         with opener.open(req, timeout=40) as resp:
             return resp.status, resp.read().decode("utf-8", "replace")
@@ -252,8 +261,7 @@ def anonymous_partner_auth(partner):
         f"https://{st.HOST}/api/partner/auth",
         data=json.dumps({"data": data_b64}).encode(),
         headers=headers, method="POST")
-    opener = urllib.request.build_opener(urllib.request.ProxyHandler(
-        {"http": st.PROXY_URL, "https": st.PROXY_URL}))
+    opener = http_opener()
     try:
         with opener.open(req, timeout=40) as resp:
             s, t = resp.status, resp.read().decode("utf-8", "replace")

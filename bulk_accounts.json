@@ -1359,5 +1359,29 @@
   "merge_token": "1jk8gP-gNUrvSN3bmeW7",
   "stream_status": 200,
   "has_hls": true
+ },
+ {
+  "partner": "tcl",
+  "status": "partner_auth_gagal",
+  "partner_email": null,
+  "partner_token": null,
+  "partner_uid": null,
+  "detail": "unconditional drop overload"
+ },
+ {
+  "partner": "polytron_PDBM11ADL",
+  "status": "partner_auth_gagal",
+  "partner_email": null,
+  "partner_token": null,
+  "partner_uid": null,
+  "detail": "unconditional drop overload"
+ },
+ {
+  "partner": "tcl",
+  "status": "partner_auth_gagal",
+  "partner_email": null,
+  "partner_token": null,
+  "partner_uid": null,
+  "detail": "unconditional drop overload"
  }
 ]
