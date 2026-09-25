@@ -194,5 +194,108 @@ def main():
     print("SELESAI")
 
 
+def form_req(method, path, fields, token=None, email_hdr=None, extra_headers=None):
+    """Request form-encoded (register/login/consent memakai bentuk ini)."""
+    headers = {
+        "User-Agent": USER_AGENT,
+        "x-api-platform": "tv-android",
+        "x-api-auth": X_API_AUTH,
+        "x-api-app-info": APP_INFO,
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+    ts, sig = dyn_sig_headers()
+    headers.update(sig)
+    if token:
+        headers["x-user-token"] = token
+    if email_hdr:
+        headers["x-user-email"] = email_hdr
+    if extra_headers:
+        headers.update(extra_headers)
+    data = urllib.parse.urlencode(fields).encode() if fields else None
+    req = urllib.request.Request(f"https://{HOST}{path}", data=data, headers=headers, method=method)
+    opener = urllib.request.build_opener(
+        urllib.request.ProxyHandler({"http": PROXY_URL, "https": PROXY_URL})
+    )
+    try:
+        with opener.open(req, timeout=40) as resp:
+            return resp.status, resp.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        return e.code, e.read().decode("utf-8", "replace")
+
+
+def full_register_merge_flow(email, password, username=None):
+    """
+    Flow lengkap akun staging + merge bundling TCL (terbukti end-to-end):
+      1. POST /users/consent                (consent_uuid wajib sebelum register)
+      2. POST /api/register?check_user_consent=true (form: email, password)
+         -> akun dibuat + email konfirmasi OTOMATIS terkirim
+      3. User klik link konfirmasi di email (HARUS via browser — link diblokir
+         WAF Akamai kalau diakses via API/proxy)
+      4. POST /api/login (form: login, password) -> authentication_token
+      5. POST /api/partner/auth DENGAN x-user-token + x-user-email +
+         header 'Require-Authentication: true' -> merge bundling TCL ke akun
+      6. GET /livestreamings/{id}/stream?initialize=true -> HLS + MPD semua channel
+    """
+    print(f"\n=== FLOW REGISTER+MERGE untuk {email} ===")
+
+    # 1) consent
+    s, t = http("POST", "/users/consent",
+                body={"data": {"type": "user_consent_acceptance",
+                               "attributes": {"consent_uuid": "c640f273-abc8-4b84-bd02-d73d750332d4"}}})
+    print(f"[1] POST /users/consent -> {s}")
+
+    # 2) register
+    s, t = form_req("POST", "/api/register?check_user_consent=true",
+                    {"email": email, "password": password})
+    print(f"[2] POST /api/register -> {s} | {t[:150]}")
+    if s not in (200, 201):
+        print("    register gagal (mungkin akun sudah ada / butuh verifikasi)")
+
+    # 3) login
+    s, t = form_req("POST", "/api/login", {"login": email, "password": password})
+    print(f"[3] POST /api/login -> {s}")
+    try:
+        token = json.loads(t).get("auth", {}).get("authentication_token")
+    except Exception:
+        token = None
+    if not token:
+        print("    login gagal:", t[:150])
+        return None
+    print(f"    token: {token[:24]}")
+
+    # 4) merge bundling TCL (partner/auth dengan auth user + Require-Authentication)
+    uid = generate_uuid_v4()
+    data_b64, sig = build_encrypted_payload(
+        {"unique_id": uid, "additional_unique_id": uid, "partner_agent": "tcl"})
+    headers = {
+        "User-Agent": USER_AGENT, "x-api-platform": "tv-android",
+        "x-api-auth": X_API_AUTH, "x-api-app-info": APP_INFO,
+        "x-user-token": token, "x-user-email": email,
+        "Content-Type": "application/json",
+        "Require-Authentication": "true", "signature": sig,
+    }
+    req = urllib.request.Request(
+        f"https://{HOST}/api/partner/auth",
+        data=json.dumps({"data": data_b64}).encode(), headers=headers, method="POST")
+    opener = urllib.request.build_opener(
+        urllib.request.ProxyHandler({"http": PROXY_URL, "https": PROXY_URL}))
+    try:
+        with opener.open(req, timeout=40) as resp:
+            s, t = resp.status, resp.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        s, t = e.code, e.read().decode("utf-8", "replace")
+    print(f"[4] POST /api/partner/auth (merge) -> {s}")
+    try:
+        d = json.loads(t)
+        print(f"    email: {d.get('auth', {}).get('email')} | uid: {d.get('auth', {}).get('uid')}")
+        print(f"    subscription_created: {d.get('subscription_created')}")
+        merge_token = d.get("auth", {}).get("authentication_token")
+    except Exception:
+        print("    body:", t[:200])
+        merge_token = None
+    # 422 'more than 15 months' = merge sudah pernah terjadi, aman
+    return merge_token or token
+
+
 if __name__ == "__main__":
     main()
