@@ -1,101 +1,106 @@
-=== 20 AKUN STAGING SUKSES (semua terverifikasi + merge bundling) ===
+TOTAL SUKSES: 21
 
- 1. [tcl] email_rapid: kodywatts61@gmail.com
-    token_rapid:   nwomRiv-s7Wp7FVuqNgL
-    email_partner: 24f90db5-0cf9-4931-955d-fd9d9521d704-tcl@fake-tcl.com
-    token_partner: nkA7_wcfdnMX-WrbMgXC
+ 1. [tcl] kodywatts61@gmail.com / TestPass123!
+     partner_email: 24f90db5-0cf9-4931-955d-fd9d9521d704-tcl@fake-tcl.com
+     partner_token: nkA7_wcfdnMX-WrbMgXC
+     user_token:    nwomRiv-s7Wp7FVuqNgL
 
- 2. [tcl] email_rapid: modibpsupriyaur@gmail.com
-    token_rapid:   Fy6NhTHuey9HHxqvae8L
-    email_partner: 64b4412d-3277-46f8-9c04-bf2ec08067fe-tcl@fake-tcl.com
-    token_partner: cAwhBpR-_GeMsCBXQbWP
+ 2. [tcl] modibpsupriyaur@gmail.com / TestPass123!
+     partner_email: 64b4412d-3277-46f8-9c04-bf2ec08067fe-tcl@fake-tcl.com
+     partner_token: cAwhBpR-_GeMsCBXQbWP
+     user_token:    Fy6NhTHuey9HHxqvae8L
 
- 3. [tcl] email_rapid: henry83diaz2614@gmail.com
-    token_rapid:   eTNEkbA9pyzPyt5dWyai
-    email_partner: 322b2cdc-ca39-439c-9018-00ab2c973ce0-tcl@fake-tcl.com
-    token_partner: Z-_AcauRfPCsLPyQAvT8
+ 3. [tcl] henry83diaz2614@gmail.com / TestPass123!
+     partner_email: 322b2cdc-ca39-439c-9018-00ab2c973ce0-tcl@fake-tcl.com
+     partner_token: Z-_AcauRfPCsLPyQAvT8
+     user_token:    eTNEkbA9pyzPyt5dWyai
 
- 4. [tcl] email_rapid: zachary33price3799@gmail.com
-    token_rapid:   6qWxrAEuXNAuYssfoB9y
-    email_partner: 05b39f1a-6087-4edb-8a4e-dd7fe9288ed9-tcl@fake-tcl.com
-    token_partner: YnL7BHoNcGGBPejoTbzx
+ 4. [tcl] zachary33price3799@gmail.com / TestPass123!
+     partner_email: 05b39f1a-6087-4edb-8a4e-dd7fe9288ed9-tcl@fake-tcl.com
+     partner_token: YnL7BHoNcGGBPejoTbzx
+     user_token:    6qWxrAEuXNAuYssfoB9y
 
- 5. [tcl] email_rapid: fred.morgan21115@gmail.com
-    token_rapid:   vQwbPK_2zHbE_tHGdGHQ
-    email_partner: ed15407d-5043-405d-a6d1-de465c423345-tcl@fake-tcl.com
-    token_partner: 8wEkVoxY8G9txmiyY3Uo
+ 5. [tcl] fred.morgan21115@gmail.com / TestPass123!
+     partner_email: ed15407d-5043-405d-a6d1-de465c423345-tcl@fake-tcl.com
+     partner_token: 8wEkVoxY8G9txmiyY3Uo
+     user_token:    vQwbPK_2zHbE_tHGdGHQ
 
- 6. [tcl] email_rapid: jeanne.franklin27205@gmail.com
-    token_rapid:   8GgotikTT5JyDFsfh4R9
-    email_partner: 88dbef7c-1b31-4ada-9606-f73849ccfa98-tcl@fake-tcl.com
-    token_partner: QauJ6VNtzznx5hd7_AVs
+ 6. [tcl] jeanne.franklin27205@gmail.com / TestPass123!
+     partner_email: 88dbef7c-1b31-4ada-9606-f73849ccfa98-tcl@fake-tcl.com
+     partner_token: QauJ6VNtzznx5hd7_AVs
+     user_token:    8GgotikTT5JyDFsfh4R9
 
- 7. [tcl] email_rapid: fuigui07@gmail.com
-    token_rapid:   V52HhZoV8bzHFrx52wW2
-    email_partner: 0ae712f2-2b73-49ac-a910-4be600a9cbb2-tcl@fake-tcl.com
-    token_partner: 6AnJmWFHdK-8FpDdAFmR
+ 7. [tcl] fuigui07@gmail.com / TestPass123!
+     partner_email: 0ae712f2-2b73-49ac-a910-4be600a9cbb2-tcl@fake-tcl.com
+     partner_token: 6AnJmWFHdK-8FpDdAFmR
+     user_token:    V52HhZoV8bzHFrx52wW2
 
- 8. [polytron_PDBM11ADL] email_rapid: thanvi22060@gmail.com
-    token_rapid:   UVhrjEvRBxCWUXTx7K_U
-    email_partner: 4efd3f7f-4fa0-461c-925f-8191447cb03d-polytron@fake-tv-bundle.com
-    token_partner: VfwLZz3LH7ZHDS63v5qw
+ 8. [polytron_PDBM11ADL] thanvi22060@gmail.com / TestPass123!
+     partner_email: 4efd3f7f-4fa0-461c-925f-8191447cb03d-polytron@fake-tv-bundle.com
+     partner_token: VfwLZz3LH7ZHDS63v5qw
+     user_token:    UVhrjEvRBxCWUXTx7K_U
 
- 9. [tcl] email_rapid: scottalfonsina4293620@gmail.com
-    token_rapid:   RAeYKtM66PGmBnRGbgQP
-    email_partner: 1bad41ac-ad10-41a7-9e1b-92dbe109bbad-tcl@fake-tcl.com
-    token_partner: PjJZrc9_Le8jDxzb1i2r
+ 9. [tcl] scottalfonsina4293620@gmail.com / TestPass123!
+     partner_email: 1bad41ac-ad10-41a7-9e1b-92dbe109bbad-tcl@fake-tcl.com
+     partner_token: PjJZrc9_Le8jDxzb1i2r
+     user_token:    RAeYKtM66PGmBnRGbgQP
 
-10. [polytron_PDBM11ADL] email_rapid: kendrtrevino348@gmail.com
-    token_rapid:   UQyTkTxgaa8sgQmrzEnh
-    email_partner: 415d3ff5-2e70-4448-8b9a-3941f7f35486-polytron@fake-tv-bundle.com
-    token_partner: TrqdDkuuHBK1mhPmoAFQ
+10. [polytron_PDBM11ADL] kendrtrevino348@gmail.com / TestPass123!
+     partner_email: 415d3ff5-2e70-4448-8b9a-3941f7f35486-polytron@fake-tv-bundle.com
+     partner_token: TrqdDkuuHBK1mhPmoAFQ
+     user_token:    UQyTkTxgaa8sgQmrzEnh
 
-11. [polytron_PDBM11ADL] email_rapid: voraitworthwhile@gmail.com
-    token_rapid:   -_gR7JQx1meEkKrCw_p2
-    email_partner: fb3eba86-983d-45d7-a4d7-50c71ce507a5-polytron@fake-tv-bundle.com
-    token_partner: rFjyNscXHAXGo9Aoz2dx
+11. [polytron_PDBM11ADL] voraitworthwhile@gmail.com / TestPass123!
+     partner_email: fb3eba86-983d-45d7-a4d7-50c71ce507a5-polytron@fake-tv-bundle.com
+     partner_token: rFjyNscXHAXGo9Aoz2dx
+     user_token:    -_gR7JQx1meEkKrCw_p2
 
-12. [tcl] email_rapid: kiecmuychmuanhboach@gmail.com
-    token_rapid:   -ad1G26WrvxzzdUVwX4z
-    email_partner: aa7d7b3e-11e8-4470-bc28-16b4fbac406b-tcl@fake-tcl.com
-    token_partner: ZgZsZP1XCciMCbbgLFHh
+12. [tcl] kiecmuychmuanhboach@gmail.com / TestPass123!
+     partner_email: aa7d7b3e-11e8-4470-bc28-16b4fbac406b-tcl@fake-tcl.com
+     partner_token: ZgZsZP1XCciMCbbgLFHh
+     user_token:    -ad1G26WrvxzzdUVwX4z
 
-13. [polytron_PDBM11ADL] email_rapid: xungquangnguangsach@gmail.com
-    token_rapid:   aUgwRVBfoHnzr4B_mqxp
-    email_partner: 4e904107-e203-4c03-ab50-2ef5ae93c014-polytron@fake-tv-bundle.com
-    token_partner: cEf9QiyoxKtfgyrTfKfV
+13. [polytron_PDBM11ADL] xungquangnguangsach@gmail.com / TestPass123!
+     partner_email: 4e904107-e203-4c03-ab50-2ef5ae93c014-polytron@fake-tv-bundle.com
+     partner_token: cEf9QiyoxKtfgyrTfKfV
+     user_token:    aUgwRVBfoHnzr4B_mqxp
 
-14. [tcl] email_rapid: sanghvijxriddhiw2@gmail.com
-    token_rapid:   1rZLU3ynyGomiyzZcgsW
-    email_partner: 0824d2e3-0756-41ea-801f-ed9157fe4f1b-tcl@fake-tcl.com
-    token_partner: sQi1zyrz85yT_-iwyCnE
+14. [tcl] sanghvijxriddhiw2@gmail.com / TestPass123!
+     partner_email: 0824d2e3-0756-41ea-801f-ed9157fe4f1b-tcl@fake-tcl.com
+     partner_token: sQi1zyrz85yT_-iwyCnE
+     user_token:    1rZLU3ynyGomiyzZcgsW
 
-15. [polytron_PDBM11ADL] email_rapid: buaza0913@gmail.com
-    token_rapid:   LqE6Ur4yazxjsPNRtiYY
-    email_partner: 18bcc993-b835-4c40-80ab-e2b2d3bff3b9-polytron@fake-tv-bundle.com
-    token_partner: nccVoxsKdMceUFZSVRJd
+15. [polytron_PDBM11ADL] buaza0913@gmail.com / TestPass123!
+     partner_email: 18bcc993-b835-4c40-80ab-e2b2d3bff3b9-polytron@fake-tv-bundle.com
+     partner_token: nccVoxsKdMceUFZSVRJd
+     user_token:    LqE6Ur4yazxjsPNRtiYY
 
-16. [tcl] email_rapid: flowerslover626@gmail.com
-    token_rapid:   _gaqToVu9RssKQh-wCs_
-    email_partner: b312f66e-3d4a-4b6c-bdcd-acdf9181f241-tcl@fake-tcl.com
-    token_partner: PxtQns3k13phYKxYEGJS
+16. [tcl] flowerslover626@gmail.com / TestPass123!
+     partner_email: b312f66e-3d4a-4b6c-bdcd-acdf9181f241-tcl@fake-tcl.com
+     partner_token: PxtQns3k13phYKxYEGJS
+     user_token:    _gaqToVu9RssKQh-wCs_
 
-17. [polytron_PDBM11ADL] email_rapid: phantoamnguyenphenh@gmail.com
-    token_rapid:   9-GwWu6KuSMb6sbFJTd8
-    email_partner: 92de4143-1ace-4db6-89be-b3a6a9375a00-polytron@fake-tv-bundle.com
-    token_partner: ge3icjDS1Bm5D4Dsis7W
+17. [polytron_PDBM11ADL] phantoamnguyenphenh@gmail.com / TestPass123!
+     partner_email: 92de4143-1ace-4db6-89be-b3a6a9375a00-polytron@fake-tv-bundle.com
+     partner_token: ge3icjDS1Bm5D4Dsis7W
+     user_token:    9-GwWu6KuSMb6sbFJTd8
 
-18. [tcl] email_rapid: jacqueline.mitchell38846@gmail.com
-    token_rapid:   HsZkzM9Z5n2z9Ecpa-6T
-    email_partner: 007b9c21-7535-4a67-a1a7-a43691039ebb-tcl@fake-tcl.com
-    token_partner: JXUtxxRSfnTc7ByF8BNJ
+18. [tcl] jacqueline.mitchell38846@gmail.com / TestPass123!
+     partner_email: 007b9c21-7535-4a67-a1a7-a43691039ebb-tcl@fake-tcl.com
+     partner_token: JXUtxxRSfnTc7ByF8BNJ
+     user_token:    HsZkzM9Z5n2z9Ecpa-6T
 
-19. [polytron_PDBM11ADL] email_rapid: johnni.williams4069@gmail.com
-    token_rapid:   aAicZKL_8uY-_uXdeEvG
-    email_partner: e32566a3-1c16-471d-9be4-f637ccdc6d7a-polytron@fake-tv-bundle.com
-    token_partner: Fpq_sBALn9ECnrskCsZK
+19. [polytron_PDBM11ADL] johnni.williams4069@gmail.com / TestPass123!
+     partner_email: e32566a3-1c16-471d-9be4-f637ccdc6d7a-polytron@fake-tv-bundle.com
+     partner_token: Fpq_sBALn9ECnrskCsZK
+     user_token:    aAicZKL_8uY-_uXdeEvG
 
-20. [tcl] email_rapid: alexiwilson922@gmail.com
-    token_rapid:   FvshF3HCNf_8ExN7YzKy
-    email_partner: 145239ee-efa0-488f-acb9-e7f3f92966db-tcl@fake-tcl.com
-    token_partner: KoeuJDhbFCCufv-easJ3
+20. [tcl] lapkhangvac@gmail.com / TestPass123!
+     partner_email: 430eda23-e37b-4d8b-847c-95e0c6db85b1-tcl@fake-tcl.com
+     partner_token: HwyekdzxAFC-p4S_GxT4
+     user_token:    o-NAcbvB2pZszxdjsDGn
+
+21. [polytron_PDBM11ADL] ramonkent064@gmail.com / TestPass123!
+     partner_email: ab964706-6a19-420c-bbb4-aab6ac95841e-polytron@fake-tv-bundle.com
+     partner_token: dLZ5Fsc-5Ryg9AmfBsfR
+     user_token:    e2nvPFXGVn9pBNG3gnUZ
