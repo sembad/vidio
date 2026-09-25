@@ -471,6 +471,20 @@ async function getClearkey(pssh: string, licenseUrl: string, useProxy = false): 
 // Satu request -> staging (mpd/hls) + production (mpd + clearkey) sekaligus
 const SECRET_PATH = "haowhwowgwogieowgwi";
 
+// Cache clearkey per channel ID di Deno KV, auto-hapus setelah 24 jam
+// (biar nggak decrypt terus + nggak buang preview akun production tiap request)
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const kv = await Deno.openKv();
+
+async function getCachedClearkey(id: string): Promise<string | undefined> {
+  const entry = await kv.get<string>(["clearkey", id]);
+  return entry.value ?? undefined;
+}
+
+async function cacheClearkey(id: string, clearkey: string): Promise<void> {
+  await kv.set(["clearkey", id], clearkey, { expireIn: CACHE_TTL_MS });
+}
+
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   const key = url.pathname.replace(/^\/+|\/+$/g, "");
@@ -479,9 +493,15 @@ Deno.serve(async (req) => {
   }
   const id = url.searchParams.get("id") ?? "6686";
   try {
-    // --- staging: rotasi akun staging -> mpd/hls ---
+    // --- staging: rotasi akun staging -> mpd/hls (selalu fresh, token URL cepat expired) ---
     const stagingAcct = STAGING_ACCOUNTS[stagingIdx++ % STAGING_ACCOUNTS.length];
     const staging = await getStreamInfo("staging", id, stagingAcct);
+
+    // --- clearkey: pakai cache kalau ada (hemat preview akun production) ---
+    const cached = await getCachedClearkey(id);
+    if (cached) {
+      return Response.json({ mpd: staging.mpd, hls: staging.hls, clearkey: cached });
+    }
 
     // --- production: rotasi akun production (preview 1x GET per ID/hari
     // per akun) — kalau semua kena limit, buat akun TCL fresh ---
@@ -507,6 +527,7 @@ Deno.serve(async (req) => {
     if (prod.widevine) {
       const pssh = await getPssh(prod.mpd);
       clearkey = await getClearkey(pssh, prod.widevine);
+      if (clearkey) await cacheClearkey(id, clearkey);
     }
 
     // MPD/HLS dari staging + clearkey dari production, satu objek
