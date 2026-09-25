@@ -29,6 +29,48 @@ const STATIC_HEADERS: Record<string, string> = {
 const GETKEY_URL = "https://go-widevine.onrender.com/getkey/widevine";
 const BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
+// --- staging (dari staging_test.py) ---
+const STAGING_HOST = "api.staging.vidio.com";
+const STAGING_AUTH = "cubixarIhu8une5OP33upogocaTeWerU";
+const SIGNATURE_SECRET = "V1d10D3v"; // live_streaming_token_key (sama utk staging & production)
+
+// 21 akun staging (bulk_accounts.json, semua terverifikasi + merge bundling)
+const STAGING_ACCOUNTS = [
+  { email: "kodywatts61@gmail.com", token: "nwomRiv-s7Wp7FVuqNgL" },
+  { email: "modibpsupriyaur@gmail.com", token: "Fy6NhTHuey9HHxqvae8L" },
+  { email: "henry83diaz2614@gmail.com", token: "eTNEkbA9pyzPyt5dWyai" },
+  { email: "zachary33price3799@gmail.com", token: "6qWxrAEuXNAuYssfoB9y" },
+  { email: "fred.morgan21115@gmail.com", token: "vQwbPK_2zHbE_tHGdGHQ" },
+  { email: "jeanne.franklin27205@gmail.com", token: "8GgotikTT5JyDFsfh4R9" },
+  { email: "fuigui07@gmail.com", token: "V52HhZoV8bzHFrx52wW2" },
+  { email: "thanvi22060@gmail.com", token: "UVhrjEvRBxCWUXTx7K_U" },
+  { email: "scottalfonsina4293620@gmail.com", token: "RAeYKtM66PGmBnRGbgQP" },
+  { email: "kendrtrevino348@gmail.com", token: "UQyTkTxgaa8sgQmrzEnh" },
+  { email: "voraitworthwhile@gmail.com", token: "-_gR7JQx1meEkKrCw_p2" },
+  { email: "kiecmuychmuanhboach@gmail.com", token: "-ad1G26WrvxzzdUVwX4z" },
+  { email: "xungquangnguangsach@gmail.com", token: "aUgwRVBfoHnzr4B_mqxp" },
+  { email: "sanghvijxriddhiw2@gmail.com", token: "1rZLU3ynyGomiyzZcgsW" },
+  { email: "buaza0913@gmail.com", token: "LqE6Ur4yazxjsPNRtiYY" },
+  { email: "flowerslover626@gmail.com", token: "_gaqToVu9RssKQh-wCs_" },
+  { email: "phantoamnguyenphenh@gmail.com", token: "9-GwWu6KuSMb6sbFJTd8" },
+  { email: "jacqueline.mitchell38846@gmail.com", token: "HsZkzM9Z5n2z9Ecpa-6T" },
+  { email: "johnni.williams4069@gmail.com", token: "aAicZKL_8uY-_uXdeEvG" },
+  { email: "lapkhangvac@gmail.com", token: "o-NAcbvB2pZszxdjsDGn" },
+  { email: "ramonkent064@gmail.com", token: "e2nvPFXGVn9pBNG3gnUZ" },
+];
+let stagingIdx = 0;
+
+// x-client/x-signature dinamis staging: hmac(key="SECRET:ts", msg=ts)
+async function stagingSigHeaders(): Promise<Record<string, string>> {
+  const ts = Math.floor(Date.now() / 1000).toString();
+  const key = new TextEncoder().encode(`${SIGNATURE_SECRET}:${ts}`);
+  const msg = new TextEncoder().encode(ts);
+  const k = await crypto.subtle.importKey("raw", key, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac = new Uint8Array(await crypto.subtle.sign("HMAC", k, msg));
+  const sig = Array.from(mac).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return { "x-client": ts, "x-signature": sig };
+}
+
 // fetch lewat proxy Indonesia via Deno.createHttpClient({proxy})
 const proxyClient = Deno.createHttpClient({
   proxy: { url: PROXY_URL },
@@ -122,12 +164,24 @@ async function createTclAccount() {
   return { email: auth.email as string, token: auth.authentication_token as string };
 }
 
-// --- 1) stream info dari API production ---
-async function getStreamInfo(id: string, acct: { email: string; token: string }) {
+// --- 1) stream info dari API (staging atau production) ---
+async function getStreamInfo(env: string, id: string, acct: { email: string; token: string }) {
+  const host = env === "staging" ? STAGING_HOST : "api.vidio.com";
+  const baseHeaders = env === "staging"
+    ? {
+      "User-Agent": USER_AGENT,
+      "Accept-Encoding": "gzip",
+      "x-api-platform": "tv-android",
+      "x-api-auth": STAGING_AUTH,
+      "x-api-app-info": APP_INFO,
+      ...(await stagingSigHeaders()),
+      "accept-language": "id",
+    }
+    : { ...STATIC_HEADERS };
   const res = await pfetch(
-    `https://api.vidio.com/livestreamings/${id}/stream?initialize=true`,
+    `https://${host}/livestreamings/${id}/stream?initialize=true`,
     {
-      headers: { ...STATIC_HEADERS, "x-user-email": acct.email, "x-user-token": acct.token },
+      headers: { ...baseHeaders, "x-user-email": acct.email, "x-user-token": acct.token },
       signal: AbortSignal.timeout(45000),
     },
   );
@@ -140,8 +194,9 @@ async function getStreamInfo(id: string, acct: { email: string; token: string })
     ? `${drmBase}?pallycon-customdata-v2=${wvToken}`
     : undefined;
   const mpd = (attrs.dash ?? attrs.mpd) as string | undefined;
+  const hls = attrs.hls as string | undefined;
   if (!mpd) throw new Error("dash kosong di respons stream");
-  return { mpd, widevine };
+  return { mpd, hls, widevine };
 }
 
 // --- 2) fetch MPD -> ekstrak PSSH widevine ---
@@ -184,13 +239,15 @@ async function getAuthToken(): Promise<string> {
   return cachedToken.value;
 }
 
-async function getClearkey(pssh: string, licenseUrl: string): Promise<string> {
+async function getClearkey(pssh: string, licenseUrl: string, useProxy = false): Promise<string> {
   const token = await getAuthToken();
   const res = await fetch(GETKEY_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-    body: JSON.stringify({ pssh, license_url: licenseUrl, proxy: "", headers: {} }),
-    signal: AbortSignal.timeout(90000),
+    // license staging di-geo-block dari luar Indonesia -> lewat proxy;
+    // license production bisa langsung
+    body: JSON.stringify({ pssh, license_url: licenseUrl, proxy: useProxy ? PROXY_URL : "", headers: {} }),
+    signal: AbortSignal.timeout(60000),
   });
   const text = await res.text();
   if (!res.ok) throw new Error(`getkey ${res.status}: ${text.slice(0, 200)}`);
@@ -206,15 +263,28 @@ async function getClearkey(pssh: string, licenseUrl: string): Promise<string> {
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   const id = url.searchParams.get("id") ?? "6686";
+  const env = url.searchParams.get("env") ?? "production"; // staging | production
   try {
-    const acct = await createTclAccount();
-    const { mpd, widevine } = await getStreamInfo(id, acct);
-    if (!widevine) {
-      return Response.json({ mpd, note: "channel tidak pakai DRM" });
+    let acct: { email: string; token: string };
+    if (env === "staging") {
+      // staging: rotasi akun biasa, hasil JSON ditampilkan langsung
+      acct = STAGING_ACCOUNTS[stagingIdx++ % STAGING_ACCOUNTS.length];
+    } else {
+      // production: akun TCL fresh (preview) tiap request untuk ambil widevine
+      acct = await createTclAccount();
     }
-    const pssh = await getPssh(mpd);
-    const clearkey = await getClearkey(pssh, widevine);
-    return Response.json({ mpd, clearkey });
+    const stream = await getStreamInfo(env, id, acct);
+    if (env === "staging") {
+      // staging: cukup MPD/HLS saja, tanpa getkey
+      return Response.json({ mpd: stream.mpd, hls: stream.hls });
+    }
+    if (!stream.widevine) {
+      return Response.json({ mpd: stream.mpd, note: "channel tidak pakai DRM" });
+    }
+    // production: MPD -> PSSH -> go-widevine -> clearkey
+    const pssh = await getPssh(stream.mpd);
+    const clearkey = await getClearkey(pssh, stream.widevine);
+    return Response.json({ mpd: stream.mpd, clearkey });
   } catch (e) {
     const err = e as Error;
     const cause = err.cause ? ` (${String(err.cause)})` : "";
