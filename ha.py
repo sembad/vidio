@@ -33,7 +33,7 @@ APP_INFO = "tv-android/16/2608.2.4-1020"
 MORATEL_LAUNCHER_TOKEN = "8ipCffxAnNUxSUjkXZScA6"
 MORATEL_OXYGEN_ACTION = "com.oxygen.atv.action.API_GET_ID"
 
-DEFAULT_DATAIMPULSE_PROXY = "http://54e00827b371c0c310a2__cr.id:817df9dc4f7bfe33@gw.dataimpulse.com:823"
+DEFAULT_DATAIMPULSE_PROXY = "http://66c757e644710948__cr.id:46b0ff892fc1d3075320@gw.dataimpulse.com:823"
 
 # Seluruh 25 Partner Brand yang teridentifikasi di DEX Vidio
 BRANDS = [

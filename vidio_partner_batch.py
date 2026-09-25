@@ -35,8 +35,8 @@ X_API_PLATFORM = "tv-android"
 X_API_APP_INFO = "tv-android/16/2608.2.4-1020"
 
 PROXY_URL = (
-    "http://54e00827b371c0c310a2__cr.id:"
-    "817df9dc4f7bfe33@gw.dataimpulse.com:823"
+    "http://66c757e644710948__cr.id:"
+    "46b0ff892fc1d3075320@gw.dataimpulse.com:823"
 )
 
 PROXIES = {

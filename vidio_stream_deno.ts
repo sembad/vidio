@@ -13,7 +13,7 @@
 const STREAM_API_BASE = "https://api.vidio.com";
 
 const PROXY_URL =
-  "http://54e00827b371c0c310a2__cr.id:817df9dc4f7bfe33@gw.dataimpulse.com:823";
+  "http://66c757e644710948__cr.id:46b0ff892fc1d3075320@gw.dataimpulse.com:823";
 
 const CACHE_TTL_MS = 4 * 60 * 1000; // 4 menit
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000; // UTC+7
