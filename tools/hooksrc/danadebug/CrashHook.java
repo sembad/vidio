@@ -121,10 +121,10 @@ public class CrashHook {
             }
             if (isCrash) notify(ctx, content);
         } else {
-            // no context yet: best effort direct path
+            // no context yet (clinit/ctor crash): the process still owns
+            // /data/data/id.dana, so write there directly
             try {
-                File dir = new File(Environment.getExternalStorageDirectory(),
-                    "Android/data/id.dana/files/" + DIR);
+                File dir = new File("/data/data/id.dana/files/" + DIR);
                 dir.mkdirs();
                 File f = new File(dir, name);
                 FileOutputStream fo = new FileOutputStream(f, append);

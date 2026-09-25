@@ -13,10 +13,12 @@ public class DanaApplication extends id.dana.DanaApplicatioZ {
 
     @Override
     protected void attachBaseContext(Context base) {
+        // set context FIRST so any crash inside super.attachBaseContext
+        // (mPaaS/SecurityGuard init) can be logged, notified, and exported
+        CrashHook.attach(base);
         CrashHook.stage("wrapper-attach");
         try {
             super.attachBaseContext(base);
-            CrashHook.attach(base);
             CrashHook.stage("super-attach-done");
         } catch (Throwable t) {
             CrashHook.logCrash(t);
