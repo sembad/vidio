@@ -1,96 +1,153 @@
-// Port PHP -> Deno Deploy: get stream + clearkey Vidio production
+// Port PHP + ha.py -> Deno Deploy: get stream + clearkey Vidio production
+// Flow: buat akun TCL fresh (partner/auth, AES-GCM + HMAC) -> GET stream ->
+//       MPD -> PSSH -> go-widevine getkey -> clearkey
 // Semua request API & MPD lewat proxy Indonesia (DataImpulse cr.id)
 
 const PROXY_URL = "http://54e00827b371c0c310a2__cr.id:817df9dc4f7bfe33@gw.dataimpulse.com:823";
 
-// Header statis persis dari PHP
+// --- konstanta partner auth (dari ha.py, APK 2608.2.4 build 1020) ---
+const KEY_ID = "ZXhDgP7RixaP";
+const AES_KEY_B64 = "O8NAJlk7o7GNeNn01qUXxjezrD/Z2djOMjSizTRZt1U=";
+const X_API_AUTH = "laZOmogezono5ogekaso5oz4Mezimew1";
+const USER_AGENT = "tv-android/2608.2.4 (1020)";
+const APP_INFO = "tv-android/16/2608.2.4-1020";
+
+// Header statis persis dari PHP (untuk GET stream)
 const STATIC_HEADERS: Record<string, string> = {
   "Accept": "application/vnd.api+json",
   "Content-Type": "application/vnd.api+json",
-  "User-Agent": "tv-android/2608.2.4 (1020)",
+  "User-Agent": USER_AGENT,
   "Accept-Encoding": "gzip",
   "x-client": "1788880138",
   "x-signature": "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4",
   "referer": "androidtv-app://com.vidio.android.tc",
   "x-api-platform": "tv-android",
-  "x-api-auth": "laZOmogezono5ogekaso5oz4Mezimew1",
-  "x-api-app-info": "tv-android/16/2608.2.4-1020",
+  "x-api-auth": X_API_AUTH,
+  "x-api-app-info": APP_INFO,
 };
-
-// Akun partner production fresh (Moratel/NontonPlus/Melvar/Tivinity) — dirotasi
-const ACCOUNTS = [
-  { email: "mora_874950-moratel@fake-tv-bundle.com", token: "pmzhz2hEFhbN-MYmU_bi" },
-  { email: "np_hotel_790@fake-nontonplus.com", token: "bdpZzsM_xF_LtySQGbVJ" },
-  { email: "melvar_879-melvar@fake-tv-bundle.com", token: "Xxx2jBDGpcz39Svy4VEb" },
-  { email: "tiv_room_280tivinity@fake-tv-bundle.com", token: "45n1Va6fYxt-iCpaj4kJ" },
-  { email: "mora_827296-moratel@fake-tv-bundle.com", token: "2ZSh7X6_YBPMiPxdC2U2" },
-];
 
 const GETKEY_URL = "https://go-widevine.onrender.com/getkey/widevine";
 const BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
-let accountIdx = 0;
+// fetch lewat proxy Indonesia via Deno.createHttpClient({proxy})
+const proxyClient = Deno.createHttpClient({
+  proxy: { url: PROXY_URL },
+  // DataImpulse pakai basic-auth di URL proxy
+  basicAuth: { username: "54e00827b371c0c310a2__cr.id", password: "817df9dc4f7bfe33" },
+} as Deno.CreateHttpClientOptions);
 
-// fetch dengan proxy (undici ProxyAgent via env, fallback direct di Deno Deploy lokal)
-function fetchOpts(init: RequestInit): RequestInit {
-  // @ts-ignore: undici ProxyAgent tersedia di Deno 1.4x via node: undici? gunakan env approach
-  return init;
+function pfetch(url: string, init: RequestInit = {}): Promise<Response> {
+  return fetch(url, { ...init, client: proxyClient } as RequestInit & { client: unknown });
 }
 
-// Deno tidak punya proxy bawaan di fetch; gunakan undici ProxyAgent bila ada,
-// kalau tidak, fallback lewat HTTP CONNECT manual tidak praktis -> pakai env HTTPS_PROXY saat deploy.
-// Di Deno Deploy, set env HTTPS_PROXY agar fetch otomatis lewat proxy (didukung sejak Deno 1.42 via undici).
-async function pfetch(url: string, init: RequestInit = {}): Promise<Response> {
-  return fetch(url, init);
+const aesKey = crypto.subtle.importKey(
+  "raw",
+  Uint8Array.from(atob(AES_KEY_B64), (c) => c.charCodeAt(0)),
+  "AES-GCM",
+  false,
+  ["encrypt"],
+);
+const hmacKey = crypto.subtle.importKey(
+  "raw",
+  Uint8Array.from(atob(AES_KEY_B64), (c) => c.charCodeAt(0)),
+  { name: "HMAC", hash: "SHA-256" },
+  false,
+  ["sign"],
+);
+
+function b64(buf: ArrayBuffer | Uint8Array): string {
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  let s = "";
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s);
 }
 
-// --- 1) stream info dari API production (rotasi akun) ---
-async function getStreamInfo(id: string) {
-  let lastErr = "";
-  for (let i = 0; i < ACCOUNTS.length; i++) {
-    const acct = ACCOUNTS[accountIdx++ % ACCOUNTS.length];
-    try {
-      const headers = {
-        ...STATIC_HEADERS,
-        "x-user-email": acct.email,
-        "x-user-token": acct.token,
-      };
-      const res = await pfetch(
-        `https://api.vidio.com/livestreamings/${id}/stream?initialize=true`,
-        { headers, signal: AbortSignal.timeout(45000) },
-      );
-      const text = await res.text();
-      if (!res.ok) {
-        lastErr = `akun ${acct.email.slice(0, 12)} -> ${res.status}: ${text.slice(0, 120)}`;
-        continue; // coba akun berikutnya (preview 1x/hari per ID)
-      }
-      const attrs = JSON.parse(text)?.data?.attributes ?? {};
-      const drmBase = attrs.license_servers?.drm_license_url as string | undefined;
-      const wvToken = attrs.custom_data?.widevine as string | undefined;
-      const widevine = drmBase && wvToken
-        ? `${drmBase}?pallycon-customdata-v2=${encodeURIComponent(wvToken)}`
-        : undefined;
-      const mpd = (attrs.dash ?? attrs.mpd) as string | undefined;
-      if (!mpd) {
-        lastErr = `akun ${acct.email.slice(0, 12)} -> 200 tapi dash kosong`;
-        continue;
-      }
-      return { mpd, widevine };
-    } catch (e) {
-      lastErr = `akun ${acct.email.slice(0, 12)} -> ${(e as Error).message}`;
-    }
+// Port build_encrypted_payload ha.py: AES-256-GCM + HMAC-SHA256 signature
+async function buildEncryptedPayload(plain: Record<string, string>) {
+  const plainJson = new TextEncoder().encode(JSON.stringify(plain));
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const nonceStr = Array.from(crypto.getRandomValues(new Uint8Array(12)))
+    .map((b) => alphabet[b % alphabet.length]).join("");
+  const nonce = new TextEncoder().encode(nonceStr);
+
+  const ct = new Uint8Array(await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: nonce },
+    await aesKey,
+    plainJson,
+  ));
+  // data = ciphertext+tag || nonce
+  const combined = new Uint8Array(ct.length + nonce.length);
+  combined.set(ct);
+  combined.set(nonce, ct.length);
+  const dataB64 = b64(combined);
+
+  // signature = nonce_b64[:-1] + base64(hmac(hmac(key,nonce), plain)) + nonce_b64[-1]
+  const innerKey = new Uint8Array(await crypto.subtle.sign("HMAC", await hmacKey, nonce));
+  const innerHmac = crypto.subtle.importKey("raw", innerKey, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const payloadMac = b64(await crypto.subtle.sign("HMAC", await innerHmac, plainJson));
+  const nonceB64 = b64(nonce);
+  const signature = nonceB64.slice(0, -1) + payloadMac + nonceB64.slice(-1);
+
+  return { dataB64, signatureHeader: `keyId="${KEY_ID}",signature="${signature}"` };
+}
+
+// --- 0) buat akun TCL fresh di production (port ha.py send_request) ---
+async function createTclAccount() {
+  const uid = `TCL_${crypto.randomUUID().replaceAll("-", "").slice(0, 12)}`;
+  const { dataB64, signatureHeader } = await buildEncryptedPayload({
+    unique_id: uid,
+    additional_unique_id: uid,
+    partner_agent: "tcl",
+  });
+  const res = await pfetch("https://api.vidio.com/api/partner/auth", {
+    method: "POST",
+    headers: {
+      "User-Agent": USER_AGENT,
+      "Accept-Encoding": "gzip",
+      "signature": signatureHeader,
+      "x-api-platform": "tv-android",
+      "x-api-auth": X_API_AUTH,
+      "x-api-app-info": APP_INFO,
+      "Content-Type": "application/json; charset=UTF-8",
+    },
+    body: JSON.stringify({ data: dataB64 }),
+    signal: AbortSignal.timeout(45000),
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`partner/auth ${res.status}: ${text.slice(0, 150)}`);
+  const auth = JSON.parse(text)?.auth;
+  if (!auth?.email || !auth?.authentication_token) {
+    throw new Error(`partner/auth tanpa auth: ${text.slice(0, 150)}`);
   }
-  throw new Error(`semua ${ACCOUNTS.length} akun gagal: ${lastErr}`);
+  return { email: auth.email as string, token: auth.authentication_token as string };
+}
+
+// --- 1) stream info dari API production ---
+async function getStreamInfo(id: string, acct: { email: string; token: string }) {
+  const res = await pfetch(
+    `https://api.vidio.com/livestreamings/${id}/stream?initialize=true`,
+    {
+      headers: { ...STATIC_HEADERS, "x-user-email": acct.email, "x-user-token": acct.token },
+      signal: AbortSignal.timeout(45000),
+    },
+  );
+  const text = await res.text();
+  if (!res.ok) throw new Error(`stream ${res.status}: ${text.slice(0, 150)}`);
+  const attrs = JSON.parse(text)?.data?.attributes ?? {};
+  const drmBase = attrs.license_servers?.drm_license_url as string | undefined;
+  const wvToken = attrs.custom_data?.widevine as string | undefined;
+  const widevine = drmBase && wvToken
+    ? `${drmBase}?pallycon-customdata-v2=${wvToken}`
+    : undefined;
+  const mpd = (attrs.dash ?? attrs.mpd) as string | undefined;
+  if (!mpd) throw new Error("dash kosong di respons stream");
+  return { mpd, widevine };
 }
 
 // --- 2) fetch MPD -> ekstrak PSSH widevine ---
 async function getPssh(mpdUrl: string): Promise<string> {
   const res = await pfetch(mpdUrl, {
-    headers: {
-      "User-Agent": BROWSER_UA,
-      "Referer": "https://www.vidio.com/",
-      "Origin": "https://www.vidio.com/",
-    },
+    headers: { "User-Agent": BROWSER_UA, "Referer": "https://www.vidio.com/" },
     signal: AbortSignal.timeout(45000),
   });
   if (!res.ok) throw new Error(`MPD ${res.status}`);
@@ -119,8 +176,7 @@ async function getAuthToken(): Promise<string> {
   if (!m) throw new Error("token auth tidak ditemukan di /login");
   let expiry = 0;
   try {
-    const dec = atob(m[1]);
-    expiry = parseInt(dec.split("|")[1], 10) || 0;
+    expiry = parseInt(atob(m[1]).split("|")[1], 10) || 0;
   } catch {
     // biarkan expiry 0 -> cache 4 menit
   }
@@ -133,22 +189,26 @@ async function getClearkey(pssh: string, licenseUrl: string): Promise<string> {
   const res = await fetch(GETKEY_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-    body: JSON.stringify({ pssh, license_url: licenseUrl, proxy: PROXY_URL, headers: {} }),
+    body: JSON.stringify({ pssh, license_url: licenseUrl, proxy: "", headers: {} }),
     signal: AbortSignal.timeout(90000),
   });
   const text = await res.text();
   if (!res.ok) throw new Error(`getkey ${res.status}: ${text.slice(0, 200)}`);
   const data = JSON.parse(text);
-  const key = data?.clearkey ?? data?.key ?? data?.keys?.[0];
-  if (!key) throw new Error(`clearkey tidak ada di respons: ${text.slice(0, 200)}`);
-  return typeof key === "string" ? key : JSON.stringify(key);
+  // format respons: {keys:[{type:"signed",key:...},{type:"content",kid,key}],status:"ok"}
+  const content = data?.keys?.find((k: { type?: string }) => k.type === "content") ?? data?.keys?.[0];
+  if (!content?.kid || !content?.key) {
+    throw new Error(`clearkey tidak ada di respons: ${text.slice(0, 200)}`);
+  }
+  return `${content.kid}:${content.key}`;
 }
 
 Deno.serve(async (req) => {
   const url = new URL(req.url);
   const id = url.searchParams.get("id") ?? "6686";
   try {
-    const { mpd, widevine } = await getStreamInfo(id);
+    const acct = await createTclAccount();
+    const { mpd, widevine } = await getStreamInfo(id, acct);
     if (!widevine) {
       return Response.json({ mpd, note: "channel tidak pakai DRM" });
     }
