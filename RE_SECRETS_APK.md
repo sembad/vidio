@@ -100,7 +100,20 @@ Saklar environment: SharedPreferences `.key_switch_environment` (boolean; true =
 - MMKV dengan kunci blob4 untuk storage lokal.
 - `.key_switch_environment` (SharedPreferences, `l.java:1320`) — saklar production ↔ staging (ditemukan chat sebelumnya).
 
-## 7. Catatan Keamanan (temuan)
+## 7. Vektor "Injectable" (apa yang bisa dipakai/di-inject)
+
+**Bisa — sudah terbukti:**
+1. **Partner identity injection** (`POST /api/partner/auth`, `SeamlessLoginApi.java`): body `{"data": "<AES-GCM ciphertext>"}` + header `Signature: keyId="uKBhDETICyfL",signature="..."`. Kunci AES-GCM `9ow3pHuT7i+agw+o9nByJAfNedlkdcnHFo9IxnefVjs=` **TIDAK ada di APK** (bukan di dex/resources/.so) — sumber eksternal (perangkat partner/SDK TCL). Dengan kunci ini, akun partner (tcl, polytron_PDBM11ADL) bisa di-mint massal — terbukti jalan di `bulk_accounts.py` (88 akun).
+2. **Env switch**: SharedPreferences `.key_switch_environment` (boolean) — flip production↔staging (`l.java:1320`).
+3. **FTA fake credentials**: stream-init FTA hanya cek *keberadaan* header email+token, bukan validitasnya — kredensial palsu pun dapat 200 + HLS (bug terkonfirmasi di production & staging).
+
+**Tidak bisa dari APK (server-side / runtime):**
+- `header_enrichment_shared_key` (auto-login Telkomsel via `/telcos/he` + `authenticateWithHE(payload, msisdn)`, `LoginGatewayImpl.java:455`): default kosong di `remote_config_defaults.xml`, diisi server via Remote Config saat runtime. Tidak terekstrak dari APK.
+- Kode promo/voucher: tidak ada satu pun kode hardcoded di dex — redeem (`RedeemVoucher`, `PromoScreenTracker`) murni validasi server-side.
+- Kunci DRM & entitlement: dari respons API per-request, tidak ada di klien.
+- Kunci partner lain (selain tcl/polytron yang sudah diketahui): daftar partner di server, bukan di APK.
+
+## 8. Catatan Keamanan (temuan)
 
 1. AES key statis + IV nol + key di dex = obfuscation, bukan keamanan. Semua rahasia native bisa didekripsi offline seperti di atas.
 2. Token API production & staging sama-sama terekspos; token production dipakai lintas env (bug FTA yang sudah dikonfirmasi). Koreksi penting: versi awal dokumen ini salah mapping (terbalik) — yang benar: `cubixar...`=staging, `laZOmogez...`=production (terverifikasi empiris 200/401 + mapping kode `AppNdkConfig.c()/d()`).
