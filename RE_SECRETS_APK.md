@@ -19,14 +19,53 @@ Semua nilai diverifikasi dengan dekripsi ulang, bukan tebakan.
 
 | Blob | Native method | Plaintext | Fungsi |
 |---|---|---|---|
-| 1 | `apiTokenProductionBase64()` | `cubixarIhu8une5OP33upogocaTeWerU` | **API token production** — dipakai sebagai `x-api-auth` (sama dengan yang dipakai semua script kita) |
-| 2 | `apiTokenStagingBase64()` | `laZOmogezono5ogekaso5oz4Mezimew1` | **API token staging** — token khusus staging (belum terpakai di script; staging sedang 503 saat dokumen ini dibuat) |
+| 1 | `apiTokenStagingBase64()` | `cubixarIhu8une5OP33upogocaTeWerU` | **API token STAGING** — `x-api-auth` untuk `api.staging.vidio.com` (dipakai `staging_test.py`) |
+| 2 | `apiTokenProductionBase64()` | `laZOmogezono5ogekaso5oz4Mezimew1` | **API token PRODUCTION** — `x-api-auth` untuk `api.vidio.com` (dipakai `vidio_check_livestream.py` dll.) |
 | 3 | `googleClientIdBase64()` | `370141853687-1g5b754il9g29s0pp4n45k4r9hgb3l3p.apps.googleusercontent.com` | Google OAuth client ID (publik, normal) |
 | 4 | `encryptedPreferenceBase64()` | `P@ZFbRnWi8t@8xr~S3=3b3EN=Iw@Eh2(OPJEc'z[WzW7-ZieGJ` | **Kunci enkripsi MMKV/EncryptedSharedPreferences** — enkripsi preferensi lokal di device |
 
-Mekanisme: `lz.b` → `System.loadLibrary("ndkconfig")` → 4 native method mengembalikan ciphertext Base64 → `lz.a` (AES-CBC) mendekripsi → dipakai via interface `c70.b` (4 getter: production, staging, googleClientId, encryptedPreference).
+**Verifikasi mapping (empiris, bukan urutan string di .so):**
+- `laZOmogez...` → `api.vidio.com/livestreamings` = **200 OK**; `cubixar...` = **401 Unauthorized application**.
+- Mapping kode: `AppNdkConfig.c()` → `apiTokenProductionBase64`, `d()` → `apiTokenStagingBase64` (`AppNdkConfig.java:90-110`); dipilih di `l.java:1314`: `production ? c() : d()`.
+- Urutan string di `.so` TIDAK mencerminkan mapping method — jangan pakai urutan string table sebagai acuan.
 
-## 3. Signing Livestream Token
+Mekanisme: `lz.b` → `System.loadLibrary("ndkconfig")` → 4 native method mengembalikan ciphertext Base64 → `lz.a` (AES-CBC) mendekripsi → dipakai via interface `c70.b`: `a()`=googleClientId, `b()`=encryptedPreference (dipakai juga di config telkomsel, `l.java:1721`), `c()`=token production, `d()`=token staging.
+
+## 3. Inventaris Header HTTP Lengkap (dari dex)
+
+Semua header custom yang di-set aplikasi (sumber: `f60/d.java` interceptor OkHttp, `o40/e.java` + `qr/l1.java` interceptor KMM, `classes6.dex` string table):
+
+| Header | Nilai / Sumber | Fungsi |
+|---|---|---|
+| `X-API-Auth` | token dari `c70.b.c()`/`d()` (blob 1/2) | Auth aplikasi per environment |
+| `X-API-Platform` | `app-android` (mobile) / `tv-android` (TV) | Identifikasi platform |
+| `X-API-App-Info` | `tv-android/16/2608.2.4-1020` | Versi app + build |
+| `X-CLIENT` | timestamp unix (detik) | Pasangan signing |
+| `X-SIGNATURE` | HMAC-SHA256(`V1d10D3v:{ts}`, ts) | Signing request livestream |
+| `X-USER-EMAIL` / `X-USER-TOKEN` | sesi login user | Auth user (juga dipakai webview bridge, `o1.java:321-325`) |
+| `X-VISITOR-ID` | UUID per-install | Pelacak device/analytics |
+| `X-Device-Brand` / `X-Device-Model` / `X-Device-Form-Factor` / `X-Device-SOC` / `X-Device-OS` / `X-Device-Android-MPC` / `X-Device-CPU-Arch` | info device (`qr/l1.java`) | Telemetri/fingerprint device |
+| `Referer` | `android-app://com.vidio.android` (mobile), `androidtv-app://com.vidio.android.tc` (TV) | Anti-hotlink sisi server |
+| `Require-Authentication: true` | internal (`InterceptorConstantKt.java`) | Marker OkHttp internal — menandai endpoint yang wajib sesi login; di-strip sebelum dikirim |
+| `X-Auth-Tokens` | (jarang) | Varian auth di sebagian endpoint |
+
+Tidak ada header rahasia lain — sisanya (`X-Goog-*`, `x-firebase-*`, `x-gtm-*`) milik SDK Google/Firebase standar.
+
+## 3b. Daftar Host API (production ↔ staging, `l.java:1314` & `l.java:1721`)
+
+| Layanan | Production | Staging |
+|---|---|---|
+| API utama | `api.vidio.com` | `api.staging.vidio.com` |
+| Plenty (personalisasi) | `plenty.vidio.com` | `staging-plenty.vidio.com` |
+| API-NS | `api-ns.vidio.com` | `api-ns.int.vidio.com` |
+| Live/quiz | `live.vidio.com` / `quiz.vidio.com` | `live.staging.vidio.com` / `quiz.staging.vidio.com` |
+| WebSocket live | `wss://live.vidio.com` | `wss://live.staging.vidio.com` |
+| Telkomsel | `telkomsel.vidio.com` | `telkomsel.staging.vidio.com` |
+| Web | `www.vidio.com` | `www.staging.vidio.com` |
+
+Saklar environment: SharedPreferences `.key_switch_environment` (boolean; true = production).
+
+## 3c. Signing Livestream Token
 
 | Item | Nilai |
 |---|---|
@@ -64,5 +103,5 @@ Mekanisme: `lz.b` → `System.loadLibrary("ndkconfig")` → 4 native method meng
 ## 7. Catatan Keamanan (temuan)
 
 1. AES key statis + IV nol + key di dex = obfuscation, bukan keamanan. Semua rahasia native bisa didekripsi offline seperti di atas.
-2. Token API production & staging sama-sama terekspos; token production dipakai lintas env (bug FTA yang sudah dikonfirmasi).
+2. Token API production & staging sama-sama terekspos; token production dipakai lintas env (bug FTA yang sudah dikonfirmasi). Koreksi penting: versi awal dokumen ini salah mapping (terbalik) — yang benar: `cubixar...`=staging, `laZOmogez...`=production (terverifikasi empiris 200/401 + mapping kode `AppNdkConfig.c()/d()`).
 3. `live_streaming_token_key` bisa dirotasi server via Remote Config tanpa update APK — nilai `V1d10D3v` hanya default.
