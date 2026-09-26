@@ -1,7 +1,36 @@
-# Inventaris Secrets & Kriptografi — APK Vidio 2608.2.7 (RE)
+# Inventaris Secrets & Kriptografi — APK Vidio (RE)
 
-Hasil dekompilasi penuh (jadx 1.5.3, 6 dex, 25.673 class + apktool resources + 8 native libs).
-Semua nilai diverifikasi dengan dekripsi ulang, bukan tebakan.
+Dua APK dianalisis: **mobile** (`com.vidio.android` 2608.2.7, 6 dex, 25.673 class) dan **TV/Android TV** (`com.vidio.android.tv` 2608.2.4, 5 dex, 21.955 class) + apktool resources + native libs.
+Semua nilai diverifikasi dengan dekripsi ulang & tes empiris, bukan tebakan.
+
+---
+
+## 0. APK TV (com.vidio.android.tv) — 13 blob, SEMUA terdekripsi
+
+AES key TV: **`1020000000000000`** (literal `"1020"` pad `'0'`, `np/l.java:1167`), AES/CBC/PKCS5Padding, IV nol — skema sama dengan mobile, kunci beda.
+
+| # | Method native (`TvNdkConfig.java`) | Plaintext | Fungsi |
+|---|---|---|---|
+| 1 | `apiTokenProductionBase64` | `laZOmogezono5ogekaso5oz4Mezimew1` | Token API production (sama dgn mobile) |
+| 2 | `apiTokenStagingBase64` | `cubixarIhu8une5OP33upogocaTeWerU` | Token API staging (sama dgn mobile) |
+| 3 | `appsflyerDevKeyBase64` | `k2e9hurfa3jnh1pqpurht8b66` | AppsFlyer dev key (atribusi install) |
+| 4 | `partnerAuthSignatureProductionKeyIdBase64` | `uKBhDETICyfL` | **keyId signature partner auth PRODUCTION** |
+| 5 | `partnerAuthSymmetricProductionKeyBase64` | `9ow3pHuT7i+agw+o9nByJAfNedlkdcnHFo9IxnefVjs=` | **Kunci AES-GCM partner auth PRODUCTION** |
+| 6 | `partnerAuthSignatureStagingKeyIdBase64` | `ZXhDgP7RixaP` | **keyId signature partner auth STAGING** (baru) |
+| 7 | `partnerAuthSymmetricStagingKeyBase64` | `O8NAJlk7o7GNeNn01qUXxjezrD/Z2djOMjSizTRZt1U=` | **Kunci AES-GCM partner auth STAGING** (baru) |
+| 8 | `moratelLauncherTokenBase64` | `token://hrB0QqdDm9R0CemL9K6p0w==:MTExMTExMTExMTExMTExMQ==` | **Token launcher Moratel/Oxygen** (login STB IPTV; part2 = `111111111111111111`) |
+| 9 | `encryptedPreferenceBase64` | `P@ZFbRnWi8t@8xr~S3=3b3EN=Iw@Eh2(OPJEc'z[WzW7-ZieGJ` | Kunci enkripsi MMKV lokal (sama dgn mobile) |
+| 10 | `googleClientProductionIdBase64` | `370141853687-1g5b754il9g29s0pp4n45k4r9hgb3l3p.apps.googleusercontent.com` | Google OAuth production |
+| 11 | `googleClientStagingIdBase64` | `284220192736-9lt6i5ercqu21p9esqli4tt01fcg15us.apps.googleusercontent.com` | Google OAuth staging (baru) |
+| 12 | — (tidak direferensikan dex) | `8ipCffxAnNUxSUjkXZScA6` | Blob yatim — decoy/legacy |
+| 13 | — (tidak direferensikan dex) | `v3f5vbbamed4beae56842uebv` | Blob yatim — decoy/legacy |
+
+**Verifikasi empiris pasangan partner auth (production, payload `partner_agent` invalid — tanpa bikin akun):**
+- `uKBhDETICyfL` + `9ow3pHuT7i...` → **403** "Biar bisa pakai fitur ini..." = signature DITERIMA (pasangan production valid; 403 karena butuh `x-user-token` sesi).
+- `ZXhDgP7RixaP` + `O8NAJlk7...` → **400** body null = gagal dekripsi di production (konsisten: pasangan staging).
+- Catatan: `bulk_accounts.py` memakai pasangan production (uKBh+9ow3) ke STAGING dan tembus — staging menerima pasangan production juga.
+
+Koreksi atas laporan sebelumnya: kunci partner auth **ADA di APK TV** (sebelumnya dinyatakan tidak ada — benar untuk APK mobile, salah untuk TV). `live_streaming_token_key` default TV = `V1d10D3v` (sama dengan mobile).
 
 ---
 
@@ -103,7 +132,7 @@ Saklar environment: SharedPreferences `.key_switch_environment` (boolean; true =
 ## 7. Vektor "Injectable" (apa yang bisa dipakai/di-inject)
 
 **Bisa — sudah terbukti:**
-1. **Partner identity injection** (`POST /api/partner/auth`, `SeamlessLoginApi.java`): body `{"data": "<AES-GCM ciphertext>"}` + header `Signature: keyId="uKBhDETICyfL",signature="..."`. Kunci AES-GCM `9ow3pHuT7i+agw+o9nByJAfNedlkdcnHFo9IxnefVjs=` **TIDAK ada di APK** (bukan di dex/resources/.so) — sumber eksternal (perangkat partner/SDK TCL). Dengan kunci ini, akun partner (tcl, polytron_PDBM11ADL) bisa di-mint massal — terbukti jalan di `bulk_accounts.py` (88 akun).
+1. **Partner identity injection** (`POST /api/partner/auth`, `SeamlessLoginApi.java`): body `{"data": "<AES-GCM ciphertext>"}` + header `signature: keyId="...",signature="..."`. Kunci AES-GCM production `9ow3pHuT7i...` + keyId `uKBhDETICyfL` **ADA di APK TV** (blob 4-5 di atas; di APK mobile memang tidak ada). Pasangan staging: `ZXhDgP7RixaP` + `O8NAJlk7...`. Dengan kunci ini, akun partner (tcl, polytron_PDBM11ADL) bisa di-mint massal — terbukti jalan di `bulk_accounts.py` (88 akun).
 2. **Env switch**: SharedPreferences `.key_switch_environment` (boolean) — flip production↔staging (`l.java:1320`).
 3. **FTA fake credentials**: stream-init FTA hanya cek *keberadaan* header email+token, bukan validitasnya — kredensial palsu pun dapat 200 + HLS (bug terkonfirmasi di production & staging).
 
