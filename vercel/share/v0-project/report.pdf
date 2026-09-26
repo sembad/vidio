@@ -1,0 +1,428 @@
+
+
+Subdomain Finder Report (Light)
+The Light Subdomain Finder returned limited results. Upgrade now to run Deep scans and discover substantially more
+subdomains.
+  
+See what the DEEP scanner can do
+Discover more subdomains with additional subdomain discovery techniques.
+TechniqueLight scanDeep scan
+Passive detection
+DNS records (NS, MX, TXT, AXFR)
+DNS Enumeration
+Certificate Transparency Logs
+HTML links
+SSL certificates
+Google and Bing search
+External APIs
+Reverse DNS enumeration
+Alteration search
+CNAME search
+Unlock the full capabilities of this scanner
+Unlock the full capabilities of this scanner
+ vidio.com 
+Found 341 subdomains
+SubdomainIP address
+m.vidio.com2.16.168.5
+blog.vidio.com2.16.170.72
+api.dev.vidio.com10.252.38.18
+m.dev.vidio.com10.252.38.18
+www.dev.vidio.com10.252.38.18
+dev.vidio.com10.252.38.18
+app-log-analyzer-api.staging.vidio.com10.252.102.159
+www.vidio.com23.15.3.10
+1 / 11
+
+api.vidio.com23.15.3.10
+tv.staging.vidio.com23.32.238.195
+tv.vidio.com23.35.104.80
+tv.alpha.vidio.com23.55.110.142
+www-dsa.staging.vidio.com23.55.110.154
+about.vidio.com23.192.228.15
+gandiwa.staging.vidio.com23.192.228.26
+gandiwa.vidio.com23.194.190.211
+gandiwa-akamai.staging.vidio.com34.8.8.6
+ets-dashboard.vidio.com34.36.58.49
+license.staging.vidio.com34.36.103.2
+link.promo.vidio.com34.36.107.183
+ongi9angbeef5iw8-tv-dsa.vidio.com34.36.193.7
+vidio-media-interopt.int.vidio.com34.36.229.42
+next.staging.vidio.com34.36.255.56
+iso.vidio.com34.49.22.44
+next-akamai.staging.vidio.com34.49.98.65
+iso.staging.vidio.com34.49.200.223
+vision.staging.vidio.com34.54.61.19
+indosat.vidio.com34.87.37.125
+cdn-a.origin.dev.vidio.com34.95.72.198
+media.origin.dev.vidio.com34.95.72.198
+static-quiz.origin.int.vidio.com34.95.85.215
+thumbor-gke.staging.vidio.com34.95.92.78
+dashboard-quiz.int.vidio.com34.95.93.223
+airflow.vidio.com34.95.108.145
+static-origin.dev.vidio.com34.96.79.191
+hydra.staging.vidio.com34.96.108.148
+static03.staging.vidio.com34.98.97.95
+dboreja4fu.int.vidio.com34.98.125.177
+aequ1kie7b.vidio.com34.102.158.190
+tv-gke.staging.vidio.com34.102.199.9
+lasjk21bda21-tv-dsa.staging.vidio.com34.102.199.9
+thumbor-gke.dev.vidio.com34.102.200.171
+peehain1ee.vidio.com34.107.135.0
+ckp66utx.vidio.com34.107.146.29
+SubdomainIP address
+2 / 11
+
+api-ns.int.vidio.com34.107.179.150
+gen.vidio.com34.107.192.182
+gmvpwepkj3.int.vidio.com34.107.223.52
+license.vidio.com34.110.165.83
+vision.vidio.com34.110.168.20
+staging-plenty.vidio.com34.110.192.133
+api-ns.vidio.com34.111.60.67
+blog.staging.vidio.com34.111.113.121
+plenty.vidio.com34.111.228.151
+w3hh46zt.staging.vidio.com34.117.25.214
+etslive-server.vidio.com34.117.26.33
+staging.gen.vidio.com34.117.44.204
+hermes.staging.vidio.com34.117.150.41
+jjndi0k9m2.int.vidio.com34.117.162.195
+telkomsel.vidio.com34.117.180.47
+8hjrjnvoc3.vidio.com34.117.205.16
+hermes.vidio.com34.117.241.252
+scm-iso.vidio.com34.120.17.79
+live.vidio.com34.120.25.176
+chat.vidio.com34.120.25.176
+indosat.staging.vidio.com34.120.27.3
+telkomsel.staging.vidio.com34.120.27.3
+tmbubjryhvewc-origin-quiz-staging.vidio.com34.120.74.32
+wp.staging.vidio.com34.120.178.87
+dsa-web-iedu4coavee0poh1.vidio.com34.120.218.177
+lite.vidio.com34.120.218.177
+chatbot-api.staging.vidio.com34.128.140.145
+scm-iso.staging.vidio.com34.128.160.94
+ets-subtitle-generator-api.vidio.com34.144.255.66
+next.vidio.com34.149.73.14
+etslive-server.staging.vidio.com34.149.114.137
+whisper.staging.vidio.com34.149.162.177
+hermes-cms.staging.vidio.com34.149.171.88
+gandiwa-akamai.vidio.com34.149.178.46
+calendar.vidio.com34.149.213.11
+SubdomainIP address
+3 / 11
+
+chatbot-api.vidio.com34.149.213.76
+wp.vidio.com34.160.62.245
+whisper.vidio.com34.160.82.127
+thumbor-gke.prod.vidio.com34.160.83.219
+design.vidio.com34.160.116.89
+vidio-web-prod-media-001-lb.vidio.com35.186.228.30
+live.staging.vidio.com35.186.230.123
+airflow.int.vidio.com35.190.6.114
+psug4xogrt.int.vidio.com35.190.23.193
+gandiwa.prod.vidio.com35.190.31.252
+lite.staging.vidio.com35.190.83.167
+staging.vidio.com35.190.83.167
+test.int.vidio.com35.190.83.167
+www.staging.vidio.com35.190.83.167
+m.staging.vidio.com35.190.83.167
+api.staging.vidio.com35.190.83.167
+ocs-inventory.vidio.com35.190.91.99
+api-docs.vidio.com35.201.87.32
+contract-testing.staging.vidio.com35.201.87.32
+llhls.staging.vidio.com35.201.93.59
+hgktpzzg3r0e.vidio.com35.227.198.227
+etslive-app.vidio.com35.227.202.147
+careers.vidio.com35.241.0.250
+iap.staging.vidio.com35.241.18.33
+m.int.vidio.com35.241.18.33
+int.vidio.com35.241.18.33
+m.iap.staging.vidio.com35.241.18.33
+iap.api.staging.vidio.com35.241.18.33
+www.iap.staging.vidio.com35.241.18.33
+kmm.docs.vidio.com35.241.56.225
+static02.staging.vidio.com35.244.184.31
+yz3nq6kn0m.int.vidio.com35.244.184.31
+tee3ahl2ch.vidio.com35.244.220.18
+int.live.vidio.com35.244.250.135
+email1.vidio.com77.32.151.177
+email2.vidio.com77.32.151.201
+SubdomainIP address
+4 / 11
+
+img.email2.vidio.com104.17.155.243
+img.email3.vidio.com104.17.156.243
+img.email1.vidio.com104.17.158.243
+quiz.staging.vidio.com104.20.9.155
+nobar.vidio.com104.20.46.147
+nontontv.vidio.com104.20.46.147
+quiz.int.vidio.com104.20.46.147
+ets-dashboard.staging.vidio.com107.178.243.25
+ets-subtitle-generator-api.staging.vidio.com136.110.139.141
+inside.vidio.com142.251.14.121
+app.vidio.com151.101.1.195
+support.vidio.com172.66.0.145
+quiz.vidio.com172.66.144.39
+r.email3.vidio.com172.246.243.65
+r.email1.vidio.com172.246.243.65
+r.email2.vidio.com172.246.243.65
+labs.vidio.com192.0.78.13
+audiostreamserver.vidio.com202.158.9.230
+email3.vidio.com212.146.246.165
+media.origin.int.vidio.comDid not resolve.
+r.mail3.vidio.comDid not resolve.
+tskpzjxrv.vidio.comDid not resolve.
+r.mail2.vidio.comDid not resolve.
+app.staging.vidio.comDid not resolve.
+piwik.airflow.vidio.comDid not resolve.
+fashion.live.vidio.comDid not resolve.
+www.sin.city.vidio.comDid not resolve.
+r.mail1.vidio.comDid not resolve.
+dynlink.staging.vidio.comDid not resolve.
+media.origin.prod.vidio.comDid not resolve.
+fnfuwafjqpeej.int.vidio.comDid not resolve.
+etsdrm-trolld.int.vidio.comDid not resolve.
+linkage.staging.vidio.comDid not resolve.
+staging-ocs.vidio.comDid not resolve.
+prodpmyww.about.vidio.comDid not resolve.
+dashboard-ets.int.vidio.comDid not resolve.
+SubdomainIP address
+5 / 11
+
+staging.careers.vidio.comDid not resolve.
+m.test.staging.vidio.comDid not resolve.
+www.staging-2.vidio.comDid not resolve.
+Xl.vidio.comDid not resolve.
+confluence.2016.winey-m.ppmail1.infinity-create-jpww.about.vidio.comDid not resolve.
+www.funtoos.vidio.comDid not resolve.
+www.blog.vidio.comDid not resolve.
+staging-2.vidio.comDid not resolve.
+6.vidio.comDid not resolve.
+www.noelia.vidio.comDid not resolve.
+6.sex.vidio.comDid not resolve.
+ci.vidio.comDid not resolve.
+jifoer83jfei03.vidio.comDid not resolve.
+catfishing.vidio.comDid not resolve.
+airflow.staging.vidio.comDid not resolve.
+www.sex.woman.vidio.comDid not resolve.
+mail1.vidio.comDid not resolve.
+bbm.vidio.comDid not resolve.
+5am.sex.vidio.comDid not resolve.
+upload.vidio.comDid not resolve.
+znjjprwzgeyyp.vidio.comDid not resolve.
+fnfuwafjqptot.int.vidio.comDid not resolve.
+piwik.app.vidio.comDid not resolve.
+www.indosat.vidio.comDid not resolve.
+chat.int.vidio.comDid not resolve.
+app-etslive-2.vidio.comDid not resolve.
+stagingv2-plenty.vidio.comDid not resolve.
+etslive.int.vidio.comDid not resolve.
+stickers.vidio.comDid not resolve.
+tv-int.vidio.comDid not resolve.
+static-thumbor-aws.origin.int.vidio.comDid not resolve.
+m3.vidio.comDid not resolve.
+static-playback.origin.int.vidio.comDid not resolve.
+chat-platform.int.vidio.comDid not resolve.
+lgtxnzg11tc98.int.vidio.comDid not resolve.
+www.salika.vidio.comDid not resolve.
+SubdomainIP address
+6 / 11
+
+quicksilver.staging.vidio.comDid not resolve.
+app-etslive-2.int.vidio.comDid not resolve.
+mail3.vidio.comDid not resolve.
+demo-etslive.int.vidio.comDid not resolve.
+personalization.int.vidio.comDid not resolve.
+static-thumbor-aws.origin.vidio.comDid not resolve.
+app-etslive-int.vidio.comDid not resolve.
+bein1.live.vidio.comDid not resolve.
+tv-int-internal.vidio.comDid not resolve.
+tv-canary-vpn.vidio.comDid not resolve.
+www.telkomsel.vidio.comDid not resolve.
+a.xxx.vidio.comDid not resolve.
+tv-canary.int.vidio.comDid not resolve.
+personalization.vidio.comDid not resolve.
+89.free.horas.and.woman.sex.vidio.comDid not resolve.
+marketwwwww.about.vidio.comDid not resolve.
+bbm.int.vidio.comDid not resolve.
+web-etslive.int.vidio.comDid not resolve.
+thumbor.int.vidio.comDid not resolve.
+mark1.vidio.comDid not resolve.
+quiz-ion.int.vidio.comDid not resolve.
+thumbor-aws.origin.vidio.comDid not resolve.
+edirww.about.vidio.comDid not resolve.
+alpha.vidio.comDid not resolve.
+quiz.int.ion.vidio.comDid not resolve.
+www.islam.vidio.comDid not resolve.
+dashboard-ets-vod.vidio.comDid not resolve.
+piwik.vidio.comDid not resolve.
+bratz.vidio.comDid not resolve.
+gcs-etslive.int.vidio.comDid not resolve.
+cdn0-e.production.vidio.comDid not resolve.
+feyiweiwooch-origin.staging.vidio.comDid not resolve.
+live.int.vidio.comDid not resolve.
+tv-internal-vpn.vidio.comDid not resolve.
+piwik.chatbot.vidio.comDid not resolve.
+piwik.c.vidio.comDid not resolve.
+SubdomainIP address
+7 / 11
+
+livestreaming-etslive.vidio.comDid not resolve.
+piwik.blog.vidio.comDid not resolve.
+piwik.int.vidio.comDid not resolve.
+www.animesex.vidio.comDid not resolve.
+www3.vidio.comDid not resolve.
+tv.int.vidio.comDid not resolve.
+amishpatel.sexi.vidio.comDid not resolve.
+piwik.design.vidio.comDid not resolve.
+testafkns.staging.vidio.comDid not resolve.
+www.98.vidio.comDid not resolve.
+cdn-a-etslive.origin.int.vidio.comDid not resolve.
+test.staging.vidio.comDid not resolve.
+at.vidio.comDid not resolve.
+sxs.vidio.comDid not resolve.
+gandiwa-gke.staging.vidio.comDid not resolve.
+www-dsa.vidio.comDid not resolve.
+livestreaming-ets.vidio.comDid not resolve.
+livestreaming-google-etslive.int.vidio.comDid not resolve.
+gandiwa-int.vidio.comDid not resolve.
+ongi9angbeef5iw8-tv-canary-vpn-dsa.vidio.comDid not resolve.
+yahoo.com.pilipino.sex.vidio.comDid not resolve.
+www.freenetpass!.vidio.comDid not resolve.
+liachu2feir7oiqu-tv-dsa.int.vidio.comDid not resolve.
+hj9795.m.int-www.about.vidio.comDid not resolve.
+api-doc.vidio.comDid not resolve.
+posthog-staging.vidio.comDid not resolve.
+www.test.staging.vidio.comDid not resolve.
+webmail.vidio.comDid not resolve.
+mail2.vidio.comDid not resolve.
+piwik.live.vidio.comDid not resolve.
+quiz-gcp.int.vidio.comDid not resolve.
+r.mail5.vidio.comDid not resolve.
+reportportal.int.vidio.comDid not resolve.
+ongi9angbeef5iw8-tv-canary-dsa.vidio.comDid not resolve.
+zxzvfjqrpw.vidio.comDid not resolve.
+r.mail.vidio.comDid not resolve.
+SubdomainIP address
+8 / 11
+
+mail4.vidio.comDid not resolve.
+chatbot.vidio.comDid not resolve.
+ww.vidio.comDid not resolve.
+btestollocationww.about.vidio.comDid not resolve.
+andabused.vidio.comDid not resolve.
+api.iap.staging.vidio.comDid not resolve.
+www.inesgjoni.vidio.comDid not resolve.
+bein2.live.vidio.comDid not resolve.
+www.ronaldiniho.vidio.comDid not resolve.
+cdn-a-catchup.origin.int.vidio.comDid not resolve.
+whisper-web-server.staging.vidio.comDid not resolve.
+c.vidio.comDid not resolve.
+amdekn.sex.vidio.comDid not resolve.
+etslive-app.staging.vidio.comDid not resolve.
+quiz-gcp.vidio.comDid not resolve.
+gandiwa-gke.int.vidio.comDid not resolve.
+livestreaming-swiftserve-etslive.vidio.comDid not resolve.
+thumbor-gke.int.vidio.comDid not resolve.
+kpi.vidio.comDid not resolve.
+httptamil.vidio.comDid not resolve.
+bangladesh.sexy.injoy.vidio.comDid not resolve.
+www.xxxl.vidio.comDid not resolve.
+static-playback.origin.vidio.comDid not resolve.
+www.youtube.six.vidio.comDid not resolve.
+site.vidio.comDid not resolve.
+audiostreamserver-staging.vidio.comDid not resolve.
+livestreaming-google-etslive.vidio.comDid not resolve.
+www.english.vidio.comDid not resolve.
+streaming.vidio.comDid not resolve.
+live.prod.vidio.comDid not resolve.
+m.staging-2.vidio.comDid not resolve.
+banet.vidio.comDid not resolve.
+piwik.next.vidio.comDid not resolve.
+mail5.vidio.comDid not resolve.
+cdp.vidio.comDid not resolve.
+livestreaming-swiftserve-etslive-staging.vidio.comDid not resolve.
+SubdomainIP address
+9 / 11
+
+careers.staging.vidio.comDid not resolve.
+tv-internal.vidio.comDid not resolve.
+quiz-ion.vidio.comDid not resolve.
+static-quiz.origin.vidio.comDid not resolve.
+tst-aqcdqr1234.staging.vidio.comDid not resolve.
+static-origin.staging.vidio.comDid not resolve.
+bein3.live.vidio.comDid not resolve.
+cdn.hls.vidio.comDid not resolve.
+livestreaming-fashion.vidio.comDid not resolve.
+www.sex.vidio.comDid not resolve.
+thumbor-aws.origin.int.vidio.comDid not resolve.
+tv-canary.vidio.comDid not resolve.
+susuku.vidio.comDid not resolve.
+api-docs.staging.vidio.comDid not resolve.
+01tto88sm58k5.int.vidio.comDid not resolve.
+cdp.int.vidio.comDid not resolve.
+2.xex.vidio.comDid not resolve.
+app-etslive.vidio.comDid not resolve.
+r.mail4.vidio.comDid not resolve.
+www.int.vidio.comDid not resolve.
+piwik.hermes.vidio.comDid not resolve.
+next.iap.staging.vidio.comDid not resolve.
+www.about.vidio.comDid not resolve.
+cxvpemlvbgo-origin-quiz-ion.int.vidio.comDid not resolve.
+hoppscotch.staging.vidio.comDid not resolve.
+m.blog.vidio.comDid not resolve.
+prod-sec.dev.vidio.comDid not resolve.
+app-etslive.int.vidio.comDid not resolve.
+img.mail.vidio.comDid not resolve.
+2csex.vidio.comDid not resolve.
+thumbor-aws.int.vidio.comDid not resolve.
+toronto.pocoapocoom.sdsaymentww.about.vidio.comDid not resolve.
+thumbor.dev.vidio.comDid not resolve.
+l107-vi-n15.vidio.about.vidio.comDid not resolve.
+piwik.dev.vidio.comDid not resolve.
+www.dada.vidio.comDid not resolve.
+SubdomainIP address
+10 / 11
+
+gcp.vidio.comDid not resolve.
+live-dev.vidio.comDid not resolve.
+ovm.staging.vidio.comDid not resolve.
+cxvpemlvbgo-origin-quiz-dsa.int.vidio.comDid not resolve.
+staging-quiz.vidio.comDid not resolve.
+gandiwa.canary.prod.vidio.comDid not resolve.
+bbm.staging.vidio.comDid not resolve.
+fddkim.vidio.comDid not resolve.
+7dogs-fucking.vidio.comDid not resolve.
+piwik.staging.vidio.comDid not resolve.
+SubdomainIP address
+Scan parameters
+Domain:vidio.com
+Scan type:Light
+Passive Detection:On
+DNS records (NS, MX, TXT,
+AXFR):
+On
+DNS enumeration:On
+Certificate Transparency Logs:Off
+External APIs:On
+Bing search:Off
+Google search:Off
+HTML links search:Off
+SSL search:On
+Reverse DNS search:Off
+Alteration search:Off
+CNAME search:Off
+IP information:False
+Web technologies:False
+Include unresolved results:True
+DNS enumeration wordlist:
+Common subdomain names (light) (1001
+words)
+Scan information
+Start time:
+Sep 25, 2026 / 04:54:42
+UTC+03
+Finish time:Sep 25, 2026 / 04:55:32 UTC+03
+Scan duration:50 sec
+Scan status:
+Finished
+11 / 11
