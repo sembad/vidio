@@ -9,6 +9,29 @@ const ACCOUNT_URL = 'https://baru.pw/jsoegwies82u2bsishshwu.json';
 const UPSTREAM = 'https://api.vidio.com';
 const ROTATE_MS = 4 * 60 * 1000; // 4 menit
 
+// Batas subrequest Cloudflare free plan: 50 per invocation.
+// 1 fetch daftar akun + maksimal MAX_ATTEMPTS fetch upstream.
+const MAX_ATTEMPTS = 40;
+
+// Akun yang baru saja gagal di-skip sementara (10 menit) supaya invocation
+// berikutnya tidak membakar subrequest untuk akun yang sama berulang kali.
+const BAD_TTL_MS = 10 * 60 * 1000;
+const badAccounts = new Map(); // email -> expiry (ms)
+
+function isBad(email) {
+  const exp = badAccounts.get(email);
+  if (!exp) return false;
+  if (Date.now() > exp) {
+    badAccounts.delete(email);
+    return false;
+  }
+  return true;
+}
+
+function markBad(email) {
+  badAccounts.set(email, Date.now() + BAD_TTL_MS);
+}
+
 // State rotasi per-isolate. Cukup untuk kasus ini; kalau isolate di-restart,
 // akun tinggal dipilih ulang secara acak pada request berikutnya.
 let current = { email: null, token: null, since: 0 };
@@ -132,9 +155,21 @@ export default {
 
     const upstreamUrl = UPSTREAM + url.pathname + (url.search || '');
 
+    // Urutan percobaan: akun aktif dulu, lalu sisanya diacak.
+    // Akun yang baru gagal (10 menit terakhir) di-skip supaya hemat subrequest.
+    let order = buildOrder(accounts).filter((a) => !isBad(a.email));
+    if (!order.length) {
+      // Semua ter-mark bad — reset dan pakai semua lagi.
+      badAccounts.clear();
+      order = buildOrder(accounts);
+    }
+
     let lastRes = null;
     let lastAcc = null;
-    for (const acc of buildOrder(accounts)) {
+    let attempts = 0;
+    for (const acc of order) {
+      if (attempts >= MAX_ATTEMPTS) break;
+      attempts++;
       let res;
       try {
         res = await fetch(upstreamUrl, {
@@ -158,9 +193,32 @@ export default {
         return passThrough(res, acc.email);
       }
 
+      // Bukan 200 — mark bad sementara lalu coba akun berikutnya.
+      markBad(acc.email);
       lastRes = res;
       lastAcc = acc;
-      // Bukan 200 → coba akun berikutnya.
+    }
+
+    if (lastRes === null) {
+      return new Response(JSON.stringify({ error: 'tidak ada akun yang bisa dicoba' }), {
+        status: 502,
+        headers: { 'Content-Type': 'application/json', ...CORS },
+      });
+    }
+
+    // Batas attempt tercapai atau semua akun gagal.
+    // Kalau masih ada akun yang belum dicoba, sarankan retry (invocation
+    // berikutnya lanjut dari akun yang belum di-mark bad).
+    const remaining = accounts.length - badAccounts.size;
+    if (attempts >= MAX_ATTEMPTS && remaining > 0) {
+      return new Response(
+        JSON.stringify({
+          error: 'batas percobaan per request tercapai, coba lagi (akun gagal di-skip otomatis)',
+          dicoba: attempts,
+          akun_tersisa: remaining,
+        }),
+        { status: 503, headers: { 'Content-Type': 'application/json', ...CORS, 'Retry-After': '2' } }
+      );
     }
 
     // Semua akun gagal — kembalikan respons asli terakhir (bukan 200).
