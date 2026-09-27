@@ -36,23 +36,28 @@ function markBad(email) {
 // akun tinggal dipilih ulang secara acak pada request berikutnya.
 let current = { email: null, token: null, since: 0 };
 
-// Header statis (semua kecuali x-user-email / x-user-token yang per-akun).
+// Header: salinan PERSIS dari script PHP sumber. Yang berubah antar akun
+// HANYA x-user-email dan x-user-token — semua header lain identik.
 function baseHeaders(email, token) {
   return {
     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36',
     'Accept': 'application/json, text/plain, */*',
+    'Accept-Encoding': 'gzip, deflate, br, zstd',
     'sec-ch-ua-platform': '"Linux"',
+    'x-user-id': '220709732',
     'sec-ch-ua': '"Chromium";v="152", "Not?A_Brand";v="24", "Google Chrome";v="152"',
+    'x-api-key': 'CH1ZFsN4N/MIfAds1DL9mP151CNqIpWHqZGRr+LkvUyiq3FRPuP1Kt6aK+pG3nEC1FXt0ZAAJ5FKP8QU8CZ5/k9CWHd4gJBZRJ11nwoOjapXf82PZhdeUPa1zisN30G/roeWT4y2iXME4Jr07gwhlmd63IjSMWYzBiNYpLggQ7I=',
     'sec-ch-ua-mobile': '?0',
     'x-device-model': 'Linux armv81',
     'content-type': 'application/vnd.api+json',
     'x-device-brand': 'Browser',
-    'x-api-key': 'CH1ZFsN4N/MIfAds1DL9mP151CNqIpWHqZGRr+LkvUyiq3FRPuP1Kt6aK+pG3nEC1FXt0ZAAJ5FKP8QU8CZ5/k9CWHd4gJBZRJ11nwoOjapXf82PZhdeUPa1zisN30G/roeWT4y2iXME4Jr07gwhlmd63IjSMWYzBiNYpLggQ7I=',
     'x-client': '1790422734',
+    'x-user-token': token,
     'accept-language': 'id',
     'x-partner-signature': '',
     'x-partner-id': '',
     'x-signature': '79834b81e1a4a76ff320269214300a1ff4b8245dae2b0c8433e79c43b33ffd65',
+    'x-user-email': email,
     'x-secure-level': '2',
     'x-api-platform': 'tv-react',
     'origin': 'https://tv.alpha.vidio.com',
@@ -60,8 +65,7 @@ function baseHeaders(email, token) {
     'sec-fetch-mode': 'cors',
     'sec-fetch-dest': 'empty',
     'referer': 'https://tv.alpha.vidio.com/',
-    'x-user-email': email,
-    'x-user-token': token,
+    'priority': 'u=1, i',
   };
 }
 
