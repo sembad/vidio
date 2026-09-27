@@ -130,7 +130,7 @@ while IFS= read -r dex_name; do
   fi
   (( dex_index > max_dex_index )) && max_dex_index=$dex_index
   unzip -p "$WORK_DIR/universal.apk" "$dex_name" | strings > "$WORK_DIR/${dex_name}.strings"
-  if grep -Fq "com/vidio/android/patch/LoginGate" "$WORK_DIR/${dex_name}.strings" && grep -Fq "stream_ua.txt" "$WORK_DIR/${dex_name}.strings"; then
+  if grep -Fq "com/vidio/android/patch/LoginGate" "$WORK_DIR/${dex_name}.strings" && grep -Fq "stream_account_mode.txt" "$WORK_DIR/${dex_name}.strings"; then
     LOGIN_GATE_DEX_NAMES+=("$dex_name")
     if (( dex_index < LOGIN_GATE_DEX_INDEX )); then
       LOGIN_GATE_DEX_NAME=$dex_name
@@ -166,12 +166,16 @@ python3 - "$WORK_DIR/decoded" "$PROFILE" "$MIN_API" <<'PY'
 from collections import Counter
 from pathlib import Path
 import re
-import shutil
 import sys
 
 root = Path(sys.argv[1])
 profile = sys.argv[2]
 min_api = int(sys.argv[3])
+# A fresh LoginGate DEX is injected at build time; drop stale injected copies
+# first so they cannot inflate the header scans below. QrLoginActivity and
+# QrEmailGate from earlier patch generations are live features and must stay.
+for stale_login_gate in root.glob("smali*/com/vidio/android/patch/LoginGate*.smali"):
+    stale_login_gate.unlink()
 disabled_headers = {
     "X-Partner-Id": 1,
     "X-Device-Brand": 1,
@@ -224,6 +228,8 @@ restored_stream_header_counts = Counter()
 changed_files = set()
 
 for path in root.glob("smali*/**/*.smali"):
+    if "com/vidio/android/patch/" in path.as_posix():
+        continue
     lines = path.read_text().splitlines(keepends=True)
     pending = None
     changed = False
@@ -331,6 +337,30 @@ if playback_counts != expected_playback_counts:
     raise SystemExit(
         f"Unexpected playback patch counts: expected {dict(expected_playback_counts)}, got {dict(playback_counts)}"
     )
+
+# Disable the Play in-app update prompt (InAppUpdateGoogle): stub every public
+# entry point so no update check or update flow is ever started. Soft-globbed so
+# profiles without this class are unaffected.
+update_stub_counts = Counter()
+inapp_update_matches = list(root.glob("smali*/**/com/vidio/android/v4/main/x.smali"))
+if len(inapp_update_matches) == 1:
+    inapp_update_path = inapp_update_matches[0]
+    inapp_update_text = inapp_update_path.read_text()
+    for method_name in ("g", "h", "i", "j", "k", "l"):
+        pattern = re.compile(
+            rf"(?ms)^(\.method public(?: final)? {method_name}\([^)]*\)V\n).*?^\.end method$"
+        )
+        inapp_update_text, method_count = pattern.subn(
+            rf"\1    .locals 0\n\n    return-void\n.end method",
+            inapp_update_text,
+        )
+        if method_count != 1:
+            raise SystemExit(f"Expected one {method_name}()V in {inapp_update_path}, found {method_count}")
+        update_stub_counts[method_name] += method_count
+    inapp_update_path.write_text(inapp_update_text)
+    changed_files.add(inapp_update_path.relative_to(root))
+elif len(inapp_update_matches) > 1:
+    raise SystemExit(f"Expected at most one InAppUpdateGoogle class, found {len(inapp_update_matches)}")
 
 if profile == "mobile":
     cast_d_matches = list(root.glob("smali*/**/dx/d.smali"))
@@ -504,9 +534,6 @@ for path in smali_paths:
     if text != original:
         path.write_text(text)
         changed_files.add(path.relative_to(root))
-
-for stale_patch_dir in root.glob("smali*/com/vidio/android/patch"):
-    shutil.rmtree(stale_patch_dir)
 
 login_gate_hooked = False
 login_types = {
@@ -1020,6 +1047,9 @@ for header in preserved_stream_headers:
 print("Playback policy methods forced false:")
 for method_name in playback_methods:
     print(f"  {method_name}: {playback_counts[method_name]}")
+print("In-app update entry points stubbed:")
+for method_name, count in sorted(update_stub_counts.items()):
+    print(f"  {method_name}: {count}")
 print("Changed Smali files:")
 for path in sorted(changed_files):
     print(f"  {path}")

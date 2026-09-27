@@ -25,16 +25,22 @@ import javax.crypto.spec.SecretKeySpec;
 
 public final class LoginGate {
     private static final byte[] ENC_DEFAULT_API_URL = new byte[] {
-        (byte)('h' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('p' ^ 0x5A), (byte)('s' ^ 0x5A),
-        (byte)(':' ^ 0x5A), (byte)('/' ^ 0x5A), (byte)('/' ^ 0x5A), (byte)('v' ^ 0x5A), (byte)('i' ^ 0x5A),
-        (byte)('d' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('o' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('.' ^ 0x5A),
-        (byte)('m' ^ 0x5A), (byte)('y' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('d' ^ 0x5A),
+        (byte)('h' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('p' ^ 0x5A), (byte)('s' ^ 0x5A), (byte)(':' ^ 0x5A),
+        (byte)('/' ^ 0x5A), (byte)('/' ^ 0x5A), (byte)('p' ^ 0x5A), (byte)('l' ^ 0x5A), (byte)('u' ^ 0x5A), (byte)('c' ^ 0x5A),
+        (byte)('k' ^ 0x5A), (byte)('y' ^ 0x5A), (byte)('-' ^ 0x5A), (byte)('c' ^ 0x5A), (byte)('o' ^ 0x5A), (byte)('y' ^ 0x5A),
+        (byte)('o' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('e' ^ 0x5A), (byte)('-' ^ 0x5A), (byte)('1' ^ 0x5A), (byte)('6' ^ 0x5A),
+        (byte)('5' ^ 0x5A), (byte)('7' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('l' ^ 0x5A),
+        (byte)('t' ^ 0x5A), (byte)('o' ^ 0x5A), (byte)('l' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('d' ^ 0x5A), (byte)('e' ^ 0x5A),
+        (byte)('n' ^ 0x5A), (byte)('o' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('n' ^ 0x5A), (byte)('e' ^ 0x5A), (byte)('t' ^ 0x5A),
         (byte)('/' ^ 0x5A)
     };
     private static final byte[] ENC_DEFAULT_STREAM_PROXY_HOST = new byte[] {
-        (byte)('v' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('d' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('o' ^ 0x5A),
-        (byte)('t' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('m' ^ 0x5A), (byte)('y' ^ 0x5A), (byte)('.' ^ 0x5A),
-        (byte)('i' ^ 0x5A), (byte)('d' ^ 0x5A)
+        (byte)('p' ^ 0x5A), (byte)('l' ^ 0x5A), (byte)('u' ^ 0x5A), (byte)('c' ^ 0x5A), (byte)('k' ^ 0x5A), (byte)('y' ^ 0x5A),
+        (byte)('-' ^ 0x5A), (byte)('c' ^ 0x5A), (byte)('o' ^ 0x5A), (byte)('y' ^ 0x5A), (byte)('o' ^ 0x5A), (byte)('t' ^ 0x5A),
+        (byte)('e' ^ 0x5A), (byte)('-' ^ 0x5A), (byte)('1' ^ 0x5A), (byte)('6' ^ 0x5A), (byte)('5' ^ 0x5A), (byte)('7' ^ 0x5A),
+        (byte)('.' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('l' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('o' ^ 0x5A),
+        (byte)('l' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('d' ^ 0x5A), (byte)('e' ^ 0x5A), (byte)('n' ^ 0x5A), (byte)('o' ^ 0x5A),
+        (byte)('.' ^ 0x5A), (byte)('n' ^ 0x5A), (byte)('e' ^ 0x5A), (byte)('t' ^ 0x5A)
     };
 
     private static String decodeMasked(byte[] enc) {
@@ -84,13 +90,14 @@ public final class LoginGate {
     }
 
     private static final String STREAM_SOURCE_HOST = "api.vidio.com";
+    // Playback User-Agent is fully hardcoded; the API ?ua endpoint is never contacted.
+    private static final String HARDCODED_STREAM_UA =
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36";
     private static final String PROFILE = "mobile";
     private static final String[] ACCOUNT_QUERIES = accountQueries(PROFILE);
     private static final String DENIED_MESSAGE = deniedMessage(PROFILE);
     private static final String ERROR_MESSAGE = "Tidak dapat memeriksa izin email, silakan coba lagi";
     private static final int MAX_RESPONSE_CHARS = 16;
-    private static final int MAX_UA_CHARS = 1024;
-    private static final String UA_CACHE_FILE = "stream_ua.txt";
     private static final String ACCOUNT_MODE_FILE = "stream_account_mode.txt";
     private static final String ULTIMATE_MODE = "ultimate";
     private static final String STANDARD_MODE = "standard";
@@ -219,8 +226,6 @@ public final class LoginGate {
     private static volatile Object applicationContext;
     private static volatile Object currentActivity;
     private static volatile Object loadingView;
-    // Loaded once at an authorized login and kept until Android clears the app cache.
-    private static volatile String cachedUa;
     private static volatile String cachedAccountEmail;
     private static volatile Boolean cachedUltimate;
     private static volatile long lastUltimateCheckMs = 0;
@@ -254,7 +259,6 @@ public final class LoginGate {
         if (Boolean.TRUE.equals(cachedUltimate) && cachedAccountEmail != null) {
             checkUltimateExpiryAsync(cachedAccountEmail);
         }
-        triggerAsyncFetchUa();
         registerActivityLifecycle();
     }
 
@@ -314,19 +318,17 @@ public final class LoginGate {
             return;
         }
         cacheAccountModeAfterLogin(email, ultimate);
-        cacheStreamUaAfterLogin();
     }
 
     /**
-     * Returns the cached API User-Agent for exact livestream and video-data
-     * initialize requests. The UA is fetched from the configured API ?ua endpoint.
+     * Returns the hardcoded playback User-Agent for exact livestream and
+     * video-data initialize requests. No network fetch is performed.
      */
     public static String streamUaForUrl(String url) {
         if (!isPlaybackHeaderUrl(url)) {
             return null;
         }
-        String ua = normalizeUa(cachedUa);
-        return ua != null ? ua : loadStreamUa();
+        return loadStreamUa();
     }
 
     static String defaultApiUa() {
@@ -427,6 +429,10 @@ public final class LoginGate {
         if (slash < 0) {
             return null;
         }
+        String product = ua.substring(0, slash).trim();
+        if (!"tv-android".equals(product) && !"vidioandroid".equals(product)) {
+            return null;
+        }
         String rest = ua.substring(slash + 1).trim();
         int open = rest.indexOf('(');
         int close = rest.indexOf(')', open + 1);
@@ -442,11 +448,7 @@ public final class LoginGate {
     }
 
     private static String streamAppInfo() {
-        String ua = normalizeUa(cachedUa);
-        if (ua == null) {
-            ua = loadStreamUa();
-        }
-        String version = appInfoVersionFromUa(ua);
+        String version = appInfoVersionFromUa(loadStreamUa());
         if (version == null) {
             return null;
         }
@@ -751,158 +753,9 @@ public final class LoginGate {
         return isEmail(value) ? value.trim() : null;
     }
 
-    private static void cacheStreamUaAfterLogin() {
-        triggerAsyncFetchUa();
-    }
-
-    private static void triggerAsyncFetchUa() {
-        Thread thread = new Thread(() -> {
-            try {
-                String fetched = fetchUa();
-                if (fetched != null) {
-                    cachedUa = fetched;
-                    File cacheFile = uaCacheFile();
-                    if (cacheFile != null) {
-                        writeCachedUa(cacheFile, fetched);
-                    }
-                }
-            } catch (Throwable ignored) {
-            }
-        });
-        thread.setDaemon(true);
-        thread.start();
-    }
-
+    /** UA is hardcoded; the API ?ua endpoint is never contacted. */
     private static synchronized String loadStreamUa() {
-        String ua = normalizeUa(cachedUa);
-        if (ua != null) {
-            return ua;
-        }
-
-        File cacheFile = uaCacheFile();
-        ua = readCachedUa(cacheFile);
-        if (ua != null) {
-            cachedUa = ua;
-            return ua;
-        }
-
-        // No cached UA yet: fetch it synchronously from the API ?ua endpoint so the
-        // value always tracks the official app version instead of a hardcoded string.
-        try {
-            ua = fetchUa();
-        } catch (IOException ignored) {
-            return null;
-        }
-        if (ua == null) {
-            return null;
-        }
-        cachedUa = ua;
-        if (cacheFile != null) {
-            try {
-                writeCachedUa(cacheFile, ua);
-            } catch (IOException ignored) {
-            }
-        }
-        return ua;
-    }
-
-    private static String fetchUa() throws IOException {
-        String uaUrl = getEffectiveApiUrl() + "?ua";
-        HttpURLConnection connection = (HttpURLConnection) new URL(uaUrl).openConnection();
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(5000);
-        connection.setInstanceFollowRedirects(false);
-        connection.setRequestMethod("GET");
-        connection.setRequestProperty("Accept", "text/plain");
-        connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 Chrome/140 Mobile Safari/537.36");
-        try {
-            int status = connection.getResponseCode();
-            if (status != HttpURLConnection.HTTP_OK) {
-                throw new IOException("UA endpoint returned HTTP " + status);
-            }
-            InputStream stream = connection.getInputStream();
-            return parseUa(new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8)));
-        } finally {
-            connection.disconnect();
-        }
-    }
-
-    static String parseUa(BufferedReader reader) throws IOException {
-        int responseChars = 0;
-        String ua = null;
-        try (BufferedReader source = reader) {
-            String line;
-            while ((line = source.readLine()) != null) {
-                responseChars += line.length();
-                if (responseChars > MAX_UA_CHARS) {
-                    throw new IOException("UA response is too large");
-                }
-                if (ua == null) {
-                    ua = normalizeUa(line);
-                }
-            }
-        }
-        return ua;
-    }
-
-    static String normalizeUa(String value) {
-        if (value == null) {
-            return null;
-        }
-        String candidate = value.trim();
-        if (candidate.isEmpty() || candidate.length() > MAX_UA_CHARS) {
-            return null;
-        }
-        for (int index = 0; index < candidate.length(); index++) {
-            char character = candidate.charAt(index);
-            if (character < 0x20 || character > 0x7e) {
-                return null;
-            }
-        }
-        return candidate;
-    }
-
-    private static File uaCacheFile() {
-        Object context = applicationContext;
-        if (context == null) {
-            return null;
-        }
-        try {
-            Object cacheDir = context.getClass().getMethod("getCacheDir").invoke(context);
-            return cacheDir instanceof File ? new File((File) cacheDir, UA_CACHE_FILE) : null;
-        } catch (ReflectiveOperationException ignored) {
-            return null;
-        }
-    }
-
-    private static String readCachedUa(File file) {
-        if (file == null || !file.isFile()) {
-            return null;
-        }
-        try {
-            return parseUa(new BufferedReader(new InputStreamReader(
-                    new FileInputStream(file), StandardCharsets.UTF_8)));
-        } catch (IOException ignored) {
-            return null;
-        }
-    }
-
-    private static void writeCachedUa(File file, String ua) throws IOException {
-        File parent = file.getParentFile();
-        if (parent == null || (!parent.isDirectory() && !parent.mkdirs())) {
-            throw new IOException("Cannot create UA cache directory");
-        }
-        File temporary = new File(parent, file.getName() + ".tmp");
-        try (OutputStreamWriter writer = new OutputStreamWriter(
-                new FileOutputStream(temporary), StandardCharsets.UTF_8)) {
-            writer.write(ua);
-            writer.write('\n');
-        }
-        if ((!file.exists() || file.delete()) && temporary.renameTo(file)) {
-            return;
-        }
-        temporary.delete();
-        throw new IOException("Cannot replace UA cache file");
+        return HARDCODED_STREAM_UA;
     }
 
     private static String formValue(Object requestBody, String key) throws IOException {
@@ -1322,20 +1175,9 @@ public final class LoginGate {
             throw new AssertionError("Profile API User-Agent mismatch");
         }
 
-        String ua = "Mozilla/5.0 (Linux; Android 14) VidioStream/1.0";
-        if (!ua.equals(parseUa(new BufferedReader(new java.io.StringReader("  \n\n  " + ua + "  \nignored"))))) {
-            throw new AssertionError("UA parse did not return first non-empty trimmed line");
-        }
-        if (parseUa(new BufferedReader(new java.io.StringReader("   \n  \n"))) != null) {
-            throw new AssertionError("Blank UA response should parse to null");
-        }
-        File cacheTest = File.createTempFile("vidio-stream-ua", ".cache");
-        if (!cacheTest.delete() || readCachedUa(cacheTest) != null) {
-            throw new AssertionError("Missing cache should not provide a UA");
-        }
-        writeCachedUa(cacheTest, ua);
-        if (!ua.equals(readCachedUa(cacheTest)) || !cacheTest.delete()) {
-            throw new AssertionError("UA cache round trip failed");
+        String ua = HARDCODED_STREAM_UA;
+        if (!ua.equals(loadStreamUa())) {
+            throw new AssertionError("Stream UA must be the hardcoded constant");
         }
 
         File accountModeTest = File.createTempFile("vidio-account-mode", ".cache");
@@ -1350,30 +1192,25 @@ public final class LoginGate {
             throw new AssertionError("Standard account mode did not persist by email");
         }
 
-        cachedUa = ua;
         String targetUrl = "https://api.vidio.com/livestreamings/12345/stream?initialize=true";
         String expectedProxyUrl = "https://" + getEffectiveStreamProxyHost() + "/livestreamings/12345/stream?initialize=true";
         String videoDataUrl = "https://api.vidio.com/api/stream/v1/video_data/9332265?initialize=true";
         String expectedVideoDataProxyUrl = "https://" + getEffectiveStreamProxyHost() + "/api/stream/v1/video_data/9332265?initialize=true";
         String expectedPlatform = "tv-android";
-        String expectedAppInfoPrefix = "tv-android/";
         if (!"session-authorization".equals(
                     streamHeaderValue(targetUrl, "x-authorization", "session-authorization"))
                 || !"".equals(streamHeaderValue(targetUrl, "x-partner-signature", null))
                 || !expectedPlatform.equals(streamHeaderValue(targetUrl, "x-api-platform", null))
                 || !expectedPlatform.equals(streamHeaderValue(videoDataUrl, "x-api-platform", null))
-                || !streamHeaderValue(expectedProxyUrl, "x-api-app-info", null)
-                        .startsWith(expectedAppInfoPrefix)
-                || !streamHeaderValue(videoDataUrl, "x-api-app-info", null)
-                        .startsWith(expectedAppInfoPrefix)
+                || streamHeaderValue(expectedProxyUrl, "x-api-app-info", null) != null
+                || streamHeaderValue(videoDataUrl, "x-api-app-info", null) != null
                 || streamHeaderValue("https://api.vidio.com/profiles", "x-api-platform", null) != null) {
             throw new AssertionError("Required headers must only be added to playback initialize URLs");
         }
         if (!ua.equals(streamUaForUrl(targetUrl))
                 || !ua.equals(streamUaForUrl(expectedProxyUrl))
-                || !ua.equals(streamUaForUrl(videoDataUrl))
-                || cachedUa != ua) {
-            throw new AssertionError("API UA fast path failed for a playback initialize URL");
+                || !ua.equals(streamUaForUrl(videoDataUrl))) {
+            throw new AssertionError("Hardcoded UA fast path failed for a playback initialize URL");
         }
         if (streamUaForUrl("https://api.vidio.com/profiles") != null) {
             throw new AssertionError("RAM UA leaked to a non-target request");
@@ -1408,7 +1245,6 @@ public final class LoginGate {
                 || streamProxyUrl(targetUrl, "not-an-email") != null) {
             throw new AssertionError("Stream proxy must only route verified Ultimate accounts and restore non-ultimate to source");
         }
-        cachedUa = null;
         if (!isStreamUrl(targetUrl) || !isVideoDataUrl(videoDataUrl)) {
             throw new AssertionError("Playback initialize URLs should match");
         }
@@ -1458,22 +1294,13 @@ public final class LoginGate {
             }
         }
         verifySignature(null);
-        if (normalizeUa("bad\u0001ua") != null) {
-            throw new AssertionError("Control character was accepted in UA");
-        }
         if (!"2608.2.4-1020".equals(appInfoVersionFromUa("tv-android/2608.2.4 (1020)"))) {
             throw new AssertionError("UA version/build was not parsed from the UA");
         }
         if (appInfoVersionFromUa("tv-android/2608.2.4") != null
-                || appInfoVersionFromUa(null) != null) {
+                || appInfoVersionFromUa(null) != null
+                || appInfoVersionFromUa(HARDCODED_STREAM_UA) != null) {
             throw new AssertionError("Malformed UA must not yield an app-info version");
-        }
-        char[] oversized = new char[MAX_UA_CHARS + 1];
-        Arrays.fill(oversized, 'a');
-        try {
-            parseUa(new BufferedReader(new java.io.StringReader(new String(oversized))));
-            throw new AssertionError("Oversized UA response was accepted");
-        } catch (IOException expected) {
         }
 
         // Test AES Decryption roundtrip
