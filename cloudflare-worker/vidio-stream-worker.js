@@ -153,9 +153,81 @@ export default {
       current = { email: pick.email, token: pick.token, since: now };
     }
 
-    const upstreamUrl = UPSTREAM + url.pathname + (url.search || '');
+    // Buang param lokal (debug) supaya tidak bocor ke URL upstream.
+    const upstreamUrl =
+      UPSTREAM + url.pathname + (() => {
+        const p = new URLSearchParams(url.search);
+        p.delete('debug');
+        const s = p.toString();
+        return s ? '?' + s : '';
+      })();
 
-    // Mode diagnostik: ?debug=1 → 1 fetch dengan akun aktif, tampilkan
+    // Mode diagnostik 2: matriks variasi header — menentukan apakah 403 Akamai
+    // karena fingerprint header (ada varian yang lolos) atau blok IP egress CF
+    // (semua varian 403). 6 fetch dalam 1 invocation.
+    if (url.searchParams.get('debug') === '2') {
+      const acc = accounts.find((a) => a.email === current.email) || accounts[0];
+      const full = baseHeaders(acc.email, acc.token);
+      const variants = [
+        { nama: 'A: header lengkap (baseline)', headers: full },
+        {
+          nama: 'B: lengkap + Accept-Encoding + priority',
+          headers: { ...full, 'Accept-Encoding': 'gzip, deflate, br, zstd', 'priority': 'u=1, i' },
+        },
+        {
+          nama: 'C: minimal tanpa browser hints',
+          headers: {
+            'User-Agent': full['User-Agent'],
+            'Accept': 'application/json, text/plain, */*',
+            'x-api-key': full['x-api-key'],
+            'x-api-platform': 'tv-react',
+            'x-signature': full['x-signature'],
+            'x-secure-level': '2',
+            'x-user-email': acc.email,
+            'x-user-token': acc.token,
+          },
+        },
+        {
+          nama: 'D: UA Chrome Windows asli',
+          headers: {
+            ...full,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36',
+          },
+        },
+        {
+          nama: 'E: tanpa x-signature',
+          headers: Object.fromEntries(Object.entries(full).filter(([k]) => k !== 'x-signature')),
+        },
+        {
+          nama: 'F: tanpa header Vidio sama sekali (tes edge saja)',
+          headers: {
+            'User-Agent': full['User-Agent'],
+            'Accept': '*/*',
+          },
+        },
+      ];
+      const hasil = [];
+      for (const v of variants) {
+        try {
+          const res = await fetch(upstreamUrl, { method: 'GET', headers: v.headers, redirect: 'follow' });
+          const body = await res.text();
+          hasil.push({
+            varian: v.nama,
+            status: res.status,
+            server: res.headers.get('server') || '',
+            body_awal: body.slice(0, 150),
+          });
+        } catch (e) {
+          hasil.push({ varian: v.nama, error: String(e && e.message) });
+        }
+      }
+      return new Response(JSON.stringify({ debug: 2, akun: acc.email, upstream_url: upstreamUrl, hasil }, null, 2), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...CORS },
+      });
+    }
+
+    // Mode diagnostik 1: 1 fetch dengan akun aktif, tampilkan
     // status + header + body asli yang diterima worker dari upstream.
     if (url.searchParams.get('debug')) {
       const acc = accounts.find((a) => a.email === current.email) || accounts[0];
