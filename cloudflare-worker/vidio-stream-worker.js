@@ -48,15 +48,38 @@ const CORS = {
   'Access-Control-Allow-Headers': '*',
 };
 
+// Parse PHP array syntax: ['nomor' => 1, 'email' => '...', 'token' => '...'],
+// JSON biasa, atau campuran. Regex ambil pasangan 'email' => '...' dan 'token' => '...'.
+function parseAccounts(text) {
+  let data = null;
+  try {
+    data = JSON.parse(text);
+  } catch (_) {
+    // bukan JSON — parse PHP array
+  }
+
+  if (Array.isArray(data)) {
+    return data
+      .map((it) => (Array.isArray(it) ? { email: it[1], token: it[2] } : { email: it.email, token: it.token }))
+      .filter((a) => a.email && a.token);
+  }
+
+  // Fallback: ekstrak langsung dari teks PHP array.
+  const accounts = [];
+  const re = /'email'\s*=>\s*'([^']+)'[\s\S]*?'token'\s*=>\s*'([^']+)'/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    accounts.push({ email: m[1], token: m[2] });
+  }
+  return accounts;
+}
+
 async function getAccounts() {
   const res = await fetch(ACCOUNT_URL, { cf: { cacheTtl: 60, cacheEverything: true } });
   if (!res.ok) throw new Error('gagal ambil daftar akun: ' + res.status);
-  const data = await res.json();
-  // Toleran format: array of {email, token} (object), atau array of array.
-  const accounts = (Array.isArray(data) ? data : [])
-    .map((it) => (Array.isArray(it) ? { email: it[1], token: it[2] } : { email: it.email, token: it.token }))
-    .filter((a) => a.email && a.token);
-  if (!accounts.length) throw new Error('daftar akun kosong');
+  const text = await res.text();
+  const accounts = parseAccounts(text);
+  if (!accounts.length) throw new Error('daftar akun kosong / format tidak dikenali');
   return accounts;
 }
 
