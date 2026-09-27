@@ -18,13 +18,13 @@ function baseHeaders(email, token) {
   return {
     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36',
     'Accept': 'application/json, text/plain, */*',
-    'Accept-Encoding': 'gzip, deflate, br',
     'sec-ch-ua-platform': '"Linux"',
     'sec-ch-ua': '"Chromium";v="152", "Not?A_Brand";v="24", "Google Chrome";v="152"',
     'sec-ch-ua-mobile': '?0',
     'x-device-model': 'Linux armv81',
     'content-type': 'application/vnd.api+json',
     'x-device-brand': 'Browser',
+    'x-api-key': 'CH1ZFsN4N/MIfAds1DL9mP151CNqIpWHqZGRr+LkvUyiq3FRPuP1Kt6aK+pG3nEC1FXt0ZAAJ5FKP8QU8CZ5/k9CWHd4gJBZRJ11nwoOjapXf82PZhdeUPa1zisN30G/roeWT4y2iXME4Jr07gwhlmd63IjSMWYzBiNYpLggQ7I=',
     'x-client': '1790422734',
     'accept-language': 'id',
     'x-partner-signature': '',
@@ -133,31 +133,49 @@ export default {
     const upstreamUrl = UPSTREAM + url.pathname + (url.search || '');
 
     let lastRes = null;
+    let lastAcc = null;
     for (const acc of buildOrder(accounts)) {
-      const res = await fetch(upstreamUrl, {
-        method: 'GET',
-        headers: baseHeaders(acc.email, acc.token),
-        redirect: 'follow',
-      });
+      let res;
+      try {
+        res = await fetch(upstreamUrl, {
+          method: 'GET',
+          headers: baseHeaders(acc.email, acc.token),
+          redirect: 'follow',
+        });
+      } catch (e) {
+        // Network/TLS error ke upstream — catat dan coba akun berikutnya.
+        lastRes = new Response(JSON.stringify({ error: 'upstream fetch gagal: ' + (e && e.message) }), {
+          status: 502,
+          headers: { 'Content-Type': 'application/json' },
+        });
+        lastAcc = acc;
+        continue;
+      }
 
       if (res.status === 200) {
         // Kunci akun ini untuk sisa window (mulai ulang window dari sekarang).
         current = { email: acc.email, token: acc.token, since: Date.now() };
-        const headers = new Headers(res.headers);
-        headers.set('Access-Control-Allow-Origin', '*');
-        headers.set('X-Used-Account', acc.email);
-        return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+        return passThrough(res, acc.email);
       }
 
-      lastRes = { res, acc };
+      lastRes = res;
+      lastAcc = acc;
       // Bukan 200 → coba akun berikutnya.
     }
 
     // Semua akun gagal — kembalikan respons asli terakhir (bukan 200).
-    const { res, acc } = lastRes;
-    const headers = new Headers(res.headers);
-    headers.set('Access-Control-Allow-Origin', '*');
-    headers.set('X-Used-Account', acc.email);
-    return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+    return passThrough(lastRes, lastAcc && lastAcc.email);
   },
 };
+
+// Pass-through respons upstream. Header content-encoding/content-length HARUS
+// dibuang: Cloudflare sudah mendekompres body secara otomatis, dan mempertahankan
+// header itu membuat Response baru melempar exception (penyebab HTTP 500).
+function passThrough(res, email) {
+  const headers = new Headers(res.headers);
+  headers.delete('content-encoding');
+  headers.delete('content-length');
+  headers.set('Access-Control-Allow-Origin', '*');
+  if (email) headers.set('X-Used-Account', email);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
