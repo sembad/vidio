@@ -155,6 +155,37 @@ export default {
 
     const upstreamUrl = UPSTREAM + url.pathname + (url.search || '');
 
+    // Mode diagnostik: ?debug=1 → 1 fetch dengan akun aktif, tampilkan
+    // status + header + body asli yang diterima worker dari upstream.
+    if (url.searchParams.get('debug')) {
+      const acc = accounts.find((a) => a.email === current.email) || accounts[0];
+      const res = await fetch(upstreamUrl, {
+        method: 'GET',
+        headers: baseHeaders(acc.email, acc.token),
+        redirect: 'follow',
+      });
+      const body = await res.text();
+      const hdrs = {};
+      res.headers.forEach((v, k) => {
+        hdrs[k] = v;
+      });
+      return new Response(
+        JSON.stringify(
+          {
+            debug: true,
+            akun: acc.email,
+            upstream_url: upstreamUrl,
+            status: res.status,
+            headers: hdrs,
+            body: body.slice(0, 2000),
+          },
+          null,
+          2
+        ),
+        { status: 200, headers: { 'Content-Type': 'application/json', ...CORS } }
+      );
+    }
+
     // Urutan percobaan: akun aktif dulu, lalu sisanya diacak.
     // Akun yang baru gagal (10 menit terakhir) di-skip supaya hemat subrequest.
     let order = buildOrder(accounts).filter((a) => !isBad(a.email));
@@ -211,11 +242,25 @@ export default {
     // berikutnya lanjut dari akun yang belum di-mark bad).
     const remaining = accounts.length - badAccounts.size;
     if (attempts >= MAX_ATTEMPTS && remaining > 0) {
+      // Sertakan cuplikan respons terakhir supaya kelihatan KENAPA akun gagal
+      // (mis. 403 bot-block Akamai, 401 signature, dll).
+      let lastSnippet = '';
+      let lastStatus = null;
+      try {
+        lastStatus = lastRes.status;
+        lastSnippet = (await lastRes.text()).slice(0, 400);
+      } catch (_) {
+        lastSnippet = '(gagal membaca body)';
+      }
       return new Response(
         JSON.stringify({
           error: 'batas percobaan per request tercapai, coba lagi (akun gagal di-skip otomatis)',
           dicoba: attempts,
           akun_tersisa: remaining,
+          status_terakhir: lastStatus,
+          akun_terakhir: lastAcc && lastAcc.email,
+          cuplikan_respon: lastSnippet,
+          petunjuk: 'tambahkan ?debug=1 untuk detail lengkap 1 percobaan',
         }),
         { status: 503, headers: { 'Content-Type': 'application/json', ...CORS, 'Retry-After': '2' } }
       );
