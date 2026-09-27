@@ -334,7 +334,7 @@ public final class LoginGate {
     static String defaultApiUa() {
         return "tv".equals(PROFILE)
                 ? "tv-android/2608.2.4 (1020)"
-                : "vidioandroid/2608.2.7-73babcffa4 (3191921)";
+                : HARDCODED_STREAM_UA;
     }
 
     public static void addStreamHeaders(Object request, Object builder) {
@@ -1170,7 +1170,7 @@ public final class LoginGate {
         }
         String expectedApiUa = "tv".equals(PROFILE)
                 ? "tv-android/2608.2.4 (1020)"
-                : "vidioandroid/2608.2.7-73babcffa4 (3191921)";
+                : HARDCODED_STREAM_UA;
         if (!expectedApiUa.equals(defaultApiUa())) {
             throw new AssertionError("Profile API User-Agent mismatch");
         }

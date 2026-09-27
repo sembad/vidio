@@ -227,6 +227,18 @@ preserved_counts = Counter()
 restored_stream_header_counts = Counter()
 changed_files = set()
 
+# Replace the app's hardcoded vidioandroid UA with the hardcoded Chrome UA.
+vidio_ua = "vidioandroid/2608.2.7-73babcffa4 (3191921)"
+chrome_ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36"
+vidio_ua_replacements = 0
+for path in root.glob("smali*/**/*.smali"):
+    text = path.read_text()
+    count = text.count(vidio_ua)
+    if count:
+        vidio_ua_replacements += count
+        path.write_text(text.replace(vidio_ua, chrome_ua))
+        changed_files.add(path.relative_to(root))
+
 for path in root.glob("smali*/**/*.smali"):
     if "com/vidio/android/patch/" in path.as_posix():
         continue
@@ -491,7 +503,12 @@ if min_api < 26:
 profile_identities = {
     "mobile": {
         "androidtv-app://com.vidio.android.tv": ("android-app://com.vidio.android", 2),
-        "tv-android/2608.2.4 (1020)": ("vidioandroid/2608.2.7-73babcffa4 (3191921)", 9),
+        # The app UA is normalized straight to the hardcoded Chrome UA; the
+        # vidioandroid identity must not appear anywhere in the output.
+        "tv-android/2608.2.4 (1020)": (
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+            9,
+        ),
     },
     "tv": {
         "android-app://com.vidio.android": ("androidtv-app://com.vidio.android.tv", 2),
@@ -1050,6 +1067,7 @@ for method_name in playback_methods:
 print("In-app update entry points stubbed:")
 for method_name, count in sorted(update_stub_counts.items()):
     print(f"  {method_name}: {count}")
+print(f"vidioandroid UA replaced with Chrome UA: {vidio_ua_replacements}")
 print("Changed Smali files:")
 for path in sorted(changed_files):
     print(f"  {path}")
