@@ -21,7 +21,7 @@ const BOT_DATA_URL = "https://baru.pw/botpideook/bot_data.json";
 // upstream hanya berlaku ~2 menit, expires_in 126), dan tiap akun dipakai
 // maksimal satu slot per hari sehingga tidak pernah dipakai ulang. Hari
 // dihitung dalam WIB (UTC+7): pemakaian di-reset jam 00:00 WIB.
-const ULTIMATE_POOL_URL = "https://baru.pw/jsoegwies82u2bsishshwu.json";
+const ULTIMATE_POOL_URL = "https://baru.pw/usjwowhw8whwodgwhw.json";
 const ULTIMATE_ROTATE_MS = 4 * 60 * 1000;
 const SLOTS_PER_DAY = Math.floor(86_400_000 / ULTIMATE_ROTATE_MS);
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
@@ -676,7 +676,7 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   // Kredensial upstream bukan lagi dari bot_data: diputar dari pool akun
   // ultimate tiap 4 menit. Pool habis untuk hari ini → official upstream.
   const poolCandidates = activeUltimate
-    ? pickRotatedUltimateCredentials(await fetchUltimatePool(), POOL_RETRY_COUNT)
+    ? pickRotatedUltimateCredentials(await fetchUltimatePool(), Number.MAX_SAFE_INTEGER)
     : [];
   if (poolCandidates.length === 0) {
     return redirectToOfficial(
@@ -702,29 +702,9 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     }
   }
 
-  // Coba kandidat pool satu per satu sampai dapat stream FULL. Respons preview
-  // (akun pool yang sudah membakar window preview-nya) disimpan sebagai
-  // cadangan, lalu lanjut ke akun berikutnya.
-  let fullResult: UpstreamResult | null = null;
-  let previewResult: UpstreamResult | null = null;
-  for (const candidate of poolCandidates) {
-    // Satu percobaan per akun dengan Chrome UA (daftar user). Terima HANYA
-    // respons 200 OK dengan URL live; selain itu terus cari ke akun berikutnya.
-    const attempt = await proxyUltimateStream(streamId, candidate, request, CHROME_UA);
-    if (!attempt) continue;
-    if (attempt.status !== 200) {
-      if (upstreamHasFatalErrors(attempt.body)) {
-        // not_subscribed dll = akun sedang dipakai → cooldown, jangan dipakai lagi.
-        markUltimateAccountBurned(candidate.email);
-      }
-      continue;
-    }
-    if (upstreamStreamQuality(attempt.body) === "full") {
-      fullResult = attempt;
-      break;
-    }
-    // 200 tapi placeholder ("update aplikasi") → lanjut ke kandidat berikutnya.
-  }
+  // Scan seluruh kandidat pool sampai dapat respons 200 OK dengan URL stream.
+  const fullResult = await scanPoolForFullResult(poolCandidates, (candidate) =>
+    proxyUltimateStream(streamId, candidate, request, CHROME_UA));
   let result = fullResult;
   if (!result) {
     // Tidak ada kandidat pool yang full → coba kredensial asli user yang request
@@ -845,7 +825,7 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
 
   const activeUltimate = findActiveUltimateCredential(data, requestedEmail);
   const poolCandidates = activeUltimate
-    ? pickRotatedUltimateCredentials(await fetchUltimatePool(), POOL_RETRY_COUNT)
+    ? pickRotatedUltimateCredentials(await fetchUltimatePool(), Number.MAX_SAFE_INTEGER)
     : [];
   if (poolCandidates.length === 0) {
     return redirectToOfficial(
@@ -870,27 +850,10 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
     }
   }
 
-  // Sama seperti stream: cari kandidat pool yang memberi stream FULL;
-  // preview disimpan sebagai cadangan terakhir.
-  let fullResult: UpstreamResult | null = null;
-  for (const candidate of poolCandidates) {
-    // Satu percobaan per akun dengan Chrome UA (daftar user). Terima HANYA
-    // respons 200 OK dengan URL live; selain itu terus cari ke akun berikutnya.
-    const attempt = await proxyUltimateVideoData(videoId, candidate, request, CHROME_UA);
-    if (!attempt) continue;
-    if (attempt.status !== 200) {
-      if (upstreamHasFatalErrors(attempt.body)) {
-        // not_subscribed dll = akun sedang dipakai → cooldown, jangan dipakai lagi.
-        markUltimateAccountBurned(candidate.email);
-      }
-      continue;
-    }
-    if (upstreamStreamQuality(attempt.body) === "full") {
-      fullResult = attempt;
-      break;
-    }
-    // 200 tapi placeholder ("update aplikasi") → lanjut ke kandidat berikutnya.
-  }
+  // Sama seperti stream: scan seluruh kandidat pool sampai dapat 200 OK
+  // dengan URL stream.
+  const fullResult = await scanPoolForFullResult(poolCandidates, (candidate) =>
+    proxyUltimateVideoData(videoId, candidate, request, CHROME_UA));
   let result = fullResult;
   if (!result) {
     const own = await proxyUltimateVideoData(
