@@ -555,8 +555,10 @@ function findActiveUltimateCredential(
 }
 
 // Endpoint livestream stream memakai staging upstream; endpoint lain tetap
-// production (api.vidio.com).
+// production (api.vidio.com). Redirect ke app tetap production; hanya
+// pengambilan stream oleh worker yang lewat staging.
 const STREAM_UPSTREAM_ORIGIN = "https://api.staging.vidio.com";
+const STAGING_API_AUTH = "cubixarIhu8une5OP33upogocaTeWerU";
 
 function originalStreamUrl(streamId: string, search = "?initialize=true"): string {
   const query = search ? (search.startsWith("?") ? search : `?${search}`) : "?initialize=true";
@@ -672,7 +674,8 @@ async function proxyUltimateStream(
     "x-signature": signature,
     referer: "androidtv-app://com.vidio.android.tc",
     "x-api-platform": "tv-android",
-    "x-api-auth": API_AUTH,
+    // Staging memakai x-api-auth khusus staging, bukan API_AUTH production.
+    "x-api-auth": STAGING_API_AUTH,
     "x-api-app-info": "tv-android/16/2608.2.4-1020",
     "accept-language": "id",
     "x-user-email": credential.email,
@@ -871,7 +874,7 @@ function redirectToOfficial(
   if (!isKnownAccount) {
     return textResponse("forbidden", 403);
   }
-  const upstreamUrl = new URL(`${STREAM_UPSTREAM_ORIGIN}/${path}`);
+  const upstreamUrl = new URL(`${UPSTREAM_ORIGIN}/${path}`);
   const incomingUrl = new URL(request.url);
   for (const [key, val] of incomingUrl.searchParams.entries()) {
     upstreamUrl.searchParams.set(key, val);
