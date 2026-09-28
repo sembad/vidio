@@ -394,18 +394,43 @@ reminder_matches = [
 ]
 if len(reminder_matches) == 1:
     reminder_path = reminder_matches[0]
-    reminder_text = reminder_path.read_text()
-    old_check = "    instance-of p1, v0, Lwr/d$a$b;\n"
-    count = reminder_text.count(old_check)
+    original_text = reminder_path.read_text()
+    reminder_text = original_text
+    # Revert the earlier const/4 mis-patch: it routed the update event into
+    # the when-else thrower (NoWhenBranchMatchedException) and crashed the app
+    # on the first home load. Line-based because apktool interleaves .line
+    # directives between instructions, so exact multi-line matching fails.
+    lines = reminder_text.split("\n")
+    reverted = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if line == "    const/4 p1, 0x0":
+            j = i + 1
+            while j < len(lines) and (lines[j].strip() == "" or lines[j].strip().startswith(".line")):
+                j += 1
+            if j < len(lines) and lines[j] == "    if-eqz p1, :cond_1":
+                reverted.append("    instance-of p1, v0, Lwr/d$a$b;")
+                i += 1
+                continue
+        reverted.append(line)
+        i += 1
+    reminder_text = "\n".join(reverted)
+    # Neutralize the update branch: jump straight to the shared return instead
+    # of launching ReminderUpdateActivity. The rest of the branch becomes dead
+    # code, and the when-else thrower stays unreachable for $b events.
+    old_body = "    check-cast v0, Lwr/d$a$b;\n"
+    count = reminder_text.count(old_body)
     if count == 1:
-        reminder_text = reminder_text.replace(old_check, "    const/4 p1, 0x0\n")
+        reminder_text = reminder_text.replace(old_body, "    goto :goto_0\n")
+    elif count == 0 and "    goto :goto_0\n" not in reminder_text:
+        raise SystemExit(f"Expected one wr/d$a$b check-cast in {reminder_path}, found {count}")
+    elif count > 1:
+        raise SystemExit(f"Expected one wr/d$a$b check-cast in {reminder_path}, found {count}")
+    if reminder_text != original_text:
         reminder_path.write_text(reminder_text)
         changed_files.add(reminder_path.relative_to(root))
         update_stub_counts["reminder-update-launch"] += 1
-    elif count == 0:
-        pass  # already patched on a previous run
-    else:
-        raise SystemExit(f"Expected one wr/d$a$b instance-of in {reminder_path}, found {count}")
 elif len(reminder_matches) > 1:
     raise SystemExit(f"Expected at most one wr/a home collector, found {len(reminder_matches)}")
 
