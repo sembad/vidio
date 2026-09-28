@@ -226,6 +226,9 @@ public final class LoginGate {
     private static volatile Object applicationContext;
     private static volatile Object currentActivity;
     private static volatile Object loadingView;
+    // Overlay "Memuat siaran..." hanya untuk load pertama; swap/refresh stream
+    // native app harus seamless tanpa overlay agar tidak mengganggu tontonan.
+    private static volatile boolean streamLoadingShown = false;
     private static volatile String cachedAccountEmail;
     private static volatile Boolean cachedUltimate;
     private static volatile long lastUltimateCheckMs = 0;
@@ -921,6 +924,10 @@ public final class LoginGate {
     }
 
     public static void showStreamLoading() {
+        if (streamLoadingShown) {
+            return;
+        }
+        streamLoadingShown = true;
         runOnMainThread(new Runnable() {
             @Override
             public void run() {

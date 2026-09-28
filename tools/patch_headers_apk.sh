@@ -698,8 +698,13 @@ stream_builder_hook_done = True
 # true) sehingga URL hls/license mati setelah 5 menit tanpa reload.
 preview_gate_marker = "Lcom/vidio/android/patch/LoginGate;->isUltimateMode()Z"
 preview_patch_specs = (
+    # Mobile: v00/t0 = LiveStreamUrl (field e = isPreview), lv/n = entity (field l).
     ("v00/t0.smali", ".method public final m()Z", "Lv00/t0;->e:Z"),
     ("lv/n.smali", ".method public final n()Z", "Llv/n;->l:Z"),
+    # TV: tv/a0 = LiveStreamUrl (field e = isPreview, getter j()),
+    # com/vidio/domain/entity/d$b = entity (field b = isPreview, getter e()).
+    ("tv/a0.smali", ".method public final j()Z", "Ltv/a0;->e:Z"),
+    ("com/vidio/domain/entity/d$b.smali", ".method public final e()Z", "Lcom/vidio/domain/entity/d$b;->b:Z"),
 )
 for preview_suffix, preview_signature, preview_field in preview_patch_specs:
     preview_matches = list(root.glob(f"smali*/**/{preview_suffix}"))
@@ -741,6 +746,61 @@ for preview_suffix, preview_signature, preview_field in preview_patch_specs:
     preview_path.write_text(preview_text)
     changed_files.add(preview_path.relative_to(root))
     print(f"[preview-gate] patched {preview_suffix} ({preview_field})")
+
+# Toast "Ads Disabled by Debug Setting" tampil setiap kali ads loader
+# di-setup ulang (tiap reload/swap stream) — batasi hanya sekali (load
+# pertama) dengan static boolean guard di class pemilik toast-nya.
+ads_toast_marker = "sAdsToastShown:Z"
+ads_toast_string = "Ads Disabled by Debug Setting"
+ads_toast_files = [p for p in root.glob("smali*/**/*.smali") if ads_toast_string in p.read_text()]
+for ads_path in ads_toast_files:
+    ads_text = ads_path.read_text()
+    if ads_toast_marker in ads_text:
+        continue
+    ads_class_match = re.search(r"^\.class\s+[^;]*L([\w/$-]+);", ads_text, re.M)
+    if not ads_class_match:
+        print(f"[ads-toast] {ads_path}: no .class line, skipped")
+        continue
+    ads_class = "L" + ads_class_match.group(1) + ";"
+    ads_const_match = re.search(
+        r'    const-string ([vp]\d+), "' + re.escape(ads_toast_string) + '"', ads_text
+    )
+    if not ads_const_match:
+        print(f"[ads-toast] {ads_path}: toast const-string not found, skipped")
+        continue
+    ads_reg = ads_const_match.group(1)
+    ads_show_match = re.search(
+        r"invoke-virtual \{[^}]+\}, Landroid/widget/Toast;->show\(\)V\n",
+        ads_text[ads_const_match.end():],
+    )
+    if not ads_show_match:
+        print(f"[ads-toast] {ads_path}: Toast.show() after const-string not found, skipped")
+        continue
+    # Sisipkan dari posisi paling belakang agar index tetap valid.
+    show_abs = ads_const_match.end() + ads_show_match.start()
+    show_line_len = len(ads_show_match.group(0))
+    ads_text = (
+        ads_text[:show_abs + show_line_len]
+        + "\n    :vidio_ads_toast_skip\n"
+        + ads_text[show_abs + show_line_len:]
+    )
+    ads_guard = (
+        f"    sget-boolean {ads_reg}, {ads_class}->sAdsToastShown:Z\n"
+        f"    if-nez {ads_reg}, :vidio_ads_toast_skip\n"
+        f"    const/4 {ads_reg}, 0x1\n"
+        f"    sput-boolean {ads_reg}, {ads_class}->sAdsToastShown:Z\n"
+    )
+    ads_text = ads_text[:ads_const_match.start()] + ads_guard + ads_text[ads_const_match.start():]
+    ads_text = re.sub(
+        r"^(\.super \S+)$",
+        r"\1\n\n.field private static sAdsToastShown:Z",
+        ads_text,
+        count=1,
+        flags=re.M,
+    )
+    ads_path.write_text(ads_text)
+    changed_files.add(ads_path.relative_to(root))
+    print(f"[ads-toast] patched {ads_class}: toast now shown only once")
 
 # Keep an OkHttp transport fallback for any stream request built outside KMM.
 if profile == "mobile":

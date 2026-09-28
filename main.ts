@@ -331,11 +331,14 @@ async function scanPoolForFullResult(
   return null;
 }
 
-// Cache respons stream per ID: user pertama memicu fetch fresh dari pool,
-// user berikutnya dalam window cache memakai respons yang sama — akun pool
-// tidak diambil terus-menerus tetap awet. Setelah TTL (4 menit, URL hls/mpd/
-// license upstream berlaku ±5 menit) request berikutnya memicu fetch fresh.
-const STREAM_CACHE_TTL_MS = 4 * 60_000;
+// Cache respons stream per ID. Aplikasi dijadwalkan refresh stream tiap 4
+// menit (expires_in dilaporkan selalu 240 dtk), dan URL upstream hanya hidup
+// ±5 menit sejak fetch — jadi URL yang dilayani harus punya sisa umur ≥ 4
+// menit agar swap native app terjadi sebelum URL mati. Konsekuensinya cache
+// hanya dilayani selama 60 dtk pertama; hit yang lebih tua memicu fetch fresh
+// (dedup) yang sekaligus meng-refresh cache. Untuk 1 penonton kontinu tetap
+// 1 fetch per siklus 4 menit.
+const STREAM_CACHE_SERVE_WINDOW_MS = 60_000;
 
 interface CachedStreamResponse {
   status: number;
@@ -350,7 +353,7 @@ const streamResponseInflight = new Map<string, Promise<UpstreamResult | null>>()
 function getCachedStreamResponse(key: string, nowMs = Date.now()): CachedStreamResponse | null {
   const cached = streamResponseCache.get(key);
   if (!cached) return null;
-  if (nowMs - cached.fetchedAt >= STREAM_CACHE_TTL_MS) {
+  if (nowMs - cached.fetchedAt >= STREAM_CACHE_SERVE_WINDOW_MS) {
     streamResponseCache.delete(key);
     return null;
   }
@@ -382,14 +385,12 @@ function fetchStreamResultShared(
 }
 
 // URL hls/mpd/license upstream hidup ±5 menit sejak fetch. Aplikasi
-// menjadwalkan refresh stream dari field JSON `expires_in` (detik) — jadi
-// respons yang dilayani dari cache harus melaporkan sisa masa berlaku URL,
-// bukan nilai asli upstream, kalau tidak aplikasi menahan URL yang sudah mati.
+// menjadwalkan refresh stream dari field JSON `expires_in` (detik) — nilai
+// ini selalu dilaporkan 240 dtk (4 menit) supaya siklus reload app stabil
+// dan tidak mengganggu, bukan sisa umur URL yang berganti-ganti.
 const UPSTREAM_URL_TTL_S = 300;
-// Refresh dijadwalkan lebih awal agar swap source selesai sebelum URL mati.
-const URL_REFRESH_MARGIN_S = 60;
-// Batas bawah expires_in yang dilaporkan ke aplikasi.
-const MIN_REPORTED_EXPIRES_S = 15;
+// expires_in yang dilaporkan ke aplikasi untuk stream live.
+const REPORTED_EXPIRES_S = 240;
 
 /** Set semua field `is_preview` menjadi false di data.attributes dan included[].attributes. */
 function forcePreviewOffInBody(body: string): string {
@@ -424,24 +425,22 @@ function jsonApiAttributeRecords(parsed: unknown): Record<string, unknown>[] {
 }
 
 /**
- * Tulis ulang `expires_in` (detik) menjadi sisa masa berlaku URL dikurangi
- * margin, sehingga refresh native aplikasi (px/y0 menjadwalkan ulang fetch
- * stream dari field ini) selalu terjadi sebelum URL mati. Nilai asli upstream
- * dipakai sebagai batas atas agar tidak pernah melaporkan masa berlaku yang
- * lebih lama dari klaim upstream. Nilai 0/hilang diisi cap agar aplikasi
- * tidak masuk loop refresh instan.
+ * Tulis ulang `expires_in` (detik) menjadi 240 dtk (4 menit) supaya refresh
+ * native aplikasi (px/y0 menjadwalkan ulang fetch stream dari field ini)
+ * berjalan pada siklus 4 menit yang stabil. Nilai asli upstream dipakai
+ * sebagai batas atas agar tidak pernah melaporkan masa berlaku lebih lama
+ * dari klaim upstream. Nilai 0/hilang diisi 240 agar aplikasi tidak masuk
+ * loop refresh instan.
  */
-function rewriteExpiresIn(body: string, ageMs: number): string {
+function rewriteExpiresIn(body: string): string {
   try {
     const parsed: unknown = JSON.parse(body);
-    const remainingS = Math.max(0, UPSTREAM_URL_TTL_S - ageMs / 1000);
-    const cap = Math.max(MIN_REPORTED_EXPIRES_S, Math.floor(remainingS) - URL_REFRESH_MARGIN_S);
     for (const record of jsonApiAttributeRecords(parsed)) {
       const original = record.expires_in;
       if (typeof original === "number" && original > 0 && original <= UPSTREAM_URL_TTL_S) {
-        record.expires_in = Math.min(original, cap);
+        record.expires_in = Math.min(original, REPORTED_EXPIRES_S);
       } else if (original === undefined || original === null || original === 0) {
-        record.expires_in = cap;
+        record.expires_in = REPORTED_EXPIRES_S;
       }
     }
     return JSON.stringify(parsed);
@@ -831,7 +830,7 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   if (cached) {
     // expires_in dilaporkan sebagai sisa masa berlaku URL agar refresh
     // native aplikasi tetap terjadwal sebelum URL cache mati.
-    const body = rewriteExpiresIn(cached.body, Date.now() - cached.fetchedAt);
+    const body = rewriteExpiresIn(cached.body);
     return renderUpstream({ status: cached.status, body, headers: cached.headers }, shouldEncrypt);
   }
 
@@ -855,7 +854,7 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     // supaya aplikasi tidak melewatkan penjadwalan refresh stream-nya.
     fullResult.body = forcePreviewOffInBody(fullResult.body);
     storeStreamResponse(cacheKey, fullResult);
-    fullResult.body = rewriteExpiresIn(fullResult.body, 0);
+    fullResult.body = rewriteExpiresIn(fullResult.body);
   }
   return renderUpstream(result, shouldEncrypt);
 }
@@ -1262,11 +1261,11 @@ async function selfCheck(): Promise<void> {
     headers: { "content-type": "application/vnd.api+json" },
   };
   storeStreamResponse("selfcheck:1", okResult, 1000);
-  if (!getCachedStreamResponse("selfcheck:1", 1000 + STREAM_CACHE_TTL_MS - 1)) {
-    throw new Error("Cached response must be served within TTL");
+  if (!getCachedStreamResponse("selfcheck:1", 1000 + STREAM_CACHE_SERVE_WINDOW_MS - 1)) {
+    throw new Error("Cached response must be served within the serve window");
   }
-  if (getCachedStreamResponse("selfcheck:1", 1000 + STREAM_CACHE_TTL_MS + 1)) {
-    throw new Error("Cached response must expire after TTL");
+  if (getCachedStreamResponse("selfcheck:1", 1000 + STREAM_CACHE_SERVE_WINDOW_MS + 1)) {
+    throw new Error("Cached response must expire after the serve window");
   }
   const badResult: UpstreamResult = { status: 403, body: '{"errors":[]}', headers: {} };
   storeStreamResponse("selfcheck:bad", badResult, 1000);
@@ -1290,26 +1289,20 @@ async function selfCheck(): Promise<void> {
     throw new Error("Non-JSON bodies must pass through unchanged");
   }
 
-  // rewriteExpiresIn: fresh fetch → min(upstream, 240); cache umur 100 dtk → sisa - 60
-  const freshParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{"expires_in":300}}}', 0)) as {
+  // rewriteExpiresIn: expires_in selalu dilaporkan 240 dtk (4 menit)
+  const freshParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{"expires_in":300}}}')) as {
     data: { attributes: { expires_in: number } };
   };
   if (freshParsed.data.attributes.expires_in !== 240) {
     throw new Error(`Fresh expires_in must be capped at 240, got ${freshParsed.data.attributes.expires_in}`);
   }
-  const agedParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{"expires_in":300}}}', 100_000)) as {
-    data: { attributes: { expires_in: number } };
-  };
-  if (agedParsed.data.attributes.expires_in !== 140) {
-    throw new Error(`Aged expires_in must be 140, got ${agedParsed.data.attributes.expires_in}`);
-  }
-  const missingParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{}}}', 0)) as {
+  const missingParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{}}}')) as {
     data: { attributes: { expires_in: number } };
   };
   if (missingParsed.data.attributes.expires_in !== 240) {
-    throw new Error("Missing expires_in must default to the refresh cap");
+    throw new Error("Missing expires_in must default to the 4-minute reload cycle");
   }
-  const vodParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{"expires_in":86400}}}', 0)) as {
+  const vodParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{"expires_in":86400}}}')) as {
     data: { attributes: { expires_in: number } };
   };
   if (vodParsed.data.attributes.expires_in !== 86400) {
