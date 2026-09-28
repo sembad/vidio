@@ -27,7 +27,7 @@ const SLOTS_PER_DAY = Math.floor(86_400_000 / ULTIMATE_ROTATE_MS);
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 // Saat kredensial pool ditolak upstream (akun mati/expired), coba kredensial
 // pool berikutnya sebanyak ini sebelum fallback ke akun user sendiri.
-const POOL_RETRY_COUNT = 5;
+const POOL_RETRY_COUNT = 8;
 const REDIRECT_URL = "https://vidio.com";
 const USER_AGENT = "tv-android/ (1020";
 
@@ -217,6 +217,9 @@ async function fetchUltimatePool(): Promise<UltimateCredential[]> {
       signal: AbortSignal.timeout(10_000),
       redirect: "follow",
       headers: {
+        // WAF baru.pw memblokir UA default runtime (Deno/*) dengan 403 —
+        // wajib kirim UA browser eksplisit.
+        "user-agent": USER_AGENT,
         accept: "application/json",
         "cache-control": "no-cache, no-store, must-revalidate",
         pragma: "no-cache",
@@ -319,6 +322,32 @@ function upstreamHasFatalErrors(body: string): boolean {
   }
 }
 
+/**
+ * Mengklasifikasi respons stream/video_data dari upstream:
+ * - "full": URL hls/dash ada dan bukan URL preview — akun pool diterima penuh.
+ * - "preview": URL ada tapi preview (is_preview atau URL preview-tokenized) —
+ *   akun ini sudah membakar window preview-nya; coba akun lain.
+ * - "error": respons error / tanpa URL sama sekali (akun mati, ditolak, dsb).
+ */
+function upstreamStreamQuality(body: string): "full" | "preview" | "error" {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (!isRecord(parsed)) return "error";
+    if (Array.isArray(parsed.errors)) return "error";
+    if (!isRecord(parsed.data) || !isRecord(parsed.data.attributes)) return "error";
+    const attrs = parsed.data.attributes;
+    const hls = typeof attrs.hls === "string" ? attrs.hls : "";
+    const dash = typeof attrs.dash === "string" ? attrs.dash : "";
+    if (!hls && !dash) return "error";
+    const previewMarked = attrs.is_preview === true
+      || hls.includes("preview")
+      || dash.includes("preview");
+    return previewMarked ? "preview" : "full";
+  } catch {
+    return "error";
+  }
+}
+
 function findActiveUltimateCredential(
   data: Record<string, unknown>,
   requestedEmail: string,
@@ -383,8 +412,9 @@ function getProxyHttpClient(): unknown {
 // milik klien: JWT akan menimpa identitas kredensial pool di mata upstream
 // (akun pool dianggap user pengirim yang tidak berlangganan → stream preview),
 // dan app-info android membuat sesi dihitung sebagai klien biasa.
+// UA klien TIDAK boleh diteruskan: UA browser/HP di identitas klien tv-android
+// memicu deteksi bot upstream (403 / preview). Selalu pakai UA TV hardcode.
 const STREAM_HEADER_DEFAULTS: Record<string, string> = {
-  "user-agent": USER_AGENT,
   "x-partner-signature": "",
 };
 
@@ -418,7 +448,6 @@ async function fetchUpstream(
     }
 
     const upstream = await fetch(upstreamUrl, fetchOptions);
-    console.log("[v0] upstream", upstreamUrl, "->", upstream.status, "x-user-email:", headers.get("x-user-email"));
     const headerMap: Record<string, string> = {};
     upstream.headers.forEach((val, key) => {
       if (key.toLowerCase() !== "content-encoding") {
@@ -469,11 +498,14 @@ async function proxyUltimateStream(
 
   const client = "1788880138";
   const signature = "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4";
+  // Visitor-id device user tidak boleh diteruskan: visitor-id yang sudah
+  // berasosiasi dengan akun gratis membuat akun pool dapat treatment preview
+  // (hls/dash null). Selalu pakai visitor-id default yang bersih.
   const defaultVisitorId = "c0f1cf62-ab27-45fb-9663-5e056ca0e3b3";
-  const visitorId = request?.headers.get("x-visitor-id") || defaultVisitorId;
 
   const headers = new Headers({
     "accept-encoding": "gzip",
+    "user-agent": USER_AGENT,
     "x-client": client,
     "x-signature": signature,
     referer: "androidtv-app://com.vidio.android.tc",
@@ -481,7 +513,7 @@ async function proxyUltimateStream(
     "x-api-auth": API_AUTH,
     "x-api-app-info": "tv-android/16/2608.2.4-1020",
     "accept-language": "id",
-    "x-visitor-id": visitorId,
+    "x-visitor-id": defaultVisitorId,
     "content-type": "application/vnd.api+json",
     "x-user-email": credential.email,
     "x-user-token": credential.token,
@@ -578,6 +610,8 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
       signal: AbortSignal.timeout(10_000),
       redirect: "follow",
       headers: {
+        // WAF baru.pw memblokir UA default runtime (Deno/*) dengan 403.
+        "user-agent": USER_AGENT,
         accept: "application/json",
         "cache-control": "no-cache, no-store, must-revalidate",
         pragma: "no-cache",
@@ -625,19 +659,34 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     }
   }
 
-  // Coba kandidat pool satu per satu; berhenti di akun yang diterima upstream.
-  let result: UpstreamResult | null = null;
+  // Coba kandidat pool satu per satu sampai dapat stream FULL. Respons preview
+  // (akun pool yang sudah membakar window preview-nya) disimpan sebagai
+  // cadangan, lalu lanjut ke akun berikutnya.
+  let fullResult: UpstreamResult | null = null;
+  let previewResult: UpstreamResult | null = null;
   for (const candidate of poolCandidates) {
-    result = await proxyUltimateStream(streamId, candidate, request);
-    if (result && !upstreamHasFatalErrors(result.body)) break;
+    const attempt = await proxyUltimateStream(streamId, candidate, request);
+    if (!attempt) continue;
+    const quality = upstreamStreamQuality(attempt.body);
+    if (quality === "full") {
+      fullResult = attempt;
+      break;
+    }
+    if (quality === "preview" && !previewResult) previewResult = attempt;
   }
-  if (!result || upstreamHasFatalErrors(result.body)) {
-    // Semua kandidat pool ditolak → pakai kredensial asli user yang request
-    result = await proxyUltimateStream(
+  let result = fullResult;
+  if (!result) {
+    // Tidak ada kandidat pool yang full → coba kredensial asli user yang request
+    const own = await proxyUltimateStream(
       streamId,
       { email: requestedEmail, token: trimmedToken },
       request,
     );
+    if (own && upstreamStreamQuality(own.body) === "full") {
+      result = own;
+    } else {
+      result = previewResult ?? own;
+    }
   }
   const shouldEncrypt = request.headers.get("x-encrypt-response") === "aes"
     || new URL(request.url).searchParams.has("encrypt");
@@ -681,8 +730,10 @@ async function proxyUltimateVideoData(
 ): Promise<UpstreamResult | null> {
   const incoming = request ? new URL(request.url) : null;
   const search = incoming ? incoming.search : "?initialize=true";
+  // Sama seperti proxyUltimateStream: jangan teruskan visitor-id device user
+  // maupun JWT (x-authorization) miliknya — keduanya membuat akun pool
+  // mendapat treatment preview di mata upstream.
   const defaultVisitorId = "c0f1cf62-ab27-45fb-9663-5e056ca0e3b3";
-  const visitorId = request?.headers.get("x-visitor-id") || defaultVisitorId;
 
   const headers = new Headers({
     "accept-encoding": "gzip",
@@ -694,13 +745,11 @@ async function proxyUltimateVideoData(
     "x-api-app-info": "tv-android/16/2608.2.4-1020",
     "user-agent": USER_AGENT,
     "accept-language": "id",
-    "x-visitor-id": visitorId,
+    "x-visitor-id": defaultVisitorId,
     "x-user-email": credential.email,
     "x-user-token": credential.token,
   });
 
-  const authHeader = request?.headers.get("x-authorization");
-  if (authHeader) headers.set("x-authorization", authHeader);
   const partnerSig = request?.headers.get("x-partner-signature");
   if (partnerSig !== null && partnerSig !== undefined) headers.set("x-partner-signature", partnerSig);
 
@@ -726,6 +775,8 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
       signal: AbortSignal.timeout(10_000),
       redirect: "follow",
       headers: {
+        // WAF baru.pw memblokir UA default runtime (Deno/*) dengan 403.
+        "user-agent": USER_AGENT,
         accept: "application/json",
         "cache-control": "no-cache, no-store, must-revalidate",
         pragma: "no-cache",
@@ -770,19 +821,32 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
     }
   }
 
-  // Coba kandidat pool satu per satu; berhenti di akun yang diterima upstream.
-  let result: UpstreamResult | null = null;
+  // Sama seperti stream: cari kandidat pool yang memberi stream FULL;
+  // preview disimpan sebagai cadangan terakhir.
+  let fullResult: UpstreamResult | null = null;
+  let previewResult: UpstreamResult | null = null;
   for (const candidate of poolCandidates) {
-    result = await proxyUltimateVideoData(videoId, candidate, request);
-    if (result && !upstreamHasFatalErrors(result.body)) break;
+    const attempt = await proxyUltimateVideoData(videoId, candidate, request);
+    if (!attempt) continue;
+    const quality = upstreamStreamQuality(attempt.body);
+    if (quality === "full") {
+      fullResult = attempt;
+      break;
+    }
+    if (quality === "preview" && !previewResult) previewResult = attempt;
   }
-  if (!result || upstreamHasFatalErrors(result.body)) {
-    // Semua kandidat pool ditolak → pakai kredensial asli user yang request
-    result = await proxyUltimateVideoData(
+  let result = fullResult;
+  if (!result) {
+    const own = await proxyUltimateVideoData(
       videoId,
       { email: requestedEmail, token: trimmedToken },
       request,
     );
+    if (own && upstreamStreamQuality(own.body) === "full") {
+      result = own;
+    } else {
+      result = previewResult ?? own;
+    }
   }
   const shouldEncrypt = request.headers.get("x-encrypt-response") === "aes"
     || new URL(request.url).searchParams.has("encrypt");
@@ -845,6 +909,8 @@ async function handleRequest(request: Request): Promise<Response> {
       signal: AbortSignal.timeout(30_000),
       redirect: "follow",
       headers: {
+        // WAF baru.pw memblokir UA default runtime (Deno/*) dengan 403.
+        "user-agent": USER_AGENT,
         accept: "application/json",
         "cache-control": "no-cache, no-store, must-revalidate",
         pragma: "no-cache",
@@ -996,6 +1062,24 @@ async function selfCheck(): Promise<void> {
     throw new Error("Non-fatal upstream bodies must pass through unchanged");
   }
 
+  // Klasifikasi kualitas respons upstream: full / preview / error
+  const fullBody = JSON.stringify({
+    data: { id: "1", attributes: { hls: "https://www.vidio.com/videos/1/common_tokenized_playlist.m3u8", is_preview: false } },
+  });
+  const previewBody = JSON.stringify({
+    data: { id: "1", attributes: { hls: "https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/x.m3u8", is_preview: true } },
+  });
+  const noUrlBody = JSON.stringify({ data: { id: "1", attributes: { hls: null, is_preview: true } } });
+  if (upstreamStreamQuality(fullBody) !== "full") {
+    throw new Error("Full stream body must classify as full");
+  }
+  if (upstreamStreamQuality(previewBody) !== "preview") {
+    throw new Error("Preview stream body must classify as preview");
+  }
+  if (upstreamStreamQuality(noUrlBody) !== "error" || upstreamStreamQuality("not json") !== "error") {
+    throw new Error("Error/URL-less bodies must classify as error");
+  }
+
   // Test stream request without required headers returns 403 Forbidden
   const noHeaderReq = new Request("https://vidiot.my.id/livestreamings/123/stream");
   const noHeaderRes = await handleRequest(noHeaderReq);
@@ -1067,7 +1151,8 @@ async function selfCheck(): Promise<void> {
     }),
   );
   if (
-    forwardedHeaders.get("user-agent") !== "tv-android/from-api" ||
+    // UA klien tidak boleh bocor ke upstream (memicu deteksi bot)
+    forwardedHeaders.get("user-agent") !== null ||
     forwardedHeaders.get("x-partner-signature") !== "partner-signature" ||
     forwardedHeaders.get("x-authorization") !== null ||
     forwardedHeaders.get("x-api-platform") !== null ||
