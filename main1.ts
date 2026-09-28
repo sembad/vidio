@@ -177,13 +177,10 @@ interface UltimateCredential {
   token: string;
 }
 
-// Cache respons stream per ID. Aplikasi dijadwalkan refresh stream tiap 4
-// menit (expires_in dilaporkan selalu 240 dtk), dan URL upstream hanya hidup
-// ±5 menit sejak fetch — jadi URL yang dilayani harus punya sisa umur ≥ 4
-// menit agar swap native app terjadi sebelum URL mati. Konsekuensinya cache
-// hanya dilayani selama 60 dtk pertama; hit yang lebih tua memicu fetch fresh
-// (dedup) yang sekaligus meng-refresh cache. Untuk 1 penonton kontinu tetap
-// 1 fetch per siklus 4 menit.
+// Cache respons stream per ID. Aplikasi menjadwalkan refresh dari field
+// `expires_in` upstream apa adanya (mis. 5040 dtk) — tidak di-rewrite. Cache
+// tetap hanya dilayani 60 dtk pertama; hit yang lebih tua memicu fetch fresh
+// (dedup) yang sekaligus meng-refresh cache.
 const STREAM_CACHE_SERVE_WINDOW_MS = 60_000;
 
 interface CachedStreamResponse {
@@ -230,12 +227,6 @@ function fetchStreamResultShared(
   return promise;
 }
 
-// URL hls/mpd/license upstream hidup ±5 menit sejak fetch. Aplikasi
-// menjadwalkan refresh stream dari field JSON `expires_in` (detik) — nilai
-// ini selalu dilaporkan 240 dtk (4 menit) supaya siklus reload app stabil
-// dan tidak mengganggu, bukan sisa umur URL yang berganti-ganti.
-const REPORTED_EXPIRES_S = 240;
-
 /** Set semua field `is_preview` menjadi false di data.attributes dan included[].attributes. */
 function forcePreviewOffInBody(body: string): string {
   try {
@@ -266,28 +257,6 @@ function jsonApiAttributeRecords(parsed: unknown): Record<string, unknown>[] {
     }
   }
   return records;
-}
-
-/**
- * Paksa `expires_in` (detik) menjadi 240 dtk (4 menit) — SIKLUS RELOAD YANG
- * DIMINTA USER. Nilai upstream (mis. 126) TIDAK dipakai: pengalaman menunjukkan
- * URL tetap hidup hingga ±5 menit meski upstream melaporkan 126, jadi 240 aman
- * dan reload jadi jarang/tenang. Nilai hilang/0 juga diisi 240 agar aplikasi
- * tidak masuk loop refresh instan.
- */
-function rewriteExpiresIn(body: string): string {
-  try {
-    const parsed: unknown = JSON.parse(body);
-    const records = jsonApiAttributeRecords(parsed);
-    for (const record of records) {
-      if ("expires_in" in record || record === records[0]) {
-        record.expires_in = REPORTED_EXPIRES_S;
-      }
-    }
-    return JSON.stringify(parsed);
-  } catch {
-    return body;
-  }
 }
 
 // Respons upstream yang berarti kredensial ultimate tidak bisa dipakai untuk
@@ -638,10 +607,7 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   const cacheKey = `stream:${streamId}`;
   const cached = getCachedStreamResponse(cacheKey);
   if (cached) {
-    // expires_in dilaporkan sebagai sisa masa berlaku URL agar refresh
-    // native aplikasi tetap terjadwal sebelum URL cache mati.
-    const body = rewriteExpiresIn(cached.body);
-    return renderUpstream({ status: cached.status, body, headers: cached.headers }, shouldEncrypt);
+    return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
   }
 
   const fullResult = await fetchStreamResultShared(cacheKey, () =>
@@ -662,7 +628,6 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     // supaya aplikasi tidak melewatkan penjadwalan refresh stream-nya.
     fullResult.body = forcePreviewOffInBody(fullResult.body);
     storeStreamResponse(cacheKey, fullResult);
-    fullResult.body = rewriteExpiresIn(fullResult.body);
   }
   return renderUpstream(result, shouldEncrypt);
 }
@@ -1012,27 +977,6 @@ async function selfCheck(): Promise<void> {
   }
   if (forcePreviewOffInBody("not-json") !== "not-json") {
     throw new Error("Non-JSON bodies must pass through unchanged");
-  }
-
-  // rewriteExpiresIn: expires_in SELALU dilaporkan 240 dtk (4 menit), apapun
-  // nilai upstream (126 → 240, 300 → 240, hilang → 240).
-  const upstream126 = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{"expires_in":126}}}')) as {
-    data: { attributes: { expires_in: number } };
-  };
-  if (upstream126.data.attributes.expires_in !== 240) {
-    throw new Error(`Upstream 126 must be forced to 240, got ${upstream126.data.attributes.expires_in}`);
-  }
-  const freshParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{"expires_in":300}}}')) as {
-    data: { attributes: { expires_in: number } };
-  };
-  if (freshParsed.data.attributes.expires_in !== 240) {
-    throw new Error(`Fresh expires_in must be forced to 240, got ${freshParsed.data.attributes.expires_in}`);
-  }
-  const missingParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{}}}')) as {
-    data: { attributes: { expires_in: number } };
-  };
-  if (missingParsed.data.attributes.expires_in !== 240) {
-    throw new Error("Missing expires_in must default to the 4-minute reload cycle");
   }
 
   const testStreamId = "test-stream-id";
