@@ -317,7 +317,11 @@ function pickRotatedUltimateCredentials(
     if (isUltimateAccountBurned(candidate.email, nowMs)) continue;
     candidates.push(candidate);
   }
-  return candidates;
+  // Akun fake-tcl.com sering tidak berentitlement untuk konten tertentu
+  // (not_subscribed) — prioritaskan fake-tv-bundle.com & fake-coocaa.com.
+  const entitled = candidates.filter((c) => !c.email.endsWith("@fake-tcl.com"));
+  const tcl = candidates.filter((c) => c.email.endsWith("@fake-tcl.com"));
+  return [...entitled, ...tcl];
 }
 
 // Respons upstream yang berarti kredensial ultimate tidak bisa dipakai untuk
@@ -345,12 +349,13 @@ function upstreamHasFatalErrors(body: string): boolean {
 
 /**
  * Mengklasifikasi respons stream/video_data dari upstream:
- * - "full": URL hls/dash ada dan bukan URL preview — akun pool diterima penuh.
- * - "preview": URL ada tapi preview (is_preview atau URL preview-tokenized) —
- *   akun ini sudah membakar window preview-nya; coba akun lain.
- * - "error": respons error / tanpa URL sama sekali (akun mati, ditolak, dsb).
+ * - "full": URL live asli di host etslive/akamaized (termasuk preview-tokenized
+ *   yang diputar APK dan di-refresh tiap 4 menit) — INI yang diinginkan.
+ * - "placeholder": URL www.vidio.com/videos/.../common_tokenized_playlist.m3u8 —
+ *   video placeholder "suruh update aplikasi", BUKAN live stream; jangan dipakai.
+ * - "error": respons error / tanpa URL (akun terpakai, ditolak, dsb).
  */
-function upstreamStreamQuality(body: string): "full" | "preview" | "error" {
+function upstreamStreamQuality(body: string): "full" | "placeholder" | "error" {
   try {
     const parsed: unknown = JSON.parse(body);
     if (!isRecord(parsed)) return "error";
@@ -360,10 +365,9 @@ function upstreamStreamQuality(body: string): "full" | "preview" | "error" {
     const hls = typeof attrs.hls === "string" ? attrs.hls : "";
     const dash = typeof attrs.dash === "string" ? attrs.dash : "";
     if (!hls && !dash) return "error";
-    const previewMarked = attrs.is_preview === true
-      || hls.includes("preview")
-      || dash.includes("preview");
-    return previewMarked ? "preview" : "full";
+    const isPlaceholder = hls.includes("/videos/") || hls.includes("common_tokenized_playlist")
+      || dash.includes("/videos/") || dash.includes("common_tokenized_playlist");
+    return isPlaceholder ? "placeholder" : "full";
   } catch {
     return "error";
   }
@@ -511,10 +515,6 @@ function renderUpstream(result: UpstreamResult | null, shouldEncrypt: boolean): 
 
 const CHROME_UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36";
-// UA TV: fallback per-akun. Entitlement akun pool (bundle TV) hanya diterapkan
-// upstream saat request terlihat sebagai klien TV — Chrome UA sering ditolak
-// (not_subscribed/403) meski akunnya bebas, terutama via proxy.
-const TV_UA = "tv-android/ (1020";
 
 async function proxyUltimateStream(
   streamId: string,
@@ -689,38 +689,30 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   let fullResult: UpstreamResult | null = null;
   let previewResult: UpstreamResult | null = null;
   for (const candidate of poolCandidates) {
-    // Urutan per akun: Chrome UA (daftar user) dulu, lalu TV UA pada akun
-    // yang sama sebelum pindah ke akun berikutnya.
-    const attempts = [
-      await proxyUltimateStream(streamId, candidate, request, CHROME_UA),
-      await proxyUltimateStream(streamId, candidate, request, TV_UA),
-    ];
-    const allFatal = attempts.every((a) => a && upstreamHasFatalErrors(a.body));
-    for (const attempt of attempts) {
-      if (!attempt) continue;
-      const quality = upstreamStreamQuality(attempt.body);
-      if (quality === "full") {
-        fullResult = attempt;
-        break;
-      }
-      if (quality === "preview" && !previewResult) previewResult = attempt;
-    }
-    if (fullResult) break;
-    if (allFatal) {
-      // Gagal dengan kedua UA → akun benar-benar terpakai → cooldown.
+    // Satu percobaan per akun dengan Chrome UA (daftar user). ETSLIVE = berhenti.
+    const attempt = await proxyUltimateStream(streamId, candidate, request, CHROME_UA);
+    if (!attempt) continue;
+    if (upstreamHasFatalErrors(attempt.body)) {
+      // not_subscribed dll = akun sedang dipakai → cooldown, jangan dipakai lagi.
       markUltimateAccountBurned(candidate.email);
+      continue;
     }
+    if (upstreamStreamQuality(attempt.body) === "full") {
+      fullResult = attempt;
+      break;
+    }
+    // placeholder ("update aplikasi") atau lainnya → lanjut ke kandidat berikutnya.
   }
   let result = fullResult;
   if (!result) {
     // Tidak ada kandidat pool yang full → coba kredensial asli user yang request
-    const ownAttempts = [
-      await proxyUltimateStream(streamId, { email: requestedEmail, token: trimmedToken }, request, CHROME_UA),
-      await proxyUltimateStream(streamId, { email: requestedEmail, token: trimmedToken }, request, TV_UA),
-    ];
-    const own = ownAttempts.find((a) => a && upstreamStreamQuality(a.body) === "full")
-      ?? previewResult ?? ownAttempts.find(Boolean) ?? null;
-    result = own;
+    const own = await proxyUltimateStream(
+      streamId,
+      { email: requestedEmail, token: trimmedToken },
+      request,
+      CHROME_UA,
+    );
+    result = own ?? null;
   }
   const shouldEncrypt = request.headers.get("x-encrypt-response") === "aes"
     || new URL(request.url).searchParams.has("encrypt");
@@ -859,39 +851,30 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
   // Sama seperti stream: cari kandidat pool yang memberi stream FULL;
   // preview disimpan sebagai cadangan terakhir.
   let fullResult: UpstreamResult | null = null;
-  let previewResult: UpstreamResult | null = null;
   for (const candidate of poolCandidates) {
-    // Urutan per akun: Chrome UA (daftar user) dulu, lalu TV UA pada akun
-    // yang sama sebelum pindah ke akun berikutnya.
-    const attempts = [
-      await proxyUltimateVideoData(videoId, candidate, request, CHROME_UA),
-      await proxyUltimateVideoData(videoId, candidate, request, TV_UA),
-    ];
-    const allFatal = attempts.every((a) => a && upstreamHasFatalErrors(a.body));
-    for (const attempt of attempts) {
-      if (!attempt) continue;
-      const quality = upstreamStreamQuality(attempt.body);
-      if (quality === "full") {
-        fullResult = attempt;
-        break;
-      }
-      if (quality === "preview" && !previewResult) previewResult = attempt;
-    }
-    if (fullResult) break;
-    if (allFatal) {
-      // Gagal dengan kedua UA → akun benar-benar terpakai → cooldown.
+    // Satu percobaan per akun dengan Chrome UA (daftar user). ETSLIVE = berhenti.
+    const attempt = await proxyUltimateVideoData(videoId, candidate, request, CHROME_UA);
+    if (!attempt) continue;
+    if (upstreamHasFatalErrors(attempt.body)) {
+      // not_subscribed dll = akun sedang dipakai → cooldown, jangan dipakai lagi.
       markUltimateAccountBurned(candidate.email);
+      continue;
     }
+    if (upstreamStreamQuality(attempt.body) === "full") {
+      fullResult = attempt;
+      break;
+    }
+    // placeholder ("update aplikasi") atau lainnya → lanjut ke kandidat berikutnya.
   }
   let result = fullResult;
   if (!result) {
-    const ownAttempts = [
-      await proxyUltimateVideoData(videoId, { email: requestedEmail, token: trimmedToken }, request, CHROME_UA),
-      await proxyUltimateVideoData(videoId, { email: requestedEmail, token: trimmedToken }, request, TV_UA),
-    ];
-    const own = ownAttempts.find((a) => a && upstreamStreamQuality(a.body) === "full")
-      ?? previewResult ?? ownAttempts.find(Boolean) ?? null;
-    result = own;
+    const own = await proxyUltimateVideoData(
+      videoId,
+      { email: requestedEmail, token: trimmedToken },
+      request,
+      CHROME_UA,
+    );
+    result = own ?? null;
   }
   const shouldEncrypt = request.headers.get("x-encrypt-response") === "aes"
     || new URL(request.url).searchParams.has("encrypt");
@@ -1107,19 +1090,19 @@ async function selfCheck(): Promise<void> {
     throw new Error("Non-fatal upstream bodies must pass through unchanged");
   }
 
-  // Klasifikasi kualitas respons upstream: full / preview / error
-  const fullBody = JSON.stringify({
+  // Klasifikasi kualitas respons upstream: full (etslive) / placeholder / error
+  const etsliveBody = JSON.stringify({
+    data: { id: "1", attributes: { hls: "https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22246/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1", is_preview: true } },
+  });
+  const placeholderBody = JSON.stringify({
     data: { id: "1", attributes: { hls: "https://www.vidio.com/videos/1/common_tokenized_playlist.m3u8", is_preview: false } },
   });
-  const previewBody = JSON.stringify({
-    data: { id: "1", attributes: { hls: "https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/x.m3u8", is_preview: true } },
-  });
   const noUrlBody = JSON.stringify({ data: { id: "1", attributes: { hls: null, is_preview: true } } });
-  if (upstreamStreamQuality(fullBody) !== "full") {
-    throw new Error("Full stream body must classify as full");
+  if (upstreamStreamQuality(etsliveBody) !== "full") {
+    throw new Error("Etslive stream body must classify as full");
   }
-  if (upstreamStreamQuality(previewBody) !== "preview") {
-    throw new Error("Preview stream body must classify as preview");
+  if (upstreamStreamQuality(placeholderBody) !== "placeholder") {
+    throw new Error("Update-app placeholder body must classify as placeholder");
   }
   if (upstreamStreamQuality(noUrlBody) !== "error" || upstreamStreamQuality("not json") !== "error") {
     throw new Error("Error/URL-less bodies must classify as error");
