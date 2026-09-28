@@ -269,8 +269,10 @@ function rotatedSlotIndex(poolLength: number, nowMs: number): number | null {
   const slot = Math.floor(wibMs / ULTIMATE_ROTATE_MS);
   const daySlot = Math.floor(slot / SLOTS_PER_DAY);
   const slotInDay = slot - daySlot * SLOTS_PER_DAY;
-  if (slotInDay >= poolLength) return null;
-  return shuffledIndices(poolLength, daySlot)[slotInDay];
+  // Pool lebih kecil dari jumlah slot harian (mis. 2 akun untuk 360 slot):
+  // bungkus dengan modulo agar selalu ada akun pool — tanpa ini worker
+  // me-redirect ke official hampir sepanjang hari.
+  return shuffledIndices(poolLength, daySlot)[slotInDay % poolLength];
 }
 
 /**
