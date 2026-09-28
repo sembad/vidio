@@ -603,7 +603,7 @@ async function getLicensePoolAccounts(): Promise<{ email: string; token: string 
   }
   if (!text || !parseLicensePoolText(text).length) {
     try {
-      const viaProxy = await fetchUpstream(LICENSE_POOL_URL, reqHeaders);
+      const viaProxy = await fetchUpstream(LICENSE_POOL_URL, new Headers(reqHeaders));
       if (viaProxy && viaProxy.status === 200) text = viaProxy.body;
     } catch {
       // tetap null
