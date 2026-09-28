@@ -831,15 +831,11 @@ async function proxyUltimateStream(
           const patched: UpstreamResult = {
             ...result,
             body: patchedBody,
-            headers: {
-              ...Object.fromEntries(
-                Object.entries(result.headers).filter(
-                  ([k]) => k !== "content-length" && k !== "content-encoding",
-                ),
+            headers: Object.fromEntries(
+              Object.entries(result.headers).filter(
+                ([k]) => k !== "content-length" && k !== "content-encoding",
               ),
-              // Penanda diagnosis: DRM berasal dari production.
-              "x-drm-source": "production",
-            },
+            ),
           };
           stagingLastByStream.set(streamId, { result: patched, fetchedAt: lastStagingRequestAt });
           return patched;
@@ -848,10 +844,6 @@ async function proxyUltimateStream(
     } catch {
       // fallback: kirim body staging asli
     }
-    result.headers = {
-      ...result.headers,
-      "x-drm-source": "staging-fallback",
-    };
     stagingLastByStream.set(streamId, { result, fetchedAt: lastStagingRequestAt });
   }
   return result;
