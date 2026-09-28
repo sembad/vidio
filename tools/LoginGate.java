@@ -793,8 +793,10 @@ public final class LoginGate {
         String encodedEmail = URLEncoder.encode(email.trim(), "UTF-8").replace("+", "%20");
         String nocacheUrl = getEffectiveApiUrl() + "?" + query + "=" + encodedEmail + "&_t=" + System.currentTimeMillis();
         HttpURLConnection connection = (HttpURLConnection) new URL(nocacheUrl).openConnection();
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(5000);
+        // 10s: worker serverless bisa cold start; 5s membuat cek periodik gagal
+        // dan menurunkan mode akun secara permanen (badge preview + tanpa reload).
+        connection.setConnectTimeout(10_000);
+        connection.setReadTimeout(10_000);
         connection.setInstanceFollowRedirects(false);
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Accept", "text/plain");
@@ -804,7 +806,10 @@ public final class LoginGate {
         try {
             int status = connection.getResponseCode();
             if (status != HttpURLConnection.HTTP_OK) {
-                return false;
+                // Transport failure, bukan jawaban tier. Lempar agar pemanggil
+                // TIDAK menurunkan mode akun; hanya "false" eksplisit (HTTP 200)
+                // yang boleh menurunkan ultimate ke standard.
+                throw new IOException("Permission endpoint HTTP " + status);
             }
             return parsePermission(new BufferedReader(new InputStreamReader(
                     connection.getInputStream(), StandardCharsets.UTF_8)));
