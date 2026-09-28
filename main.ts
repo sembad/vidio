@@ -27,7 +27,7 @@ const SLOTS_PER_DAY = Math.floor(86_400_000 / ULTIMATE_ROTATE_MS);
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 // Saat kredensial pool ditolak upstream (akun mati/expired), coba kredensial
 // pool berikutnya sebanyak ini sebelum fallback ke akun user sendiri.
-const POOL_RETRY_COUNT = 8;
+const POOL_RETRY_COUNT = 20;
 const REDIRECT_URL = "https://vidio.com";
 const USER_AGENT = "tv-android/ (1020";
 
@@ -685,19 +685,22 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   let fullResult: UpstreamResult | null = null;
   let previewResult: UpstreamResult | null = null;
   for (const candidate of poolCandidates) {
-    // Satu percobaan per akun dengan Chrome UA (daftar user). ETSLIVE = berhenti.
+    // Satu percobaan per akun dengan Chrome UA (daftar user). Terima HANYA
+    // respons 200 OK dengan URL live; selain itu terus cari ke akun berikutnya.
     const attempt = await proxyUltimateStream(streamId, candidate, request, CHROME_UA);
     if (!attempt) continue;
-    if (upstreamHasFatalErrors(attempt.body)) {
-      // not_subscribed dll = akun sedang dipakai → cooldown, jangan dipakai lagi.
-      markUltimateAccountBurned(candidate.email);
+    if (attempt.status !== 200) {
+      if (upstreamHasFatalErrors(attempt.body)) {
+        // not_subscribed dll = akun sedang dipakai → cooldown, jangan dipakai lagi.
+        markUltimateAccountBurned(candidate.email);
+      }
       continue;
     }
     if (upstreamStreamQuality(attempt.body) === "full") {
       fullResult = attempt;
       break;
     }
-    // placeholder ("update aplikasi") atau lainnya → lanjut ke kandidat berikutnya.
+    // 200 tapi placeholder ("update aplikasi") → lanjut ke kandidat berikutnya.
   }
   let result = fullResult;
   if (!result) {
@@ -848,19 +851,22 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
   // preview disimpan sebagai cadangan terakhir.
   let fullResult: UpstreamResult | null = null;
   for (const candidate of poolCandidates) {
-    // Satu percobaan per akun dengan Chrome UA (daftar user). ETSLIVE = berhenti.
+    // Satu percobaan per akun dengan Chrome UA (daftar user). Terima HANYA
+    // respons 200 OK dengan URL live; selain itu terus cari ke akun berikutnya.
     const attempt = await proxyUltimateVideoData(videoId, candidate, request, CHROME_UA);
     if (!attempt) continue;
-    if (upstreamHasFatalErrors(attempt.body)) {
-      // not_subscribed dll = akun sedang dipakai → cooldown, jangan dipakai lagi.
-      markUltimateAccountBurned(candidate.email);
+    if (attempt.status !== 200) {
+      if (upstreamHasFatalErrors(attempt.body)) {
+        // not_subscribed dll = akun sedang dipakai → cooldown, jangan dipakai lagi.
+        markUltimateAccountBurned(candidate.email);
+      }
       continue;
     }
     if (upstreamStreamQuality(attempt.body) === "full") {
       fullResult = attempt;
       break;
     }
-    // placeholder ("update aplikasi") atau lainnya → lanjut ke kandidat berikutnya.
+    // 200 tapi placeholder ("update aplikasi") → lanjut ke kandidat berikutnya.
   }
   let result = fullResult;
   if (!result) {
