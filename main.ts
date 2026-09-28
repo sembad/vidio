@@ -1240,16 +1240,21 @@ async function selfCheck(): Promise<void> {
   if (usedEmails.size !== pool.length) {
     throw new Error("Pool rotation must use each account at most once per WIB day");
   }
-  if (pickRotatedUltimateCredential(pool, dayStart + pool.length * ULTIMATE_ROTATE_MS) !== null) {
-    throw new Error("Exhausted pool must yield no credential for the rest of the day");
+  // Pool lebih kecil dari jumlah slot harian: rotasi membungkus dengan
+  // modulo, jadi slot setelah akun terakhir kembali ke akun pertama —
+  // bukan null (dulu menyebabkan redirect ke official sepanjang hari).
+  const wrappedCred = pickRotatedUltimateCredential(pool, dayStart + pool.length * ULTIMATE_ROTATE_MS);
+  const firstOfOrder = pickRotatedUltimateCredential(pool, dayStart);
+  if (!wrappedCred || !firstOfOrder || wrappedCred.email !== firstOfOrder.email) {
+    throw new Error("Exhausted pool must wrap around to the first account");
   }
   // Reset 00:00 WIB: slot terakhir hari sebelumnya dan slot pertama hari baru
-  // harus terjadi tepat di boundary 17:00 UTC, dan hari baru mulai memakai
-  // akun lagi (pool "isi ulang").
+  // tetap menghasilkan akun (wrap), dan urutan hari baru di-seed ulang —
+  // diverifikasi lewat perubahan akun pada slot-slot awal hari baru.
   const beforeReset = pickRotatedUltimateCredential(pool, dayStart + 86_400_000 - 1);
   const afterReset = pickRotatedUltimateCredential(pool, dayStart + 86_400_000);
-  if (beforeReset !== null || afterReset === null) {
-    throw new Error("Pool must reset exactly at 00:00 WIB");
+  if (!beforeReset || !afterReset) {
+    throw new Error("Pool must keep yielding credentials across 00:00 WIB");
   }
   if (pickRotatedUltimateCredential([], dayStart) !== null) {
     throw new Error("Empty pool must yield no credential");
