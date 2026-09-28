@@ -575,6 +575,13 @@ const STAGING_CREDENTIAL_TOKEN = "ohzsy8obTvyhkk_Tx-vZ";
 const LICENSE_POOL_URL = "https://baru.pw/jwhwiwjwuevdehe.json";
 let licensePoolCache: { accounts: { email: string; token: string }[]; fetchedAt: number } | null = null;
 
+interface DrmPatch {
+  license_servers?: unknown;
+  widevine?: unknown;
+  fairplay?: unknown;
+  playready?: unknown;
+}
+
 function parseLicensePoolText(text: string): { email: string; token: string }[] {
   // Format file: ekspor array PHP — ['email' => '...', 'token' => '...']
   const emails = [...text.matchAll(/'email'\s*=>\s*'([^']*)'/g)].map((m) => m[1]);
@@ -615,51 +622,64 @@ async function getLicensePoolAccounts(): Promise<{ email: string; token: string 
 }
 
 // Ambil respons stream PRODUCTION untuk stream yang sama dengan akun pool
-// (diputar berdasarkan streamId agar merata), lalu ekstrak bagian DRM.
+// (mulai dari index streamId, coba hingga 5 akun sampai dapat license_servers),
+// lalu ekstrak bagian DRM. Patch per stream di-cache 3 menit agar request
+// berulang tidak menembak production berulang kali.
+const DRM_PATCH_CACHE_TTL = 3 * 60_000;
+const drmPatchByStream = new Map<string, { patch: DrmPatch; at: number }>();
+
 async function fetchProductionLicensePatch(
   streamId: string,
   search: string,
-): Promise<{ license_servers?: unknown; widevine?: unknown; fairplay?: unknown; playready?: unknown } | null> {
+): Promise<DrmPatch | null> {
+  const cached = drmPatchByStream.get(streamId);
+  if (cached && Date.now() - cached.at < DRM_PATCH_CACHE_TTL) return cached.patch;
+
   const accounts = await getLicensePoolAccounts();
   if (!accounts.length) return null;
   const numeric = Number.parseInt(streamId, 10);
-  const pick = Number.isFinite(numeric) && numeric > 0
-    ? accounts[numeric % accounts.length]
-    : accounts[Date.now() % accounts.length];
+  const start = Number.isFinite(numeric) && numeric > 0 ? numeric % accounts.length : 0;
+  const tries = Math.min(5, accounts.length);
 
-  const headers = new Headers({
-    "user-agent": "tv-android/2608.2.4 (1020)",
-    "accept-encoding": "gzip",
-    "x-client": "1790311747",
-    "x-signature": "81627641f8168b4c6707e4de044f63da3e662a90f0bf9d5c06a149e9af3de1ee",
-    referer: "androidtv-app://com.vidio.android.tc",
-    "x-api-platform": "tv-android",
-    "x-api-auth": API_AUTH,
-    "x-api-app-info": "tv-android/16/2608.2.4-1020",
-    "accept-language": "id",
-    "x-user-email": pick.email,
-    "x-user-token": pick.token,
-    "x-visitor-id": "c0f1cf62-ab27-45fb-9663-5e056ca0e3b3",
-    "content-type": "application/vnd.api+json",
-  });
+  for (let i = 0; i < tries; i++) {
+    const pick = accounts[(start + i) % accounts.length];
+    const headers = new Headers({
+      "user-agent": "tv-android/2608.2.4 (1020)",
+      "accept-encoding": "gzip",
+      "x-client": "1790311747",
+      "x-signature": "81627641f8168b4c6707e4de044f63da3e662a90f0bf9d5c06a149e9af3de1ee",
+      referer: "androidtv-app://com.vidio.android.tc",
+      "x-api-platform": "tv-android",
+      "x-api-auth": API_AUTH,
+      "x-api-app-info": "tv-android/16/2608.2.4-1020",
+      "accept-language": "id",
+      "x-user-email": pick.email,
+      "x-user-token": pick.token,
+      "x-visitor-id": "c0f1cf62-ab27-45fb-9663-5e056ca0e3b3",
+      "content-type": "application/vnd.api+json",
+    });
 
-  const prodUrl = `${UPSTREAM_ORIGIN}/livestreamings/${streamId}/stream${search}`;
-  const prod = await fetchUpstream(prodUrl, headers);
-  if (!prod || prod.status !== 200) return null;
-  try {
-    const json = JSON.parse(prod.body);
-    const attrs = json?.data?.attributes;
-    if (!attrs) return null;
-    const custom = attrs.custom_data ?? {};
-    return {
-      license_servers: attrs.license_servers,
-      widevine: custom.widevine,
-      fairplay: custom.fairplay,
-      playready: custom.playready,
-    };
-  } catch {
-    return null;
+    const prodUrl = `${UPSTREAM_ORIGIN}/livestreamings/${streamId}/stream${search}`;
+    const prod = await fetchUpstream(prodUrl, headers);
+    if (!prod || prod.status !== 200) continue;
+    try {
+      const json = JSON.parse(prod.body);
+      const attrs = json?.data?.attributes;
+      if (!attrs?.license_servers) continue;
+      const custom = attrs.custom_data ?? {};
+      const patch: DrmPatch = {
+        license_servers: attrs.license_servers,
+        widevine: custom.widevine,
+        fairplay: custom.fairplay,
+        playready: custom.playready,
+      };
+      drmPatchByStream.set(streamId, { patch, at: Date.now() });
+      return patch;
+    } catch {
+      continue;
+    }
   }
+  return null;
 }
 
 // Staging membatasi 1 request/menit; request berulang cepat → 403. Semua
