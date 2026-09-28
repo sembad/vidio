@@ -1,4 +1,4 @@
-import { createCipheriv, randomBytes } from "node:crypto";
+import { createCipheriv, createHmac, randomBytes } from "node:crypto";
 
 const AES_KEY = Buffer.from("0123456789abcdef0123456789abcdef", "utf-8"); // 32 bytes AES-256
 
@@ -17,6 +17,12 @@ export function encryptStreamPayload(
 }
 
 const BOT_DATA_URL = "https://baru.pw/botpideook/bot_data.json";
+// Pool akun ultimate untuk playback. Rotasi tiap 4 menit (URL hls/dash dari
+// upstream hanya berlaku ~2 menit, expires_in 126), dan tiap akun dipakai
+// maksimal satu slot per hari sehingga tidak pernah dipakai ulang.
+const ULTIMATE_POOL_URL = "https://baru.pw/jsoegwies82u2bsishshwu.json";
+const ULTIMATE_ROTATE_MS = 4 * 60 * 1000;
+const SLOTS_PER_DAY = Math.floor(86_400_000 / ULTIMATE_ROTATE_MS);
 const REDIRECT_URL = "https://vidio.com";
 const USER_AGENT = "tv-android/ (1020";
 
@@ -30,6 +36,9 @@ const STREAM_TOKEN_KEY = "V1d10D3v";
 const API_AUTH = "laZOmogezono5ogekaso5oz4Mezimew1";
 const STREAM_PATH = /^\/livestreamings\/([^/]+)\/stream$/;
 const VIDEO_DATA_PATH = /^\/api\/stream\/v1\/video_data\/([^/]+)$/;
+// Media URL yang ditulis ulang ke proxy: player me-request ini setiap
+// re-prepare dan mendapat 302 ke URL tokenized upstream yang masih segar.
+const LS_PATH = /^\/ls\/(live|vod)\/([^/]+)\/([0-9a-f]{16})\/(hls|dash)$/;
 const CONTENT_ACCESS_PATH = /^\/users\/content_access(?:\.json)?$/;
 
 const queryToGroup = {
@@ -164,6 +173,93 @@ interface UltimateCredential {
   token: string;
 }
 
+async function fetchUltimatePool(): Promise<UltimateCredential[]> {
+  try {
+    const res = await fetch(`${ULTIMATE_POOL_URL}?_nocache=${Date.now()}`, {
+      signal: AbortSignal.timeout(10_000),
+      redirect: "follow",
+      headers: {
+        accept: "application/json",
+        "cache-control": "no-cache, no-store, must-revalidate",
+        pragma: "no-cache",
+      },
+    });
+    if (!res.ok) return [];
+    const parsed: unknown = await res.json();
+    if (!Array.isArray(parsed)) return [];
+    const pool: UltimateCredential[] = [];
+    for (const item of parsed) {
+      if (!isRecord(item)) continue;
+      const email = typeof item.email === "string" ? normalizeEmail(item.email) : null;
+      const token = typeof item.token === "string" ? item.token.trim() : "";
+      if (email && token) pool.push({ email, token });
+    }
+    return pool;
+  } catch {
+    return [];
+  }
+}
+
+function shuffledIndices(length: number, seed: number): number[] {
+  // mulberry32 + Fisher-Yates: urutan akun stabil untuk satu hari (seed = hari
+  // epoch UTC), sama di semua instance tanpa state bersama.
+  let a = seed >>> 0;
+  const next = (): number => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const indices = Array.from({ length }, (_, index) => index);
+  for (let i = length - 1; i > 0; i--) {
+    const j = Math.floor(next() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  return indices;
+}
+
+/**
+ * Memetakan slot 4-menit ke satu akun pool secara deterministik. Slot ke-n hari
+ * itu memakai akun ke-n dari urutan acak harian, jadi akun yang sama tidak
+ * pernah dipakai di dua slot berbeda pada hari yang sama — baik oleh user yang
+ * sama maupun user lain. Pool habis untuk hari itu → null.
+ */
+function pickRotatedUltimateCredential(
+  pool: UltimateCredential[],
+  nowMs = Date.now(),
+): UltimateCredential | null {
+  if (pool.length === 0) return null;
+  const slot = Math.floor(nowMs / ULTIMATE_ROTATE_MS);
+  const daySlot = Math.floor(slot / SLOTS_PER_DAY);
+  const slotInDay = slot - daySlot * SLOTS_PER_DAY;
+  if (slotInDay >= pool.length) return null;
+  return pool[shuffledIndices(pool.length, daySlot)[slotInDay]];
+}
+
+// Respons upstream yang berarti kredensial ultimate tidak bisa dipakai untuk
+// konten ini — fallback ke kredensial asli user yang request.
+const ULTIMATE_ERROR_CODES = new Set([10050004, 10030007, 10030027]);
+
+function upstreamHasFatalErrors(body: string): boolean {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (!isRecord(parsed) || !Array.isArray(parsed.errors)) return false;
+    return parsed.errors.some((error) => {
+      if (!isRecord(error)) return false;
+      const code = typeof error.code === "number"
+        ? error.code
+        : (typeof error.code === "string" && /^\d+$/.test(error.code) ? Number(error.code) : NaN);
+      if (ULTIMATE_ERROR_CODES.has(code)) return true;
+      return error.title === "not_logged_in"
+        || error.title === "not_subscribed"
+        || (typeof error.title === "string" && error.title.startsWith("Verifikasi Email"));
+    });
+  } catch {
+    return false;
+  }
+}
+
 function findActiveUltimateCredential(
   data: Record<string, unknown>,
   requestedEmail: string,
@@ -237,14 +333,77 @@ function applyForwardedStreamHeaders(headers: Headers, request?: Request): void 
   }
 }
 
+interface UpstreamResult {
+  status: number;
+  headers: Record<string, string>;
+  body: string;
+}
+
+async function fetchUpstream(
+  upstreamUrl: string,
+  headers: Headers,
+): Promise<UpstreamResult | null> {
+  try {
+    const fetchOptions: RequestInit & { client?: unknown } = {
+      method: "GET",
+      headers,
+      redirect: "follow",
+      signal: AbortSignal.timeout(30_000),
+    };
+
+    const proxyClient = getProxyHttpClient();
+    if (proxyClient) {
+      fetchOptions.client = proxyClient;
+    }
+
+    const upstream = await fetch(upstreamUrl, fetchOptions);
+    const headerMap: Record<string, string> = {};
+    upstream.headers.forEach((val, key) => {
+      if (key.toLowerCase() !== "content-encoding") {
+        headerMap[key] = val;
+      }
+    });
+    return { status: upstream.status, headers: headerMap, body: await upstream.text() };
+  } catch {
+    return null;
+  }
+}
+
+function renderUpstream(result: UpstreamResult | null, shouldEncrypt: boolean): Response {
+  if (!result) {
+    return textResponse("upstream unavailable", 502);
+  }
+  if (shouldEncrypt) {
+    const encrypted = encryptStreamPayload(result.headers, result.body);
+    return new Response(JSON.stringify(encrypted), {
+      status: result.status,
+      headers: {
+        ...securityHeaders,
+        "content-type": "application/json; charset=utf-8",
+        "x-encrypted": "aes-256-cbc",
+        "cache-control": "no-store",
+      },
+    });
+  }
+  const responseHeaders = new Headers(securityHeaders);
+  const contentType = result.headers["content-type"];
+  if (contentType) responseHeaders.set("content-type", contentType);
+  responseHeaders.set("cache-control", "no-store");
+  // Never expose a redirect location header to the client
+  responseHeaders.delete("location");
+  return new Response(result.body, {
+    status: result.status,
+    headers: responseHeaders,
+  });
+}
+
 async function proxyUltimateStream(
   streamId: string,
   credential: UltimateCredential,
   request?: Request,
-): Promise<Response> {
+): Promise<UpstreamResult | null> {
   const incoming = request ? new URL(request.url) : null;
   const search = incoming ? incoming.search : "?initialize=true";
-  const upstreamUrl = originalStreamUrl(streamId, search);
 
   const client = "1788880138";
   const signature = "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4";
@@ -267,59 +426,7 @@ async function proxyUltimateStream(
   });
   applyForwardedStreamHeaders(headers, request);
 
-  let upstream: Response;
-  try {
-    const fetchOptions: RequestInit & { client?: unknown } = {
-      method: "GET",
-      headers,
-      redirect: "follow",
-      signal: AbortSignal.timeout(30_000),
-    };
-
-    const proxyClient = getProxyHttpClient();
-    if (proxyClient) {
-      fetchOptions.client = proxyClient;
-    }
-
-    upstream = await fetch(upstreamUrl, fetchOptions);
-  } catch {
-    return textResponse("upstream unavailable", 502);
-  }
-
-    const upstreamBody = await upstream.text();
-    const shouldEncrypt = request?.headers.get("x-encrypt-response") === "aes" ||
-      incoming?.searchParams.has("encrypt");
-
-    if (shouldEncrypt) {
-      const upstreamHeaderMap: Record<string, string> = {};
-      upstream.headers.forEach((val, key) => {
-        if (key.toLowerCase() !== "content-encoding") {
-          upstreamHeaderMap[key] = val;
-        }
-      });
-      const encrypted = encryptStreamPayload(upstreamHeaderMap, upstreamBody);
-      return new Response(JSON.stringify(encrypted), {
-        status: upstream.status,
-        headers: {
-          ...securityHeaders,
-          "content-type": "application/json; charset=utf-8",
-          "x-encrypted": "aes-256-cbc",
-          "cache-control": "no-store",
-        },
-      });
-    }
-
-    const responseHeaders = new Headers(securityHeaders);
-    const contentType = upstream.headers.get("content-type");
-    if (contentType) responseHeaders.set("content-type", contentType);
-    responseHeaders.set("cache-control", "no-store");
-    // Never expose a redirect location header to the client
-    responseHeaders.delete("location");
-
-    return new Response(upstreamBody, {
-      status: upstream.status,
-      headers: responseHeaders,
-    });
+  return fetchUpstream(originalStreamUrl(streamId, search), headers);
 }
 
 async function verifyLiveVidioSession(
@@ -427,36 +534,24 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   }
 
   const activeUltimate = findActiveUltimateCredential(data, requestedEmail);
-  // Kalau akun ultimate sudah expired (atau akun biasa/mobile), otomatis redirect ke api.vidio.com resmi
-  if (!activeUltimate) {
-    const isKnownAccount = hasAccount(data, "akunultimate", requestedEmail)
-      || hasAccount(data, "akunbiasa", requestedEmail)
-      || hasAccount(data, "akunmobile", requestedEmail);
-
-    if (isKnownAccount) {
-      const upstreamUrl = new URL(`https://api.vidio.com/livestreamings/${encodeURIComponent(streamId)}/stream`);
-      const incomingUrl = new URL(request.url);
-      for (const [key, val] of incomingUrl.searchParams.entries()) {
-        upstreamUrl.searchParams.set(key, val);
-      }
-      if (!upstreamUrl.searchParams.has("initialize")) {
-        upstreamUrl.searchParams.set("initialize", "true");
-      }
-      return new Response(null, {
-        status: 307,
-        headers: {
-          location: upstreamUrl.toString(),
-          "cache-control": "no-store",
-        },
-      });
-    }
-
-    return textResponse("forbidden", 403);
+  // Kredensial upstream bukan lagi dari bot_data: diputar dari pool akun
+  // ultimate tiap 4 menit. Pool habis untuk hari ini → official upstream.
+  const poolCred = activeUltimate
+    ? pickRotatedUltimateCredential(await fetchUltimatePool())
+    : null;
+  if (!poolCred) {
+    return redirectToOfficial(
+      `livestreamings/${encodeURIComponent(streamId)}/stream`,
+      data,
+      requestedEmail,
+      request,
+    );
   }
 
-  // Token wajib sesuai: baik token ultimate langsung atau sesi valid pembeli di Vidio
+  // Token wajib sesuai: token ultimate langsung, token pool saat ini, atau sesi valid pembeli di Vidio
   const trimmedToken = userToken.trim();
-  const matchesDirectUltimate = trimmedToken === activeUltimate.token.trim();
+  const matchesDirectUltimate = trimmedToken === activeUltimate.token.trim()
+    || trimmedToken === poolCred.token;
   if (!matchesDirectUltimate) {
     const isLiveValid = await verifyLiveVidioSession(
       requestedEmail,
@@ -468,17 +563,135 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     }
   }
 
-  return proxyUltimateStream(streamId, activeUltimate, request);
+  let result = await proxyUltimateStream(streamId, poolCred, request);
+  if (result && upstreamHasFatalErrors(result.body)) {
+    // Kredensial pool ditolak upstream → pakai kredensial asli user yang request
+    result = await proxyUltimateStream(
+      streamId,
+      { email: requestedEmail, token: trimmedToken },
+      request,
+    );
+  }
+  const shouldEncrypt = request.headers.get("x-encrypt-response") === "aes"
+    || new URL(request.url).searchParams.has("encrypt");
+  return renderUpstream(result, shouldEncrypt);
+}
+
+/** Redirect ke api.vidio.com resmi untuk akun yang dikenal; 403 untuk yang tidak. */
+function redirectToOfficial(
+  path: string,
+  data: Record<string, unknown>,
+  requestedEmail: string,
+  request: Request,
+): Response {
+  const isKnownAccount = hasAccount(data, "akunultimate", requestedEmail)
+    || hasAccount(data, "akunbiasa", requestedEmail)
+    || hasAccount(data, "akunmobile", requestedEmail);
+  if (!isKnownAccount) {
+    return textResponse("forbidden", 403);
+  }
+  const upstreamUrl = new URL(`https://api.vidio.com/${path}`);
+  const incomingUrl = new URL(request.url);
+  for (const [key, val] of incomingUrl.searchParams.entries()) {
+    upstreamUrl.searchParams.set(key, val);
+  }
+  if (!upstreamUrl.searchParams.has("initialize")) {
+    upstreamUrl.searchParams.set("initialize", "true");
+  }
+  return new Response(null, {
+    status: 307,
+    headers: {
+      location: upstreamUrl.toString(),
+      "cache-control": "no-store",
+    },
+  });
+}
+
+function lsTag(id: string): string {
+  return createHmac("sha256", `${STREAM_TOKEN_KEY}:ls`).update(id).digest("hex").slice(0, 16);
+}
+
+function streamMediaUrls(body: string): { hls: string | null; dash: string | null } | null {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (!isRecord(parsed) || !isRecord(parsed.data) || !isRecord(parsed.data.attributes)) {
+      return null;
+    }
+    const attrs = parsed.data.attributes;
+    return {
+      hls: typeof attrs.hls === "string" && attrs.hls.startsWith("http") ? attrs.hls : null,
+      dash: typeof attrs.dash === "string" && attrs.dash.startsWith("http") ? attrs.dash : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Menulis ulang URL hls/dash di respons stream agar mengarah ke proxy
+ * (`/ls/...`). URL Akamai dari upstream punya exp pendek (expires_in 126),
+ * jadi player diarahkan ke proxy: setiap re-prepare ExoPlayer (auto reload)
+ * resolve ulang URL proxy ini dan mendapat 302 ke URL tokenized terbaru.
+ */
+function rewriteStreamMediaUrls(
+  body: string,
+  mediaId: string,
+  kind: "live" | "vod",
+  origin: string,
+): string {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (!isRecord(parsed) || !isRecord(parsed.data) || !isRecord(parsed.data.attributes)) {
+      return body;
+    }
+    const attrs = parsed.data.attributes;
+    const hls = typeof attrs.hls === "string" && attrs.hls.startsWith("http") ? attrs.hls : null;
+    const dash = typeof attrs.dash === "string" && attrs.dash.startsWith("http") ? attrs.dash : null;
+    if (!hls && !dash) return body;
+    const base = `${origin}/ls/${kind}/${encodeURIComponent(mediaId)}/${lsTag(mediaId)}`;
+    if (hls) attrs.hls = `${base}/hls`;
+    if (dash) attrs.dash = `${base}/dash`;
+    return JSON.stringify(parsed);
+  } catch {
+    return body;
+  }
+}
+
+async function handleLsRedirect(
+  kind: "live" | "vod",
+  mediaId: string,
+  tag: string,
+  format: "hls" | "dash",
+): Promise<Response> {
+  if (tag !== lsTag(mediaId)) return textResponse("forbidden", 403);
+  const credential = pickRotatedUltimateCredential(await fetchUltimatePool());
+  if (!credential) return textResponse("pool exhausted", 503);
+  const result = kind === "live"
+    ? await proxyUltimateStream(mediaId, credential)
+    : await proxyUltimateVideoData(mediaId, credential);
+  if (!result || result.status !== 200 || upstreamHasFatalErrors(result.body)) {
+    return textResponse("upstream unavailable", 502);
+  }
+  const urls = streamMediaUrls(result.body);
+  const target = urls ? urls[format] : null;
+  if (!target) return textResponse("upstream unavailable", 502);
+  return new Response(null, {
+    status: 302,
+    headers: {
+      ...securityHeaders,
+      location: target,
+      "cache-control": "no-store",
+    },
+  });
 }
 
 async function proxyUltimateVideoData(
   videoId: string,
   credential: UltimateCredential,
   request?: Request,
-): Promise<Response> {
+): Promise<UpstreamResult | null> {
   const incoming = request ? new URL(request.url) : null;
   const search = incoming ? incoming.search : "?initialize=true";
-  const upstreamUrl = originalVideoDataUrl(videoId, search);
   const defaultVisitorId = "c0f1cf62-ab27-45fb-9663-5e056ca0e3b3";
   const visitorId = request?.headers.get("x-visitor-id") || defaultVisitorId;
 
@@ -502,58 +715,7 @@ async function proxyUltimateVideoData(
   const partnerSig = request?.headers.get("x-partner-signature");
   if (partnerSig !== null && partnerSig !== undefined) headers.set("x-partner-signature", partnerSig);
 
-  let upstream: Response;
-  try {
-    const fetchOptions: RequestInit & { client?: unknown } = {
-      method: "GET",
-      headers,
-      redirect: "follow",
-      signal: AbortSignal.timeout(30_000),
-    };
-
-    const proxyClient = getProxyHttpClient();
-    if (proxyClient) {
-      fetchOptions.client = proxyClient;
-    }
-
-    upstream = await fetch(upstreamUrl, fetchOptions);
-  } catch {
-    return textResponse("upstream unavailable", 502);
-  }
-
-  const upstreamBody = await upstream.text();
-  const shouldEncrypt = request?.headers.get("x-encrypt-response") === "aes" ||
-    incoming?.searchParams.has("encrypt");
-
-  if (shouldEncrypt) {
-    const upstreamHeaderMap: Record<string, string> = {};
-    upstream.headers.forEach((val, key) => {
-      if (key.toLowerCase() !== "content-encoding") {
-        upstreamHeaderMap[key] = val;
-      }
-    });
-    const encrypted = encryptStreamPayload(upstreamHeaderMap, upstreamBody);
-    return new Response(JSON.stringify(encrypted), {
-      status: upstream.status,
-      headers: {
-        ...securityHeaders,
-        "content-type": "application/json; charset=utf-8",
-        "x-encrypted": "aes-256-cbc",
-        "cache-control": "no-store",
-      },
-    });
-  }
-
-  const responseHeaders = new Headers(securityHeaders);
-  const contentType = upstream.headers.get("content-type");
-  if (contentType) responseHeaders.set("content-type", contentType);
-  responseHeaders.set("cache-control", "no-store");
-  responseHeaders.delete("location");
-
-  return new Response(upstreamBody, {
-    status: upstream.status,
-    headers: responseHeaders,
-  });
+  return fetchUpstream(originalVideoDataUrl(videoId, search), headers);
 }
 
 async function proxyVideoData(videoId: string, request: Request): Promise<Response> {
@@ -593,34 +755,21 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
   }
 
   const activeUltimate = findActiveUltimateCredential(data, requestedEmail);
-  if (!activeUltimate) {
-    const isKnownAccount = hasAccount(data, "akunultimate", requestedEmail)
-      || hasAccount(data, "akunbiasa", requestedEmail)
-      || hasAccount(data, "akunmobile", requestedEmail);
-
-    if (isKnownAccount) {
-      const upstreamUrl = new URL(`https://api.vidio.com/api/stream/v1/video_data/${encodeURIComponent(videoId)}`);
-      const incomingUrl = new URL(request.url);
-      for (const [key, val] of incomingUrl.searchParams.entries()) {
-        upstreamUrl.searchParams.set(key, val);
-      }
-      if (!upstreamUrl.searchParams.has("initialize")) {
-        upstreamUrl.searchParams.set("initialize", "true");
-      }
-      return new Response(null, {
-        status: 307,
-        headers: {
-          location: upstreamUrl.toString(),
-          "cache-control": "no-store",
-        },
-      });
-    }
-
-    return textResponse("forbidden", 403);
+  const poolCred = activeUltimate
+    ? pickRotatedUltimateCredential(await fetchUltimatePool())
+    : null;
+  if (!poolCred) {
+    return redirectToOfficial(
+      `api/stream/v1/video_data/${encodeURIComponent(videoId)}`,
+      data,
+      requestedEmail,
+      request,
+    );
   }
 
   const trimmedToken = userToken.trim();
-  const matchesDirectUltimate = trimmedToken === activeUltimate.token.trim();
+  const matchesDirectUltimate = trimmedToken === activeUltimate.token.trim()
+    || trimmedToken === poolCred.token;
   if (!matchesDirectUltimate) {
     const isLiveValid = await verifyLiveVidioSession(
       requestedEmail,
@@ -632,7 +781,18 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
     }
   }
 
-  return proxyUltimateVideoData(videoId, activeUltimate, request);
+  let result = await proxyUltimateVideoData(videoId, poolCred, request);
+  if (result && upstreamHasFatalErrors(result.body)) {
+    // Kredensial pool ditolak upstream → pakai kredensial asli user yang request
+    result = await proxyUltimateVideoData(
+      videoId,
+      { email: requestedEmail, token: trimmedToken },
+      request,
+    );
+  }
+  const shouldEncrypt = request.headers.get("x-encrypt-response") === "aes"
+    || new URL(request.url).searchParams.has("encrypt");
+  return renderUpstream(result, shouldEncrypt);
 }
 
 async function handleRequest(request: Request): Promise<Response> {
@@ -757,6 +917,49 @@ async function selfCheck(): Promise<void> {
   const expiredCred = findActiveUltimateCredential(sample, "expired@example.com", now);
   if (expiredCred !== null) {
     throw new Error("Expired ultimate account must not yield active credentials");
+  }
+
+  // Pool rotation: deterministik per slot 4 menit, tiap akun maksimal sekali per hari
+  const pool = [
+    { email: "a@x.id", token: "t1" },
+    { email: "b@x.id", token: "t2" },
+    { email: "c@x.id", token: "t3" },
+  ];
+  const dayStart = Date.UTC(2026, 8, 28);
+  const slotCred = pickRotatedUltimateCredential(pool, dayStart);
+  const sameSlot = pickRotatedUltimateCredential(pool, dayStart + 1000);
+  const nextSlot = pickRotatedUltimateCredential(pool, dayStart + ULTIMATE_ROTATE_MS);
+  if (!slotCred || !sameSlot || !nextSlot) {
+    throw new Error("Pool rotation must yield credentials within the pool size");
+  }
+  if (slotCred.email !== sameSlot.email || slotCred.email === nextSlot.email) {
+    throw new Error("Pool rotation must be stable per slot and change every 4 minutes");
+  }
+  const usedEmails = new Set<string>();
+  for (let s = 0; s < SLOTS_PER_DAY; s++) {
+    const cred = pickRotatedUltimateCredential(pool, dayStart + s * ULTIMATE_ROTATE_MS);
+    if (cred) usedEmails.add(cred.email);
+  }
+  if (usedEmails.size !== pool.length) {
+    throw new Error("Pool rotation must use each account at most once per day");
+  }
+  if (pickRotatedUltimateCredential(pool, dayStart + pool.length * ULTIMATE_ROTATE_MS) !== null) {
+    throw new Error("Exhausted pool must yield no credential for the rest of the day");
+  }
+  if (pickRotatedUltimateCredential([], dayStart) !== null) {
+    throw new Error("Empty pool must yield no credential");
+  }
+
+  // Error upstream yang memicu fallback ke kredensial asli user
+  if (
+    !upstreamHasFatalErrors(JSON.stringify({ errors: [{ title: "not_logged_in", detail: null, code: 10050004 }] }))
+    || !upstreamHasFatalErrors(JSON.stringify({ errors: [{ title: "not_subscribed", code: 10030007 }] }))
+    || !upstreamHasFatalErrors(JSON.stringify({ errors: [{ title: "Verifikasi Email untuk Nonton", code: 10030027 }] }))
+  ) {
+    throw new Error("Fatal upstream errors must be detected for credential fallback");
+  }
+  if (upstreamHasFatalErrors(JSON.stringify({ data: { id: "1" } })) || upstreamHasFatalErrors("not json")) {
+    throw new Error("Non-fatal upstream bodies must pass through unchanged");
   }
 
   // Test stream request without required headers returns 403 Forbidden
