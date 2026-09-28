@@ -303,6 +303,26 @@ function isUltimateAccountBurned(email: string, nowMs = Date.now()): boolean {
   return true;
 }
 
+// Statistik sukses per domain akun pool — dipelajari saat runtime, bukan
+// hardcode: domain yang terbukti memberi stream full naik prioritas rotate,
+// domain yang sering ditolak turun.
+const domainSuccess = new Map<string, { ok: number; fail: number }>();
+
+function recordUltimateDomainResult(email: string, ok: boolean): void {
+  const domain = email.split("@")[1] ?? "";
+  if (!domain) return;
+  const stat = domainSuccess.get(domain) ?? { ok: 0, fail: 0 };
+  if (ok) stat.ok++;
+  else stat.fail++;
+  domainSuccess.set(domain, stat);
+}
+
+function domainSuccessRatio(email: string): number {
+  const stat = domainSuccess.get(email.split("@")[1] ?? "");
+  if (!stat || stat.ok + stat.fail === 0) return 0.5; // belum ada data
+  return stat.ok / (stat.ok + stat.fail);
+}
+
 function pickRotatedUltimateCredentials(
   pool: UltimateCredential[],
   count: number,
@@ -317,11 +337,8 @@ function pickRotatedUltimateCredentials(
     if (isUltimateAccountBurned(candidate.email, nowMs)) continue;
     candidates.push(candidate);
   }
-  // Akun fake-tcl.com sering tidak berentitlement untuk konten tertentu
-  // (not_subscribed) — prioritaskan fake-tv-bundle.com & fake-coocaa.com.
-  const entitled = candidates.filter((c) => !c.email.endsWith("@fake-tcl.com"));
-  const tcl = candidates.filter((c) => c.email.endsWith("@fake-tcl.com"));
-  return [...entitled, ...tcl];
+  // Prioritas dinamis berdasarkan rasio sukses domain yang teramati.
+  return candidates.sort((a, b) => domainSuccessRatio(b.email) - domainSuccessRatio(a.email));
 }
 
 // Respons upstream yang berarti kredensial ultimate tidak bisa dipakai untuk
@@ -695,9 +712,11 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     if (upstreamHasFatalErrors(attempt.body)) {
       // not_subscribed dll = akun sedang dipakai → cooldown, jangan dipakai lagi.
       markUltimateAccountBurned(candidate.email);
+      recordUltimateDomainResult(candidate.email, false);
       continue;
     }
     if (upstreamStreamQuality(attempt.body) === "full") {
+      recordUltimateDomainResult(candidate.email, true);
       fullResult = attempt;
       break;
     }
@@ -858,9 +877,11 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
     if (upstreamHasFatalErrors(attempt.body)) {
       // not_subscribed dll = akun sedang dipakai → cooldown, jangan dipakai lagi.
       markUltimateAccountBurned(candidate.email);
+      recordUltimateDomainResult(candidate.email, false);
       continue;
     }
     if (upstreamStreamQuality(attempt.body) === "full") {
+      recordUltimateDomainResult(candidate.email, true);
       fullResult = attempt;
       break;
     }
@@ -1118,6 +1139,17 @@ async function selfCheck(): Promise<void> {
   }
   if (isUltimateAccountBurned("burn-check@example.com", 1000 + BURN_COOLDOWN_MS + 1)) {
     throw new Error("Burned account must be reusable after cooldown expires");
+  }
+
+  // Prioritas domain dinamis (tanpa hardcode domain)
+  recordUltimateDomainResult("a@good.example", true);
+  recordUltimateDomainResult("a@good.example", true);
+  recordUltimateDomainResult("b@bad.example", false);
+  if (domainSuccessRatio("x@good.example") <= domainSuccessRatio("y@bad.example")) {
+    throw new Error("Domain with successful streams must outrank failing domain");
+  }
+  if (domainSuccessRatio("z@unknown.example") !== 0.5) {
+    throw new Error("Unknown domain must have neutral priority");
   }
 
   // Test stream request without required headers returns 403 Forbidden
