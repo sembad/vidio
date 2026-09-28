@@ -59,6 +59,7 @@
     iput-boolean v0, p0, Lcom/vidio/android/patch/StreamRefresher;->e:Z
 
     :try_start_0
+    # Result.Failure -> lewati, jadwalkan tick berikutnya
     instance-of v1, p1, Lpb0/r$b;
     if-eqz v1, :cond_0
     goto/16 :goto_resched
@@ -78,7 +79,8 @@
     move-result-object v12
     if-eqz v12, :goto_resched
 
-    invoke-virtual {v0}, Lo40/c;->f()Ljava/lang/String;
+    # pilih URL: hls = c.g(), dash = c.c(); dash dipakai bila url .mpd
+    invoke-virtual {v0}, Lo40/c;->g()Ljava/lang/String;
     move-result-object v6
     invoke-virtual {v0}, Lo40/c;->c()Ljava/lang/String;
     move-result-object v5
@@ -94,33 +96,43 @@
     invoke-virtual {v2}, Lcom/kmklabs/vidioplayer/api/Video;->getDrmConfig()Lv00/h0;
     move-result-object v3
 
-    const/16 v11, 0x7b
+    const/16 v11, 0x7d
     const/4 v10, 0x0
 
     if-eqz v3, :cond_3
+
+    # DRM: licenseUrl segar = licenseServers.a(); secret segar = customData.widevine
+    invoke-virtual {v0}, Lo40/c;->i()Lcom/vidio/kmm/stream/api/a;
+    move-result-object v1
+    if-eqz v1, :cond_3
+    invoke-virtual {v1}, Lcom/vidio/kmm/stream/api/a;->a()Ljava/lang/String;
+    move-result-object v4
+    if-eqz v4, :cond_3
 
     invoke-virtual {v0}, Lo40/c;->b()Lcom/vidio/kmm/stream/api/CustomDataResponse;
     move-result-object v1
     if-eqz v1, :cond_3
     invoke-virtual {v1}, Lcom/vidio/kmm/stream/api/CustomDataResponse;->getWidevine()Ljava/lang/String;
-    move-result-object v4
-    if-eqz v4, :cond_3
+    move-result-object v7
+    if-eqz v7, :cond_3
 
     new-instance v1, Lv00/h0;
     invoke-virtual {v3}, Lv00/h0;->a()I
     move-result v5
-    invoke-virtual {v3}, Lv00/h0;->c()Ljava/lang/String;
-    move-result-object v7
     invoke-virtual {v3}, Lv00/h0;->d()Z
     move-result v8
     invoke-direct {v1, v5, v4, v7, v8}, Lv00/h0;-><init>(ILjava/lang/String;Ljava/lang/String;Z)V
     move-object v10, v1
-    const/16 v11, 0x3b
+    const/16 v11, 0x3d
 
     :cond_3
+    # copy$default(video, id=0J, url=TERPILIH, offlineWatchId=null, ad=null,
+    #              metadata=null, isLiveStream=false, drm, mask, null)
+    # mask 0x7d: hanya url (bit1) yang di-pass; 0x3d: url + drm (bit1, bit6)
     const/4 v1, 0x0
     const-wide/16 v3, 0x0
-    const/4 v5, 0x0
+    move-object v5, v6
+    const/4 v6, 0x0
     const/4 v7, 0x0
     const/4 v8, 0x0
     const/4 v9, 0x0

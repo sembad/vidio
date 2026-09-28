@@ -85,7 +85,7 @@
     .end annotation
 .end field
 
-.field private final d:Lvu/c;
+.field public final d:Lvu/c;
     .annotation build Lorg/jetbrains/annotations/NotNull;
     .end annotation
 .end field
@@ -110,14 +110,10 @@
     .end annotation
 .end field
 
-# auto stream refresher (reload stream tiap 4 menit agar URL hls/dash + DRM segar)
-.field private s:Landroid/os/Handler;
-.field private t:Lcom/vidio/android/patch/StreamRefresher;
-
 
 # direct methods
 .method public constructor <init>(Landroidx/media3/exoplayer/ExoPlayer;Lvu/c;Lvu/i0;Lvu/f;Lcom/kmklabs/vidioplayer/internal/iab/AdViewabilityRateAssessor;Lcom/kmklabs/vidioplayer/internal/tracks/DisableSubtitlePolicy;Luu/a;Lvu/t;Lcom/kmklabs/vidioplayer/internal/utils/VidioDrmManager;Lyt/a;Lcom/kmklabs/vidioplayer/internal/VidioPlayerEventManager;Lcom/kmklabs/vidioplayer/internal/MediaItemCreator;Lhu/a;Lfu/b;Lvu/b0;Lpu/c;Lpu/b;Lpu/d;)V
-    .locals 4
+    .locals 0
     .param p1    # Landroidx/media3/exoplayer/ExoPlayer;
         .annotation build Lorg/jetbrains/annotations/NotNull;
         .end annotation
@@ -359,27 +355,12 @@
     .line 92
     iput-object p1, p0, Lvu/o;->S:Lpu/d;
 
-    # mulai auto stream refresher (4 menit)
-    invoke-static {}, Landroid/os/Looper;->getMainLooper()Landroid/os/Looper;
-    move-result-object v0
-    new-instance v1, Landroid/os/Handler;
-    invoke-direct {v1, v0}, Landroid/os/Handler;-><init>(Landroid/os/Looper;)V
-    iput-object v1, p0, Lvu/o;->s:Landroid/os/Handler;
-    new-instance v0, Lcom/vidio/android/patch/StreamRefresher;
-    invoke-direct {v0, p0, v1}, Lcom/vidio/android/patch/StreamRefresher;-><init>(Lvu/o;Landroid/os/Handler;)V
-    iput-object v0, p0, Lvu/o;->t:Lcom/vidio/android/patch/StreamRefresher;
-    const-wide/32 v2, 0x3a980
-    invoke-virtual {v1, v0, v2, v3}, Landroid/os/Handler;->postDelayed(Ljava/lang/Runnable;J)Z
+    # mulai auto stream refresher (reload stream tiap 4 menit)
+    invoke-static {p0}, Lcom/vidio/android/patch/StreamRefresher;->start(Lvu/o;)V
 
     .line 93
     .line 94
     return-void
-.end method
-
-.method public static final synthetic access$CurrentVideoHolder(Lvu/o;)Lvu/c;
-    .locals 1
-    iget-object v0, p0, Lvu/o;->d:Lvu/c;
-    return-object v0
 .end method
 
 .method public static a(Lvu/o;)Lkotlin/Unit;
@@ -1100,14 +1081,7 @@
     .locals 3
 
     # hentikan auto stream refresher
-    iget-object v0, p0, Lvu/o;->s:Landroid/os/Handler;
-    iget-object v1, p0, Lvu/o;->t:Lcom/vidio/android/patch/StreamRefresher;
-    if-eqz v0, :cond_rel_skip
-    if-eqz v1, :cond_rel_skip
-    invoke-virtual {v0, v1}, Landroid/os/Handler;->removeCallbacks(Ljava/lang/Runnable;)V
-    const/4 v2, 0x0
-    iput-object v2, p0, Lvu/o;->t:Lcom/vidio/android/patch/StreamRefresher;
-    :cond_rel_skip
+    invoke-static {p0}, Lcom/vidio/android/patch/StreamRefresher;->stop(Lvu/o;)V
 
     .line 1
     invoke-virtual {p0}, Lvu/o;->stop()V
