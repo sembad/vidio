@@ -383,6 +383,32 @@ if len(inapp_update_matches) == 1:
 elif len(inapp_update_matches) > 1:
     raise SystemExit(f"Expected at most one InAppUpdateGoogle class, found {len(inapp_update_matches)}")
 
+# Disable the TV reminder-update screen (ReminderUpdateActivity): the home
+# collector (wr/a) is its only launcher. Force the wr/d$a$b instance-of check
+# to false so "force"/"warning" update events never open the update screen,
+# mirroring the mobile profile's stubbed in-app update. Soft-globbed and
+# idempotent (skips when already patched).
+reminder_matches = [
+    p for p in root.glob("smali*/**/wr/a.smali")
+    if "Lwr/d$a$b;" in p.read_text()
+]
+if len(reminder_matches) == 1:
+    reminder_path = reminder_matches[0]
+    reminder_text = reminder_path.read_text()
+    old_check = "    instance-of p1, v0, Lwr/d$a$b;\n"
+    count = reminder_text.count(old_check)
+    if count == 1:
+        reminder_text = reminder_text.replace(old_check, "    const/4 p1, 0x0\n")
+        reminder_path.write_text(reminder_text)
+        changed_files.add(reminder_path.relative_to(root))
+        update_stub_counts["reminder-update-launch"] += 1
+    elif count == 0:
+        pass  # already patched on a previous run
+    else:
+        raise SystemExit(f"Expected one wr/d$a$b instance-of in {reminder_path}, found {count}")
+elif len(reminder_matches) > 1:
+    raise SystemExit(f"Expected at most one wr/a home collector, found {len(reminder_matches)}")
+
 if profile == "mobile":
     cast_d_matches = list(root.glob("smali*/**/dx/d.smali"))
     if cast_d_matches:
