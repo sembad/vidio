@@ -381,6 +381,75 @@ function fetchStreamResultShared(
   return promise;
 }
 
+// URL hls/mpd/license upstream hidup ±5 menit sejak fetch. Aplikasi
+// menjadwalkan refresh stream dari field JSON `expires_in` (detik) — jadi
+// respons yang dilayani dari cache harus melaporkan sisa masa berlaku URL,
+// bukan nilai asli upstream, kalau tidak aplikasi menahan URL yang sudah mati.
+const UPSTREAM_URL_TTL_S = 300;
+// Refresh dijadwalkan lebih awal agar swap source selesai sebelum URL mati.
+const URL_REFRESH_MARGIN_S = 60;
+// Batas bawah expires_in yang dilaporkan ke aplikasi.
+const MIN_REPORTED_EXPIRES_S = 15;
+
+/** Set semua field `is_preview` menjadi false di data.attributes dan included[].attributes. */
+function forcePreviewOffInBody(body: string): string {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    for (const record of jsonApiAttributeRecords(parsed)) {
+      if ("is_preview" in record) record.is_preview = false;
+    }
+    return JSON.stringify(parsed);
+  } catch {
+    return body;
+  }
+}
+
+/** Kumpulkan objek attributes dari bentuk JSON:API { data, included }. */
+function jsonApiAttributeRecords(parsed: unknown): Record<string, unknown>[] {
+  const records: Record<string, unknown>[] = [];
+  if (!parsed || typeof parsed !== "object") return records;
+  const root = parsed as Record<string, unknown>;
+  const resources: unknown[] = [];
+  if (root.data) resources.push(root.data);
+  if (Array.isArray(root.included)) resources.push(...root.included);
+  for (const resource of resources) {
+    if (resource && typeof resource === "object") {
+      const attributes = (resource as Record<string, unknown>).attributes;
+      if (attributes && typeof attributes === "object") {
+        records.push(attributes as Record<string, unknown>);
+      }
+    }
+  }
+  return records;
+}
+
+/**
+ * Tulis ulang `expires_in` (detik) menjadi sisa masa berlaku URL dikurangi
+ * margin, sehingga refresh native aplikasi (px/y0 menjadwalkan ulang fetch
+ * stream dari field ini) selalu terjadi sebelum URL mati. Nilai asli upstream
+ * dipakai sebagai batas atas agar tidak pernah melaporkan masa berlaku yang
+ * lebih lama dari klaim upstream. Nilai 0/hilang diisi cap agar aplikasi
+ * tidak masuk loop refresh instan.
+ */
+function rewriteExpiresIn(body: string, ageMs: number): string {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    const remainingS = Math.max(0, UPSTREAM_URL_TTL_S - ageMs / 1000);
+    const cap = Math.max(MIN_REPORTED_EXPIRES_S, Math.floor(remainingS) - URL_REFRESH_MARGIN_S);
+    for (const record of jsonApiAttributeRecords(parsed)) {
+      const original = record.expires_in;
+      if (typeof original === "number" && original > 0 && original <= UPSTREAM_URL_TTL_S) {
+        record.expires_in = Math.min(original, cap);
+      } else if (original === undefined || original === null || original === 0) {
+        record.expires_in = cap;
+      }
+    }
+    return JSON.stringify(parsed);
+  } catch {
+    return body;
+  }
+}
+
 function pickRotatedUltimateCredentials(
   pool: UltimateCredential[],
   count: number,
@@ -760,7 +829,10 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   const cacheKey = `stream:${streamId}`;
   const cached = getCachedStreamResponse(cacheKey);
   if (cached) {
-    return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
+    // expires_in dilaporkan sebagai sisa masa berlaku URL agar refresh
+    // native aplikasi tetap terjadwal sebelum URL cache mati.
+    const body = rewriteExpiresIn(cached.body, Date.now() - cached.fetchedAt);
+    return renderUpstream({ status: cached.status, body, headers: cached.headers }, shouldEncrypt);
   }
 
   // Scan seluruh kandidat pool sampai dapat respons 200 OK dengan URL stream.
@@ -778,7 +850,13 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     );
     result = own ?? null;
   }
-  if (result) storeStreamResponse(cacheKey, result);
+  if (fullResult) {
+    // Respons dari akun pool ultimate: sembunyikan treatment preview (badge)
+    // supaya aplikasi tidak melewatkan penjadwalan refresh stream-nya.
+    fullResult.body = forcePreviewOffInBody(fullResult.body);
+    storeStreamResponse(cacheKey, fullResult);
+    fullResult.body = rewriteExpiresIn(fullResult.body, 0);
+  }
   return renderUpstream(result, shouldEncrypt);
 }
 
@@ -914,7 +992,8 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
   const shouldEncrypt = request.headers.get("x-encrypt-response") === "aes"
     || new URL(request.url).searchParams.has("encrypt");
 
-  // Cache per video ID, sama seperti stream.
+  // Cache per video ID, sama seperti stream. VOD tidak disentuh expires_in-nya
+  // (URL VOD berlaku lama); hanya treatment preview yang dimatikan.
   const cacheKey = `video:${videoId}`;
   const cached = getCachedStreamResponse(cacheKey);
   if (cached) {
@@ -936,7 +1015,10 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
     );
     result = own ?? null;
   }
-  if (result) storeStreamResponse(cacheKey, result);
+  if (fullResult) {
+    fullResult.body = forcePreviewOffInBody(fullResult.body);
+    storeStreamResponse(cacheKey, fullResult);
+  }
   return renderUpstream(result, shouldEncrypt);
 }
 
@@ -1190,6 +1272,48 @@ async function selfCheck(): Promise<void> {
   storeStreamResponse("selfcheck:bad", badResult, 1000);
   if (getCachedStreamResponse("selfcheck:bad", 2000)) {
     throw new Error("Non-200 responses must not be cached");
+  }
+
+  // forcePreviewOffInBody: semua is_preview (termasuk di included) menjadi false
+  const previewBody = JSON.stringify({
+    data: { attributes: { hls: "https://x/hls.m3u8", is_preview: true, expires_in: 300 } },
+    included: [{ attributes: { is_preview: true } }],
+  });
+  const previewParsed = JSON.parse(forcePreviewOffInBody(previewBody)) as {
+    data: { attributes: { is_preview: boolean } };
+    included: Array<{ attributes: { is_preview: boolean } }>;
+  };
+  if (previewParsed.data.attributes.is_preview !== false || previewParsed.included[0].attributes.is_preview !== false) {
+    throw new Error("is_preview must be forced to false");
+  }
+  if (forcePreviewOffInBody("not-json") !== "not-json") {
+    throw new Error("Non-JSON bodies must pass through unchanged");
+  }
+
+  // rewriteExpiresIn: fresh fetch → min(upstream, 240); cache umur 100 dtk → sisa - 60
+  const freshParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{"expires_in":300}}}', 0)) as {
+    data: { attributes: { expires_in: number } };
+  };
+  if (freshParsed.data.attributes.expires_in !== 240) {
+    throw new Error(`Fresh expires_in must be capped at 240, got ${freshParsed.data.attributes.expires_in}`);
+  }
+  const agedParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{"expires_in":300}}}', 100_000)) as {
+    data: { attributes: { expires_in: number } };
+  };
+  if (agedParsed.data.attributes.expires_in !== 140) {
+    throw new Error(`Aged expires_in must be 140, got ${agedParsed.data.attributes.expires_in}`);
+  }
+  const missingParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{}}}', 0)) as {
+    data: { attributes: { expires_in: number } };
+  };
+  if (missingParsed.data.attributes.expires_in !== 240) {
+    throw new Error("Missing expires_in must default to the refresh cap");
+  }
+  const vodParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{"expires_in":86400}}}', 0)) as {
+    data: { attributes: { expires_in: number } };
+  };
+  if (vodParsed.data.attributes.expires_in !== 86400) {
+    throw new Error("Long-lived expires_in must not be shortened");
   }
 
   // Test stream request without required headers returns 403 Forbidden

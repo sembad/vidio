@@ -716,6 +716,12 @@ public final class LoginGate {
         }
     }
 
+    /** True saat mode akun cache = ultimate; dipakai untuk menekan treatment preview. */
+    public static boolean isUltimateMode() {
+        Boolean mode = readAccountMode(accountModeFile(), null);
+        return mode != null && mode.booleanValue();
+    }
+
     private static void writeAccountMode(File file, String email, boolean ultimate) throws IOException {
         File parent = file.getParentFile();
         if (parent == null || (!parent.isDirectory() && !parent.mkdirs())) {

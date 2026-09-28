@@ -691,6 +691,57 @@ if stream_host_hook_count != 1:
     raise SystemExit(f"Expected exactly one KMM stream host hook, found {stream_host_hook_count}")
 stream_builder_hook_done = True
 
+# Paksa isPreview=false saat mode akun cache = ultimate. Upstream kadang
+# menandai stream pool ultimate sebagai preview; selain menampilkan badge
+# preview, isPreview=true membuat aplikasi MELEWATI penjadwalan refresh
+# stream berbasis expires_in (px/y0, dy/i, s7 semuanya skip saat t0.m()
+# true) sehingga URL hls/license mati setelah 5 menit tanpa reload.
+preview_gate_marker = "Lcom/vidio/android/patch/LoginGate;->isUltimateMode()Z"
+preview_patch_specs = (
+    ("v00/t0.smali", ".method public final m()Z", "Lv00/t0;->e:Z"),
+    ("lv/n.smali", ".method public final n()Z", "Llv/n;->l:Z"),
+)
+for preview_suffix, preview_signature, preview_field in preview_patch_specs:
+    preview_matches = list(root.glob(f"smali*/**/{preview_suffix}"))
+    if len(preview_matches) != 1:
+        # Nama kelas hasil obfuscasi bisa berbeda antar profil (mobile/tv);
+        # lewati saja bila tidak ditemukan agar build profil lain tetap jalan.
+        print(f"[preview-gate] {preview_suffix}: skipped (found {len(preview_matches)} matches)")
+        continue
+    preview_path = preview_matches[0]
+    preview_text = preview_path.read_text()
+    if preview_gate_marker in preview_text:
+        continue
+    getter_pattern = re.compile(
+        rf"(?ms)^{re.escape(preview_signature)}\n    \.locals \d+\n.*?^\.end method$"
+    )
+    gated_body = (
+        f"{preview_signature}\n"
+        "    .locals 1\n"
+        "\n"
+        "    invoke-static {}, " + preview_gate_marker + "\n"
+        "\n"
+        "    move-result v0\n"
+        "\n"
+        "    if-eqz v0, :preview_gate_original\n"
+        "\n"
+        "    const/4 v0, 0x0\n"
+        "\n"
+        "    return v0\n"
+        "\n"
+        "    :preview_gate_original\n"
+        f"    iget-boolean v0, p0, {preview_field}\n"
+        "\n"
+        "    return v0\n"
+        ".end method"
+    )
+    preview_text, preview_inserted = getter_pattern.subn(lambda match: gated_body, preview_text, count=1)
+    if preview_inserted != 1:
+        raise SystemExit(f"Preview getter not found in {preview_path}")
+    preview_path.write_text(preview_text)
+    changed_files.add(preview_path.relative_to(root))
+    print(f"[preview-gate] patched {preview_suffix} ({preview_field})")
+
 # Keep an OkHttp transport fallback for any stream request built outside KMM.
 if profile == "mobile":
     app_ua_suffix = "f60/d.smali"
