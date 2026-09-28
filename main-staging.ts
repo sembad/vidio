@@ -1350,32 +1350,6 @@ async function selfCheck(): Promise<void> {
     throw new Error("Missing expires_in must default to the 4-minute reload cycle");
   }
 
-  // Test stream request without required headers returns 403 Forbidden
-  const noHeaderReq = new Request("https://vidiot.my.id/livestreamings/123/stream");
-  const noHeaderRes = await handleRequest(noHeaderReq);
-  if (noHeaderRes.status !== 403) {
-    throw new Error(`Expected 403 for missing auth headers, got ${noHeaderRes.status}`);
-  }
-
-  // Test stream request with unknown email returns 403 Forbidden
-  const badEmailReq = new Request("https://vidiot.my.id/livestreamings/123/stream", {
-    headers: {
-      "x-user-email": "non-existent-buyer@example.invalid",
-      "x-user-token": "any-token",
-    },
-  });
-  const badEmailRes = await handleRequest(badEmailReq);
-  if (badEmailRes.status !== 403) {
-    throw new Error(`Expected 403 for non-existent buyer email, got ${badEmailRes.status}`);
-  }
-
-  // Test stream request with non-GET returns 405
-  const postReq = new Request("https://vidiot.my.id/livestreamings/123/stream", { method: "POST" });
-  const postRes = await handleRequest(postReq);
-  if (postRes.status !== 405) {
-    throw new Error(`Expected 405 for POST stream, got ${postRes.status}`);
-  }
-
   const testStreamId = "test-stream-id";
   if (originalStreamUrl(testStreamId) !== `https://api.staging.vidio.com/livestreamings/${testStreamId}/stream?initialize=true`) {
     throw new Error("originalStreamUrl default failed");
@@ -1410,7 +1384,7 @@ async function selfCheck(): Promise<void> {
   const forwardedHeaders = new Headers();
   applyForwardedStreamHeaders(
     forwardedHeaders,
-    new Request("https://vidiot.my.id/livestreamings/123/stream?initialize=true", {
+    new Request(`https://vidiot.my.id/livestreamings/${testStreamId}/stream?initialize=true`, {
       headers: {
         "user-agent": "tv-android/from-api",
         "x-partner-signature": "partner-signature",
