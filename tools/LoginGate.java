@@ -329,9 +329,7 @@ public final class LoginGate {
     }
 
     static String defaultApiUa() {
-        return "tv".equals(PROFILE)
-                ? "tv-android/2608.2.4 (1020)"
-                : HARDCODED_STREAM_UA;
+        return HARDCODED_STREAM_UA;
     }
 
     public static void addStreamHeaders(Object request, Object builder) {
@@ -1175,10 +1173,7 @@ public final class LoginGate {
                 || BLOCKED_LOGIN_PATHS.contains("/api/tv/verify_code")) {
             throw new AssertionError("Google and TV QR login endpoints must remain enabled");
         }
-        String expectedApiUa = "tv".equals(PROFILE)
-                ? "tv-android/2608.2.4 (1020)"
-                : HARDCODED_STREAM_UA;
-        if (!expectedApiUa.equals(defaultApiUa())) {
+        if (!HARDCODED_STREAM_UA.equals(defaultApiUa())) {
             throw new AssertionError("Profile API User-Agent mismatch");
         }
 
@@ -1301,10 +1296,11 @@ public final class LoginGate {
             }
         }
         verifySignature(null);
-        if (!"2608.2.4-1020".equals(appInfoVersionFromUa("tv-android/2608.2.4 (1020)"))) {
+        // Synthetic version so the real app version string never ships in the dex.
+        if (!"9.9.9-123".equals(appInfoVersionFromUa("tv-android/9.9.9 (123)"))) {
             throw new AssertionError("UA version/build was not parsed from the UA");
         }
-        if (appInfoVersionFromUa("tv-android/2608.2.4") != null
+        if (appInfoVersionFromUa("tv-android/9.9.9") != null
                 || appInfoVersionFromUa(null) != null
                 || appInfoVersionFromUa(HARDCODED_STREAM_UA) != null) {
             throw new AssertionError("Malformed UA must not yield an app-info version");

@@ -227,16 +227,25 @@ preserved_counts = Counter()
 restored_stream_header_counts = Counter()
 changed_files = set()
 
-# Replace the app's hardcoded vidioandroid UA with the hardcoded Chrome UA.
+# Replace the app's hardcoded vidioandroid UA (and, for TV, the tv-android UA)
+# with the hardcoded Chrome UA.
 vidio_ua = "vidioandroid/2608.2.7-73babcffa4 (3191921)"
+# Longest first: the bare TV UA is a prefix of the "(1020)" one.
+tv_uas = (
+    "tv-android/2608.2.4 (1020)",
+    "tv-android/2608.2.4",
+)
 chrome_ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36"
+app_uas = (vidio_ua, *tv_uas) if profile == "tv" else (vidio_ua,)
 vidio_ua_replacements = 0
 for path in root.glob("smali*/**/*.smali"):
     text = path.read_text()
-    count = text.count(vidio_ua)
+    count = sum(text.count(ua) for ua in app_uas)
     if count:
         vidio_ua_replacements += count
-        path.write_text(text.replace(vidio_ua, chrome_ua))
+        for ua in app_uas:
+            text = text.replace(ua, chrome_ua)
+        path.write_text(text)
         changed_files.add(path.relative_to(root))
 
 for path in root.glob("smali*/**/*.smali"):
@@ -512,7 +521,14 @@ profile_identities = {
     },
     "tv": {
         "android-app://com.vidio.android": ("androidtv-app://com.vidio.android.tv", 2),
-        "vidioandroid/2608.2.7-73babcffa4 (3191921)": ("tv-android/2608.2.4 (1020)", 2),
+        # The TV app UA is normalized straight to the hardcoded Chrome UA; the
+        # tv-android identity must not appear anywhere in the output. Count
+        # covers the 2 API UA copies plus the 3 WebView setUserAgentString
+        # copies ("tv-android/2608.2.4").
+        "tv-android/2608.2.4 (1020)": (
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+            5,
+        ),
     },
 }
 normalizations = profile_identities[profile]
@@ -1178,7 +1194,7 @@ for method_name in playback_methods:
 print("In-app update entry points stubbed:")
 for method_name, count in sorted(update_stub_counts.items()):
     print(f"  {method_name}: {count}")
-print(f"vidioandroid UA replaced with Chrome UA: {vidio_ua_replacements}")
+print(f"App UA strings replaced with Chrome UA: {vidio_ua_replacements}")
 print("Changed Smali files:")
 for path in sorted(changed_files):
     print(f"  {path}")

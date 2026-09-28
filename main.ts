@@ -30,10 +30,18 @@ const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 const REDIRECT_URL = "https://vidio.com";
 const USER_AGENT = "tv-android/ (1020";
 
-// Official upstream that serves the stream. All upstream calls go here
-// (via the DataImpulse ID proxy for geo access).
+// Official upstream that serves the stream. All upstream calls go here,
+// routed through the score proxy (upstream host becomes the first path
+// segment): https://score.xxxxxxx.my.id/api.vidio.com/<path>
 const UPSTREAM_ORIGIN = "https://api.vidio.com";
-const UPSTREAM_PROXY_URL = "http://46b0ff892fc1d3075320__cr.id:66c757e644710948@gw.dataimpulse.com:823";
+const UPSTREAM_PROXY_BASE = "https://score.xxxxxxx.my.id";
+
+function proxiedUpstreamUrl(url: string): string {
+  if (url.startsWith(UPSTREAM_ORIGIN)) {
+    return UPSTREAM_PROXY_BASE + "/api.vidio.com" + url.slice(UPSTREAM_ORIGIN.length);
+  }
+  return url;
+}
 // Default Remote Config live streaming token key. X-SIGNATURE for the stream
 // endpoint is HMAC-SHA256(key = "<STREAM_TOKEN_KEY>:<client>", data = "<client>").
 const STREAM_TOKEN_KEY = "V1d10D3v";
@@ -554,16 +562,6 @@ function originalVideoDataUrl(videoId: string, search = "?initialize=true"): str
   return `${UPSTREAM_ORIGIN}/api/stream/v1/video_data/${videoId}${query}`;
 }
 
-let cachedProxyClient: unknown = null;
-function getProxyHttpClient(): unknown {
-  if (cachedProxyClient) return cachedProxyClient;
-  const denoObj = (globalThis as unknown as { Deno?: { createHttpClient?: (opts: { proxy: { url: string } }) => unknown } }).Deno;
-  if (denoObj?.createHttpClient) {
-    cachedProxyClient = denoObj.createHttpClient({ proxy: { url: UPSTREAM_PROXY_URL } });
-  }
-  return cachedProxyClient;
-}
-
 // Hanya UA dan partner-signature yang di-forward dari request klien. Jangan
 // pernah meneruskan x-authorization (JWT identitas user) atau x-api-app-info
 // milik klien: JWT akan menimpa identitas kredensial pool di mata upstream
@@ -592,19 +590,12 @@ async function fetchUpstream(
   headers: Headers,
 ): Promise<UpstreamResult | null> {
   try {
-    const fetchOptions: RequestInit & { client?: unknown } = {
+    const upstream = await fetch(proxiedUpstreamUrl(upstreamUrl), {
       method: "GET",
       headers,
       redirect: "follow",
       signal: AbortSignal.timeout(30_000),
-    };
-
-    const proxyClient = getProxyHttpClient();
-    if (proxyClient) {
-      fetchOptions.client = proxyClient;
-    }
-
-    const upstream = await fetch(upstreamUrl, fetchOptions);
+    });
     const headerMap: Record<string, string> = {};
     upstream.headers.forEach((val, key) => {
       if (key.toLowerCase() !== "content-encoding") {
@@ -705,7 +696,7 @@ async function verifyLiveVidioSession(
   }
 
   try {
-    const res = await fetch("https://api.vidio.com/profiles", {
+    const res = await fetch(proxiedUpstreamUrl("https://api.vidio.com/profiles"), {
       method: "GET",
       headers: testHeaders,
       signal: AbortSignal.timeout(8_000),
@@ -727,7 +718,7 @@ async function verifyLiveVidioSession(
   } catch {}
 
   try {
-    const res = await fetch("https://api.vidio.com/users/data", {
+    const res = await fetch(proxiedUpstreamUrl("https://api.vidio.com/users/data"), {
       method: "GET",
       headers: testHeaders,
       signal: AbortSignal.timeout(8_000),
@@ -878,7 +869,7 @@ function redirectToOfficial(
   return new Response(null, {
     status: 307,
     headers: {
-      location: upstreamUrl.toString(),
+      location: proxiedUpstreamUrl(upstreamUrl.toString()),
       "cache-control": "no-store",
     },
   });
@@ -1341,6 +1332,13 @@ async function selfCheck(): Promise<void> {
   }
   if (!VIDEO_DATA_PATH.test(`/api/stream/v1/video_data/${testVideoId}`)) {
     throw new Error("Video data path self-check failed");
+  }
+  if (proxiedUpstreamUrl(`https://api.vidio.com/livestreamings/${testStreamId}/stream?initialize=true`)
+    !== `https://score.xxxxxxx.my.id/api.vidio.com/livestreamings/${testStreamId}/stream?initialize=true`) {
+    throw new Error("Upstream proxy mapping failed");
+  }
+  if (proxiedUpstreamUrl("https://other.example.com/path") !== "https://other.example.com/path") {
+    throw new Error("Upstream proxy passthrough failed");
   }
 
   // Test UA endpoint returns tv-android UA
