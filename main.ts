@@ -567,6 +567,15 @@ const STAGING_API_AUTH = "cubixarIhu8une5OP33upogocaTeWerU";
 const STAGING_CREDENTIAL_EMAIL = "@gmail.com";
 const STAGING_CREDENTIAL_TOKEN = "ohzsy8obTvyhkk_Tx-vZ";
 
+// Staging membatasi 1 request/menit; request berulang cepat → 403. Semua
+// fetch staging lewat proxyUltimateStream: dalam jendela 60 dtk sejak request
+// staging terakhir, respons tersimpan untuk stream yang sama dilayani ulang
+// tanpa menyentuh staging. Tanpa respons tersimpan (stream berbeda / request
+// sebelumnya gagal) pemanggil dilewati (null) agar staging tidak di-hammer.
+const STAGING_MIN_INTERVAL_MS = 60_000;
+let lastStagingRequestAt = 0;
+const stagingLastByStream = new Map<string, { result: UpstreamResult; fetchedAt: number }>();
+
 function originalStreamUrl(streamId: string, search = "?initialize=true"): string {
   const query = search ? (search.startsWith("?") ? search : `?${search}`) : "?initialize=true";
   return `${STREAM_UPSTREAM_ORIGIN}/livestreamings/${streamId}/stream${query}`;
@@ -689,7 +698,22 @@ async function proxyUltimateStream(
   });
   applyForwardedStreamHeaders(headers, request);
 
-  return fetchUpstream(originalStreamUrl(streamId, search), headers);
+  // Throttle 1 request/menit ke staging (lihat catatan di konstanta atas).
+  const now = Date.now();
+  if (now - lastStagingRequestAt < STAGING_MIN_INTERVAL_MS) {
+    const stored = stagingLastByStream.get(streamId);
+    // Respons tersimpan maksimal ~60 dtk umurnya dalam jendela ini — URL
+    // upstream hidup ±5 menit, jadi masih valid dilayani ulang.
+    if (stored) return stored.result;
+    return null;
+  }
+
+  const result = await fetchUpstream(originalStreamUrl(streamId, search), headers);
+  lastStagingRequestAt = Date.now();
+  if (result && result.status === 200 && upstreamStreamQuality(result.body) === "full") {
+    stagingLastByStream.set(streamId, { result, fetchedAt: lastStagingRequestAt });
+  }
+  return result;
 }
 
 async function verifyLiveVidioSession(
