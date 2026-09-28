@@ -344,14 +344,12 @@ function upstreamHasFatalErrors(body: string): boolean {
 }
 
 /**
- * Mengklasifikasi respons stream/video_data dari upstream:
- * - "full": URL live asli di host etslive/akamaized (termasuk preview-tokenized
- *   yang diputar APK dan di-refresh tiap 4 menit) — INI yang diinginkan.
- * - "placeholder": URL www.vidio.com/videos/.../common_tokenized_playlist.m3u8 —
- *   video placeholder "suruh update aplikasi", BUKAN live stream; jangan dipakai.
+ * Mengklasifikasi respons stream/video_data dari upstream, tanpa hardcode
+ * hostname apa pun:
+ * - "full": ada URL hls/dash yang bisa dipakai.
  * - "error": respons error / tanpa URL (akun terpakai, ditolak, dsb).
  */
-function upstreamStreamQuality(body: string): "full" | "placeholder" | "error" {
+function upstreamStreamQuality(body: string): "full" | "error" {
   try {
     const parsed: unknown = JSON.parse(body);
     if (!isRecord(parsed)) return "error";
@@ -360,10 +358,7 @@ function upstreamStreamQuality(body: string): "full" | "placeholder" | "error" {
     const attrs = parsed.data.attributes;
     const hls = typeof attrs.hls === "string" ? attrs.hls : "";
     const dash = typeof attrs.dash === "string" ? attrs.dash : "";
-    if (!hls && !dash) return "error";
-    const isPlaceholder = hls.includes("/videos/") || hls.includes("common_tokenized_playlist")
-      || dash.includes("/videos/") || dash.includes("common_tokenized_playlist");
-    return isPlaceholder ? "placeholder" : "full";
+    return hls || dash ? "full" : "error";
   } catch {
     return "error";
   }
@@ -1092,19 +1087,13 @@ async function selfCheck(): Promise<void> {
     throw new Error("Non-fatal upstream bodies must pass through unchanged");
   }
 
-  // Klasifikasi kualitas respons upstream: full (etslive) / placeholder / error
-  const etsliveBody = JSON.stringify({
-    data: { id: "1", attributes: { hls: "https://etslive-v3-vidio-com-preview-tokenized.akamaized.net/stream/22246/res=1080p/file/drm/hls/master.m3u8?hdnts=exp=1", is_preview: true } },
-  });
-  const placeholderBody = JSON.stringify({
-    data: { id: "1", attributes: { hls: "https://www.vidio.com/videos/1/common_tokenized_playlist.m3u8", is_preview: false } },
+  // Klasifikasi kualitas respons upstream: full (ada URL) / error
+  const withUrlBody = JSON.stringify({
+    data: { id: "1", attributes: { hls: "https://example.com/stream/master.m3u8", is_preview: true } },
   });
   const noUrlBody = JSON.stringify({ data: { id: "1", attributes: { hls: null, is_preview: true } } });
-  if (upstreamStreamQuality(etsliveBody) !== "full") {
-    throw new Error("Etslive stream body must classify as full");
-  }
-  if (upstreamStreamQuality(placeholderBody) !== "placeholder") {
-    throw new Error("Update-app placeholder body must classify as placeholder");
+  if (upstreamStreamQuality(withUrlBody) !== "full") {
+    throw new Error("Body with stream URL must classify as full");
   }
   if (upstreamStreamQuality(noUrlBody) !== "error" || upstreamStreamQuality("not json") !== "error") {
     throw new Error("Error/URL-less bodies must classify as error");
