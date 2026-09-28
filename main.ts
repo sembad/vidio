@@ -1,4 +1,4 @@
-import { createCipheriv, createHmac, randomBytes } from "node:crypto";
+import { createCipheriv, randomBytes } from "node:crypto";
 
 const AES_KEY = Buffer.from("0123456789abcdef0123456789abcdef", "utf-8"); // 32 bytes AES-256
 
@@ -36,9 +36,6 @@ const STREAM_TOKEN_KEY = "V1d10D3v";
 const API_AUTH = "laZOmogezono5ogekaso5oz4Mezimew1";
 const STREAM_PATH = /^\/livestreamings\/([^/]+)\/stream$/;
 const VIDEO_DATA_PATH = /^\/api\/stream\/v1\/video_data\/([^/]+)$/;
-// Media URL yang ditulis ulang ke proxy: player me-request ini setiap
-// re-prepare dan mendapat 302 ke URL tokenized upstream yang masih segar.
-const LS_PATH = /^\/ls\/(live|vod)\/([^/]+)\/([0-9a-f]{16})\/(hls|dash)$/;
 const CONTENT_ACCESS_PATH = /^\/users\/content_access(?:\.json)?$/;
 
 const queryToGroup = {
@@ -602,84 +599,6 @@ function redirectToOfficial(
     status: 307,
     headers: {
       location: upstreamUrl.toString(),
-      "cache-control": "no-store",
-    },
-  });
-}
-
-function lsTag(id: string): string {
-  return createHmac("sha256", `${STREAM_TOKEN_KEY}:ls`).update(id).digest("hex").slice(0, 16);
-}
-
-function streamMediaUrls(body: string): { hls: string | null; dash: string | null } | null {
-  try {
-    const parsed: unknown = JSON.parse(body);
-    if (!isRecord(parsed) || !isRecord(parsed.data) || !isRecord(parsed.data.attributes)) {
-      return null;
-    }
-    const attrs = parsed.data.attributes;
-    return {
-      hls: typeof attrs.hls === "string" && attrs.hls.startsWith("http") ? attrs.hls : null,
-      dash: typeof attrs.dash === "string" && attrs.dash.startsWith("http") ? attrs.dash : null,
-    };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Menulis ulang URL hls/dash di respons stream agar mengarah ke proxy
- * (`/ls/...`). URL Akamai dari upstream punya exp pendek (expires_in 126),
- * jadi player diarahkan ke proxy: setiap re-prepare ExoPlayer (auto reload)
- * resolve ulang URL proxy ini dan mendapat 302 ke URL tokenized terbaru.
- */
-function rewriteStreamMediaUrls(
-  body: string,
-  mediaId: string,
-  kind: "live" | "vod",
-  origin: string,
-): string {
-  try {
-    const parsed: unknown = JSON.parse(body);
-    if (!isRecord(parsed) || !isRecord(parsed.data) || !isRecord(parsed.data.attributes)) {
-      return body;
-    }
-    const attrs = parsed.data.attributes;
-    const hls = typeof attrs.hls === "string" && attrs.hls.startsWith("http") ? attrs.hls : null;
-    const dash = typeof attrs.dash === "string" && attrs.dash.startsWith("http") ? attrs.dash : null;
-    if (!hls && !dash) return body;
-    const base = `${origin}/ls/${kind}/${encodeURIComponent(mediaId)}/${lsTag(mediaId)}`;
-    if (hls) attrs.hls = `${base}/hls`;
-    if (dash) attrs.dash = `${base}/dash`;
-    return JSON.stringify(parsed);
-  } catch {
-    return body;
-  }
-}
-
-async function handleLsRedirect(
-  kind: "live" | "vod",
-  mediaId: string,
-  tag: string,
-  format: "hls" | "dash",
-): Promise<Response> {
-  if (tag !== lsTag(mediaId)) return textResponse("forbidden", 403);
-  const credential = pickRotatedUltimateCredential(await fetchUltimatePool());
-  if (!credential) return textResponse("pool exhausted", 503);
-  const result = kind === "live"
-    ? await proxyUltimateStream(mediaId, credential)
-    : await proxyUltimateVideoData(mediaId, credential);
-  if (!result || result.status !== 200 || upstreamHasFatalErrors(result.body)) {
-    return textResponse("upstream unavailable", 502);
-  }
-  const urls = streamMediaUrls(result.body);
-  const target = urls ? urls[format] : null;
-  if (!target) return textResponse("upstream unavailable", 502);
-  return new Response(null, {
-    status: 302,
-    headers: {
-      ...securityHeaders,
-      location: target,
       "cache-control": "no-store",
     },
   });
