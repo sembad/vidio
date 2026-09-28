@@ -331,6 +331,56 @@ async function scanPoolForFullResult(
   return null;
 }
 
+// Cache respons stream per ID: user pertama memicu fetch fresh dari pool,
+// user berikutnya dalam window cache memakai respons yang sama — akun pool
+// tidak diambil terus-menerus tetap awet. Setelah TTL (4 menit, URL hls/mpd/
+// license upstream berlaku ±5 menit) request berikutnya memicu fetch fresh.
+const STREAM_CACHE_TTL_MS = 4 * 60_000;
+
+interface CachedStreamResponse {
+  status: number;
+  body: string;
+  headers: Record<string, string>;
+  fetchedAt: number;
+}
+
+const streamResponseCache = new Map<string, CachedStreamResponse>();
+const streamResponseInflight = new Map<string, Promise<UpstreamResult | null>>();
+
+function getCachedStreamResponse(key: string, nowMs = Date.now()): CachedStreamResponse | null {
+  const cached = streamResponseCache.get(key);
+  if (!cached) return null;
+  if (nowMs - cached.fetchedAt >= STREAM_CACHE_TTL_MS) {
+    streamResponseCache.delete(key);
+    return null;
+  }
+  return cached;
+}
+
+function storeStreamResponse(key: string, result: UpstreamResult, nowMs = Date.now()): void {
+  if (result.status !== 200 || upstreamStreamQuality(result.body) !== "full") return;
+  streamResponseCache.set(key, {
+    status: result.status,
+    body: result.body,
+    headers: result.headers,
+    fetchedAt: nowMs,
+  });
+}
+
+/** Fetch fresh dengan dedup: request bersamaan memakai satu scan yang sama. */
+function fetchStreamResultShared(
+  key: string,
+  load: () => Promise<UpstreamResult | null>,
+): Promise<UpstreamResult | null> {
+  const inflight = streamResponseInflight.get(key);
+  if (inflight) return inflight;
+  const promise = load().finally(() => {
+    streamResponseInflight.delete(key);
+  });
+  streamResponseInflight.set(key, promise);
+  return promise;
+}
+
 function pickRotatedUltimateCredentials(
   pool: UltimateCredential[],
   count: number,
@@ -702,9 +752,21 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     }
   }
 
+  const shouldEncrypt = request.headers.get("x-encrypt-response") === "aes"
+    || new URL(request.url).searchParams.has("encrypt");
+
+  // Cache per stream ID: user pertama fetch fresh, user berikutnya dalam
+  // window 4 menit memakai respons yang sama (akun pool tetap awet).
+  const cacheKey = `stream:${streamId}`;
+  const cached = getCachedStreamResponse(cacheKey);
+  if (cached) {
+    return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
+  }
+
   // Scan seluruh kandidat pool sampai dapat respons 200 OK dengan URL stream.
-  const fullResult = await scanPoolForFullResult(poolCandidates, (candidate) =>
-    proxyUltimateStream(streamId, candidate, request, CHROME_UA));
+  const fullResult = await fetchStreamResultShared(cacheKey, () =>
+    scanPoolForFullResult(poolCandidates, (candidate) =>
+      proxyUltimateStream(streamId, candidate, request, CHROME_UA)));
   let result = fullResult;
   if (!result) {
     // Tidak ada kandidat pool yang full → coba kredensial asli user yang request
@@ -716,8 +778,7 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     );
     result = own ?? null;
   }
-  const shouldEncrypt = request.headers.get("x-encrypt-response") === "aes"
-    || new URL(request.url).searchParams.has("encrypt");
+  if (result) storeStreamResponse(cacheKey, result);
   return renderUpstream(result, shouldEncrypt);
 }
 
@@ -850,10 +911,21 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
     }
   }
 
+  const shouldEncrypt = request.headers.get("x-encrypt-response") === "aes"
+    || new URL(request.url).searchParams.has("encrypt");
+
+  // Cache per video ID, sama seperti stream.
+  const cacheKey = `video:${videoId}`;
+  const cached = getCachedStreamResponse(cacheKey);
+  if (cached) {
+    return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
+  }
+
   // Sama seperti stream: scan seluruh kandidat pool sampai dapat 200 OK
   // dengan URL stream.
-  const fullResult = await scanPoolForFullResult(poolCandidates, (candidate) =>
-    proxyUltimateVideoData(videoId, candidate, request, CHROME_UA));
+  const fullResult = await fetchStreamResultShared(cacheKey, () =>
+    scanPoolForFullResult(poolCandidates, (candidate) =>
+      proxyUltimateVideoData(videoId, candidate, request, CHROME_UA)));
   let result = fullResult;
   if (!result) {
     const own = await proxyUltimateVideoData(
@@ -864,8 +936,7 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
     );
     result = own ?? null;
   }
-  const shouldEncrypt = request.headers.get("x-encrypt-response") === "aes"
-    || new URL(request.url).searchParams.has("encrypt");
+  if (result) storeStreamResponse(cacheKey, result);
   return renderUpstream(result, shouldEncrypt);
 }
 
@@ -1100,6 +1171,25 @@ async function selfCheck(): Promise<void> {
   }
   if (isUltimateAccountBurned("burn-check@example.com", 1000 + BURN_COOLDOWN_MS + 1)) {
     throw new Error("Burned account must be reusable after cooldown expires");
+  }
+
+  // Cache respons per stream ID
+  const okResult: UpstreamResult = {
+    status: 200,
+    body: JSON.stringify({ data: { id: "1", attributes: { hls: "https://example.com/live.m3u8" } } }),
+    headers: { "content-type": "application/vnd.api+json" },
+  };
+  storeStreamResponse("selfcheck:1", okResult, 1000);
+  if (!getCachedStreamResponse("selfcheck:1", 1000 + STREAM_CACHE_TTL_MS - 1)) {
+    throw new Error("Cached response must be served within TTL");
+  }
+  if (getCachedStreamResponse("selfcheck:1", 1000 + STREAM_CACHE_TTL_MS + 1)) {
+    throw new Error("Cached response must expire after TTL");
+  }
+  const badResult: UpstreamResult = { status: 403, body: '{"errors":[]}', headers: {} };
+  storeStreamResponse("selfcheck:bad", badResult, 1000);
+  if (getCachedStreamResponse("selfcheck:bad", 2000)) {
+    throw new Error("Non-200 responses must not be cached");
   }
 
   // Test stream request without required headers returns 403 Forbidden
