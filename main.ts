@@ -19,10 +19,12 @@ export function encryptStreamPayload(
 const BOT_DATA_URL = "https://baru.pw/botpideook/bot_data.json";
 // Pool akun ultimate untuk playback. Rotasi tiap 4 menit (URL hls/dash dari
 // upstream hanya berlaku ~2 menit, expires_in 126), dan tiap akun dipakai
-// maksimal satu slot per hari sehingga tidak pernah dipakai ulang.
+// maksimal satu slot per hari sehingga tidak pernah dipakai ulang. Hari
+// dihitung dalam WIB (UTC+7): pemakaian di-reset jam 00:00 WIB.
 const ULTIMATE_POOL_URL = "https://baru.pw/jsoegwies82u2bsishshwu.json";
 const ULTIMATE_ROTATE_MS = 4 * 60 * 1000;
 const SLOTS_PER_DAY = Math.floor(86_400_000 / ULTIMATE_ROTATE_MS);
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 const REDIRECT_URL = "https://vidio.com";
 const USER_AGENT = "tv-android/ (1020";
 
@@ -225,8 +227,8 @@ async function fetchUltimatePool(): Promise<UltimateCredential[]> {
 }
 
 function shuffledIndices(length: number, seed: number): number[] {
-  // mulberry32 + Fisher-Yates: urutan akun stabil untuk satu hari (seed = hari
-  // epoch UTC), sama di semua instance tanpa state bersama.
+  // mulberry32 + Fisher-Yates: urutan akun stabil untuk satu hari WIB (seed =
+  // nomor hari WIB), sama di semua instance tanpa state bersama.
   let a = seed >>> 0;
   const next = (): number => {
     a = (a + 0x6d2b79f5) | 0;
@@ -247,14 +249,19 @@ function shuffledIndices(length: number, seed: number): number[] {
  * Memetakan slot 4-menit ke satu akun pool secara deterministik. Slot ke-n hari
  * itu memakai akun ke-n dari urutan acak harian, jadi akun yang sama tidak
  * pernah dipakai di dua slot berbeda pada hari yang sama — baik oleh user yang
- * sama maupun user lain. Pool habis untuk hari itu → null.
+ * sama maupun user lain. Hari digulung pada 00:00 WIB: setelah reset itu semua
+ * akun boleh dipakai lagi. Pool habis untuk hari itu → null.
  */
 function pickRotatedUltimateCredential(
   pool: UltimateCredential[],
   nowMs = Date.now(),
 ): UltimateCredential | null {
   if (pool.length === 0) return null;
-  const slot = Math.floor(nowMs / ULTIMATE_ROTATE_MS);
+  // Geser ke waktu WIB agar batas hari (dan reseed urutan acak) jatuh di
+  // tengah malam WIB, bukan tengah malam UTC. Offset 7 jam adalah kelipatan
+  // slot 4 menit, jadi batas slot tetap sejajar dengan menit dinding.
+  const wibMs = nowMs + WIB_OFFSET_MS;
+  const slot = Math.floor(wibMs / ULTIMATE_ROTATE_MS);
   const daySlot = Math.floor(slot / SLOTS_PER_DAY);
   const slotInDay = slot - daySlot * SLOTS_PER_DAY;
   if (slotInDay >= pool.length) return null;
@@ -865,13 +872,14 @@ async function selfCheck(): Promise<void> {
     throw new Error("Expired ultimate account must not yield active credentials");
   }
 
-  // Pool rotation: deterministik per slot 4 menit, tiap akun maksimal sekali per hari
+  // Pool rotation: deterministik per slot 4 menit, tiap akun maksimal sekali
+  // per hari WIB, reset jam 00:00 WIB (17:00 UTC sebelumnya).
   const pool = [
     { email: "a@x.id", token: "t1" },
     { email: "b@x.id", token: "t2" },
     { email: "c@x.id", token: "t3" },
   ];
-  const dayStart = Date.UTC(2026, 8, 28);
+  const dayStart = Date.UTC(2026, 8, 28) - WIB_OFFSET_MS; // 00:00 WIB
   const slotCred = pickRotatedUltimateCredential(pool, dayStart);
   const sameSlot = pickRotatedUltimateCredential(pool, dayStart + 1000);
   const nextSlot = pickRotatedUltimateCredential(pool, dayStart + ULTIMATE_ROTATE_MS);
@@ -887,10 +895,18 @@ async function selfCheck(): Promise<void> {
     if (cred) usedEmails.add(cred.email);
   }
   if (usedEmails.size !== pool.length) {
-    throw new Error("Pool rotation must use each account at most once per day");
+    throw new Error("Pool rotation must use each account at most once per WIB day");
   }
   if (pickRotatedUltimateCredential(pool, dayStart + pool.length * ULTIMATE_ROTATE_MS) !== null) {
     throw new Error("Exhausted pool must yield no credential for the rest of the day");
+  }
+  // Reset 00:00 WIB: slot terakhir hari sebelumnya dan slot pertama hari baru
+  // harus terjadi tepat di boundary 17:00 UTC, dan hari baru mulai memakai
+  // akun lagi (pool "isi ulang").
+  const beforeReset = pickRotatedUltimateCredential(pool, dayStart + 86_400_000 - 1);
+  const afterReset = pickRotatedUltimateCredential(pool, dayStart + 86_400_000);
+  if (beforeReset !== null || afterReset === null) {
+    throw new Error("Pool must reset exactly at 00:00 WIB");
   }
   if (pickRotatedUltimateCredential([], dayStart) !== null) {
     throw new Error("Empty pool must yield no credential");
