@@ -793,10 +793,11 @@ public final class LoginGate {
         String encodedEmail = URLEncoder.encode(email.trim(), "UTF-8").replace("+", "%20");
         String nocacheUrl = getEffectiveApiUrl() + "?" + query + "=" + encodedEmail + "&_t=" + System.currentTimeMillis();
         HttpURLConnection connection = (HttpURLConnection) new URL(nocacheUrl).openConnection();
-        // 10s: worker serverless bisa cold start; 5s membuat cek periodik gagal
-        // dan menurunkan mode akun secara permanen (badge preview + tanpa reload).
-        connection.setConnectTimeout(10_000);
-        connection.setReadTimeout(10_000);
+        // 30s: worker serverless bisa cold start; timeout pendek membuat cek
+        // periodik gagal dan menurunkan mode akun secara permanen
+        // (badge preview + tanpa reload).
+        connection.setConnectTimeout(30_000);
+        connection.setReadTimeout(30_000);
         connection.setInstanceFollowRedirects(false);
         connection.setRequestMethod("GET");
         connection.setRequestProperty("Accept", "text/plain");
