@@ -20,10 +20,15 @@ const BOT_DATA_URL = "https://baru.pw/botpideook/bot_data.json";
 // Kredensial ultimate HARDCODED — tanpa pool dari API. Semua fetch stream
 // ultimate memakai akun ini (header persis curl yang terbukti sukses).
 const ULTIMATE_CREDENTIAL = {
-  email: ".",
-  token: "weFu4zxbujjKWibGDgxx",
+  email: "85923081810-xl@fake-vidio.com",
+  token: "KHFZCCxyExbSr-y9K8KA",
 };
 const ULTIMATE_CREDENTIAL_TOKEN = ULTIMATE_CREDENTIAL.token;
+// Identitas perangkat persis curl yang terbukti sukses (app-android 2609.1.14).
+const ULTIMATE_UA = "vidioandroid/2609.1.14-c11a00be7f (3191940)";
+const ULTIMATE_VISITOR_ID = "75dec05f-d3e9-4c4e-a384-2bc238868076";
+const ULTIMATE_USER_ID = "231108280";
+const ULTIMATE_JWT = "eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjp7InR5cGUiOiJhY2Nlc3NfdG9rZW4iLCJ1aWQiOjIzMTEwODI4MH0sImV4cCI6MTc5MDY3ODk2NH0.yZxJ5Rm2ZQHI8FxcEf5I2fudt13iKYY754ysJR2maWI";
 const REDIRECT_URL = "https://vidio.com";
 const USER_AGENT = "tv-android/ (1020";
 
@@ -440,19 +445,31 @@ async function proxyUltimateStream(
   const incoming = request ? new URL(request.url) : null;
   const search = incoming ? incoming.search : "?initialize=true";
 
-  // Header persis daftar user (CURLOPT_HTTPHEADER), UA sesuai parameter.
+  // Header persis curl yang terbukti sukses (app-android 2609.1.14).
   const headers = new Headers({
-    "user-agent": userAgent,
+    "user-agent": ULTIMATE_UA,
+    accept: "application/json",
     "accept-encoding": "gzip",
-    "x-client": "1788880138",
-    "x-signature": "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4",
-    referer: "androidtv-app://com.vidio.android.tc",
-    "x-api-platform": "tv-android",
-    "x-api-auth": API_AUTH,
-    "x-api-app-info": "tv-android/16/2608.2.4-1020",
-    "accept-language": "id",
+    "accept-charset": "UTF-8",
+    "x-signature": "13ae5f8a3dcda6cadddf3f8bdc8947ba8afce28457bba8cb92eeb396b2006e8a",
+    "x-client": "1790592605",
+    "x-device-brand": "Redmi",
+    "x-device-model": "M2006C3LG",
+    "x-device-form-factor": "phone",
+    "x-device-soc": "mt6762 dandelion",
+    "x-device-os": "Android 10 (API 29)",
+    "x-device-android-mpc": "0",
+    "x-device-cpu-arch": "armeabi-v7a",
     "x-user-email": credential.email,
     "x-user-token": credential.token,
+    "x-authorization": ULTIMATE_JWT,
+    referer: "android-app://com.vidio.android",
+    "x-api-platform": "app-android",
+    "x-api-auth": API_AUTH,
+    "x-api-app-info": "android/10/2609.1.14-c11a00be7f-3191940",
+    "x-visitor-id": ULTIMATE_VISITOR_ID,
+    "x-user-id": ULTIMATE_USER_ID,
+    "content-type": "application/vnd.api+json",
   });
   applyForwardedStreamHeaders(headers, request);
 
@@ -679,13 +696,25 @@ async function proxyUltimateVideoData(
     "accept-encoding": "gzip",
     accept: "application/json",
     "content-type": "application/json",
-    referer: "androidtv-app://com.vidio.android.tv",
-    "x-api-platform": "tv-android",
+    "accept-charset": "UTF-8",
+    "x-signature": "13ae5f8a3dcda6cadddf3f8bdc8947ba8afce28457bba8cb92eeb396b2006e8a",
+    "x-client": "1790592605",
+    "x-device-brand": "Redmi",
+    "x-device-model": "M2006C3LG",
+    "x-device-form-factor": "phone",
+    "x-device-soc": "mt6762 dandelion",
+    "x-device-os": "Android 10 (API 29)",
+    "x-device-android-mpc": "0",
+    "x-device-cpu-arch": "armeabi-v7a",
+    referer: "android-app://com.vidio.android",
+    "x-api-platform": "app-android",
     "x-api-auth": API_AUTH,
-    "x-api-app-info": "tv-android/16/2608.2.4-1020",
-    "user-agent": userAgent,
+    "x-api-app-info": "android/10/2609.1.14-c11a00be7f-3191940",
+    "user-agent": ULTIMATE_UA,
     "accept-language": "id",
-    "x-visitor-id": defaultVisitorId,
+    "x-visitor-id": ULTIMATE_VISITOR_ID,
+    "x-user-id": ULTIMATE_USER_ID,
+    "x-authorization": ULTIMATE_JWT,
     "x-user-email": credential.email,
     "x-user-token": credential.token,
   });
@@ -916,7 +945,7 @@ async function selfCheck(): Promise<void> {
   }
 
   // Kredensial ultimate hardcode terdefinisi dengan benar
-  if (ULTIMATE_CREDENTIAL.email !== "." || ULTIMATE_CREDENTIAL.token !== "weFu4zxbujjKWibGDgxx") {
+  if (ULTIMATE_CREDENTIAL.email !== "85923081810-xl@fake-vidio.com" || ULTIMATE_CREDENTIAL.token !== "KHFZCCxyExbSr-y9K8KA") {
     throw new Error("Hardcoded ultimate credential must stay intact");
   }
 
