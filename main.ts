@@ -170,6 +170,42 @@ interface UltimateCredential {
   token: string;
 }
 
+/**
+ * Pool upstream berupa PHP array literal (`'email' => '...'`) meski
+ * content-type-nya application/json, jadi res.json() selalu gagal. Parse
+ * teksnya secara toleran: coba JSON dulu, lalu fallback ke regex pasangan
+ * email → token dalam urutan kemunculan.
+ */
+function parseUltimatePoolText(text: string): UltimateCredential[] {
+  const pool: UltimateCredential[] = [];
+  const push = (email: unknown, token: unknown): void => {
+    const normEmail = typeof email === "string" ? normalizeEmail(email) : null;
+    const normToken = typeof token === "string" ? token.trim() : "";
+    if (normEmail && normToken) pool.push({ email: normEmail, token: normToken });
+  };
+
+  const trimmed = text.trim();
+  try {
+    const parsed: unknown = JSON.parse(trimmed);
+    if (Array.isArray(parsed)) {
+      for (const item of parsed) {
+        if (!isRecord(item)) continue;
+        push(item.email, item.token);
+      }
+      if (pool.length > 0) return pool;
+    }
+  } catch {
+    // Bukan JSON — lanjut ke parser PHP array di bawah.
+  }
+
+  const entryPattern =
+    /['"]email['"]\s*=>\s*['"]([^'"]*)['"][\s\S]{0,400}?['"]token['"]\s*=>\s*['"]([^'"]*)['"]/g;
+  for (const match of trimmed.matchAll(entryPattern)) {
+    push(match[1], match[2]);
+  }
+  return pool;
+}
+
 async function fetchUltimatePool(): Promise<UltimateCredential[]> {
   try {
     const res = await fetch(`${ULTIMATE_POOL_URL}?_nocache=${Date.now()}`, {
@@ -182,16 +218,7 @@ async function fetchUltimatePool(): Promise<UltimateCredential[]> {
       },
     });
     if (!res.ok) return [];
-    const parsed: unknown = await res.json();
-    if (!Array.isArray(parsed)) return [];
-    const pool: UltimateCredential[] = [];
-    for (const item of parsed) {
-      if (!isRecord(item)) continue;
-      const email = typeof item.email === "string" ? normalizeEmail(item.email) : null;
-      const token = typeof item.token === "string" ? item.token.trim() : "";
-      if (email && token) pool.push({ email, token });
-    }
-    return pool;
+    return parseUltimatePoolText(await res.text());
   } catch {
     return [];
   }
@@ -867,6 +894,21 @@ async function selfCheck(): Promise<void> {
   }
   if (pickRotatedUltimateCredential([], dayStart) !== null) {
     throw new Error("Empty pool must yield no credential");
+  }
+
+  // Parser pool harus menerima format PHP array literal dari upstream
+  const phpPool = parseUltimatePoolText(
+    "[\r\n    [\r\n        'nomor' => 1,\r\n        'email' => 'A@X.id',\r\n        'token' => 't1',\r\n    ],\r\n    [\r\n        'nomor' => 2,\r\n        'email' => 'b@x.id',\r\n        'token' => 't2',\r\n    ],\r\n]\r\n",
+  );
+  if (phpPool.length !== 2 || phpPool[0].email !== "a@x.id" || phpPool[1].token !== "t2") {
+    throw new Error("PHP array pool parsing failed");
+  }
+  const jsonPool = parseUltimatePoolText(JSON.stringify([{ email: "c@x.id", token: "t3" }]));
+  if (jsonPool.length !== 1 || jsonPool[0].email !== "c@x.id") {
+    throw new Error("JSON pool parsing failed");
+  }
+  if (parseUltimatePoolText("garbage without pairs").length !== 0) {
+    throw new Error("Unparseable pool text must yield an empty pool");
   }
 
   // Error upstream yang memicu fallback ke kredensial asli user
