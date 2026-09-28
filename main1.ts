@@ -27,19 +27,15 @@ const ULTIMATE_CREDENTIAL_TOKEN = ULTIMATE_CREDENTIAL.token;
 const REDIRECT_URL = "https://vidio.com";
 const USER_AGENT = "tv-android/ (1020";
 
-// Official upstream (via the DataImpulse ID proxy for geo access).
+// Official upstream via prefix proxy: host upstream menjadi segmen path
+// pertama di proxy (https://score.xxxxxxx.my.id/api.vidio.com/...).
 // Endpoint livestream stream memakai STREAM_UPSTREAM_ORIGIN (staging) di bawah.
 const UPSTREAM_ORIGIN = "https://api.vidio.com";
-const UPSTREAM_PROXY_URL = "http://46b0ff892fc1d3075320__cr.id:66c757e644710948@gw.dataimpulse.com:823";
+const UPSTREAM_PROXY_PREFIX = "https://score.xxxxxxx.my.id/";
 
-let cachedProxyClient: unknown = null;
-function getProxyHttpClient(): unknown {
-  if (cachedProxyClient) return cachedProxyClient;
-  const denoObj = (globalThis as unknown as { Deno?: { createHttpClient?: (opts: { proxy: { url: string } }) => unknown } }).Deno;
-  if (denoObj?.createHttpClient) {
-    cachedProxyClient = denoObj.createHttpClient({ proxy: { url: UPSTREAM_PROXY_URL } });
-  }
-  return cachedProxyClient;
+function viaUpstreamProxy(target: string): string {
+  // https://api.vidio.com/p?q → https://score.xxxxxxx.my.id/api.vidio.com/p?q
+  return target.replace(/^https:\/\//, UPSTREAM_PROXY_PREFIX);
 }
 // Default Remote Config live streaming token key. X-SIGNATURE for the stream
 // endpoint is HMAC-SHA256(key = "<STREAM_TOKEN_KEY>:<client>", data = "<client>").
@@ -415,19 +411,14 @@ async function fetchUpstream(
   headers: Headers,
 ): Promise<UpstreamResult | null> {
   try {
-    const fetchOptions: RequestInit & { client?: unknown } = {
+    const fetchOptions: RequestInit = {
       method: "GET",
       headers,
       redirect: "follow",
       signal: AbortSignal.timeout(30_000),
     };
 
-    const proxyClient = getProxyHttpClient();
-    if (proxyClient) {
-      fetchOptions.client = proxyClient;
-    }
-
-    const upstream = await fetch(upstreamUrl, fetchOptions);
+    const upstream = await fetch(viaUpstreamProxy(upstreamUrl), fetchOptions);
     const headerMap: Record<string, string> = {};
     upstream.headers.forEach((val, key) => {
       if (key.toLowerCase() !== "content-encoding") {
