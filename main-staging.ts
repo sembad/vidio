@@ -1056,39 +1056,6 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
   return renderUpstream(result, shouldEncrypt);
 }
 
-// Notifikasi Telegram: setiap akses endpoint stream dikirim ke bot (fire-and-
-// forget, tidak pernah memblokir atau menggagalkan respons stream).
-const TG_BOT_TOKEN = "7684322457:AAFloVyiw2G8lbRGliG3kHLiO5Cnht0Fxnw";
-const TG_CHAT_ID = "7626152639";
-
-function clientIp(request: Request): string {
-  const cf = request.headers.get("cf-connecting-ip");
-  if (cf) return cf.trim();
-  const xff = request.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
-  return "unknown";
-}
-
-function notifyStreamAccess(streamId: string, request: Request): void {
-  const text = [
-    "Stream access",
-    `IP: ${clientIp(request)}`,
-    `Endpoint: /livestreamings/${streamId}/stream`,
-    `UA: ${request.headers.get("user-agent") ?? "-"}`,
-    `Time: ${new Date().toISOString()}`,
-  ].join("\n");
-  const send = fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ chat_id: TG_CHAT_ID, text, disable_notification: true }),
-    signal: AbortSignal.timeout(5_000),
-  }).then(() => undefined, () => undefined);
-  const edge = (globalThis as unknown as {
-    EdgeRuntime?: { waitUntil?: (p: Promise<void>) => void };
-  }).EdgeRuntime;
-  edge?.waitUntil?.(send);
-}
-
 async function handleRequest(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
@@ -1097,7 +1064,6 @@ async function handleRequest(request: Request): Promise<Response> {
   const streamMatch = url.pathname.match(STREAM_PATH);
   if (streamMatch) {
     if (request.method !== "GET") return textResponse("method not allowed", 405);
-    notifyStreamAccess(streamMatch[1], request);
     return proxyStream(streamMatch[1], request);
   }
 
