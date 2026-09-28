@@ -284,6 +284,25 @@ function pickRotatedUltimateCredential(
  * lanjut ke akun berikutnya dalam urutan acak harian (membungkus). Dipakai
  * untuk retry saat akun pool ditolak upstream.
  */
+// Akun pool yang ditolak upstream (not_subscribed = akun sedang dipakai)
+// tidak boleh dipakai lagi — masuk cooldown dan di-skip saat rotate.
+const BURN_COOLDOWN_MS = 30 * 60_000;
+const burnedUltimateAccounts = new Map<string, number>();
+
+function markUltimateAccountBurned(email: string, nowMs = Date.now()): void {
+  burnedUltimateAccounts.set(email, nowMs + BURN_COOLDOWN_MS);
+}
+
+function isUltimateAccountBurned(email: string, nowMs = Date.now()): boolean {
+  const until = burnedUltimateAccounts.get(email);
+  if (until === undefined) return false;
+  if (until <= nowMs) {
+    burnedUltimateAccounts.delete(email);
+    return false;
+  }
+  return true;
+}
+
 function pickRotatedUltimateCredentials(
   pool: UltimateCredential[],
   count: number,
@@ -294,7 +313,9 @@ function pickRotatedUltimateCredentials(
   const take = Math.max(1, Math.min(count, pool.length));
   const candidates: UltimateCredential[] = [];
   for (let i = 0; i < take; i++) {
-    candidates.push(pool[(start + i) % pool.length]);
+    const candidate = pool[(start + i) % pool.length];
+    if (isUltimateAccountBurned(candidate.email, nowMs)) continue;
+    candidates.push(candidate);
   }
   return candidates;
 }
@@ -498,14 +519,13 @@ async function proxyUltimateStream(
 
   const client = "1788880138";
   const signature = "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4";
-  // Visitor-id device user tidak boleh diteruskan: visitor-id yang sudah
-  // berasosiasi dengan akun gratis membuat akun pool dapat treatment preview
-  // (hls/dash null). Selalu pakai visitor-id default yang bersih.
-  const defaultVisitorId = "c0f1cf62-ab27-45fb-9663-5e056ca0e3b3";
 
+  // Header persis daftar user (CURLOPT_HTTPHEADER). Respons not_subscribed
+  // berarti akun sudah terpakai — loop rotate akan skip dan coba akun berikut.
   const headers = new Headers({
+    "user-agent":
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
     "accept-encoding": "gzip",
-    "user-agent": USER_AGENT,
     "x-client": client,
     "x-signature": signature,
     referer: "androidtv-app://com.vidio.android.tc",
@@ -513,8 +533,6 @@ async function proxyUltimateStream(
     "x-api-auth": API_AUTH,
     "x-api-app-info": "tv-android/16/2608.2.4-1020",
     "accept-language": "id",
-    "x-visitor-id": defaultVisitorId,
-    "content-type": "application/vnd.api+json",
     "x-user-email": credential.email,
     "x-user-token": credential.token,
   });
@@ -667,6 +685,11 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   for (const candidate of poolCandidates) {
     const attempt = await proxyUltimateStream(streamId, candidate, request);
     if (!attempt) continue;
+    if (upstreamHasFatalErrors(attempt.body)) {
+      // not_subscribed dll = akun sedang dipakai → cooldown, jangan dipakai lagi.
+      markUltimateAccountBurned(candidate.email);
+      continue;
+    }
     const quality = upstreamStreamQuality(attempt.body);
     if (quality === "full") {
       fullResult = attempt;
@@ -828,6 +851,11 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
   for (const candidate of poolCandidates) {
     const attempt = await proxyUltimateVideoData(videoId, candidate, request);
     if (!attempt) continue;
+    if (upstreamHasFatalErrors(attempt.body)) {
+      // not_subscribed dll = akun sedang dipakai → cooldown, jangan dipakai lagi.
+      markUltimateAccountBurned(candidate.email);
+      continue;
+    }
     const quality = upstreamStreamQuality(attempt.body);
     if (quality === "full") {
       fullResult = attempt;
@@ -1078,6 +1106,18 @@ async function selfCheck(): Promise<void> {
   }
   if (upstreamStreamQuality(noUrlBody) !== "error" || upstreamStreamQuality("not json") !== "error") {
     throw new Error("Error/URL-less bodies must classify as error");
+  }
+
+  // Cooldown akun terpakai (not_subscribed)
+  if (isUltimateAccountBurned("burn-check@example.com")) {
+    throw new Error("Fresh account must not be burned");
+  }
+  markUltimateAccountBurned("burn-check@example.com", 1000);
+  if (!isUltimateAccountBurned("burn-check@example.com", 2000)) {
+    throw new Error("Burned account must be skipped during cooldown");
+  }
+  if (isUltimateAccountBurned("burn-check@example.com", 1000 + BURN_COOLDOWN_MS + 1)) {
+    throw new Error("Burned account must be reusable after cooldown expires");
   }
 
   // Test stream request without required headers returns 403 Forbidden
