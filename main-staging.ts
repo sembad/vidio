@@ -569,6 +569,84 @@ const STAGING_API_AUTH = "cubixarIhu8une5OP33upogocaTeWerU";
 const STAGING_CREDENTIAL_EMAIL = "@gmail.com";
 const STAGING_CREDENTIAL_TOKEN = "ohzsy8obTvyhkk_Tx-vZ";
 
+// Data DRM (license_servers + custom_data.widevine) dari staging tidak bisa
+// dipakai sama sekali, jadi diambil dari PRODUCTION memakai akun pool di
+// jwhwiwjwuevdehe.json, lalu disuntikkan ke respons staging.
+const LICENSE_POOL_URL = "https://baru.pw/jwhwiwjwuevdehe.json";
+let licensePoolCache: { accounts: { email: string; token: string }[]; fetchedAt: number } | null = null;
+
+async function getLicensePoolAccounts(): Promise<{ email: string; token: string }[]> {
+  if (licensePoolCache && Date.now() - licensePoolCache.fetchedAt < 10 * 60_000) {
+    return licensePoolCache.accounts;
+  }
+  try {
+    const res = await fetch(LICENSE_POOL_URL, {
+      headers: { "user-agent": USER_AGENT, accept: "*/*" },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) return licensePoolCache?.accounts ?? [];
+    const text = await res.text();
+    // Format file: ekspor array PHP — ['email' => '...', 'token' => '...']
+    const emails = [...text.matchAll(/'email'\s*=>\s*'([^']*)'/g)].map((m) => m[1]);
+    const tokens = [...text.matchAll(/'token'\s*=>\s*'([^']*)'/g)].map((m) => m[1]);
+    const accounts = emails
+      .map((email, i) => ({ email, token: tokens[i] ?? "" }))
+      .filter((a) => a.email && a.token);
+    if (accounts.length) licensePoolCache = { accounts, fetchedAt: Date.now() };
+    return accounts;
+  } catch {
+    return licensePoolCache?.accounts ?? [];
+  }
+}
+
+// Ambil respons stream PRODUCTION untuk stream yang sama dengan akun pool
+// (diputar berdasarkan streamId agar merata), lalu ekstrak bagian DRM.
+async function fetchProductionLicensePatch(
+  streamId: string,
+  search: string,
+): Promise<{ license_servers?: unknown; widevine?: unknown; fairplay?: unknown; playready?: unknown } | null> {
+  const accounts = await getLicensePoolAccounts();
+  if (!accounts.length) return null;
+  const numeric = Number.parseInt(streamId, 10);
+  const pick = Number.isFinite(numeric) && numeric > 0
+    ? accounts[numeric % accounts.length]
+    : accounts[Date.now() % accounts.length];
+
+  const headers = new Headers({
+    "user-agent": "tv-android/2608.2.4 (1020)",
+    "accept-encoding": "gzip",
+    "x-client": "1790311747",
+    "x-signature": "81627641f8168b4c6707e4de044f63da3e662a90f0bf9d5c06a149e9af3de1ee",
+    referer: "androidtv-app://com.vidio.android.tc",
+    "x-api-platform": "tv-android",
+    "x-api-auth": API_AUTH,
+    "x-api-app-info": "tv-android/16/2608.2.4-1020",
+    "accept-language": "id",
+    "x-user-email": pick.email,
+    "x-user-token": pick.token,
+    "x-visitor-id": "c0f1cf62-ab27-45fb-9663-5e056ca0e3b3",
+    "content-type": "application/vnd.api+json",
+  });
+
+  const prodUrl = `${UPSTREAM_ORIGIN}/livestreamings/${streamId}/stream${search}`;
+  const prod = await fetchUpstream(prodUrl, headers);
+  if (!prod || prod.status !== 200) return null;
+  try {
+    const json = JSON.parse(prod.body);
+    const attrs = json?.data?.attributes;
+    if (!attrs) return null;
+    const custom = attrs.custom_data ?? {};
+    return {
+      license_servers: attrs.license_servers,
+      widevine: custom.widevine,
+      fairplay: custom.fairplay,
+      playready: custom.playready,
+    };
+  } catch {
+    return null;
+  }
+}
+
 // Staging membatasi 1 request/menit; request berulang cepat → 403. Semua
 // fetch staging lewat proxyUltimateStream: cukup menunggu 1 menit sejak
 // request staging terakhir — TANPA reset harian jam 00:00 WIB. Dalam jendela
@@ -714,6 +792,37 @@ async function proxyUltimateStream(
   const result = await fetchUpstream(originalStreamUrl(streamId, search), headers);
   lastStagingRequestAt = Date.now();
   if (result && result.status === 200 && upstreamStreamQuality(result.body) === "full") {
+    // DRM staging tidak usable: timpa license_servers & custom_data DRM
+    // dengan data production (akun pool). Gagal ambil production → staging
+    // tetap dikirim apa adanya.
+    try {
+      const patch = await fetchProductionLicensePatch(streamId, search);
+      if (patch) {
+        const json = JSON.parse(result.body);
+        const attrs = json?.data?.attributes;
+        if (attrs) {
+          if (patch.license_servers) attrs.license_servers = patch.license_servers;
+          attrs.custom_data = { ...(attrs.custom_data ?? {}) };
+          if (patch.widevine) attrs.custom_data.widevine = patch.widevine;
+          if (patch.fairplay) attrs.custom_data.fairplay = patch.fairplay;
+          if (patch.playready) attrs.custom_data.playready = patch.playready;
+          const patchedBody = JSON.stringify(json);
+          const patched: UpstreamResult = {
+            ...result,
+            body: patchedBody,
+            headers: Object.fromEntries(
+              Object.entries(result.headers).filter(
+                ([k]) => k !== "content-length" && k !== "content-encoding",
+              ),
+            ),
+          };
+          stagingLastByStream.set(streamId, { result: patched, fetchedAt: lastStagingRequestAt });
+          return patched;
+        }
+      }
+    } catch {
+      // fallback: kirim body staging asli
+    }
     stagingLastByStream.set(streamId, { result, fetchedAt: lastStagingRequestAt });
   }
   return result;
