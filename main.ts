@@ -509,10 +509,18 @@ function renderUpstream(result: UpstreamResult | null, shouldEncrypt: boolean): 
   });
 }
 
+const CHROME_UA =
+  "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36";
+// UA TV: fallback per-akun. Entitlement akun pool (bundle TV) hanya diterapkan
+// upstream saat request terlihat sebagai klien TV — Chrome UA sering ditolak
+// (not_subscribed/403) meski akunnya bebas, terutama via proxy.
+const TV_UA = "tv-android/ (1020";
+
 async function proxyUltimateStream(
   streamId: string,
   credential: UltimateCredential,
   request?: Request,
+  userAgent: string = CHROME_UA,
 ): Promise<UpstreamResult | null> {
   const incoming = request ? new URL(request.url) : null;
   const search = incoming ? incoming.search : "?initialize=true";
@@ -520,11 +528,9 @@ async function proxyUltimateStream(
   const client = "1788880138";
   const signature = "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4";
 
-  // Header persis daftar user (CURLOPT_HTTPHEADER). Respons not_subscribed
-  // berarti akun sudah terpakai — loop rotate akan skip dan coba akun berikut.
+  // Header persis daftar user (CURLOPT_HTTPHEADER), UA sesuai parameter.
   const headers = new Headers({
-    "user-agent":
-      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+    "user-agent": userAgent,
     "accept-encoding": "gzip",
     "x-client": client,
     "x-signature": signature,
@@ -683,33 +689,38 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   let fullResult: UpstreamResult | null = null;
   let previewResult: UpstreamResult | null = null;
   for (const candidate of poolCandidates) {
-    const attempt = await proxyUltimateStream(streamId, candidate, request);
-    if (!attempt) continue;
-    if (upstreamHasFatalErrors(attempt.body)) {
-      // not_subscribed dll = akun sedang dipakai → cooldown, jangan dipakai lagi.
+    // Urutan per akun: Chrome UA (daftar user) dulu, lalu TV UA pada akun
+    // yang sama sebelum pindah ke akun berikutnya.
+    const attempts = [
+      await proxyUltimateStream(streamId, candidate, request, CHROME_UA),
+      await proxyUltimateStream(streamId, candidate, request, TV_UA),
+    ];
+    const allFatal = attempts.every((a) => a && upstreamHasFatalErrors(a.body));
+    for (const attempt of attempts) {
+      if (!attempt) continue;
+      const quality = upstreamStreamQuality(attempt.body);
+      if (quality === "full") {
+        fullResult = attempt;
+        break;
+      }
+      if (quality === "preview" && !previewResult) previewResult = attempt;
+    }
+    if (fullResult) break;
+    if (allFatal) {
+      // Gagal dengan kedua UA → akun benar-benar terpakai → cooldown.
       markUltimateAccountBurned(candidate.email);
-      continue;
     }
-    const quality = upstreamStreamQuality(attempt.body);
-    if (quality === "full") {
-      fullResult = attempt;
-      break;
-    }
-    if (quality === "preview" && !previewResult) previewResult = attempt;
   }
   let result = fullResult;
   if (!result) {
     // Tidak ada kandidat pool yang full → coba kredensial asli user yang request
-    const own = await proxyUltimateStream(
-      streamId,
-      { email: requestedEmail, token: trimmedToken },
-      request,
-    );
-    if (own && upstreamStreamQuality(own.body) === "full") {
-      result = own;
-    } else {
-      result = previewResult ?? own;
-    }
+    const ownAttempts = [
+      await proxyUltimateStream(streamId, { email: requestedEmail, token: trimmedToken }, request, CHROME_UA),
+      await proxyUltimateStream(streamId, { email: requestedEmail, token: trimmedToken }, request, TV_UA),
+    ];
+    const own = ownAttempts.find((a) => a && upstreamStreamQuality(a.body) === "full")
+      ?? previewResult ?? ownAttempts.find(Boolean) ?? null;
+    result = own;
   }
   const shouldEncrypt = request.headers.get("x-encrypt-response") === "aes"
     || new URL(request.url).searchParams.has("encrypt");
@@ -750,6 +761,7 @@ async function proxyUltimateVideoData(
   videoId: string,
   credential: UltimateCredential,
   request?: Request,
+  userAgent: string = CHROME_UA,
 ): Promise<UpstreamResult | null> {
   const incoming = request ? new URL(request.url) : null;
   const search = incoming ? incoming.search : "?initialize=true";
@@ -766,7 +778,7 @@ async function proxyUltimateVideoData(
     "x-api-platform": "tv-android",
     "x-api-auth": API_AUTH,
     "x-api-app-info": "tv-android/16/2608.2.4-1020",
-    "user-agent": USER_AGENT,
+    "user-agent": userAgent,
     "accept-language": "id",
     "x-visitor-id": defaultVisitorId,
     "x-user-email": credential.email,
@@ -849,32 +861,37 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
   let fullResult: UpstreamResult | null = null;
   let previewResult: UpstreamResult | null = null;
   for (const candidate of poolCandidates) {
-    const attempt = await proxyUltimateVideoData(videoId, candidate, request);
-    if (!attempt) continue;
-    if (upstreamHasFatalErrors(attempt.body)) {
-      // not_subscribed dll = akun sedang dipakai → cooldown, jangan dipakai lagi.
+    // Urutan per akun: Chrome UA (daftar user) dulu, lalu TV UA pada akun
+    // yang sama sebelum pindah ke akun berikutnya.
+    const attempts = [
+      await proxyUltimateVideoData(videoId, candidate, request, CHROME_UA),
+      await proxyUltimateVideoData(videoId, candidate, request, TV_UA),
+    ];
+    const allFatal = attempts.every((a) => a && upstreamHasFatalErrors(a.body));
+    for (const attempt of attempts) {
+      if (!attempt) continue;
+      const quality = upstreamStreamQuality(attempt.body);
+      if (quality === "full") {
+        fullResult = attempt;
+        break;
+      }
+      if (quality === "preview" && !previewResult) previewResult = attempt;
+    }
+    if (fullResult) break;
+    if (allFatal) {
+      // Gagal dengan kedua UA → akun benar-benar terpakai → cooldown.
       markUltimateAccountBurned(candidate.email);
-      continue;
     }
-    const quality = upstreamStreamQuality(attempt.body);
-    if (quality === "full") {
-      fullResult = attempt;
-      break;
-    }
-    if (quality === "preview" && !previewResult) previewResult = attempt;
   }
   let result = fullResult;
   if (!result) {
-    const own = await proxyUltimateVideoData(
-      videoId,
-      { email: requestedEmail, token: trimmedToken },
-      request,
-    );
-    if (own && upstreamStreamQuality(own.body) === "full") {
-      result = own;
-    } else {
-      result = previewResult ?? own;
-    }
+    const ownAttempts = [
+      await proxyUltimateVideoData(videoId, { email: requestedEmail, token: trimmedToken }, request, CHROME_UA),
+      await proxyUltimateVideoData(videoId, { email: requestedEmail, token: trimmedToken }, request, TV_UA),
+    ];
+    const own = ownAttempts.find((a) => a && upstreamStreamQuality(a.body) === "full")
+      ?? previewResult ?? ownAttempts.find(Boolean) ?? null;
+    result = own;
   }
   const shouldEncrypt = request.headers.get("x-encrypt-response") === "aes"
     || new URL(request.url).searchParams.has("encrypt");
