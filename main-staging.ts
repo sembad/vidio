@@ -789,6 +789,12 @@ async function proxyUltimateStream(
     return null;
   }
 
+  // Patch DRM production di-fetch PARALEL dengan staging supaya latensi
+  // total mendekati satu fetch (bukan jumlah keduanya). Maksimal 1 request
+  // production ekstra per menit karena jalur ini sudah di-throttle.
+  const licensePatchPromise = fetchProductionLicensePatch(streamId, search)
+    .catch(() => null);
+
   const result = await fetchUpstream(originalStreamUrl(streamId, search), headers);
   lastStagingRequestAt = Date.now();
   if (result && result.status === 200 && upstreamStreamQuality(result.body) === "full") {
@@ -796,7 +802,7 @@ async function proxyUltimateStream(
     // dengan data production (akun pool). Gagal ambil production → staging
     // tetap dikirim apa adanya.
     try {
-      const patch = await fetchProductionLicensePatch(streamId, search);
+      const patch = await licensePatchPromise;
       if (patch) {
         const json = JSON.parse(result.body);
         const attrs = json?.data?.attributes;
