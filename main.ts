@@ -605,11 +605,6 @@ async function fetchUpstream(
     }
 
     const upstream = await fetch(upstreamUrl, fetchOptions);
-      method: "GET",
-      headers,
-      redirect: "follow",
-      signal: AbortSignal.timeout(30_000),
-    });
     const headerMap: Record<string, string> = {};
     upstream.headers.forEach((val, key) => {
       if (key.toLowerCase() !== "content-encoding") {
