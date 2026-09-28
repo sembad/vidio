@@ -30,17 +30,19 @@ const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 const REDIRECT_URL = "https://vidio.com";
 const USER_AGENT = "tv-android/ (1020";
 
-// Official upstream that serves the stream. All upstream calls go here,
-// routed through the score proxy (upstream host becomes the first path
-// segment): https://score.xxxxxxx.my.id/api.vidio.com/<path>
+// Official upstream that serves the stream. All upstream calls go here
+// (via the DataImpulse ID proxy for geo access).
 const UPSTREAM_ORIGIN = "https://api.vidio.com";
-const UPSTREAM_PROXY_BASE = "https://score.xxxxxxx.my.id";
+const UPSTREAM_PROXY_URL = "http://46b0ff892fc1d3075320__cr.id:66c757e644710948@gw.dataimpulse.com:823";
 
-function proxiedUpstreamUrl(url: string): string {
-  if (url.startsWith(UPSTREAM_ORIGIN)) {
-    return UPSTREAM_PROXY_BASE + "/api.vidio.com" + url.slice(UPSTREAM_ORIGIN.length);
+let cachedProxyClient: unknown = null;
+function getProxyHttpClient(): unknown {
+  if (cachedProxyClient) return cachedProxyClient;
+  const denoObj = (globalThis as unknown as { Deno?: { createHttpClient?: (opts: { proxy: { url: string } }) => unknown } }).Deno;
+  if (denoObj?.createHttpClient) {
+    cachedProxyClient = denoObj.createHttpClient({ proxy: { url: UPSTREAM_PROXY_URL } });
   }
-  return url;
+  return cachedProxyClient;
 }
 // Default Remote Config live streaming token key. X-SIGNATURE for the stream
 // endpoint is HMAC-SHA256(key = "<STREAM_TOKEN_KEY>:<client>", data = "<client>").
@@ -590,7 +592,19 @@ async function fetchUpstream(
   headers: Headers,
 ): Promise<UpstreamResult | null> {
   try {
-    const upstream = await fetch(proxiedUpstreamUrl(upstreamUrl), {
+    const fetchOptions: RequestInit & { client?: unknown } = {
+      method: "GET",
+      headers,
+      redirect: "follow",
+      signal: AbortSignal.timeout(30_000),
+    };
+
+    const proxyClient = getProxyHttpClient();
+    if (proxyClient) {
+      fetchOptions.client = proxyClient;
+    }
+
+    const upstream = await fetch(upstreamUrl, fetchOptions);
       method: "GET",
       headers,
       redirect: "follow",
@@ -696,7 +710,7 @@ async function verifyLiveVidioSession(
   }
 
   try {
-    const res = await fetch(proxiedUpstreamUrl("https://api.vidio.com/profiles"), {
+    const res = await fetch("https://api.vidio.com/profiles", {
       method: "GET",
       headers: testHeaders,
       signal: AbortSignal.timeout(8_000),
@@ -718,7 +732,7 @@ async function verifyLiveVidioSession(
   } catch {}
 
   try {
-    const res = await fetch(proxiedUpstreamUrl("https://api.vidio.com/users/data"), {
+    const res = await fetch("https://api.vidio.com/users/data", {
       method: "GET",
       headers: testHeaders,
       signal: AbortSignal.timeout(8_000),
@@ -869,7 +883,7 @@ function redirectToOfficial(
   return new Response(null, {
     status: 307,
     headers: {
-      location: proxiedUpstreamUrl(upstreamUrl.toString()),
+      location: upstreamUrl.toString(),
       "cache-control": "no-store",
     },
   });
@@ -1332,13 +1346,6 @@ async function selfCheck(): Promise<void> {
   }
   if (!VIDEO_DATA_PATH.test(`/api/stream/v1/video_data/${testVideoId}`)) {
     throw new Error("Video data path self-check failed");
-  }
-  if (proxiedUpstreamUrl(`https://api.vidio.com/livestreamings/${testStreamId}/stream?initialize=true`)
-    !== `https://score.xxxxxxx.my.id/api.vidio.com/livestreamings/${testStreamId}/stream?initialize=true`) {
-    throw new Error("Upstream proxy mapping failed");
-  }
-  if (proxiedUpstreamUrl("https://other.example.com/path") !== "https://other.example.com/path") {
-    throw new Error("Upstream proxy passthrough failed");
   }
 
   // Test UA endpoint returns tv-android UA
