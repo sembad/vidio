@@ -556,9 +556,32 @@ function findActiveUltimateCredential(
   return null;
 }
 
+// Endpoint livestream stream memakai staging upstream; endpoint lain tetap
+// production (api.vidio.com). Redirect ke app tetap production; hanya
+// pengambilan stream oleh worker yang lewat staging.
+const STREAM_UPSTREAM_ORIGIN = "https://api.staging.vidio.com";
+const STAGING_API_AUTH = "cubixarIhu8une5OP33upogocaTeWerU";
+
+// Staging punya database user/subscription sendiri (terpisah dari production),
+// jadi kredensial pool ultimate production dianggap not_subscribed di staging.
+// Fetch stream staging wajib pakai kredensial akun yang punya langganan aktif
+// di staging ini.
+const STAGING_CREDENTIAL_EMAIL = "@gmail.com";
+const STAGING_CREDENTIAL_TOKEN = "ohzsy8obTvyhkk_Tx-vZ";
+
+// Staging membatasi 1 request/menit; request berulang cepat → 403. Semua
+// fetch staging lewat proxyUltimateStream: cukup menunggu 1 menit sejak
+// request staging terakhir — TANPA reset harian jam 00:00 WIB. Dalam jendela
+// 60 dtk, respons tersimpan untuk stream yang sama dilayani ulang tanpa
+// menyentuh staging. Tanpa respons tersimpan (stream berbeda / request
+// sebelumnya gagal) pemanggil dilewati (null) agar staging tidak di-hammer.
+const STAGING_MIN_INTERVAL_MS = 60_000;
+let lastStagingRequestAt = 0;
+const stagingLastByStream = new Map<string, { result: UpstreamResult; fetchedAt: number }>();
+
 function originalStreamUrl(streamId: string, search = "?initialize=true"): string {
   const query = search ? (search.startsWith("?") ? search : `?${search}`) : "?initialize=true";
-  return `${UPSTREAM_ORIGIN}/livestreamings/${streamId}/stream${query}`;
+  return `${STREAM_UPSTREAM_ORIGIN}/livestreamings/${streamId}/stream${query}`;
 }
 
 function originalVideoDataUrl(videoId: string, search = "?initialize=true"): string {
@@ -659,23 +682,41 @@ async function proxyUltimateStream(
   const incoming = request ? new URL(request.url) : null;
   const search = incoming ? incoming.search : "?initialize=true";
 
-  // Header persis daftar user (CURLOPT_HTTPHEADER), UA sesuai parameter.
+  // Header persis curl staging yang terbukti sukses. Kredensial pool
+  // production TIDAK dipakai: staging menolaknya sebagai not_subscribed.
   const headers = new Headers({
-    "user-agent": userAgent,
+    "user-agent": "tv-android/2608.2.4 (1020)",
     "accept-encoding": "gzip",
-    "x-client": "1788880138",
-    "x-signature": "da9b46946dfbe9b9f6bd2ce453fe819412436e282e97047741a0a981a512fdc4",
+    "x-client": "1790311747",
+    "x-signature": "81627641f8168b4c6707e4de044f63da3e662a90f0bf9d5c06a149e9af3de1ee",
     referer: "androidtv-app://com.vidio.android.tc",
     "x-api-platform": "tv-android",
-    "x-api-auth": API_AUTH,
+    "x-api-auth": STAGING_API_AUTH,
     "x-api-app-info": "tv-android/16/2608.2.4-1020",
     "accept-language": "id",
-    "x-user-email": credential.email,
-    "x-user-token": credential.token,
+    "x-user-email": STAGING_CREDENTIAL_EMAIL,
+    "x-user-token": STAGING_CREDENTIAL_TOKEN,
+    "x-visitor-id": "c0f1cf62-ab27-45fb-9663-5e056ca0e3b3",
+    "content-type": "application/vnd.api+json",
   });
   applyForwardedStreamHeaders(headers, request);
 
-  return fetchUpstream(originalStreamUrl(streamId, search), headers);
+  // Throttle 1 request/menit ke staging (lihat catatan di konstanta atas).
+  const now = Date.now();
+  if (now - lastStagingRequestAt < STAGING_MIN_INTERVAL_MS) {
+    const stored = stagingLastByStream.get(streamId);
+    // Respons tersimpan maksimal ~60 dtk umurnya dalam jendela ini — URL
+    // upstream hidup ±5 menit, jadi masih valid dilayani ulang.
+    if (stored) return stored.result;
+    return null;
+  }
+
+  const result = await fetchUpstream(originalStreamUrl(streamId, search), headers);
+  lastStagingRequestAt = Date.now();
+  if (result && result.status === 200 && upstreamStreamQuality(result.body) === "full") {
+    stagingLastByStream.set(streamId, { result, fetchedAt: lastStagingRequestAt });
+  }
+  return result;
 }
 
 async function verifyLiveVidioSession(
@@ -1370,7 +1411,7 @@ async function selfCheck(): Promise<void> {
   }
 
   const testStreamId = "test-stream-id";
-  if (originalStreamUrl(testStreamId) !== `https://api.vidio.com/livestreamings/${testStreamId}/stream?initialize=true`) {
+  if (originalStreamUrl(testStreamId) !== `https://api.staging.vidio.com/livestreamings/${testStreamId}/stream?initialize=true`) {
     throw new Error("originalStreamUrl default failed");
   }
   const testVideoId = "9332265";
