@@ -496,7 +496,15 @@ async function proxyUltimateStream(
   });
   applyForwardedStreamHeaders(headers, request);
 
-  return fetchUpstream(originalStreamUrl(streamId, search), headers);
+  const url = originalStreamUrl(streamId, search);
+  const result = await fetchUpstream(url, headers);
+  // Akamai (CDN Vidio) kadang memblokir satu request lewat ("Access Denied")
+  // sesaat — bukan penolakan auth. Coba sekali lagi: koneksi proxy baru bisa
+  // dapat exit IP berbeda dan lolos.
+  if (result?.status === 403 && result.body.includes("Access Denied")) {
+    return fetchUpstream(url, headers);
+  }
+  return result;
 }
 
 async function verifyLiveVidioSession(
