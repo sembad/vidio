@@ -27,12 +27,11 @@ const SLOTS_PER_DAY = Math.floor(86_400_000 / ULTIMATE_ROTATE_MS);
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 // Saat kredensial pool ditolak upstream (akun mati/expired), coba kredensial
 // pool berikutnya sebanyak ini sebelum fallback ke akun user sendiri.
-const POOL_RETRY_COUNT = 20;
 const REDIRECT_URL = "https://vidio.com";
 const USER_AGENT = "tv-android/ (1020";
 
-// Official upstream that serves the stream. Active Ultimate requests are sent
-// through vidiot.my.id; Mobile and regular accounts call this origin directly.
+// Official upstream that serves the stream. All upstream calls go here
+// (via the DataImpulse ID proxy for geo access).
 const UPSTREAM_ORIGIN = "https://api.vidio.com";
 const UPSTREAM_PROXY_URL = "http://46b0ff892fc1d3075320__cr.id:66c757e644710948@gw.dataimpulse.com:823";
 // Default Remote Config live streaming token key. X-SIGNATURE for the stream
@@ -301,6 +300,35 @@ function isUltimateAccountBurned(email: string, nowMs = Date.now()): boolean {
     return false;
   }
   return true;
+}
+
+// Scan seluruh kandidat pool sampai dapat respons 200 OK dengan URL stream.
+// Dicoba paralel per batch agar scan pool besar tetap cepat; urutan prioritas
+// tetap mengikuti urutan kandidat dalam batch.
+const POOL_SCAN_BATCH = 5;
+
+async function scanPoolForFullResult(
+  poolCandidates: UltimateCredential[],
+  probe: (candidate: UltimateCredential) => Promise<UpstreamResult | null>,
+): Promise<UpstreamResult | null> {
+  for (let i = 0; i < poolCandidates.length; i += POOL_SCAN_BATCH) {
+    const batch = poolCandidates.slice(i, i + POOL_SCAN_BATCH);
+    const attempts = await Promise.all(batch.map((candidate) => probe(candidate)));
+    for (let j = 0; j < batch.length; j++) {
+      const attempt = attempts[j];
+      if (!attempt) continue;
+      if (attempt.status !== 200) {
+        if (upstreamHasFatalErrors(attempt.body)) {
+          // not_subscribed dll = akun sedang dipakai → cooldown, jangan dipakai lagi.
+          markUltimateAccountBurned(batch[j].email);
+        }
+        continue;
+      }
+      if (upstreamStreamQuality(attempt.body) === "full") return attempt;
+      // 200 tapi tanpa URL stream → lanjut ke kandidat berikutnya.
+    }
+  }
+  return null;
 }
 
 function pickRotatedUltimateCredentials(
