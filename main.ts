@@ -388,8 +388,6 @@ function fetchStreamResultShared(
 // menjadwalkan refresh stream dari field JSON `expires_in` (detik) — nilai
 // ini selalu dilaporkan 240 dtk (4 menit) supaya siklus reload app stabil
 // dan tidak mengganggu, bukan sisa umur URL yang berganti-ganti.
-const UPSTREAM_URL_TTL_S = 300;
-// expires_in yang dilaporkan ke aplikasi untuk stream live.
 const REPORTED_EXPIRES_S = 240;
 
 /** Set semua field `is_preview` menjadi false di data.attributes dan included[].attributes. */
@@ -425,21 +423,18 @@ function jsonApiAttributeRecords(parsed: unknown): Record<string, unknown>[] {
 }
 
 /**
- * Tulis ulang `expires_in` (detik) menjadi 240 dtk (4 menit) supaya refresh
- * native aplikasi (px/y0 menjadwalkan ulang fetch stream dari field ini)
- * berjalan pada siklus 4 menit yang stabil. Nilai asli upstream dipakai
- * sebagai batas atas agar tidak pernah melaporkan masa berlaku lebih lama
- * dari klaim upstream. Nilai 0/hilang diisi 240 agar aplikasi tidak masuk
- * loop refresh instan.
+ * Paksa `expires_in` (detik) menjadi 240 dtk (4 menit) — SIKLUS RELOAD YANG
+ * DIMINTA USER. Nilai upstream (mis. 126) TIDAK dipakai: pengalaman menunjukkan
+ * URL tetap hidup hingga ±5 menit meski upstream melaporkan 126, jadi 240 aman
+ * dan reload jadi jarang/tenang. Nilai hilang/0 juga diisi 240 agar aplikasi
+ * tidak masuk loop refresh instan.
  */
 function rewriteExpiresIn(body: string): string {
   try {
     const parsed: unknown = JSON.parse(body);
-    for (const record of jsonApiAttributeRecords(parsed)) {
-      const original = record.expires_in;
-      if (typeof original === "number" && original > 0 && original <= UPSTREAM_URL_TTL_S) {
-        record.expires_in = Math.min(original, REPORTED_EXPIRES_S);
-      } else if (original === undefined || original === null || original === 0) {
+    const records = jsonApiAttributeRecords(parsed);
+    for (const record of records) {
+      if ("expires_in" in record || record === records[0]) {
         record.expires_in = REPORTED_EXPIRES_S;
       }
     }
@@ -1289,24 +1284,25 @@ async function selfCheck(): Promise<void> {
     throw new Error("Non-JSON bodies must pass through unchanged");
   }
 
-  // rewriteExpiresIn: expires_in selalu dilaporkan 240 dtk (4 menit)
+  // rewriteExpiresIn: expires_in SELALU dilaporkan 240 dtk (4 menit), apapun
+  // nilai upstream (126 → 240, 300 → 240, hilang → 240).
+  const upstream126 = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{"expires_in":126}}}')) as {
+    data: { attributes: { expires_in: number } };
+  };
+  if (upstream126.data.attributes.expires_in !== 240) {
+    throw new Error(`Upstream 126 must be forced to 240, got ${upstream126.data.attributes.expires_in}`);
+  }
   const freshParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{"expires_in":300}}}')) as {
     data: { attributes: { expires_in: number } };
   };
   if (freshParsed.data.attributes.expires_in !== 240) {
-    throw new Error(`Fresh expires_in must be capped at 240, got ${freshParsed.data.attributes.expires_in}`);
+    throw new Error(`Fresh expires_in must be forced to 240, got ${freshParsed.data.attributes.expires_in}`);
   }
   const missingParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{}}}')) as {
     data: { attributes: { expires_in: number } };
   };
   if (missingParsed.data.attributes.expires_in !== 240) {
     throw new Error("Missing expires_in must default to the 4-minute reload cycle");
-  }
-  const vodParsed = JSON.parse(rewriteExpiresIn('{"data":{"attributes":{"expires_in":86400}}}')) as {
-    data: { attributes: { expires_in: number } };
-  };
-  if (vodParsed.data.attributes.expires_in !== 86400) {
-    throw new Error("Long-lived expires_in must not be shortened");
   }
 
   // Test stream request without required headers returns 403 Forbidden

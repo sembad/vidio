@@ -26,21 +26,15 @@ import javax.crypto.spec.SecretKeySpec;
 public final class LoginGate {
     private static final byte[] ENC_DEFAULT_API_URL = new byte[] {
         (byte)('h' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('p' ^ 0x5A), (byte)('s' ^ 0x5A), (byte)(':' ^ 0x5A),
-        (byte)('/' ^ 0x5A), (byte)('/' ^ 0x5A), (byte)('p' ^ 0x5A), (byte)('l' ^ 0x5A), (byte)('u' ^ 0x5A), (byte)('c' ^ 0x5A),
-        (byte)('k' ^ 0x5A), (byte)('y' ^ 0x5A), (byte)('-' ^ 0x5A), (byte)('c' ^ 0x5A), (byte)('o' ^ 0x5A), (byte)('y' ^ 0x5A),
-        (byte)('o' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('e' ^ 0x5A), (byte)('-' ^ 0x5A), (byte)('1' ^ 0x5A), (byte)('6' ^ 0x5A),
-        (byte)('5' ^ 0x5A), (byte)('7' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('l' ^ 0x5A),
-        (byte)('t' ^ 0x5A), (byte)('o' ^ 0x5A), (byte)('l' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('d' ^ 0x5A), (byte)('e' ^ 0x5A),
-        (byte)('n' ^ 0x5A), (byte)('o' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('n' ^ 0x5A), (byte)('e' ^ 0x5A), (byte)('t' ^ 0x5A),
+        (byte)('/' ^ 0x5A), (byte)('/' ^ 0x5A), (byte)('a' ^ 0x5A), (byte)('p' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('.' ^ 0x5A),
+        (byte)('v' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('d' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('o' ^ 0x5A), (byte)('t' ^ 0x5A),
+        (byte)('.' ^ 0x5A), (byte)('m' ^ 0x5A), (byte)('y' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('d' ^ 0x5A),
         (byte)('/' ^ 0x5A)
     };
     private static final byte[] ENC_DEFAULT_STREAM_PROXY_HOST = new byte[] {
-        (byte)('p' ^ 0x5A), (byte)('l' ^ 0x5A), (byte)('u' ^ 0x5A), (byte)('c' ^ 0x5A), (byte)('k' ^ 0x5A), (byte)('y' ^ 0x5A),
-        (byte)('-' ^ 0x5A), (byte)('c' ^ 0x5A), (byte)('o' ^ 0x5A), (byte)('y' ^ 0x5A), (byte)('o' ^ 0x5A), (byte)('t' ^ 0x5A),
-        (byte)('e' ^ 0x5A), (byte)('-' ^ 0x5A), (byte)('1' ^ 0x5A), (byte)('6' ^ 0x5A), (byte)('5' ^ 0x5A), (byte)('7' ^ 0x5A),
-        (byte)('.' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('l' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('o' ^ 0x5A),
-        (byte)('l' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('d' ^ 0x5A), (byte)('e' ^ 0x5A), (byte)('n' ^ 0x5A), (byte)('o' ^ 0x5A),
-        (byte)('.' ^ 0x5A), (byte)('n' ^ 0x5A), (byte)('e' ^ 0x5A), (byte)('t' ^ 0x5A)
+        (byte)('a' ^ 0x5A), (byte)('p' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('v' ^ 0x5A), (byte)('i' ^ 0x5A),
+        (byte)('d' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('o' ^ 0x5A), (byte)('t' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('m' ^ 0x5A),
+        (byte)('y' ^ 0x5A), (byte)('.' ^ 0x5A), (byte)('i' ^ 0x5A), (byte)('d' ^ 0x5A)
     };
 
     private static String decodeMasked(byte[] enc) {
