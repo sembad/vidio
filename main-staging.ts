@@ -639,9 +639,13 @@ async function fetchProductionLicensePatch(
   if (!accounts.length) return null;
   const numeric = Number.parseInt(streamId, 10);
   const start = Number.isFinite(numeric) && numeric > 0 ? numeric % accounts.length : 0;
-  const tries = Math.min(5, accounts.length);
+  const tries = Math.min(3, accounts.length);
+  // Batas waktu total: 3 akun × fetch proxy bisa menembus batas Cloudflare
+  // (100 dtk) dan memicu 502 origin. Berhenti coba setelah 20 dtk.
+  const deadline = Date.now() + 20_000;
 
   for (let i = 0; i < tries; i++) {
+    if (Date.now() > deadline) break;
     const pick = accounts[(start + i) % accounts.length];
     const headers = new Headers({
       "user-agent": "tv-android/2608.2.4 (1020)",
@@ -821,7 +825,12 @@ async function proxyUltimateStream(
     // Respons tersimpan maksimal ~60 dtk umurnya dalam jendela ini — URL
     // upstream hidup ±5 menit, jadi masih valid dilayani ulang.
     if (stored) return stored.result;
-    return null;
+    // Stream baru dalam jendela: tunggu sisa jendela (maksimal 15 dtk)
+    // lalu fetch, daripada langsung 502. Sisa jendela lebih panjang dari
+    // itu terlalu lama untuk ditunggu klien.
+    const remaining = STAGING_MIN_INTERVAL_MS - (now - lastStagingRequestAt);
+    if (remaining > 15_000) return null;
+    await new Promise((resolve) => setTimeout(resolve, remaining + 50));
   }
 
   // Patch DRM production di-fetch PARALEL dengan staging supaya latensi
@@ -831,8 +840,15 @@ async function proxyUltimateStream(
     .catch(() => null);
 
   const result = await fetchUpstream(originalStreamUrl(streamId, search), headers);
-  lastStagingRequestAt = Date.now();
-  if (result && result.status === 200 && upstreamStreamQuality(result.body) === "full") {
+  const fetchedAt = Date.now();
+  // Hanya sukses (200 full) atau 403 rate-limit yang mengunci jendela 60 dtk.
+  // Kegagalan lain (5xx, network, timeout) TIDAK boleh mengunci jendela —
+  // kalau iya, satu kegagalan staging membuat semua request berikutnya 502
+  // selama satu menit penuh.
+  const isFull200 = !!result && result.status === 200
+    && upstreamStreamQuality(result.body) === "full";
+  if (isFull200 || result?.status === 403) lastStagingRequestAt = fetchedAt;
+  if (isFull200) {
     // DRM staging tidak usable: timpa license_servers & custom_data DRM
     // dengan data production (akun pool). Gagal ambil production → staging
     // tetap dikirim apa adanya.
@@ -857,14 +873,14 @@ async function proxyUltimateStream(
               ),
             ),
           };
-          stagingLastByStream.set(streamId, { result: patched, fetchedAt: lastStagingRequestAt });
+          stagingLastByStream.set(streamId, { result: patched, fetchedAt });
           return patched;
         }
       }
     } catch {
       // fallback: kirim body staging asli
     }
-    stagingLastByStream.set(streamId, { result, fetchedAt: lastStagingRequestAt });
+    stagingLastByStream.set(streamId, { result, fetchedAt });
   }
   return result;
 }
