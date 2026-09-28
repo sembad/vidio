@@ -575,28 +575,43 @@ const STAGING_CREDENTIAL_TOKEN = "ohzsy8obTvyhkk_Tx-vZ";
 const LICENSE_POOL_URL = "https://baru.pw/jwhwiwjwuevdehe.json";
 let licensePoolCache: { accounts: { email: string; token: string }[]; fetchedAt: number } | null = null;
 
+function parseLicensePoolText(text: string): { email: string; token: string }[] {
+  // Format file: ekspor array PHP — ['email' => '...', 'token' => '...']
+  const emails = [...text.matchAll(/'email'\s*=>\s*'([^']*)'/g)].map((m) => m[1]);
+  const tokens = [...text.matchAll(/'token'\s*=>\s*'([^']*)'/g)].map((m) => m[1]);
+  return emails
+    .map((email, i) => ({ email, token: tokens[i] ?? "" }))
+    .filter((a) => a.email && a.token);
+}
+
 async function getLicensePoolAccounts(): Promise<{ email: string; token: string }[]> {
   if (licensePoolCache && Date.now() - licensePoolCache.fetchedAt < 10 * 60_000) {
     return licensePoolCache.accounts;
   }
+  const reqHeaders: Record<string, string> = { "user-agent": USER_AGENT, accept: "*/*" };
+  // 1) Langsung. 2) Fallback lewat proxy DataImpulse — baru.pw bisa
+  //    memblokir IP datacenter Deno Deploy, proxy indo lolos.
+  let text: string | null = null;
   try {
     const res = await fetch(LICENSE_POOL_URL, {
-      headers: { "user-agent": USER_AGENT, accept: "*/*" },
+      headers: reqHeaders,
       signal: AbortSignal.timeout(15_000),
     });
-    if (!res.ok) return licensePoolCache?.accounts ?? [];
-    const text = await res.text();
-    // Format file: ekspor array PHP — ['email' => '...', 'token' => '...']
-    const emails = [...text.matchAll(/'email'\s*=>\s*'([^']*)'/g)].map((m) => m[1]);
-    const tokens = [...text.matchAll(/'token'\s*=>\s*'([^']*)'/g)].map((m) => m[1]);
-    const accounts = emails
-      .map((email, i) => ({ email, token: tokens[i] ?? "" }))
-      .filter((a) => a.email && a.token);
-    if (accounts.length) licensePoolCache = { accounts, fetchedAt: Date.now() };
-    return accounts;
+    if (res.ok) text = await res.text();
   } catch {
-    return licensePoolCache?.accounts ?? [];
+    // lanjut ke fallback proxy
   }
+  if (!text || !parseLicensePoolText(text).length) {
+    try {
+      const viaProxy = await fetchUpstream(LICENSE_POOL_URL, reqHeaders);
+      if (viaProxy && viaProxy.status === 200) text = viaProxy.body;
+    } catch {
+      // tetap null
+    }
+  }
+  const accounts = text ? parseLicensePoolText(text) : [];
+  if (accounts.length) licensePoolCache = { accounts, fetchedAt: Date.now() };
+  return accounts;
 }
 
 // Ambil respons stream PRODUCTION untuk stream yang sama dengan akun pool
@@ -816,11 +831,15 @@ async function proxyUltimateStream(
           const patched: UpstreamResult = {
             ...result,
             body: patchedBody,
-            headers: Object.fromEntries(
-              Object.entries(result.headers).filter(
-                ([k]) => k !== "content-length" && k !== "content-encoding",
+            headers: {
+              ...Object.fromEntries(
+                Object.entries(result.headers).filter(
+                  ([k]) => k !== "content-length" && k !== "content-encoding",
+                ),
               ),
-            ),
+              // Penanda diagnosis: DRM berasal dari production.
+              "x-drm-source": "production",
+            },
           };
           stagingLastByStream.set(streamId, { result: patched, fetchedAt: lastStagingRequestAt });
           return patched;
@@ -829,6 +848,10 @@ async function proxyUltimateStream(
     } catch {
       // fallback: kirim body staging asli
     }
+    result.headers = {
+      ...result.headers,
+      "x-drm-source": "staging-fallback",
+    };
     stagingLastByStream.set(streamId, { result, fetchedAt: lastStagingRequestAt });
   }
   return result;
