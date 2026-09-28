@@ -25,6 +25,9 @@ const ULTIMATE_POOL_URL = "https://baru.pw/jsoegwies82u2bsishshwu.json";
 const ULTIMATE_ROTATE_MS = 4 * 60 * 1000;
 const SLOTS_PER_DAY = Math.floor(86_400_000 / ULTIMATE_ROTATE_MS);
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+// Saat kredensial pool ditolak upstream (akun mati/expired), coba kredensial
+// pool berikutnya sebanyak ini sebelum fallback ke akun user sendiri.
+const POOL_RETRY_COUNT = 5;
 const REDIRECT_URL = "https://vidio.com";
 const USER_AGENT = "tv-android/ (1020";
 
@@ -245,6 +248,19 @@ function shuffledIndices(length: number, seed: number): number[] {
   return indices;
 }
 
+function rotatedSlotIndex(poolLength: number, nowMs: number): number | null {
+  if (poolLength === 0) return null;
+  // Geser ke waktu WIB agar batas hari (dan reseed urutan acak) jatuh di
+  // tengah malam WIB, bukan tengah malam UTC. Offset 7 jam adalah kelipatan
+  // slot 4 menit, jadi batas slot tetap sejajar dengan menit dinding.
+  const wibMs = nowMs + WIB_OFFSET_MS;
+  const slot = Math.floor(wibMs / ULTIMATE_ROTATE_MS);
+  const daySlot = Math.floor(slot / SLOTS_PER_DAY);
+  const slotInDay = slot - daySlot * SLOTS_PER_DAY;
+  if (slotInDay >= poolLength) return null;
+  return shuffledIndices(poolLength, daySlot)[slotInDay];
+}
+
 /**
  * Memetakan slot 4-menit ke satu akun pool secara deterministik. Slot ke-n hari
  * itu memakai akun ke-n dari urutan acak harian, jadi akun yang sama tidak
@@ -256,16 +272,28 @@ function pickRotatedUltimateCredential(
   pool: UltimateCredential[],
   nowMs = Date.now(),
 ): UltimateCredential | null {
-  if (pool.length === 0) return null;
-  // Geser ke waktu WIB agar batas hari (dan reseed urutan acak) jatuh di
-  // tengah malam WIB, bukan tengah malam UTC. Offset 7 jam adalah kelipatan
-  // slot 4 menit, jadi batas slot tetap sejajar dengan menit dinding.
-  const wibMs = nowMs + WIB_OFFSET_MS;
-  const slot = Math.floor(wibMs / ULTIMATE_ROTATE_MS);
-  const daySlot = Math.floor(slot / SLOTS_PER_DAY);
-  const slotInDay = slot - daySlot * SLOTS_PER_DAY;
-  if (slotInDay >= pool.length) return null;
-  return pool[shuffledIndices(pool.length, daySlot)[slotInDay]];
+  const index = rotatedSlotIndex(pool.length, nowMs);
+  return index === null ? null : pool[index];
+}
+
+/**
+ * Kandidat kredensial untuk satu request: mulai dari akun slot saat ini lalu
+ * lanjut ke akun berikutnya dalam urutan acak harian (membungkus). Dipakai
+ * untuk retry saat akun pool ditolak upstream.
+ */
+function pickRotatedUltimateCredentials(
+  pool: UltimateCredential[],
+  count: number,
+  nowMs = Date.now(),
+): UltimateCredential[] {
+  const start = rotatedSlotIndex(pool.length, nowMs);
+  if (start === null) return [];
+  const take = Math.max(1, Math.min(count, pool.length));
+  const candidates: UltimateCredential[] = [];
+  for (let i = 0; i < take; i++) {
+    candidates.push(pool[(start + i) % pool.length]);
+  }
+  return candidates;
 }
 
 // Respons upstream yang berarti kredensial ultimate tidak bisa dipakai untuk
@@ -350,12 +378,14 @@ function getProxyHttpClient(): unknown {
   return cachedProxyClient;
 }
 
+// Hanya UA dan partner-signature yang di-forward dari request klien. Jangan
+// pernah meneruskan x-authorization (JWT identitas user) atau x-api-app-info
+// milik klien: JWT akan menimpa identitas kredensial pool di mata upstream
+// (akun pool dianggap user pengirim yang tidak berlangganan → stream preview),
+// dan app-info android membuat sesi dihitung sebagai klien biasa.
 const STREAM_HEADER_DEFAULTS: Record<string, string> = {
   "user-agent": USER_AGENT,
   "x-partner-signature": "",
-  "x-authorization": "",
-  "x-api-platform": "tv-android",
-  "x-api-app-info": "tv-android/16/2608.2.4-1020",
 };
 
 function applyForwardedStreamHeaders(headers: Headers, request?: Request): void {
@@ -388,6 +418,7 @@ async function fetchUpstream(
     }
 
     const upstream = await fetch(upstreamUrl, fetchOptions);
+    console.log("[v0] upstream", upstreamUrl, "->", upstream.status, "x-user-email:", headers.get("x-user-email"));
     const headerMap: Record<string, string> = {};
     upstream.headers.forEach((val, key) => {
       if (key.toLowerCase() !== "content-encoding") {
@@ -567,10 +598,10 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   const activeUltimate = findActiveUltimateCredential(data, requestedEmail);
   // Kredensial upstream bukan lagi dari bot_data: diputar dari pool akun
   // ultimate tiap 4 menit. Pool habis untuk hari ini → official upstream.
-  const poolCred = activeUltimate
-    ? pickRotatedUltimateCredential(await fetchUltimatePool())
-    : null;
-  if (!poolCred) {
+  const poolCandidates = activeUltimate
+    ? pickRotatedUltimateCredentials(await fetchUltimatePool(), POOL_RETRY_COUNT)
+    : [];
+  if (poolCandidates.length === 0) {
     return redirectToOfficial(
       `livestreamings/${encodeURIComponent(streamId)}/stream`,
       data,
@@ -582,7 +613,7 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   // Token wajib sesuai: token ultimate langsung, token pool saat ini, atau sesi valid pembeli di Vidio
   const trimmedToken = userToken.trim();
   const matchesDirectUltimate = trimmedToken === activeUltimate.token.trim()
-    || trimmedToken === poolCred.token;
+    || poolCandidates.some((candidate) => trimmedToken === candidate.token);
   if (!matchesDirectUltimate) {
     const isLiveValid = await verifyLiveVidioSession(
       requestedEmail,
@@ -594,9 +625,14 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     }
   }
 
-  let result = await proxyUltimateStream(streamId, poolCred, request);
-  if (result && upstreamHasFatalErrors(result.body)) {
-    // Kredensial pool ditolak upstream → pakai kredensial asli user yang request
+  // Coba kandidat pool satu per satu; berhenti di akun yang diterima upstream.
+  let result: UpstreamResult | null = null;
+  for (const candidate of poolCandidates) {
+    result = await proxyUltimateStream(streamId, candidate, request);
+    if (result && !upstreamHasFatalErrors(result.body)) break;
+  }
+  if (!result || upstreamHasFatalErrors(result.body)) {
+    // Semua kandidat pool ditolak → pakai kredensial asli user yang request
     result = await proxyUltimateStream(
       streamId,
       { email: requestedEmail, token: trimmedToken },
@@ -708,10 +744,10 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
   }
 
   const activeUltimate = findActiveUltimateCredential(data, requestedEmail);
-  const poolCred = activeUltimate
-    ? pickRotatedUltimateCredential(await fetchUltimatePool())
-    : null;
-  if (!poolCred) {
+  const poolCandidates = activeUltimate
+    ? pickRotatedUltimateCredentials(await fetchUltimatePool(), POOL_RETRY_COUNT)
+    : [];
+  if (poolCandidates.length === 0) {
     return redirectToOfficial(
       `api/stream/v1/video_data/${encodeURIComponent(videoId)}`,
       data,
@@ -722,7 +758,7 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
 
   const trimmedToken = userToken.trim();
   const matchesDirectUltimate = trimmedToken === activeUltimate.token.trim()
-    || trimmedToken === poolCred.token;
+    || poolCandidates.some((candidate) => trimmedToken === candidate.token);
   if (!matchesDirectUltimate) {
     const isLiveValid = await verifyLiveVidioSession(
       requestedEmail,
@@ -734,9 +770,14 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
     }
   }
 
-  let result = await proxyUltimateVideoData(videoId, poolCred, request);
-  if (result && upstreamHasFatalErrors(result.body)) {
-    // Kredensial pool ditolak upstream → pakai kredensial asli user yang request
+  // Coba kandidat pool satu per satu; berhenti di akun yang diterima upstream.
+  let result: UpstreamResult | null = null;
+  for (const candidate of poolCandidates) {
+    result = await proxyUltimateVideoData(videoId, candidate, request);
+    if (result && !upstreamHasFatalErrors(result.body)) break;
+  }
+  if (!result || upstreamHasFatalErrors(result.body)) {
+    // Semua kandidat pool ditolak → pakai kredensial asli user yang request
     result = await proxyUltimateVideoData(
       videoId,
       { email: requestedEmail, token: trimmedToken },
@@ -912,6 +953,22 @@ async function selfCheck(): Promise<void> {
     throw new Error("Empty pool must yield no credential");
   }
 
+  // Kandidat retry: mulai dari akun slot saat ini, lanjut berurutan, membungkus.
+  const candidates = pickRotatedUltimateCredentials(pool, 2, dayStart);
+  if (candidates.length !== 2 || candidates[0].email !== slotCred.email) {
+    throw new Error("Retry candidates must start with the current slot credential");
+  }
+  if (candidates[0].email === candidates[1].email) {
+    throw new Error("Retry candidates must be distinct accounts");
+  }
+  const wrapped = pickRotatedUltimateCredentials(pool, 5, dayStart);
+  if (wrapped.length !== 3 || new Set(wrapped.map((c) => c.email)).size !== 3) {
+    throw new Error("Retry candidates must wrap without duplicates");
+  }
+  if (pickRotatedUltimateCredentials([], 3, dayStart).length !== 0) {
+    throw new Error("Empty pool must yield no retry candidates");
+  }
+
   // Parser pool harus menerima format PHP array literal dari upstream
   const phpPool = parseUltimatePoolText(
     "[\r\n    [\r\n        'nomor' => 1,\r\n        'email' => 'A@X.id',\r\n        'token' => 't1',\r\n    ],\r\n    [\r\n        'nomor' => 2,\r\n        'email' => 'b@x.id',\r\n        'token' => 't2',\r\n    ],\r\n]\r\n",
@@ -1012,9 +1069,9 @@ async function selfCheck(): Promise<void> {
   if (
     forwardedHeaders.get("user-agent") !== "tv-android/from-api" ||
     forwardedHeaders.get("x-partner-signature") !== "partner-signature" ||
-    forwardedHeaders.get("x-authorization") !== "session-authorization" ||
-    forwardedHeaders.get("x-api-platform") !== "app-android" ||
-    forwardedHeaders.get("x-api-app-info") !== "android/16/test-build"
+    forwardedHeaders.get("x-authorization") !== null ||
+    forwardedHeaders.get("x-api-platform") !== null ||
+    forwardedHeaders.get("x-api-app-info") !== null
   ) {
     throw new Error("Stream header forwarding self-check failed");
   }
@@ -1049,7 +1106,15 @@ async function selfCheck(): Promise<void> {
   }
 }
 
-export { handleRequest, hasAccount, isUltimateExpired, findActiveUltimateCredential };
+export {
+  handleRequest,
+  hasAccount,
+  isUltimateExpired,
+  findActiveUltimateCredential,
+  fetchUltimatePool,
+  pickRotatedUltimateCredential,
+  pickRotatedUltimateCredentials,
+};
 
 const isDirectRun =
   Boolean((import.meta as unknown as { main?: boolean }).main) ||
