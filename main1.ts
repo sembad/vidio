@@ -513,6 +513,32 @@ function extractPsshFromMpd(mpdText: string): string | null {
   return null;
 }
 
+// APK seamless-clearkey TIDAK membaca attributes.clearkey — patch-nya
+// (LoginGate) memaksa player mengambil "lisensi" ClearKey dari
+// <proxyHost>/clearkey (default api.vidiot.my.id/clearkey) dan Android
+// ClearKey CDM mengharapkan respons W3C clearkey JSON. Registri kid/stream
+// → JSON untuk endpoint tersebut, diisi setiap kali key berhasil didecrypt.
+const clearKeyStore = new Map<string, string>();
+const clearKeyByStream = new Map<string, string>();
+
+function registerClearKeyJson(streamId: string, json: string): void {
+  try {
+    const parsed = JSON.parse(json) as { keys?: Array<{ k?: unknown; kid?: unknown }> };
+    for (const key of Array.isArray(parsed.keys) ? parsed.keys : []) {
+      if (typeof key.k !== "string" || typeof key.kid !== "string") continue;
+      const entry = JSON.stringify({ keys: [{ kty: "oct", k: key.k, kid: key.kid }], type: "temporary" });
+      clearKeyStore.set(key.kid, entry);
+      const kidBytes = b64UrlToBytes(key.kid);
+      if (kidBytes) {
+        clearKeyStore.set([...kidBytes].map((b) => b.toString(16).padStart(2, "0")).join(""), entry);
+      }
+    }
+    clearKeyByStream.set(streamId, json);
+  } catch {
+    // JSON tidak valid — tidak ada yang diregistrasi.
+  }
+}
+
 export async function embedClearKeyInBody(body: string, request: Request, streamId: string): Promise<string> {
   const origin = new URL(request.url).origin;
   let parsed: unknown;
@@ -580,6 +606,8 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
     return body;
   }
   if (keys.length === 0) return body;
+
+  registerClearKeyJson(streamId, json);
 
   attrs.clearkey = { keys, type: "temporary" };
   // Aplikasi menjadwalkan refresh & playback dari expires_in — paksa 240
@@ -1388,10 +1416,41 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
   return renderUpstream(result, shouldEncrypt);
 }
 
+// Endpoint lisensi ClearKey untuk APK seamless-clearkey: Android ClearKey
+// CDM POST {"kids":["<kid-b64url>"],"type":"temporary"} dan mengharapkan
+// respons {"keys":[{"kty":"oct","k":...,"kid":...}],"type":"temporary"}.
+async function handleClearKeyEndpoint(request: Request, url: URL): Promise<Response> {
+  const jsonHeaders = {
+    ...securityHeaders,
+    "content-type": "application/json; charset=utf-8",
+    "cache-control": "no-store, no-cache, must-revalidate",
+  };
+  let kid = url.searchParams.get("kid") ?? "";
+  const streamId = url.searchParams.get("stream_id") ?? url.searchParams.get("stream") ?? "";
+  if (!kid && request.method === "POST") {
+    try {
+      const parsed = JSON.parse(await request.text()) as { kids?: unknown };
+      if (Array.isArray(parsed.kids) && typeof parsed.kids[0] === "string") kid = parsed.kids[0];
+    } catch {
+      // Body bukan JSON — coba lookup per stream.
+    }
+  }
+  const json = (kid ? clearKeyStore.get(kid) ?? clearKeyStore.get(kid.toLowerCase()) : undefined)
+    ?? (streamId ? clearKeyByStream.get(streamId) : undefined);
+  if (!json) {
+    return new Response(JSON.stringify({ error: "key not found" }), { status: 404, headers: jsonHeaders });
+  }
+  return new Response(json, { status: 200, headers: jsonHeaders });
+}
+
 async function handleRequest(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
   if (url.searchParams.has("ua")) return textResponse(USER_AGENT);
+
+  if (url.pathname === "/clearkey" || url.pathname.endsWith("/clearkey")) {
+    return handleClearKeyEndpoint(request, url);
+  }
 
 
   const streamMatch = url.pathname.match(STREAM_PATH);
