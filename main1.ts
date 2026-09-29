@@ -53,6 +53,29 @@ const STAGING_VISITOR_ID = "c0f1cf62-ab27-45fb-9663-5e056ca0e3b3";
 const UPSTREAM_ORIGIN = "https://api.vidio.com";
 const UPSTREAM_PROXY_PREFIX = "https://score.xxxxxxx.my.id/";
 
+// Proxy DataImpulse (exit Indonesia) — MPD Akamai live geo-locked ke ID.
+const DATAIMPULSE_PROXY_URL = "http://46b0ff892fc1d3075320__cr.id:66c757e644710948@gw.dataimpulse.com:823";
+
+let cachedProxyClient: unknown;
+/** Init tambahan agar fetch lewat proxy DataImpulse (Deno: client, Bun: proxy). */
+function proxyFetchInit(): Record<string, unknown> {
+  const g = globalThis as unknown as {
+    Deno?: { createHttpClient?: (opts: unknown) => unknown };
+  };
+  if (g.Deno?.createHttpClient) {
+    if (!cachedProxyClient) {
+      try {
+        cachedProxyClient = g.Deno.createHttpClient({ proxy: { url: DATAIMPULSE_PROXY_URL } });
+      } catch {
+        return {};
+      }
+    }
+    return { client: cachedProxyClient };
+  }
+  // Bun (tes lokal) mendukung opsi proxy langsung di fetch.
+  return { proxy: DATAIMPULSE_PROXY_URL };
+}
+
 function viaUpstreamProxy(target: string): string {
   // https://api.vidio.com/p?q → https://score.xxxxxxx.my.id/api.vidio.com/p?q
   return target.replace(/^https:\/\//, UPSTREAM_PROXY_PREFIX);
@@ -429,10 +452,12 @@ async function embedClearKeyInBody(body: string, streamId: string, origin: strin
 
   let mpdText: string;
   try {
+    // MPD Akamai geo-locked ke Indonesia — wajib lewat proxy DataImpulse.
     const res = await fetch(dash, {
+      ...proxyFetchInit(),
       headers: { "user-agent": CHROME_UA, accept: "*/*" },
       signal: AbortSignal.timeout(15_000),
-    });
+    } as RequestInit);
     if (!res.ok) return body;
     mpdText = await res.text();
   } catch {
