@@ -459,6 +459,13 @@ function bytesToB64Url(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+/** Base64 standar (berpadding) — format yang diterima go-widevine untuk PSSH. */
+function bytesToB64Std(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
 function b64UrlToBytes(value: string): Uint8Array | null {
   const padded = value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (value.length % 4)) % 4);
   try {
@@ -525,7 +532,7 @@ function buildWidevinePssh(kidHex: string): string | null {
     }
     if (matched) out.set(kid, i);
   }
-  return bytesToB64Url(out);
+  return bytesToB64Std(out);
 }
 
 /**
@@ -963,7 +970,13 @@ async function proxyStagingStream(streamId: string, request?: Request): Promise<
   try {
     const upstream = await fetch(
       `${STAGING_API_ORIGIN}/livestreamings/${encodeURIComponent(streamId)}/stream${search}`,
-      { headers, redirect: "follow", signal: AbortSignal.timeout(30_000) },
+      {
+        // Staging juga geo-locked — lewat proxy DataImpulse (exit Indonesia).
+        ...proxyFetchInit(),
+        headers,
+        redirect: "follow",
+        signal: AbortSignal.timeout(30_000),
+      } as RequestInit,
     );
     const headerMap: Record<string, string> = {};
     upstream.headers.forEach((val, key) => {
