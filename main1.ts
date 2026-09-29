@@ -247,7 +247,15 @@ const streamResponseInflight = new Map<string, Promise<UpstreamResult | null>>()
 function getCachedStreamResponse(key: string, nowMs = Date.now()): CachedStreamResponse | null {
   const cached = streamResponseCache.get(key);
   if (!cached) return null;
-  if (nowMs - cached.fetchedAt >= STREAM_CACHE_SERVE_WINDOW_MS) {
+  // URL upstream kini bisa sangat pendek (expires_in ~21 dtk). Window layan
+  // menyesuaikan: URL pendek dilayani maksimal 10 dtk agar yang sampai ke
+  // aplikasi masih hidup; URL panjang tetap 4 menit.
+  const m = cached.body.match(/"expires_in"\s*:\s*(\d+)/);
+  const upstreamExpires = m ? Number(m[1]) : Number.POSITIVE_INFINITY;
+  const windowMs = upstreamExpires < 300
+    ? Math.max(10_000, upstreamExpires * 500)
+    : STREAM_CACHE_SERVE_WINDOW_MS;
+  if (nowMs - cached.fetchedAt >= windowMs) {
     streamResponseCache.delete(key);
     return null;
   }
@@ -327,7 +335,9 @@ function rewriteDashUrlInBody(body: string, dashUrl: string): string {
  * Cache isi MPD per stream (4 menit): MPD di-SIMPAN, bukan di-fetch ulang
  * setiap request. Dua lapis seperti cache staging lainnya.
  */
-const MPD_TTL_MS = 4 * 60 * 1000;
+// MPD live bisa memutar PSSH/kid sewaktu-waktu — cache pendek 60 dtk agar
+// clearkey selalu mengikuti kid terkini.
+const MPD_TTL_MS = 60 * 1000;
 const mpdMemoryCache = new Map<string, { text: string; expiresAt: number }>();
 
 function mpdCacheUrl(origin: string, streamId: string): string {
@@ -572,6 +582,9 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   if (keys.length === 0) return body;
 
   attrs.clearkey = { keys, type: "temporary" };
+  // Aplikasi menjadwalkan refresh & playback dari expires_in — paksa 240
+  // agar tidak kena URL yang mati dalam hitungan detik.
+  attrs.expires_in = 240;
   delete attrs.custom_data;
   if (servers && typeof servers === "object") {
     delete (servers as Record<string, unknown>).drm_license_url;
