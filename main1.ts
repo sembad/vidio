@@ -28,7 +28,6 @@ const ULTIMATE_CREDENTIAL_TOKEN = ULTIMATE_CREDENTIAL.token;
 const ULTIMATE_UA = "vidioandroid/2609.1.14-c11a00be7f (3191940)";
 const ULTIMATE_VISITOR_ID = "75dec05f-d3e9-4c4e-a384-2bc238868076";
 const ULTIMATE_USER_ID = "231108280";
-const ULTIMATE_JWT = "eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjp7InR5cGUiOiJhY2Nlc3NfdG9rZW4iLCJ1aWQiOjIzMTEwODI4MH0sImV4cCI6MTc5MDY3ODk2NH0.yZxJ5Rm2ZQHI8FxcEf5I2fudt13iKYY754ysJR2maWI";
 const REDIRECT_URL = "https://vidio.com";
 const USER_AGENT = "tv-android/ (1020";
 
@@ -925,7 +924,6 @@ async function proxyUltimateStream(
     "x-device-cpu-arch": "armeabi-v7a",
     "x-user-email": credential.email,
     "x-user-token": credential.token,
-    "x-authorization": ULTIMATE_JWT,
     referer: "android-app://com.vidio.android",
     "x-api-platform": "app-android",
     "x-api-auth": API_AUTH,
@@ -1186,7 +1184,6 @@ async function proxyUltimateVideoData(
     "accept-language": "id",
     "x-visitor-id": ULTIMATE_VISITOR_ID,
     "x-user-id": ULTIMATE_USER_ID,
-    "x-authorization": ULTIMATE_JWT,
     "x-user-email": credential.email,
     "x-user-token": credential.token,
   });
