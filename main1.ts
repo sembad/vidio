@@ -284,32 +284,87 @@ function rewriteLicenseUrlToClearKey(body: string, clearKeyUrl: string): string 
   }
 }
 
-function base64UrlEncode(bytes: Uint8Array): string {
+function bytesToB64Url(bytes: Uint8Array): string {
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-/** Ubah "key:kid" upstream menjadi pasangan base64url W3C (hex bila hex, ASCII bila bukan). */
-function parseClearKeyValue(value: string): { key: string; kid: string } | null {
-  const separator = value.indexOf(":");
-  if (separator <= 0 || separator === value.length - 1) return null;
-  const decode = (part: string): string => {
-    if (/^[0-9a-fA-F]+$/.test(part) && part.length % 2 === 0 && part.length >= 16) {
-      const bytes = new Uint8Array(part.length / 2);
-      for (let i = 0; i < bytes.length; i++) bytes[i] = Number.parseInt(part.slice(i * 2, i * 2 + 2), 16);
-      return base64UrlEncode(bytes);
+function b64UrlToBytes(value: string): Uint8Array | null {
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (value.length % 4)) % 4);
+  try {
+    const binary = atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  } catch {
+    return null;
+  }
+}
+
+function hexToBytes(hex: string): Uint8Array | null {
+  if (!/^[0-9a-fA-F]+$/.test(hex) || hex.length % 2 !== 0) return null;
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) bytes[i] = Number.parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  return bytes;
+}
+
+// Layanan penukar kunci (dari flow user): halaman web meng-embed Bearer token
+// di window.__AUTH_TOKEN__, /getkey/widevine menukar pssh + license URL
+// menjadi content key. /auth/hearbeat hanya memperbarui token sesi web.
+const GO_WIDEVINE_ORIGIN = "https://go-widevine.onrender.com";
+let widevineTokenCache: { token: string; expiresAt: number } | null = null;
+
+async function getWidevineToken(): Promise<string | null> {
+  const now = Date.now();
+  if (widevineTokenCache && widevineTokenCache.expiresAt > now) return widevineTokenCache.token;
+  try {
+    const res = await fetch(`${GO_WIDEVINE_ORIGIN}/`, {
+      headers: { "user-agent": CHROME_UA, accept: "text/html" },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const match = html.match(/__AUTH_TOKEN__\s*=\s*"([^"]+)"/);
+    const token = match?.[1] ?? null;
+    if (token) widevineTokenCache = { token, expiresAt: now + 10 * 60_000 };
+    return token;
+  } catch {
+    return null;
+  }
+}
+
+// Template PSSH Widevine byte-exact dari flow user yang terbukti diterima
+// license server (kid konten di dalamnya tinggal diganti per stream).
+const WIDEVINE_PSSH_TEMPLATE_B64 =
+  "AAAAXHBzc2gAAAAA7e+LqXnWSs6jyCfc1R0h7QAAADwSEPtepDgl/jpdkeaDVqHNEmwSEPtepDgl/jpdkeaDVqHNEmxI49yVmwY=";
+const WIDEVINE_PSSH_TEMPLATE_KID_HEX = "fb5ea43825fe3a5d91e68356a1cd126c";
+
+function buildWidevinePssh(kidHex: string): string | null {
+  const template = b64UrlToBytes(WIDEVINE_PSSH_TEMPLATE_B64);
+  const templateKid = hexToBytes(WIDEVINE_PSSH_TEMPLATE_KID_HEX);
+  const kid = hexToBytes(kidHex);
+  if (!template || !templateKid || !kid || kid.length !== 16) return null;
+  const out = new Uint8Array(template);
+  for (let i = 0; i + kid.length <= out.length; i++) {
+    let matched = true;
+    for (let j = 0; j < templateKid.length; j++) {
+      if (out[i + j] !== templateKid[j]) {
+        matched = false;
+        break;
+      }
     }
-    return base64UrlEncode(new TextEncoder().encode(part));
-  };
-  return { key: decode(value.slice(0, separator)), kid: decode(value.slice(separator + 1)) };
+    if (matched) out.set(kid, i);
+  }
+  return bytesToB64Url(out);
 }
 
 /**
- * Endpoint kunci ClearKey (KHUSUS live stream — VOD tetap Widevine): ambil
- * atribut `clearkey` ("key:kid") dari respons stream upstream, kembalikan
- * sebagai JSON W3C clearkey. MediaDrm ClearKey mem-posting key request ke
- * sini dan memakai responsnya sebagai kunci.
+ * Endpoint kunci ClearKey (KHUSUS live stream — VOD tetap Widevine). Player
+ * hasil patch (skema ClearKey) mem-posting key request W3C {"kids":[...]} ke
+ * sini. Worker mengambil license URL production dari stream (kredensial
+ * ultimate hardcode), membangun PSSH dari kid, menukarkannya dengan konten
+ * key di go-widevine, lalu menjawab JSON W3C clearkey.
  */
 async function handleClearKeyRequest(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -318,25 +373,102 @@ async function handleClearKeyRequest(request: Request): Promise<Response> {
   if (!/^\d+$/.test(streamId)) {
     return new Response(JSON.stringify({ error: "missing stream_id" }), { status: 400, headers: jsonHeaders });
   }
-  const result = await proxyUltimateStream(streamId, ULTIMATE_CREDENTIAL, request, CHROME_UA);
-  if (!result || result.status !== 200) {
+
+  // kid dari body W3C clearkey (POST player) atau query ?kid= (hex/b64url).
+  let kidValue = url.searchParams.get("kid") ?? "";
+  if (!kidValue) {
+    try {
+      const body = (await request.json()) as { kids?: unknown };
+      const kids = Array.isArray(body?.kids) ? body.kids : [];
+      kidValue = typeof kids[0] === "string" ? kids[0] : "";
+    } catch {
+      kidValue = "";
+    }
+  }
+  let kidHex = "";
+  if (/^[0-9a-fA-F]{32}$/.test(kidValue)) {
+    kidHex = kidValue.toLowerCase();
+  } else {
+    const kidBytes = b64UrlToBytes(kidValue);
+    if (kidBytes && kidBytes.length === 16) {
+      kidHex = Array.from(kidBytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    }
+  }
+  if (!kidHex) {
+    return new Response(JSON.stringify({ error: "missing or invalid kid" }), { status: 400, headers: jsonHeaders });
+  }
+
+  // License URL production harus fresh (kedaluwarsa ±5 menit).
+  const stream = await proxyUltimateStream(streamId, ULTIMATE_CREDENTIAL, request, CHROME_UA);
+  if (!stream || stream.status !== 200) {
     return new Response(JSON.stringify({ error: "upstream unavailable" }), { status: 502, headers: jsonHeaders });
   }
+  let licenseUrl = "";
   try {
-    const parsed: unknown = JSON.parse(result.body);
-    const attributes = jsonApiAttributeRecords(parsed)[0];
-    const raw = attributes && typeof attributes.clearkey === "string" ? attributes.clearkey : "";
-    const clearKey = raw ? parseClearKeyValue(raw) : null;
-    if (!clearKey) {
-      return new Response(JSON.stringify({ error: "no clearkey" }), { status: 404, headers: jsonHeaders });
+    const attributes = jsonApiAttributeRecords(JSON.parse(stream.body))[0];
+    const servers = attributes?.license_servers;
+    if (servers && typeof servers === "object") {
+      licenseUrl = typeof (servers as Record<string, unknown>).drm_license_url === "string"
+        ? ((servers as Record<string, unknown>).drm_license_url as string)
+        : "";
     }
-    return new Response(
-      JSON.stringify({ keys: [{ kty: "oct", k: clearKey.key, kid: clearKey.kid }], type: "temporary" }),
-      { status: 200, headers: jsonHeaders },
-    );
   } catch {
-    return new Response(JSON.stringify({ error: "bad upstream body" }), { status: 502, headers: jsonHeaders });
+    licenseUrl = "";
   }
+  if (!licenseUrl) {
+    return new Response(JSON.stringify({ error: "no license url" }), { status: 404, headers: jsonHeaders });
+  }
+
+  const pssh = buildWidevinePssh(kidHex);
+  if (!pssh) {
+    return new Response(JSON.stringify({ error: "bad kid" }), { status: 400, headers: jsonHeaders });
+  }
+  const token = await getWidevineToken();
+  if (!token) {
+    return new Response(JSON.stringify({ error: "key service unavailable" }), { status: 502, headers: jsonHeaders });
+  }
+  let contentKey: string | null = null;
+  try {
+    const res = await fetch(`${GO_WIDEVINE_ORIGIN}/getkey/widevine`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${token}`,
+        "user-agent": CHROME_UA,
+        accept: "*/*",
+        origin: GO_WIDEVINE_ORIGIN,
+        referer: `${GO_WIDEVINE_ORIGIN}/`,
+      },
+      body: JSON.stringify({ pssh, license_url: licenseUrl, proxy: "", headers: {} }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!res.ok) {
+      return new Response(JSON.stringify({ error: "key service error" }), { status: 502, headers: jsonHeaders });
+    }
+    const data = (await res.json()) as { keys?: unknown; status?: unknown };
+    if (data.status !== "ok" || !Array.isArray(data.keys)) {
+      return new Response(JSON.stringify({ error: "no key" }), { status: 404, headers: jsonHeaders });
+    }
+    for (const entry of data.keys) {
+      if (
+        entry && typeof entry === "object" && (entry as Record<string, unknown>).type === "content" &&
+        typeof (entry as Record<string, unknown>).key === "string"
+      ) {
+        contentKey = (entry as Record<string, unknown>).key as string;
+        break;
+      }
+    }
+  } catch {
+    return new Response(JSON.stringify({ error: "key service error" }), { status: 502, headers: jsonHeaders });
+  }
+  if (!contentKey) {
+    return new Response(JSON.stringify({ error: "no content key" }), { status: 404, headers: jsonHeaders });
+  }
+  const keyB64 = bytesToB64Url(hexToBytes(contentKey) ?? new Uint8Array());
+  return new Response(
+    JSON.stringify({ keys: [{ kty: "oct", k: keyB64, kid: bytesToB64Url(hexToBytes(kidHex)!) }], type: "temporary" }),
+    { status: 200, headers: jsonHeaders },
+  );
 }
 
 // Respons upstream yang berarti kredensial ultimate tidak bisa dipakai untuk
@@ -1029,6 +1161,30 @@ async function selfCheck(): Promise<void> {
   // Kredensial ultimate hardcode terdefinisi dengan benar
   if (ULTIMATE_CREDENTIAL.email !== "85923081810-xl@fake-vidio.com" || ULTIMATE_CREDENTIAL.token !== "KHFZCCxyExbSr-y9K8KA") {
     throw new Error("Hardcoded ultimate credential must stay intact");
+  }
+
+  // Helper clearkey: roundtrip hex ↔ base64url dan template PSSH.
+  const ckRound = bytesToB64Url(hexToBytes("fb5ea43825fe3a5d91e68356a1cd126c")!);
+  if (b64UrlToBytes(ckRound)?.length !== 16) {
+    throw new Error("base64url roundtrip failed");
+  }
+  const builtPssh = buildWidevinePssh("00112233445566778899aabbccddeeff");
+  const templatePssh = b64UrlToBytes(WIDEVINE_PSSH_TEMPLATE_B64)!;
+  if (!builtPssh) {
+    throw new Error("PSSH build must succeed for a valid kid");
+  }
+  const builtPsshBytes = b64UrlToBytes(builtPssh)!;
+  if (builtPsshBytes.length !== templatePssh.length) {
+    throw new Error("Built PSSH must keep the template length");
+  }
+  const templateKid = hexToBytes(WIDEVINE_PSSH_TEMPLATE_KID_HEX)!;
+  if (builtPsshBytes.includes(templateKid[0]) && Array.from(builtPsshBytes).some((b, i) =>
+    i + 16 <= builtPsshBytes.length && templateKid.every((t, j) => builtPsshBytes[i + j] === t)
+  )) {
+    throw new Error("Built PSSH must not contain the template kid anymore");
+  }
+  if (buildWidevinePssh("zz") !== null) {
+    throw new Error("Invalid kid must fail PSSH build");
   }
 
   // Error upstream yang memicu fallback ke kredensial asli user
