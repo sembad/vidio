@@ -916,7 +916,7 @@ const CHROME_UA =
  * curl yang terbukti sukses. Staging dibatasi 1 GET/menit, jadi hasilnya
  * WAJIB lewat cache stream 4 menit (jangan dipanggil di luar loader cache).
  */
-async function proxyStagingStream(streamId: string, request?: Request): Promise<UpstreamResult | null> {
+export async function proxyStagingStream(streamId: string, request?: Request): Promise<UpstreamResult | null> {
   const incoming = request ? new URL(request.url) : null;
   const search = incoming && incoming.search ? incoming.search : "?initialize=true";
   const headers = new Headers({
