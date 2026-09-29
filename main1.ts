@@ -58,7 +58,7 @@ const DATAIMPULSE_PROXY_URL = "http://46b0ff892fc1d3075320__cr.id:66c757e6447109
 
 let cachedProxyClient: unknown;
 /** Init tambahan agar fetch lewat proxy DataImpulse (Deno: client, Bun: proxy). */
-function proxyFetchInit(): Record<string, unknown> {
+export function proxyFetchInit(): Record<string, unknown> {
   const g = globalThis as unknown as {
     Deno?: { createHttpClient?: (opts: unknown) => unknown };
   };
@@ -315,16 +315,6 @@ function rewriteDashUrlInBody(body: string, dashUrl: string): string {
   }
 }
 
-/** Ambil semua KID (hex, unik) dari teks MPD via atribut cenc:default_KID. */
-function extractKidsFromMpd(mpdText: string): string[] {
-  const kids = new Set<string>();
-  const re = /cenc:default_KID="([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"/g;
-  for (const match of mpdText.matchAll(re)) {
-    kids.add(match[1].replace(/-/g, "").toLowerCase());
-  }
-  return [...kids];
-}
-
 /**
  * Cache isi MPD per stream (4 menit): MPD di-SIMPAN, bukan di-fetch ulang
  * setiap request. Dua lapis seperti cache staging lainnya.
@@ -375,7 +365,80 @@ async function storeMpdCache(origin: string, streamId: string, text: string): Pr
  * clearkey di-embed langsung ke attributes.clearkey. TANPA link /clearkey.
  * Bila ada langkah gagal, body dikembalikan apa adanya (nilai upstream).
  */
-async function embedClearKeyInBody(body: string, request: Request, streamId: string): Promise<string> {
+// Daftar akun production (pemilik konten) — sumber custom_data production
+// yang fresh (masa aktif ±5 menit, cukup untuk cache 4 menit).
+const PRODUCTION_ACCOUNTS_URL = "https://baru.pw/jsoegwies82u2bsishshwu.json";
+const PROD_CD_TTL_MS = 4 * 60 * 1000;
+const prodCdMemoryCache = new Map<string, { cd: string; expiresAt: number }>();
+
+/** Parse daftar akun format Ruby hash: 'email' => 'x', 'token' => 'y'. */
+function parseProductionAccounts(raw: string): Array<{ email: string; token: string }> {
+  return [...raw.matchAll(/'email'\s*=>\s*'([^']+)',\s*\r?\n\s*'token'\s*=>\s*'([^']+)'/g)]
+    .map((m) => ({ email: m[1], token: m[2] }));
+}
+
+/**
+ * custom_data PRODUCTION per stream (query pallycon-customdata-v2 untuk
+ * license.vidio.com). Dicoba akun demi akun sampai ada yang berhak; hasil
+ * di-cache 4 menit per stream.
+ */
+async function fetchProductionCustomData(streamId: string, request?: Request): Promise<string | null> {
+  const cached = prodCdMemoryCache.get(streamId);
+  if (cached && cached.expiresAt > Date.now()) return cached.cd;
+  if (cached) prodCdMemoryCache.delete(streamId);
+
+  let raw = "";
+  try {
+    const res = await fetch(PRODUCTION_ACCOUNTS_URL, { signal: AbortSignal.timeout(15_000) });
+    if (res.ok) raw = await res.text();
+  } catch {
+    // Daftar gagal diambil — lanjut dengan kredensial ultimate bawaan.
+  }
+  const accounts = [...parseProductionAccounts(raw), ULTIMATE_CREDENTIAL];
+  for (const acc of accounts.slice(0, 10)) {
+    const r = await proxyUltimateStream(streamId, acc, request, CHROME_UA);
+    if (!r || r.status !== 200) continue;
+    try {
+      const attrs = jsonApiAttributeRecords(JSON.parse(r.body))[0];
+      const cd = attrs?.custom_data;
+      const wv = typeof cd === "string"
+        ? cd
+        : cd && typeof cd === "object" && typeof (cd as Record<string, unknown>).widevine === "string"
+        ? ((cd as Record<string, unknown>).widevine as string)
+        : "";
+      if (wv) {
+        prodCdMemoryCache.set(streamId, { cd: wv, expiresAt: Date.now() + PROD_CD_TTL_MS });
+        return wv;
+      }
+    } catch {
+      // Body tidak JSON — coba akun berikutnya.
+    }
+  }
+  return null;
+}
+
+/** PSSH Widevine (base64) dari teks MPD — pilih box dengan system id Widevine. */
+function extractPsshFromMpd(mpdText: string): string | null {
+  const widevineSystemId = new Uint8Array([
+    0xed, 0xef, 0x8b, 0xa9, 0x79, 0xd6, 0x4a, 0xce,
+    0xa3, 0xc8, 0x27, 0xdc, 0xd5, 0x1d, 0x21, 0xed,
+  ]);
+  for (const match of mpdText.matchAll(/<cenc:pssh>([^<]+)<\/cenc:pssh>/g)) {
+    const bytes = b64UrlToBytes(match[1]);
+    if (!bytes || bytes.length < 28) continue;
+    let isWidevine = true;
+    for (let i = 0; i < 16; i++) {
+      if (bytes[12 + i] !== widevineSystemId[i]) {
+        isWidevine = false;
+        break;
+      }
+    }
+    if (isWidevine) return match[1];
+  }
+  return null;
+}
+
+export async function embedClearKeyInBody(body: string, request: Request, streamId: string): Promise<string> {
   const origin = new URL(request.url).origin;
   let parsed: unknown;
   try {
@@ -387,13 +450,8 @@ async function embedClearKeyInBody(body: string, request: Request, streamId: str
   if (!attrs) return body;
 
   const servers = attrs.license_servers;
-  const licenseUrl = servers && typeof servers === "object" &&
-      typeof (servers as Record<string, unknown>).drm_license_url === "string"
-    ? ((servers as Record<string, unknown>).drm_license_url as string)
-    : "";
-  if (!licenseUrl) return body;
 
-  // Sumber KID: MPD dari respons itu sendiri (dash staging saat sumber
+  // Sumber PSSH: MPD dari respons itu sendiri (dash staging saat sumber
   // staging, dash production saat fallback). Fetch SELALU lewat proxy
   // DataImpulse (exit Indonesia) dan di-SIMPAN 4 menit per stream —
   // request berikutnya tidak fetch ulang.
@@ -415,33 +473,37 @@ async function embedClearKeyInBody(body: string, request: Request, streamId: str
       return body;
     }
   }
-  const kids = extractKidsFromMpd(mpdText);
-  if (kids.length === 0) return body;
+  const pssh = extractPsshFromMpd(mpdText);
+  if (!pssh) return body;
+
+  // License: PRODUCTION + custom_data production fresh (flow terbukti).
+  const prodCd = await fetchProductionCustomData(streamId, request);
+  if (!prodCd) return body;
+  const licenseUrl = `https://license.vidio.com/ri/licenseManager.do?pallycon-customdata-v2=${prodCd}`;
+
+  let json = await readClearKeyCache(origin, streamId, pssh.slice(0, 48));
+  if (!json) {
+    const result = await decryptPsshWithLicenseUrl(pssh, licenseUrl);
+    if (!result.ok) return body;
+    json = result.json;
+    void storeClearKeyCache(origin, streamId, pssh.slice(0, 48), json);
+  }
 
   const keys: Array<{ kty: string; k: string; kid: string }> = [];
-  for (const kidHex of kids) {
-    let json = await readClearKeyCache(origin, streamId, kidHex);
-    if (!json) {
-      const result = await decryptKidWithLicenseUrl(licenseUrl, kidHex);
-      if (!result.ok) return body;
-      json = result.json;
-      void storeClearKeyCache(origin, streamId, kidHex, json);
-    }
-    try {
-      const parsedKeys = (JSON.parse(json) as { keys?: unknown }).keys;
-      if (!Array.isArray(parsedKeys)) return body;
-      for (const key of parsedKeys) {
-        if (key && typeof key === "object" &&
-          typeof (key as Record<string, unknown>).kty === "string" &&
-          typeof (key as Record<string, unknown>).k === "string" &&
-          typeof (key as Record<string, unknown>).kid === "string"
-        ) {
-          keys.push(key as { kty: string; k: string; kid: string });
-        }
+  try {
+    const parsedKeys = (JSON.parse(json) as { keys?: unknown }).keys;
+    if (!Array.isArray(parsedKeys)) return body;
+    for (const key of parsedKeys) {
+      if (key && typeof key === "object" &&
+        typeof (key as Record<string, unknown>).kty === "string" &&
+        typeof (key as Record<string, unknown>).k === "string" &&
+        typeof (key as Record<string, unknown>).kid === "string"
+      ) {
+        keys.push(key as { kty: string; k: string; kid: string });
       }
-    } catch {
-      return body;
     }
+  } catch {
+    return body;
   }
   if (keys.length === 0) return body;
 
@@ -510,31 +572,6 @@ async function getWidevineToken(): Promise<string | null> {
   }
 }
 
-// Template PSSH Widevine byte-exact dari flow user yang terbukti diterima
-// license server (kid konten di dalamnya tinggal diganti per stream).
-const WIDEVINE_PSSH_TEMPLATE_B64 =
-  "AAAAXHBzc2gAAAAA7e+LqXnWSs6jyCfc1R0h7QAAADwSEPtepDgl/jpdkeaDVqHNEmwSEPtepDgl/jpdkeaDVqHNEmxI49yVmwY=";
-const WIDEVINE_PSSH_TEMPLATE_KID_HEX = "fb5ea43825fe3a5d91e68356a1cd126c";
-
-function buildWidevinePssh(kidHex: string): string | null {
-  const template = b64UrlToBytes(WIDEVINE_PSSH_TEMPLATE_B64);
-  const templateKid = hexToBytes(WIDEVINE_PSSH_TEMPLATE_KID_HEX);
-  const kid = hexToBytes(kidHex);
-  if (!template || !templateKid || !kid || kid.length !== 16) return null;
-  const out = new Uint8Array(template);
-  for (let i = 0; i + kid.length <= out.length; i++) {
-    let matched = true;
-    for (let j = 0; j < templateKid.length; j++) {
-      if (out[i + j] !== templateKid[j]) {
-        matched = false;
-        break;
-      }
-    }
-    if (matched) out.set(kid, i);
-  }
-  return bytesToB64Std(out);
-}
-
 /**
  * Cache hasil decrypt clearkey: 1 stream+kid cukup didecrypt 1x per hari.
  * User ke-2, ke-3, dst. memakai hasil decrypt user pertama — request berikut
@@ -579,9 +616,6 @@ async function readClearKeyCache(origin: string, streamId: string, kidHex: strin
 
 async function storeClearKeyCache(origin: string, streamId: string, kidHex: string, json: string): Promise<void> {
   clearKeyMemoryCache.set(`${streamId}:${kidHex}`, { json, expiresAt: Date.now() + CLEARKEY_TTL_MS });
-  // Indeks balik kid → kunci: dipakai endpoint /clearkey tanpa stream_id
-  // (APK patch meminta kunci hanya dengan kid dari key request player).
-  clearKeyByKidMemoryCache.set(kidHex, { json, expiresAt: Date.now() + CLEARKEY_TTL_MS });
   const cache = workerCache();
   if (!cache) return;
   try {
@@ -589,145 +623,19 @@ async function storeClearKeyCache(origin: string, streamId: string, kidHex: stri
       clearKeyCacheUrl(origin, streamId, kidHex),
       new Response(json, { headers: { "cache-control": "max-age=86400" } }),
     );
-    await cache.put(
-      `${origin}/__clearkey-by-kid/${kidHex}`,
-      new Response(json, { headers: { "cache-control": "max-age=86400" } }),
-    );
   } catch {
     // Cache API tidak tersedia (mis. domain workers.dev) — memori saja.
   }
 }
 
-const clearKeyByKidMemoryCache = new Map<string, { json: string; expiresAt: number }>();
-
-/** Kunci yang sudah didecrypt, dicari langsung per kid (tanpa stream_id). */
-async function readClearKeyByKid(origin: string, kidHex: string): Promise<string | null> {
-  const mem = clearKeyByKidMemoryCache.get(kidHex);
-  if (mem && mem.expiresAt > Date.now()) return mem.json;
-  if (mem) clearKeyByKidMemoryCache.delete(kidHex);
-  const cache = workerCache();
-  if (!cache) return null;
-  try {
-    const cached = await cache.match(`${origin}/__clearkey-by-kid/${kidHex}`);
-    if (!cached) return null;
-    const json = await cached.text();
-    clearKeyByKidMemoryCache.set(kidHex, { json, expiresAt: Date.now() + CLEARKEY_TTL_MS });
-    return json;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Endpoint kunci ClearKey (KHUSUS live stream — VOD tetap Widevine). Player
- * mem-posting key request W3C {"kids":[...]} ke sini. Dengan stream_id:
- * worker mengambil license URL production dari stream (kredensial ultimate
- * hardcode), membangun PSSH dari kid, menukarkannya dengan konten key di
- * go-widevine, lalu menjawab JSON W3C clearkey. Tanpa stream_id (APK patch):
- * kunci dijawab dari indeks balik kid yang terisi saat respons stream
- * di-embed clearkey-nya. Hasil sukses di-cache 1 hari per stream+kid.
- */
-async function handleClearKeyRequest(request: Request): Promise<Response> {
-  const url = new URL(request.url);
-  const streamId = url.searchParams.get("stream_id") ?? "";
-  const jsonHeaders = { ...securityHeaders, "content-type": "application/json", "cache-control": "no-store" };
-
-  // kid dari body W3C clearkey (POST player) atau query ?kid= (hex/b64url).
-  let kidValue = url.searchParams.get("kid") ?? "";
-  if (!kidValue) {
-    try {
-      const body = (await request.json()) as { kids?: unknown };
-      const kids = Array.isArray(body?.kids) ? body.kids : [];
-      kidValue = typeof kids[0] === "string" ? kids[0] : "";
-    } catch {
-      kidValue = "";
-    }
-  }
-  let kidHex = "";
-  if (/^[0-9a-fA-F]{32}$/.test(kidValue)) {
-    kidHex = kidValue.toLowerCase();
-  } else {
-    const kidBytes = b64UrlToBytes(kidValue);
-    if (kidBytes && kidBytes.length === 16) {
-      kidHex = Array.from(kidBytes, (b) => b.toString(16).padStart(2, "0")).join("");
-    }
-  }
-  if (!kidHex) {
-    return new Response(JSON.stringify({ error: "missing or invalid kid" }), { status: 400, headers: jsonHeaders });
-  }
-
-  // stream_id opsional: tanpa stream_id (APK patch), kunci diambil dari
-  // indeks balik kid yang terisi saat stream response di-embed clearkey-nya.
-  if (!/^\d+$/.test(streamId)) {
-    const byKid = await readClearKeyByKid(url.origin, kidHex);
-    if (byKid) {
-      return new Response(byKid, { status: 200, headers: jsonHeaders });
-    }
-    return new Response(JSON.stringify({ error: "unknown kid" }), { status: 404, headers: jsonHeaders });
-  }
-
-  const cacheKey = `${streamId}:${kidHex}`;
-  const cachedJson = await readClearKeyCache(url.origin, streamId, kidHex);
-  if (cachedJson) {
-    return new Response(cachedJson, { status: 200, headers: jsonHeaders });
-  }
-  const inflight = clearKeyInflight.get(cacheKey);
-  if (inflight) {
-    const shared = await inflight;
-    if (shared.ok) return new Response(shared.json, { status: 200, headers: jsonHeaders });
-    return new Response(JSON.stringify({ error: shared.error }), { status: shared.status, headers: jsonHeaders });
-  }
-
-  const task = decryptClearKeyOnce(request, streamId, kidHex)
-    .then((result) => {
-      if (result.ok) void storeClearKeyCache(url.origin, streamId, kidHex, result.json);
-      return result;
-    })
-    .finally(() => {
-      clearKeyInflight.delete(cacheKey);
-    });
-  clearKeyInflight.set(cacheKey, task);
-  const result = await task;
-  if (result.ok) return new Response(result.json, { status: 200, headers: jsonHeaders });
-  return new Response(JSON.stringify({ error: result.error }), { status: result.status, headers: jsonHeaders });
-}
-
-/** Decrypt sekali: license URL fresh → PSSH → go-widevine → JSON W3C. */
-async function decryptClearKeyOnce(request: Request, streamId: string, kidHex: string): Promise<ClearKeyResult> {
-  // License URL production harus fresh (kedaluwarsa ±5 menit).
-  const stream = await proxyUltimateStream(streamId, ULTIMATE_CREDENTIAL, request, CHROME_UA);
-  if (!stream || stream.status !== 200) {
-    return { ok: false, status: 502, error: "upstream unavailable" };
-  }
-  let licenseUrl = "";
-  try {
-    const attributes = jsonApiAttributeRecords(JSON.parse(stream.body))[0];
-    const servers = attributes?.license_servers;
-    if (servers && typeof servers === "object") {
-      licenseUrl = typeof (servers as Record<string, unknown>).drm_license_url === "string"
-        ? ((servers as Record<string, unknown>).drm_license_url as string)
-        : "";
-    }
-  } catch {
-    licenseUrl = "";
-  }
-  if (!licenseUrl) {
-    return { ok: false, status: 404, error: "no license url" };
-  }
-  return decryptKidWithLicenseUrl(licenseUrl, kidHex);
-}
-
-/** Tukar satu kid menjadi content key via go-widevine memakai license URL yang sudah ada. */
-async function decryptKidWithLicenseUrl(licenseUrl: string, kidHex: string): Promise<ClearKeyResult> {
-  const pssh = buildWidevinePssh(kidHex);
-  if (!pssh) {
-    return { ok: false, status: 400, error: "bad kid" };
-  }
+/** Tukar PSSH (base64 dari MPD) menjadi content key via go-widevine. */
+export async function decryptPsshWithLicenseUrl(pssh: string, licenseUrl: string): Promise<ClearKeyResult> {
   const token = await getWidevineToken();
   if (!token) {
     return { ok: false, status: 502, error: "key service unavailable" };
   }
   let contentKey: string | null = null;
+  let contentKid: string | null = null;
   try {
     const res = await fetch(`${GO_WIDEVINE_ORIGIN}/getkey/widevine`, {
       method: "POST",
@@ -752,21 +660,24 @@ async function decryptKidWithLicenseUrl(licenseUrl: string, kidHex: string): Pro
     for (const entry of data.keys) {
       if (
         entry && typeof entry === "object" && (entry as Record<string, unknown>).type === "content" &&
-        typeof (entry as Record<string, unknown>).key === "string"
+        typeof (entry as Record<string, unknown>).key === "string" &&
+        typeof (entry as Record<string, unknown>).kid === "string"
       ) {
         contentKey = (entry as Record<string, unknown>).key as string;
+        contentKid = (entry as Record<string, unknown>).kid as string;
         break;
       }
     }
   } catch {
     return { ok: false, status: 502, error: "key service error" };
   }
-  if (!contentKey) {
+  if (!contentKey || !contentKid) {
     return { ok: false, status: 404, error: "no content key" };
   }
   const keyB64 = bytesToB64Url(hexToBytes(contentKey) ?? new Uint8Array());
+  const kidB64 = bytesToB64Url(hexToBytes(contentKid) ?? new Uint8Array());
   const json = JSON.stringify({
-    keys: [{ kty: "oct", k: keyB64, kid: bytesToB64Url(hexToBytes(kidHex)!) }],
+    keys: [{ kty: "oct", k: keyB64, kid: kidB64 }],
     type: "temporary",
   });
   return { ok: true, json };
@@ -1063,10 +974,12 @@ async function verifyLiveVidioSession(
 
   try {
     const res = await fetch("https://api.vidio.com/profiles", {
+      // api.vidio.com geo-locked — verifikasi sesi juga lewat proxy DataImpulse.
+      ...proxyFetchInit(),
       method: "GET",
       headers: testHeaders,
       signal: AbortSignal.timeout(8_000),
-    });
+    } as RequestInit);
     if (res.ok) {
       const body: unknown = await res.json();
       if (isRecord(body) && Array.isArray(body.data) && body.data.length > 0) {
@@ -1383,7 +1296,6 @@ async function handleRequest(request: Request): Promise<Response> {
 
   if (url.searchParams.has("ua")) return textResponse(USER_AGENT);
 
-  if (url.pathname === "/clearkey") return handleClearKeyRequest(request);
 
   const streamMatch = url.pathname.match(STREAM_PATH);
   if (streamMatch) {
@@ -1511,28 +1423,25 @@ async function selfCheck(): Promise<void> {
     throw new Error("Hardcoded ultimate credential must stay intact");
   }
 
-  // Helper clearkey: roundtrip hex ↔ base64url dan template PSSH.
+  // Helper clearkey: roundtrip hex ↔ base64url.
   const ckRound = bytesToB64Url(hexToBytes("fb5ea43825fe3a5d91e68356a1cd126c")!);
   if (b64UrlToBytes(ckRound)?.length !== 16) {
     throw new Error("base64url roundtrip failed");
   }
-  const builtPssh = buildWidevinePssh("00112233445566778899aabbccddeeff");
-  const templatePssh = b64UrlToBytes(WIDEVINE_PSSH_TEMPLATE_B64)!;
-  if (!builtPssh) {
-    throw new Error("PSSH build must succeed for a valid kid");
+
+  // Parser daftar akun production (format Ruby hash).
+  const parsedAccounts = parseProductionAccounts("'email' => 'a@b.c',\n  'token' => 'tok123'");
+  if (parsedAccounts.length !== 1 || parsedAccounts[0].email !== "a@b.c" || parsedAccounts[0].token !== "tok123") {
+    throw new Error("production account parsing failed");
   }
-  const builtPsshBytes = b64UrlToBytes(builtPssh)!;
-  if (builtPsshBytes.length !== templatePssh.length) {
-    throw new Error("Built PSSH must keep the template length");
+
+  // Ekstraksi PSSH dari MPD.
+  const psshSample = '<cenc:pssh>AAAAXHBzc2gAAAAA7e+LqXnWSs6jyCfc1R0h7Q==</cenc:pssh>';
+  if (extractPsshFromMpd(psshSample) !== "AAAAXHBzc2gAAAAA7e+LqXnWSs6jyCfc1R0h7Q==") {
+    throw new Error("MPD pssh extraction failed");
   }
-  const templateKid = hexToBytes(WIDEVINE_PSSH_TEMPLATE_KID_HEX)!;
-  if (builtPsshBytes.includes(templateKid[0]) && Array.from(builtPsshBytes).some((b, i) =>
-    i + 16 <= builtPsshBytes.length && templateKid.every((t, j) => builtPsshBytes[i + j] === t)
-  )) {
-    throw new Error("Built PSSH must not contain the template kid anymore");
-  }
-  if (buildWidevinePssh("zz") !== null) {
-    throw new Error("Invalid kid must fail PSSH build");
+  if (extractPsshFromMpd("<MPD/>") !== null) {
+    throw new Error("MPD without pssh must yield null");
   }
 
   // Cache clearkey: simpan lalu baca kembali (lapisan memori).
@@ -1541,14 +1450,6 @@ async function selfCheck(): Promise<void> {
   const ckCached = await readClearKeyCache("https://cache.test", "1", ckKid);
   if (ckCached !== '{"keys":[]}') {
     throw new Error("clearkey cache roundtrip failed");
-  }
-  // Indeks balik kid: kunci yang sama harus terbaca tanpa stream_id.
-  const ckByKid = await readClearKeyByKid("https://cache.test", ckKid);
-  if (ckByKid !== '{"keys":[]}') {
-    throw new Error("clearkey by-kid index roundtrip failed");
-  }
-  if (await readClearKeyByKid("https://cache.test", "b".repeat(32)) !== null) {
-    throw new Error("clearkey by-kid index must miss for unknown kid");
   }
 
   // Rewrite dash: URL staging menggantikan dash production di body JSON:API.
@@ -1559,16 +1460,6 @@ async function selfCheck(): Promise<void> {
   }
   if (rewriteDashUrlInBody("not-json", "https://staging/example.mpd") !== "not-json") {
     throw new Error("dash rewrite must pass through invalid body");
-  }
-
-  // Ekstraksi KID dari MPD: default_KID unik, lowercase, tanpa tanda hubung.
-  const mpdSample = '<ContentProtection schemeIdUri="urn:mpeg:dash:mp4protection:2011" cenc:default_KID="FB5EA438-25FE-3A5D-91E6-8356A1CD126C"/><ContentProtection cenc:default_KID="fb5ea438-25fe-3a5d-91e6-8356a1cd126c"/>';
-  const extractedKids = extractKidsFromMpd(mpdSample);
-  if (extractedKids.length !== 1 || extractedKids[0] !== "fb5ea43825fe3a5d91e68356a1cd126c") {
-    throw new Error("MPD kid extraction failed");
-  }
-  if (extractKidsFromMpd("<MPD/>").length !== 0) {
-    throw new Error("MPD without kids must yield empty list");
   }
 
   // embedClearKeyInBody: body tanpa dash/license URL dikembalikan utuh —
