@@ -579,13 +579,15 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   const pssh = extractPsshFromMpd(mpdText);
   if (!pssh) return body;
 
-  // License: PRODUCTION + custom_data production fresh (flow terbukti).
-  const prodCd = await fetchProductionCustomData(streamId, request);
-  if (!prodCd) return body;
-  const licenseUrl = `https://license.vidio.com/ri/licenseManager.do?pallycon-customdata-v2=${prodCd}`;
-
+  // Cache clearkey dicek DULU: kalau sudah ada (TTL 24 jam), skip
+  // fetchProductionCustomData sama sekali — itu satu panggilan upstream
+  // penuh lewat proxy yang hanya dibutuhkan saat decrypt pertama.
   let json = await readClearKeyCache(origin, streamId, pssh.slice(0, 48));
   if (!json) {
+    // License: PRODUCTION + custom_data production fresh (flow terbukti).
+    const prodCd = await fetchProductionCustomData(streamId, request);
+    if (!prodCd) return body;
+    const licenseUrl = `https://license.vidio.com/ri/licenseManager.do?pallycon-customdata-v2=${prodCd}`;
     const result = await decryptPsshWithLicenseUrl(pssh, licenseUrl);
     if (!result.ok) return body;
     json = result.json;
@@ -1065,7 +1067,32 @@ async function proxyUltimateStream(
   return result;
 }
 
+// Verifikasi sesi mahal (2-3 fetch berurutan ke api.vidio.com) — hasilnya
+// di-cache: sukses 5 menit, gagal 30 detik. Request berikutnya dengan
+// kredensial sama tidak memverifikasi ulang.
+const SESSION_VERIFY_TTL_OK_MS = 5 * 60_000;
+const SESSION_VERIFY_TTL_FAIL_MS = 30_000;
+const sessionVerifyCache = new Map<string, { ok: boolean; expiresAt: number }>();
+
 async function verifyLiveVidioSession(
+  email: string,
+  token: string,
+  xAuthorization?: string | null,
+): Promise<boolean> {
+  const normEmail = normalizeEmail(email);
+  if (!normEmail) return false;
+  const cacheKey = `${normEmail}:${token.trim()}:${xAuthorization?.trim() ?? ""}`;
+  const cached = sessionVerifyCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return cached.ok;
+  const ok = await verifyLiveVidioSessionUpstream(email, token, xAuthorization);
+  sessionVerifyCache.set(cacheKey, {
+    ok,
+    expiresAt: Date.now() + (ok ? SESSION_VERIFY_TTL_OK_MS : SESSION_VERIFY_TTL_FAIL_MS),
+  });
+  return ok;
+}
+
+async function verifyLiveVidioSessionUpstream(
   email: string,
   token: string,
   xAuthorization?: string | null,
