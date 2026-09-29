@@ -17,8 +17,12 @@ export function encryptStreamPayload(
 }
 
 const BOT_DATA_URL = "https://baru.pw/botpideook/bot_data.json";
-// Kredensial ultimate diambil dari daftar akun production (API JSON) —
-// tidak ada lagi akun hardcoded.
+// Kredensial production (curl app-android 2609.1.14). Token baru dicoba
+// dulu; token lama cadangan (terbukti berhak untuk lebih banyak stream).
+const PRODUCTION_CREDENTIALS = [
+  { email: "85923081810-xl@fake-vidio.com", token: "KHFZCCxyExbSr-y9K8KA" },
+  { email: "85923081810-xl@fake-vidio.com", token: "65Qy8enhdZT3yCsAFzwx" },
+];
 // Identitas perangkat persis curl yang terbukti sukses (app-android 2609.1.14).
 const ULTIMATE_UA = "vidioandroid/2609.1.14-c11a00be7f (3191940)";
 const ULTIMATE_VISITOR_ID = "75dec05f-d3e9-4c4e-a384-2bc238868076";
@@ -411,7 +415,10 @@ async function getProductionAccounts(): Promise<Array<{ email: string; token: st
 /** Token akun production yang dikenal (untuk bypass verifikasi sesi). */
 async function productionAccountTokens(): Promise<Set<string>> {
   const accounts = await getProductionAccounts();
-  return new Set(accounts.map((a) => a.token.trim()));
+  return new Set([
+    ...PRODUCTION_CREDENTIALS.map((c) => c.token.trim()),
+    ...accounts.map((a) => a.token.trim()),
+  ]);
 }
 
 /** Tandai akun sudah dipakai untuk stream ini (kadaluarsa 24 jam WIB). */
@@ -451,11 +458,10 @@ async function fetchProductionCustomData(streamId: string, request?: Request): P
   if (cached && cached.expiresAt > Date.now()) return cached.cd;
   if (cached) prodCdMemoryCache.delete(streamId);
 
-  for (let i = 0; i < 10; i++) {
-    const acc = await pickProductionAccount(streamId);
-    if (!acc) break;
-    markAccountUsed(streamId, acc.email);
-    const r = await proxyUltimateStream(streamId, acc, request, CHROME_UA);
+  for (const cred of PRODUCTION_CREDENTIALS) {
+    if (!isAccountAvailable(streamId, cred.token)) continue;
+    markAccountUsed(streamId, cred.token);
+    const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA);
     if (!r || r.status !== 200) continue;
     try {
       const attrs = jsonApiAttributeRecords(JSON.parse(r.body))[0];
@@ -1161,14 +1167,17 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   }
 
   // Sumber utama: API staging (akun tv-android staging, curl terbukti).
-  // Cadangan: production akun pool (24 jam WIB per stream) → kredensial user.
+  // Cadangan: production (token baru → token lama) → kredensial user.
   // Semua lewat cache 4 menit — staging maksimal 1 GET per 4 menit.
-  const fullResult = await fetchStreamResultShared(cacheKey, async () =>
-    (await proxyStagingStream(streamId, request))
-      ?? await (async () => {
-        const acc = await pickProductionAccount(streamId);
-        return acc ? proxyUltimateStream(streamId, acc, request, CHROME_UA) : null;
-      })());
+  const fullResult = await fetchStreamResultShared(cacheKey, async () => {
+    const staging = await proxyStagingStream(streamId, request);
+    if (staging) return staging;
+    for (const cred of PRODUCTION_CREDENTIALS) {
+      const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA);
+      if (r && r.status === 200) return r;
+    }
+    return null;
+  });
   let result = fullResult;
   if (!result) {
     // Kredensial hardcode gagal → coba kredensial asli user yang request
@@ -1342,8 +1351,11 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
   }
 
   const fullResult = await fetchStreamResultShared(cacheKey, async () => {
-    const acc = await getProductionAccounts().then((a) => a[0]);
-    return acc ? proxyUltimateVideoData(videoId, acc, request, CHROME_UA) : null;
+    for (const cred of PRODUCTION_CREDENTIALS) {
+      const r = await proxyUltimateVideoData(videoId, cred, request, CHROME_UA);
+      if (r && r.status === 200) return r;
+    }
+    return null;
   });
   let result = fullResult;
   if (!result) {
