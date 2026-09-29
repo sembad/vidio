@@ -224,7 +224,7 @@ interface UltimateCredential {
 // `expires_in` upstream apa adanya (mis. 5040 dtk) — tidak di-rewrite. Cache
 // tetap hanya dilayani 60 dtk pertama; hit yang lebih tua memicu fetch fresh
 // (dedup) yang sekaligus meng-refresh cache.
-const STREAM_CACHE_SERVE_WINDOW_MS = 60_000;
+const STREAM_CACHE_SERVE_WINDOW_MS = 4 * 60_000;
 
 interface CachedStreamResponse {
   status: number;
@@ -302,106 +302,6 @@ function jsonApiAttributeRecords(parsed: unknown): Record<string, unknown>[] {
   return records;
 }
 
-/**
- * Cache URL MPD staging: 1 stream cukup di-fetch 1x per 4 menit. Respon yang
- * berhasil disimpan dan dipakai ulang semua user selama 4 menit — request
- * berikutnya tidak memanggil staging lagi. Dua lapis: memori isolate (cepat)
- * dan Cache API worker (tahan lintas isolate, TTL 4 menit via cache-control).
- * Hanya hasil berhasil (dash ada) yang di-cache; gagal → request berikutnya
- * mencoba lagi.
- */
-const STAGING_DASH_TTL_MS = 4 * 60 * 1000;
-const stagingDashMemoryCache = new Map<string, { url: string; expiresAt: number }>();
-const stagingDashInflight = new Map<string, Promise<string | null>>();
-
-function stagingDashCacheUrl(origin: string, streamId: string): string {
-  return `${origin}/__staging-dash-cache/${streamId}`;
-}
-
-async function readStagingDashCache(origin: string, streamId: string): Promise<string | null> {
-  const mem = stagingDashMemoryCache.get(streamId);
-  if (mem && mem.expiresAt > Date.now()) return mem.url;
-  if (mem) stagingDashMemoryCache.delete(streamId);
-  const cache = workerCache();
-  if (!cache) return null;
-  try {
-    const cached = await cache.match(stagingDashCacheUrl(origin, streamId));
-    if (!cached) return null;
-    const url = await cached.text();
-    stagingDashMemoryCache.set(streamId, { url, expiresAt: Date.now() + STAGING_DASH_TTL_MS });
-    return url;
-  } catch {
-    return null;
-  }
-}
-
-async function storeStagingDashCache(origin: string, streamId: string, dashUrl: string): Promise<void> {
-  stagingDashMemoryCache.set(streamId, { url: dashUrl, expiresAt: Date.now() + STAGING_DASH_TTL_MS });
-  const cache = workerCache();
-  if (!cache) return;
-  try {
-    await cache.put(
-      stagingDashCacheUrl(origin, streamId),
-      new Response(dashUrl, { headers: { "cache-control": "max-age=240" } }),
-    );
-  } catch {
-    // Cache API tidak tersedia (mis. domain workers.dev) — memori saja.
-  }
-}
-
-/**
- * Ambil URL MPD (dash) dari API staging memakai akun tv-android staging.
- * Hasil berhasil di-cache 4 menit per stream sehingga staging hanya dipanggil
- * 1x per 4 menit. Mengembalikan null bila staging tidak memberi dash (mis.
- * akun staging tidak berhak ke stream berbayar → is_preview) atau fetch
- * gagal — pemanggil memakai dash production sebagai fallback.
- */
-async function fetchStagingDashUrl(request: Request, streamId: string): Promise<string | null> {
-  const origin = new URL(request.url).origin;
-  const cached = await readStagingDashCache(origin, streamId);
-  if (cached) return cached;
-  const inflight = stagingDashInflight.get(streamId);
-  if (inflight) return inflight;
-  const task = (async (): Promise<string | null> => {
-    const headers = new Headers({
-      "user-agent": STAGING_UA,
-      "accept-encoding": "gzip",
-      "x-client": STAGING_CLIENT,
-      "x-signature": STAGING_SIGNATURE,
-      referer: STAGING_REFERER,
-      "x-api-platform": "tv-android",
-      "x-api-auth": STAGING_API_AUTH,
-      "x-api-app-info": STAGING_APP_INFO,
-      "accept-language": "id",
-      "x-user-email": STAGING_CREDENTIAL.email,
-      "x-user-token": STAGING_CREDENTIAL.token,
-      "x-visitor-id": STAGING_VISITOR_ID,
-      "content-type": "application/vnd.api+json",
-    });
-    try {
-      const res = await fetch(
-        `${STAGING_API_ORIGIN}/livestreamings/${encodeURIComponent(streamId)}/stream?initialize=true`,
-        { headers, signal: AbortSignal.timeout(15_000) },
-      );
-      if (!res.ok) return null;
-      const parsed: unknown = await res.json();
-      const attributes = jsonApiAttributeRecords(parsed)[0];
-      const dash = attributes?.dash;
-      if (typeof dash === "string" && dash) {
-        void storeStagingDashCache(origin, streamId, dash);
-        return dash;
-      }
-      return null;
-    } catch {
-      return null;
-    }
-  })().finally(() => {
-    stagingDashInflight.delete(streamId);
-  });
-  stagingDashInflight.set(streamId, task);
-  return task;
-}
-
 /** Ganti URL dash (MPD) di body JSON:API dengan URL staging. */
 function rewriteDashUrlInBody(body: string, dashUrl: string): string {
   try {
@@ -423,6 +323,48 @@ function extractKidsFromMpd(mpdText: string): string[] {
     kids.add(match[1].replace(/-/g, "").toLowerCase());
   }
   return [...kids];
+}
+
+/**
+ * Cache isi MPD per stream (4 menit): MPD di-SIMPAN, bukan di-fetch ulang
+ * setiap request. Dua lapis seperti cache staging lainnya.
+ */
+const MPD_TTL_MS = 4 * 60 * 1000;
+const mpdMemoryCache = new Map<string, { text: string; expiresAt: number }>();
+
+function mpdCacheUrl(origin: string, streamId: string): string {
+  return `${origin}/__mpd-cache/${streamId}`;
+}
+
+async function readMpdCache(origin: string, streamId: string): Promise<string | null> {
+  const mem = mpdMemoryCache.get(streamId);
+  if (mem && mem.expiresAt > Date.now()) return mem.text;
+  if (mem) mpdMemoryCache.delete(streamId);
+  const cache = workerCache();
+  if (!cache) return null;
+  try {
+    const cached = await cache.match(mpdCacheUrl(origin, streamId));
+    if (!cached) return null;
+    const text = await cached.text();
+    mpdMemoryCache.set(streamId, { text, expiresAt: Date.now() + MPD_TTL_MS });
+    return text;
+  } catch {
+    return null;
+  }
+}
+
+async function storeMpdCache(origin: string, streamId: string, text: string): Promise<void> {
+  mpdMemoryCache.set(streamId, { text, expiresAt: Date.now() + MPD_TTL_MS });
+  const cache = workerCache();
+  if (!cache) return;
+  try {
+    await cache.put(
+      mpdCacheUrl(origin, streamId),
+      new Response(text, { headers: { "cache-control": "max-age=240" } }),
+    );
+  } catch {
+    // Cache API tidak tersedia — memori saja.
+  }
 }
 
 /**
@@ -451,33 +393,24 @@ async function embedClearKeyInBody(body: string, request: Request, streamId: str
     : "";
   if (!licenseUrl) return body;
 
-  // Sumber KID: MPD staging (utama, tidak geo-locked) → MPD production via
-  // proxy DataImpulse (cadangan).
-  let mpdText: string | null = null;
-  const stagingDash = await fetchStagingDashUrl(request, streamId);
-  if (stagingDash) {
-    try {
-      const res = await fetch(stagingDash, {
-        headers: { "user-agent": CHROME_UA, accept: "*/*" },
-        signal: AbortSignal.timeout(15_000),
-      });
-      if (res.ok) mpdText = await res.text();
-    } catch {
-      // lanjut ke fallback production
-    }
-  }
+  // Sumber KID: MPD dari respons itu sendiri (dash staging saat sumber
+  // staging, dash production saat fallback). Fetch SELALU lewat proxy
+  // DataImpulse (exit Indonesia) dan di-SIMPAN 4 menit per stream —
+  // request berikutnya tidak fetch ulang.
+  let mpdText = await readMpdCache(origin, streamId);
   if (!mpdText) {
     const dash = typeof attrs.dash === "string" ? attrs.dash : "";
     if (!dash) return body;
     try {
-      // MPD Akamai production geo-locked ke Indonesia — lewat proxy DataImpulse.
       const res = await fetch(dash, {
         ...proxyFetchInit(),
         headers: { "user-agent": CHROME_UA, accept: "*/*" },
+        redirect: "follow",
         signal: AbortSignal.timeout(15_000),
       } as RequestInit);
       if (!res.ok) return body;
       mpdText = await res.text();
+      void storeMpdCache(origin, streamId, mpdText);
     } catch {
       return body;
     }
@@ -1004,6 +937,44 @@ function renderUpstream(result: UpstreamResult | null, shouldEncrypt: boolean): 
 const CHROME_UA =
   "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36";
 
+/**
+ * GET stream dari API staging memakai akun tv-android staging — header persis
+ * curl yang terbukti sukses. Staging dibatasi 1 GET/menit, jadi hasilnya
+ * WAJIB lewat cache stream 4 menit (jangan dipanggil di luar loader cache).
+ */
+async function proxyStagingStream(streamId: string, request?: Request): Promise<UpstreamResult | null> {
+  const incoming = request ? new URL(request.url) : null;
+  const search = incoming && incoming.search ? incoming.search : "?initialize=true";
+  const headers = new Headers({
+    "user-agent": STAGING_UA,
+    "accept-encoding": "gzip",
+    "x-client": STAGING_CLIENT,
+    "x-signature": STAGING_SIGNATURE,
+    referer: STAGING_REFERER,
+    "x-api-platform": "tv-android",
+    "x-api-auth": STAGING_API_AUTH,
+    "x-api-app-info": STAGING_APP_INFO,
+    "accept-language": "id",
+    "x-user-email": STAGING_CREDENTIAL.email,
+    "x-user-token": STAGING_CREDENTIAL.token,
+    "x-visitor-id": STAGING_VISITOR_ID,
+    "content-type": "application/vnd.api+json",
+  });
+  try {
+    const upstream = await fetch(
+      `${STAGING_API_ORIGIN}/livestreamings/${encodeURIComponent(streamId)}/stream${search}`,
+      { headers, redirect: "follow", signal: AbortSignal.timeout(30_000) },
+    );
+    const headerMap: Record<string, string> = {};
+    upstream.headers.forEach((val, key) => {
+      if (key.toLowerCase() !== "content-encoding") headerMap[key] = val;
+    });
+    return { status: upstream.status, headers: headerMap, body: await upstream.text() };
+  } catch {
+    return null;
+  }
+}
+
 async function proxyUltimateStream(
   streamId: string,
   credential: UltimateCredential,
@@ -1195,8 +1166,12 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
   }
 
-  const fullResult = await fetchStreamResultShared(cacheKey, () =>
-    proxyUltimateStream(streamId, ULTIMATE_CREDENTIAL, request, CHROME_UA));
+  // Sumber utama: API staging (akun tv-android staging, curl terbukti).
+  // Cadangan: production ultimate → production kredensial user.
+  // Semua lewat cache 4 menit — staging maksimal 1 GET per 4 menit.
+  const fullResult = await fetchStreamResultShared(cacheKey, async () =>
+    (await proxyStagingStream(streamId, request))
+      ?? await proxyUltimateStream(streamId, ULTIMATE_CREDENTIAL, request, CHROME_UA));
   let result = fullResult;
   if (!result) {
     // Kredensial hardcode gagal → coba kredensial asli user yang request
@@ -1208,19 +1183,14 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     );
     result = own ?? null;
   }
-  if (fullResult) {
-    // Respons dari akun ultimate: sembunyikan treatment preview (badge)
-    // supaya aplikasi tidak melewatkan penjadwalan refresh stream-nya.
-    fullResult.body = forcePreviewOffInBody(fullResult.body);
-    // MPD (dash) dari API staging (akun tv-android staging); bila staging
-    // tidak memberi dash, dash production dipakai apa adanya. License URL
-    // untuk decrypt Widevine tetap dari production ultimate.
-    const stagingDash = await fetchStagingDashUrl(request, streamId);
-    if (stagingDash) {
-      fullResult.body = rewriteDashUrlInBody(fullResult.body, stagingDash);
-    }
-    fullResult.body = await embedClearKeyInBody(fullResult.body, request, streamId);
-    storeStreamResponse(cacheKey, fullResult);
+  if (result) {
+    // Sembunyikan treatment preview (badge) supaya aplikasi tidak melewatkan
+    // penjadwalan refresh stream-nya.
+    result.body = forcePreviewOffInBody(result.body);
+    // Clearkey didekripsi di worker dan ditanam langsung ke respons —
+    // TANPA custom_data / drm_license_url / link /clearkey.
+    result.body = await embedClearKeyInBody(result.body, request, streamId);
+    storeStreamResponse(cacheKey, result);
   }
   return renderUpstream(result, shouldEncrypt);
 }
@@ -1599,11 +1569,11 @@ async function selfCheck(): Promise<void> {
     throw new Error("embedClearKeyInBody must pass through invalid body");
   }
 
-  // Cache dash staging: simpan lalu baca kembali (lapisan memori).
-  await storeStagingDashCache("https://cache.test", "77", "https://staging/live.mpd");
-  const dashCached = await readStagingDashCache("https://cache.test", "77");
-  if (dashCached !== "https://staging/live.mpd") {
-    throw new Error("staging dash cache roundtrip failed");
+  // Cache MPD: simpan lalu baca kembali (lapisan memori).
+  await storeMpdCache("https://cache.test", "77", "<MPD>kid</MPD>");
+  const mpdCached = await readMpdCache("https://cache.test", "77");
+  if (mpdCached !== "<MPD>kid</MPD>") {
+    throw new Error("MPD cache roundtrip failed");
   }
 
   // Error upstream yang memicu fallback ke kredensial asli user
