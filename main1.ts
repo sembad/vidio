@@ -264,6 +264,81 @@ function jsonApiAttributeRecords(parsed: unknown): Record<string, unknown>[] {
   return records;
 }
 
+/**
+ * Arahkan license URL DRM ke endpoint /clearkey worker. Player hasil patch
+ * memakai skema ClearKey dan meminta kunci ke URL ini; endpoint mengembalikan
+ * JSON kunci W3C yang dimengerti MediaDrm ClearKey.
+ */
+function rewriteLicenseUrlToClearKey(body: string, clearKeyUrl: string): string {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    for (const record of jsonApiAttributeRecords(parsed)) {
+      const servers = record.license_servers;
+      if (servers && typeof servers === "object") {
+        (servers as Record<string, unknown>).drm_license_url = clearKeyUrl;
+      }
+    }
+    return JSON.stringify(parsed);
+  } catch {
+    return body;
+  }
+}
+
+function base64UrlEncode(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/** Ubah "key:kid" upstream menjadi pasangan base64url W3C (hex bila hex, ASCII bila bukan). */
+function parseClearKeyValue(value: string): { key: string; kid: string } | null {
+  const separator = value.indexOf(":");
+  if (separator <= 0 || separator === value.length - 1) return null;
+  const decode = (part: string): string => {
+    if (/^[0-9a-fA-F]+$/.test(part) && part.length % 2 === 0 && part.length >= 16) {
+      const bytes = new Uint8Array(part.length / 2);
+      for (let i = 0; i < bytes.length; i++) bytes[i] = Number.parseInt(part.slice(i * 2, i * 2 + 2), 16);
+      return base64UrlEncode(bytes);
+    }
+    return base64UrlEncode(new TextEncoder().encode(part));
+  };
+  return { key: decode(value.slice(0, separator)), kid: decode(value.slice(separator + 1)) };
+}
+
+/**
+ * Endpoint kunci ClearKey (KHUSUS live stream — VOD tetap Widevine): ambil
+ * atribut `clearkey` ("key:kid") dari respons stream upstream, kembalikan
+ * sebagai JSON W3C clearkey. MediaDrm ClearKey mem-posting key request ke
+ * sini dan memakai responsnya sebagai kunci.
+ */
+async function handleClearKeyRequest(request: Request): Promise<Response> {
+  const url = new URL(request.url);
+  const streamId = url.searchParams.get("stream_id") ?? "";
+  const jsonHeaders = { ...securityHeaders, "content-type": "application/json", "cache-control": "no-store" };
+  if (!/^\d+$/.test(streamId)) {
+    return new Response(JSON.stringify({ error: "missing stream_id" }), { status: 400, headers: jsonHeaders });
+  }
+  const result = await proxyUltimateStream(streamId, ULTIMATE_CREDENTIAL, request, CHROME_UA);
+  if (!result || result.status !== 200) {
+    return new Response(JSON.stringify({ error: "upstream unavailable" }), { status: 502, headers: jsonHeaders });
+  }
+  try {
+    const parsed: unknown = JSON.parse(result.body);
+    const attributes = jsonApiAttributeRecords(parsed)[0];
+    const raw = attributes && typeof attributes.clearkey === "string" ? attributes.clearkey : "";
+    const clearKey = raw ? parseClearKeyValue(raw) : null;
+    if (!clearKey) {
+      return new Response(JSON.stringify({ error: "no clearkey" }), { status: 404, headers: jsonHeaders });
+    }
+    return new Response(
+      JSON.stringify({ keys: [{ kty: "oct", k: clearKey.key, kid: clearKey.kid }], type: "temporary" }),
+      { status: 200, headers: jsonHeaders },
+    );
+  } catch {
+    return new Response(JSON.stringify({ error: "bad upstream body" }), { status: 502, headers: jsonHeaders });
+  }
+}
+
 // Respons upstream yang berarti kredensial ultimate tidak bisa dipakai untuk
 // konten ini — fallback ke kredensial asli user yang request.
 const ULTIMATE_ERROR_CODES = new Set([10050004, 10030007, 10030027]);
@@ -644,6 +719,10 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     // Respons dari akun ultimate: sembunyikan treatment preview (badge)
     // supaya aplikasi tidak melewatkan penjadwalan refresh stream-nya.
     fullResult.body = forcePreviewOffInBody(fullResult.body);
+    fullResult.body = rewriteLicenseUrlToClearKey(
+      fullResult.body,
+      `${new URL(request.url).origin}/clearkey?stream_id=${streamId}`,
+    );
     storeStreamResponse(cacheKey, fullResult);
   }
   return renderUpstream(result, shouldEncrypt);
@@ -812,6 +891,7 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
     result = own ?? null;
   }
   if (fullResult) {
+    // VOD tetap Widevine: license URL production diteruskan apa adanya.
     fullResult.body = forcePreviewOffInBody(fullResult.body);
     storeStreamResponse(cacheKey, fullResult);
   }
@@ -822,6 +902,8 @@ async function handleRequest(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
   if (url.searchParams.has("ua")) return textResponse(USER_AGENT);
+
+  if (url.pathname === "/clearkey") return handleClearKeyRequest(request);
 
   const streamMatch = url.pathname.match(STREAM_PATH);
   if (streamMatch) {
