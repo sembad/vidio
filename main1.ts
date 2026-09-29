@@ -427,12 +427,14 @@ function extractKidsFromMpd(mpdText: string): string[] {
 
 /**
  * Ganti custom_data + drm_license_url dengan clearkey yang SUDAH didecrypt:
- * KID diambil dari MPD (yang benar-benar diputar player), key didecrypt via
- * go-widevine memakai license URL production, lalu JSON W3C clearkey
- * di-embed langsung ke attributes.clearkey. TANPA link /clearkey apa pun.
+ * KID diambil dari MPD STAGING (host staging tidak geo-locked; URL-nya
+ * di-cache 4 menit per stream sehingga staging hanya kena 1 request/4 menit),
+ * key didecrypt via go-widevine memakai license URL production, lalu JSON W3C
+ * clearkey di-embed langsung ke attributes.clearkey. TANPA link /clearkey.
  * Bila ada langkah gagal, body dikembalikan apa adanya (nilai upstream).
  */
-async function embedClearKeyInBody(body: string, streamId: string, origin: string): Promise<string> {
+async function embedClearKeyInBody(body: string, request: Request, streamId: string): Promise<string> {
+  const origin = new URL(request.url).origin;
   let parsed: unknown;
   try {
     parsed = JSON.parse(body);
@@ -442,26 +444,43 @@ async function embedClearKeyInBody(body: string, streamId: string, origin: strin
   const attrs = jsonApiAttributeRecords(parsed)[0];
   if (!attrs) return body;
 
-  const dash = typeof attrs.dash === "string" ? attrs.dash : "";
   const servers = attrs.license_servers;
   const licenseUrl = servers && typeof servers === "object" &&
       typeof (servers as Record<string, unknown>).drm_license_url === "string"
     ? ((servers as Record<string, unknown>).drm_license_url as string)
     : "";
-  if (!dash || !licenseUrl) return body;
+  if (!licenseUrl) return body;
 
-  let mpdText: string;
-  try {
-    // MPD Akamai geo-locked ke Indonesia — wajib lewat proxy DataImpulse.
-    const res = await fetch(dash, {
-      ...proxyFetchInit(),
-      headers: { "user-agent": CHROME_UA, accept: "*/*" },
-      signal: AbortSignal.timeout(15_000),
-    } as RequestInit);
-    if (!res.ok) return body;
-    mpdText = await res.text();
-  } catch {
-    return body;
+  // Sumber KID: MPD staging (utama, tidak geo-locked) → MPD production via
+  // proxy DataImpulse (cadangan).
+  let mpdText: string | null = null;
+  const stagingDash = await fetchStagingDashUrl(request, streamId);
+  if (stagingDash) {
+    try {
+      const res = await fetch(stagingDash, {
+        headers: { "user-agent": CHROME_UA, accept: "*/*" },
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (res.ok) mpdText = await res.text();
+    } catch {
+      // lanjut ke fallback production
+    }
+  }
+  if (!mpdText) {
+    const dash = typeof attrs.dash === "string" ? attrs.dash : "";
+    if (!dash) return body;
+    try {
+      // MPD Akamai production geo-locked ke Indonesia — lewat proxy DataImpulse.
+      const res = await fetch(dash, {
+        ...proxyFetchInit(),
+        headers: { "user-agent": CHROME_UA, accept: "*/*" },
+        signal: AbortSignal.timeout(15_000),
+      } as RequestInit);
+      if (!res.ok) return body;
+      mpdText = await res.text();
+    } catch {
+      return body;
+    }
   }
   const kids = extractKidsFromMpd(mpdText);
   if (kids.length === 0) return body;
@@ -1200,7 +1219,7 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     if (stagingDash) {
       fullResult.body = rewriteDashUrlInBody(fullResult.body, stagingDash);
     }
-    fullResult.body = await embedClearKeyInBody(fullResult.body, streamId, new URL(request.url).origin);
+    fullResult.body = await embedClearKeyInBody(fullResult.body, request, streamId);
     storeStreamResponse(cacheKey, fullResult);
   }
   return renderUpstream(result, shouldEncrypt);
@@ -1572,10 +1591,11 @@ async function selfCheck(): Promise<void> {
   // embedClearKeyInBody: body tanpa dash/license URL dikembalikan utuh —
   // TIDAK boleh ada link /clearkey yang disuntikkan ke respons.
   const noDrmBody = JSON.stringify({ data: { attributes: { hls: "https://x/hls.m3u8", license_servers: {} } } });
-  if (await embedClearKeyInBody(noDrmBody, "1", "https://cache.test") !== noDrmBody) {
+  const embedReq = new Request("https://cache.test/");
+  if (await embedClearKeyInBody(noDrmBody, embedReq, "1") !== noDrmBody) {
     throw new Error("embedClearKeyInBody must pass through body without DRM info unchanged");
   }
-  if (await embedClearKeyInBody("not-json", "1", "https://cache.test") !== "not-json") {
+  if (await embedClearKeyInBody("not-json", embedReq, "1") !== "not-json") {
     throw new Error("embedClearKeyInBody must pass through invalid body");
   }
 
