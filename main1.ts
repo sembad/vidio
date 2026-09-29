@@ -1738,6 +1738,8 @@ export {
   hasAccount,
   isUltimateExpired,
   findActiveUltimateCredential,
+  proxyUltimateStream,
+  CHROME_UA,
 };
 
 const isDirectRun =
