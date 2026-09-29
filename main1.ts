@@ -17,13 +17,8 @@ export function encryptStreamPayload(
 }
 
 const BOT_DATA_URL = "https://baru.pw/botpideook/bot_data.json";
-// Kredensial ultimate HARDCODED — tanpa pool dari API. Semua fetch stream
-// ultimate memakai akun ini (header persis curl yang terbukti sukses).
-const ULTIMATE_CREDENTIAL = {
-  email: "85923081810-xl@fake-vidio.com",
-  token: "65Qy8enhdZT3yCsAFzwx",
-};
-const ULTIMATE_CREDENTIAL_TOKEN = ULTIMATE_CREDENTIAL.token;
+// Kredensial ultimate diambil dari daftar akun production (API JSON) —
+// tidak ada lagi akun hardcoded.
 // Identitas perangkat persis curl yang terbukti sukses (app-android 2609.1.14).
 const ULTIMATE_UA = "vidioandroid/2609.1.14-c11a00be7f (3191940)";
 const ULTIMATE_VISITOR_ID = "75dec05f-d3e9-4c4e-a384-2bc238868076";
@@ -365,36 +360,91 @@ async function storeMpdCache(origin: string, streamId: string, text: string): Pr
  * Bila ada langkah gagal, body dikembalikan apa adanya (nilai upstream).
  */
 // Daftar akun production (pemilik konten) — sumber custom_data production
-// yang fresh (masa aktif ±5 menit, cukup untuk cache 4 menit).
+// yang fresh (masa aktif ±5 menit, cukup untuk cache 4 menit). Tidak ada
+// akun hardcoded: semua kredensial ultimate diambil dari API JSON ini.
 const PRODUCTION_ACCOUNTS_URL = "https://baru.pw/jsoegwies82u2bsishshwu.json";
 const PROD_CD_TTL_MS = 4 * 60 * 1000;
 const prodCdMemoryCache = new Map<string, { cd: string; expiresAt: number }>();
+// Cache daftar akun 60 detik agar tidak fetch JSON di setiap request.
+const ACCOUNTS_TTL_MS = 60 * 1000;
+let accountsCache: { accounts: Array<{ email: string; token: string }>; expiresAt: number } | null = null;
+// Akun yang sudah dipakai per stream ID — tidak dipakai lagi untuk stream
+// yang sama selama 24 jam WIB (WIB = UTC+7, tetap sepanjang tahun).
+const ACCOUNT_REUSE_MS = 24 * 60 * 60 * 1000;
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
+const usedAccountsByStream = new Map<string, Map<string, number>>();
 
 /** Parse daftar akun format Ruby hash: 'email' => 'x', 'token' => 'y'. */
-function parseProductionAccounts(raw: string): Array<{ email: string; token: string }> {
+export function parseProductionAccounts(raw: string): Array<{ email: string; token: string }> {
   return [...raw.matchAll(/'email'\s*=>\s*'([^']+)',\s*\r?\n\s*'token'\s*=>\s*'([^']+)'/g)]
     .map((m) => ({ email: m[1], token: m[2] }));
+}
+
+/** Daftar akun production dari API JSON, di-cache 60 detik. */
+async function getProductionAccounts(): Promise<Array<{ email: string; token: string }>> {
+  if (accountsCache && accountsCache.expiresAt > Date.now()) return accountsCache.accounts;
+  try {
+    const res = await fetch(PRODUCTION_ACCOUNTS_URL, { signal: AbortSignal.timeout(15_000) });
+    if (res.ok) {
+      const accounts = parseProductionAccounts(await res.text());
+      if (accounts.length > 0) {
+        accountsCache = { accounts, expiresAt: Date.now() + ACCOUNTS_TTL_MS };
+        return accounts;
+      }
+    }
+  } catch {
+    // Daftar gagal diambil — pakai cache lama bila ada.
+  }
+  return accountsCache?.accounts ?? [];
+}
+
+/** Token akun production yang dikenal (untuk bypass verifikasi sesi). */
+async function productionAccountTokens(): Promise<Set<string>> {
+  const accounts = await getProductionAccounts();
+  return new Set(accounts.map((a) => a.token.trim()));
+}
+
+/** Tandai akun sudah dipakai untuk stream ini (kadaluarsa 24 jam WIB). */
+export function markAccountUsed(streamId: string, email: string): void {
+  const nowWib = Date.now() + WIB_OFFSET_MS;
+  let used = usedAccountsByStream.get(streamId);
+  if (!used) {
+    used = new Map();
+    usedAccountsByStream.set(streamId, used);
+  }
+  used.set(email, nowWib + ACCOUNT_REUSE_MS);
+}
+
+/** Akun belum dipakai untuk stream ini dalam 24 jam WIB terakhir. */
+export function isAccountAvailable(streamId: string, email: string): boolean {
+  const expiresAt = usedAccountsByStream.get(streamId)?.get(email);
+  return !expiresAt || expiresAt <= Date.now() + WIB_OFFSET_MS;
+}
+
+/**
+ * Akun production berikutnya yang boleh dipakai untuk stream ini —
+ * melewati akun yang sudah dipakai dalam 24 jam WIB terakhir.
+ */
+async function pickProductionAccount(streamId: string): Promise<{ email: string; token: string } | null> {
+  const accounts = await getProductionAccounts();
+  return accounts.find((a) => isAccountAvailable(streamId, a.email)) ?? null;
 }
 
 /**
  * custom_data PRODUCTION per stream (query pallycon-customdata-v2 untuk
  * license.vidio.com). Dicoba akun demi akun sampai ada yang berhak; hasil
- * di-cache 4 menit per stream.
+ * di-cache 4 menit per stream. Akun yang sudah dipakai untuk stream ini
+ * tidak dipakai lagi selama 24 jam WIB.
  */
 async function fetchProductionCustomData(streamId: string, request?: Request): Promise<string | null> {
   const cached = prodCdMemoryCache.get(streamId);
   if (cached && cached.expiresAt > Date.now()) return cached.cd;
   if (cached) prodCdMemoryCache.delete(streamId);
 
-  let raw = "";
-  try {
-    const res = await fetch(PRODUCTION_ACCOUNTS_URL, { signal: AbortSignal.timeout(15_000) });
-    if (res.ok) raw = await res.text();
-  } catch {
-    // Daftar gagal diambil — lanjut dengan kredensial ultimate bawaan.
-  }
-  const accounts = [...parseProductionAccounts(raw), ULTIMATE_CREDENTIAL];
-  for (const acc of accounts.slice(0, 10)) {
+  for (let i = 0; i < 10; i++) {
+    const acc = await pickProductionAccount(streamId);
+    if (!acc) break;
+    markAccountUsed(streamId, acc.email);
     const r = await proxyUltimateStream(streamId, acc, request, CHROME_UA);
     if (!r || r.status !== 200) continue;
     try {
@@ -635,39 +685,46 @@ export async function decryptPsshWithLicenseUrl(pssh: string, licenseUrl: string
   }
   let contentKey: string | null = null;
   let contentKid: string | null = null;
-  try {
-    const res = await fetch(`${GO_WIDEVINE_ORIGIN}/getkey/widevine`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${token}`,
-        "user-agent": CHROME_UA,
-        accept: "*/*",
-        origin: GO_WIDEVINE_ORIGIN,
-        referer: `${GO_WIDEVINE_ORIGIN}/`,
-      },
-      body: JSON.stringify({ pssh, license_url: licenseUrl, proxy: "", headers: {} }),
-      signal: AbortSignal.timeout(30_000),
-    });
-    if (!res.ok) {
-      return { ok: false, status: 502, error: "key service error" };
-    }
-    const data = (await res.json()) as { keys?: unknown; status?: unknown };
-    if (data.status !== "ok" || !Array.isArray(data.keys)) {
-      return { ok: false, status: 404, error: "no key" };
-    }
-    for (const entry of data.keys) {
-      if (
-        entry && typeof entry === "object" && (entry as Record<string, unknown>).type === "content" &&
-        typeof (entry as Record<string, unknown>).key === "string" &&
-        typeof (entry as Record<string, unknown>).kid === "string"
-      ) {
-        contentKey = (entry as Record<string, unknown>).key as string;
-        contentKid = (entry as Record<string, unknown>).kid as string;
-        break;
+  // Service go-widevine sering flapping — 2 percobaan dengan jeda singkat.
+  for (let attempt = 0; attempt < 2 && !contentKey; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 3_000));
+    try {
+      const res = await fetch(`${GO_WIDEVINE_ORIGIN}/getkey/widevine`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${token}`,
+          "user-agent": CHROME_UA,
+          accept: "*/*",
+          origin: GO_WIDEVINE_ORIGIN,
+          referer: `${GO_WIDEVINE_ORIGIN}/`,
+        },
+        body: JSON.stringify({ pssh, license_url: licenseUrl, proxy: "", headers: {} }),
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!res.ok) {
+        continue;
       }
+      const data = (await res.json()) as { keys?: unknown; status?: unknown };
+      if (data.status !== "ok" || !Array.isArray(data.keys)) {
+        continue;
+      }
+      for (const entry of data.keys) {
+        if (
+          entry && typeof entry === "object" && (entry as Record<string, unknown>).type === "content" &&
+          typeof (entry as Record<string, unknown>).key === "string" &&
+          typeof (entry as Record<string, unknown>).kid === "string"
+        ) {
+          contentKey = (entry as Record<string, unknown>).key as string;
+          contentKid = (entry as Record<string, unknown>).kid as string;
+          break;
+        }
+      }
+    } catch {
+      // Coba lagi pada attempt berikutnya.
     }
-  } catch {
+  }
+  if (!contentKey) {
     return { ok: false, status: 502, error: "key service error" };
   }
   if (!contentKey || !contentKid) {
@@ -1064,10 +1121,10 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     );
   }
 
-  // Token wajib sesuai: token ultimate langsung, token hardcode, atau sesi valid pembeli di Vidio
+  // Token wajib sesuai: token ultimate langsung, token akun production, atau sesi valid pembeli di Vidio
   const trimmedToken = userToken.trim();
   const matchesDirectUltimate = trimmedToken === activeUltimate.token.trim()
-    || trimmedToken === ULTIMATE_CREDENTIAL_TOKEN;
+    || (await productionAccountTokens()).has(trimmedToken);
   if (!matchesDirectUltimate) {
     const isLiveValid = await verifyLiveVidioSession(
       requestedEmail,
@@ -1091,11 +1148,14 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   }
 
   // Sumber utama: API staging (akun tv-android staging, curl terbukti).
-  // Cadangan: production ultimate → production kredensial user.
+  // Cadangan: production akun pool (24 jam WIB per stream) → kredensial user.
   // Semua lewat cache 4 menit — staging maksimal 1 GET per 4 menit.
   const fullResult = await fetchStreamResultShared(cacheKey, async () =>
     (await proxyStagingStream(streamId, request))
-      ?? await proxyUltimateStream(streamId, ULTIMATE_CREDENTIAL, request, CHROME_UA));
+      ?? await (async () => {
+        const acc = await pickProductionAccount(streamId);
+        return acc ? proxyUltimateStream(streamId, acc, request, CHROME_UA) : null;
+      })());
   let result = fullResult;
   if (!result) {
     // Kredensial hardcode gagal → coba kredensial asli user yang request
@@ -1245,7 +1305,7 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
 
   const trimmedToken = userToken.trim();
   const matchesDirectUltimate = trimmedToken === activeUltimate.token.trim()
-    || trimmedToken === ULTIMATE_CREDENTIAL_TOKEN;
+    || (await productionAccountTokens()).has(trimmedToken);
   if (!matchesDirectUltimate) {
     const isLiveValid = await verifyLiveVidioSession(
       requestedEmail,
@@ -1268,8 +1328,10 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
     return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
   }
 
-  const fullResult = await fetchStreamResultShared(cacheKey, () =>
-    proxyUltimateVideoData(videoId, ULTIMATE_CREDENTIAL, request, CHROME_UA));
+  const fullResult = await fetchStreamResultShared(cacheKey, async () => {
+    const acc = await getProductionAccounts().then((a) => a[0]);
+    return acc ? proxyUltimateVideoData(videoId, acc, request, CHROME_UA) : null;
+  });
   let result = fullResult;
   if (!result) {
     const own = await proxyUltimateVideoData(
@@ -1415,9 +1477,13 @@ async function selfCheck(): Promise<void> {
     throw new Error("Expired ultimate account must not yield active credentials");
   }
 
-  // Kredensial ultimate hardcode terdefinisi dengan benar
-  if (ULTIMATE_CREDENTIAL.email !== "85923081810-xl@fake-vidio.com" || ULTIMATE_CREDENTIAL.token !== "65Qy8enhdZT3yCsAFzwx") {
-    throw new Error("Hardcoded ultimate credential must stay intact");
+  // Pelacakan pemakaian akun per stream (24 jam WIB).
+  markAccountUsed("999", "a@b.c");
+  if (!isAccountAvailable("998", "a@b.c")) {
+    throw new Error("Account must be available for a different stream");
+  }
+  if (isAccountAvailable("999", "a@b.c")) {
+    throw new Error("Used account must be blocked for the same stream");
   }
 
   // Helper clearkey: roundtrip hex ↔ base64url.
