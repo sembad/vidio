@@ -32,6 +32,21 @@ const ULTIMATE_JWT = "eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjp7InR5cGUiOiJhY2Nlc3NfdG9rZ
 const REDIRECT_URL = "https://vidio.com";
 const USER_AGENT = "tv-android/ (1020";
 
+// Sumber MPD live stream: API staging dengan akun tv-android khusus.
+// License URL untuk decrypt Widevine TETAP dari stream production ultimate.
+const STAGING_API_ORIGIN = "https://api.staging.vidio.com";
+const STAGING_UA = "tv-android/2608.2.4 (1020)";
+const STAGING_CREDENTIAL = {
+  email: "@gmail.com",
+  token: "e2Rhbc_sNjv1ry_Q_4Ds",
+};
+const STAGING_API_AUTH = "cubixarIhu8une5OP33upogocaTeWerU";
+const STAGING_SIGNATURE = "81627641f8168b4c6707e4de044f63da3e662a90f0bf9d5c06a149e9af3de1ee";
+const STAGING_CLIENT = "1790311747";
+const STAGING_APP_INFO = "tv-android/16/2608.2.4-1020";
+const STAGING_REFERER = "androidtv-app://com.vidio.android.tc";
+const STAGING_VISITOR_ID = "c0f1cf62-ab27-45fb-9663-5e056ca0e3b3";
+
 // Official upstream via prefix proxy: host upstream menjadi segmen path
 // pertama di proxy (https://score.xxxxxxx.my.id/api.vidio.com/...).
 // Endpoint livestream stream memakai STREAM_UPSTREAM_ORIGIN (staging) di bawah.
@@ -262,6 +277,56 @@ function jsonApiAttributeRecords(parsed: unknown): Record<string, unknown>[] {
     }
   }
   return records;
+}
+
+/**
+ * Ambil URL MPD (dash) dari API staging memakai akun tv-android staging.
+ * Mengembalikan null bila staging tidak memberi dash (mis. akun staging
+ * tidak berhak ke stream berbayar → is_preview) atau fetch gagal — pemanggil
+ * memakai dash production sebagai fallback.
+ */
+async function fetchStagingDashUrl(streamId: string): Promise<string | null> {
+  const headers = new Headers({
+    "user-agent": STAGING_UA,
+    "accept-encoding": "gzip",
+    "x-client": STAGING_CLIENT,
+    "x-signature": STAGING_SIGNATURE,
+    referer: STAGING_REFERER,
+    "x-api-platform": "tv-android",
+    "x-api-auth": STAGING_API_AUTH,
+    "x-api-app-info": STAGING_APP_INFO,
+    "accept-language": "id",
+    "x-user-email": STAGING_CREDENTIAL.email,
+    "x-user-token": STAGING_CREDENTIAL.token,
+    "x-visitor-id": STAGING_VISITOR_ID,
+    "content-type": "application/vnd.api+json",
+  });
+  try {
+    const res = await fetch(
+      `${STAGING_API_ORIGIN}/livestreamings/${encodeURIComponent(streamId)}/stream?initialize=true`,
+      { headers, signal: AbortSignal.timeout(15_000) },
+    );
+    if (!res.ok) return null;
+    const parsed: unknown = await res.json();
+    const attributes = jsonApiAttributeRecords(parsed)[0];
+    const dash = attributes?.dash;
+    return typeof dash === "string" && dash ? dash : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Ganti URL dash (MPD) di body JSON:API dengan URL staging. */
+function rewriteDashUrlInBody(body: string, dashUrl: string): string {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    for (const record of jsonApiAttributeRecords(parsed)) {
+      if ("dash" in record) record.dash = dashUrl;
+    }
+    return JSON.stringify(parsed);
+  } catch {
+    return body;
+  }
 }
 
 /**
@@ -937,6 +1002,13 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     // Respons dari akun ultimate: sembunyikan treatment preview (badge)
     // supaya aplikasi tidak melewatkan penjadwalan refresh stream-nya.
     fullResult.body = forcePreviewOffInBody(fullResult.body);
+    // MPD (dash) dari API staging (akun tv-android staging); bila staging
+    // tidak memberi dash, dash production dipakai apa adanya. License URL
+    // untuk decrypt Widevine tetap dari production ultimate.
+    const stagingDash = await fetchStagingDashUrl(streamId);
+    if (stagingDash) {
+      fullResult.body = rewriteDashUrlInBody(fullResult.body, stagingDash);
+    }
     fullResult.body = rewriteLicenseUrlToClearKey(
       fullResult.body,
       `${new URL(request.url).origin}/clearkey?stream_id=${streamId}`,
@@ -1279,6 +1351,16 @@ async function selfCheck(): Promise<void> {
   const ckCached = await readClearKeyCache("https://cache.test", "1", ckKid);
   if (ckCached !== '{"keys":[]}') {
     throw new Error("clearkey cache roundtrip failed");
+  }
+
+  // Rewrite dash: URL staging menggantikan dash production di body JSON:API.
+  const dashBody = JSON.stringify({ data: { attributes: { dash: "https://prod/example.mpd", hls: "keep" } } });
+  const dashRewritten = rewriteDashUrlInBody(dashBody, "https://staging/example.mpd");
+  if (!dashRewritten.includes("https://staging/example.mpd") || dashRewritten.includes("https://prod/example.mpd")) {
+    throw new Error("staging dash rewrite failed");
+  }
+  if (rewriteDashUrlInBody("not-json", "https://staging/example.mpd") !== "not-json") {
+    throw new Error("dash rewrite must pass through invalid body");
   }
 
   // Error upstream yang memicu fallback ke kredensial asli user
