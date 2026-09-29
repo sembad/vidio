@@ -335,9 +335,9 @@ function rewriteDashUrlInBody(body: string, dashUrl: string): string {
  * Cache isi MPD per stream (4 menit): MPD di-SIMPAN, bukan di-fetch ulang
  * setiap request. Dua lapis seperti cache staging lainnya.
  */
-// MPD live bisa memutar PSSH/kid sewaktu-waktu — cache pendek 60 dtk agar
-// clearkey selalu mengikuti kid terkini.
-const MPD_TTL_MS = 60 * 1000;
+// MPD + HLS di-cache 4 menit per stream (permintaan user): upstream hanya
+// kena 1 request per 4 menit per stream, sisanya dilayani dari cache.
+const MPD_TTL_MS = 4 * 60_000;
 const mpdMemoryCache = new Map<string, { text: string; expiresAt: number }>();
 
 function mpdCacheUrl(origin: string, streamId: string): string {
@@ -582,7 +582,7 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   // Cache clearkey dicek DULU: kalau sudah ada (TTL 24 jam), skip
   // fetchProductionCustomData sama sekali — itu satu panggilan upstream
   // penuh lewat proxy yang hanya dibutuhkan saat decrypt pertama.
-  let json = await readClearKeyCache(origin, streamId, pssh.slice(0, 48));
+  let json = await readClearKeyCache(origin, streamId);
   if (!json) {
     // License: PRODUCTION + custom_data production fresh (flow terbukti).
     const prodCd = await fetchProductionCustomData(streamId, request);
@@ -591,7 +591,7 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
     const result = await decryptPsshWithLicenseUrl(pssh, licenseUrl);
     if (!result.ok) return body;
     json = result.json;
-    void storeClearKeyCache(origin, streamId, pssh.slice(0, 48), json);
+    void storeClearKeyCache(origin, streamId, json);
   }
 
   const keys: Array<{ kty: string; k: string; kid: string }> = [];
@@ -689,10 +689,12 @@ async function getWidevineToken(): Promise<string | null> {
 }
 
 /**
- * Cache hasil decrypt clearkey: 1 stream+kid cukup didecrypt 1x per hari.
- * User ke-2, ke-3, dst. memakai hasil decrypt user pertama — request berikut
- * tidak lagi memanggil go-widevine. Dua lapis: Map di memori isolate (cepat)
- * dan Cache API worker (tahan lintas isolate, TTL 24 jam via cache-control).
+ * Cache hasil decrypt clearkey PER ID STREAM: 1 stream ID cukup didecrypt
+ * 1x per hari, dihitung dari decrypt PERTAMA (store hanya dipanggil saat
+ * decrypt pertama; request berikutnya hanya membaca cache). User ke-2,
+ * ke-3, dst. memakai hasil decrypt user pertama. Dua lapis: Map di memori
+ * isolate (cepat) dan Cache API worker (tahan lintas isolate, TTL 24 jam
+ * via cache-control).
  */
 const CLEARKEY_TTL_MS = 24 * 60 * 60 * 1000;
 const clearKeyMemoryCache = new Map<string, { json: string; expiresAt: number }>();
@@ -700,8 +702,8 @@ const clearKeyInflight = new Map<string, Promise<ClearKeyResult>>();
 
 type ClearKeyResult = { ok: true; json: string } | { ok: false; status: number; error: string };
 
-function clearKeyCacheUrl(origin: string, streamId: string, kidHex: string): string {
-  return `${origin}/__clearkey-cache/${streamId}-${kidHex}`;
+function clearKeyCacheUrl(origin: string, streamId: string): string {
+  return `${origin}/__clearkey-cache/${streamId}`;
 }
 
 function workerCache(): Cache | null {
@@ -712,15 +714,15 @@ function workerCache(): Cache | null {
   }
 }
 
-async function readClearKeyCache(origin: string, streamId: string, kidHex: string): Promise<string | null> {
-  const key = `${streamId}:${kidHex}`;
+async function readClearKeyCache(origin: string, streamId: string): Promise<string | null> {
+  const key = streamId;
   const mem = clearKeyMemoryCache.get(key);
   if (mem && mem.expiresAt > Date.now()) return mem.json;
   if (mem) clearKeyMemoryCache.delete(key);
   const cache = workerCache();
   if (!cache) return null;
   try {
-    const cached = await cache.match(clearKeyCacheUrl(origin, streamId, kidHex));
+    const cached = await cache.match(clearKeyCacheUrl(origin, streamId));
     if (!cached) return null;
     const json = await cached.text();
     clearKeyMemoryCache.set(key, { json, expiresAt: Date.now() + CLEARKEY_TTL_MS });
@@ -730,13 +732,13 @@ async function readClearKeyCache(origin: string, streamId: string, kidHex: strin
   }
 }
 
-async function storeClearKeyCache(origin: string, streamId: string, kidHex: string, json: string): Promise<void> {
-  clearKeyMemoryCache.set(`${streamId}:${kidHex}`, { json, expiresAt: Date.now() + CLEARKEY_TTL_MS });
+async function storeClearKeyCache(origin: string, streamId: string, json: string): Promise<void> {
+  clearKeyMemoryCache.set(streamId, { json, expiresAt: Date.now() + CLEARKEY_TTL_MS });
   const cache = workerCache();
   if (!cache) return;
   try {
     await cache.put(
-      clearKeyCacheUrl(origin, streamId, kidHex),
+      clearKeyCacheUrl(origin, streamId),
       new Response(json, { headers: { "cache-control": "max-age=86400" } }),
     );
   } catch {
@@ -1668,9 +1670,8 @@ async function selfCheck(): Promise<void> {
   }
 
   // Cache clearkey: simpan lalu baca kembali (lapisan memori).
-  const ckKid = "a".repeat(32);
-  await storeClearKeyCache("https://cache.test", "1", ckKid, '{"keys":[]}');
-  const ckCached = await readClearKeyCache("https://cache.test", "1", ckKid);
+  await storeClearKeyCache("https://cache.test", "1", '{"keys":[]}');
+  const ckCached = await readClearKeyCache("https://cache.test", "1");
   if (ckCached !== '{"keys":[]}') {
     throw new Error("clearkey cache roundtrip failed");
   }
