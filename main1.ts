@@ -360,11 +360,68 @@ function buildWidevinePssh(kidHex: string): string | null {
 }
 
 /**
+ * Cache hasil decrypt clearkey: 1 stream+kid cukup didecrypt 1x per hari.
+ * User ke-2, ke-3, dst. memakai hasil decrypt user pertama — request berikut
+ * tidak lagi memanggil go-widevine. Dua lapis: Map di memori isolate (cepat)
+ * dan Cache API worker (tahan lintas isolate, TTL 24 jam via cache-control).
+ */
+const CLEARKEY_TTL_MS = 24 * 60 * 60 * 1000;
+const clearKeyMemoryCache = new Map<string, { json: string; expiresAt: number }>();
+const clearKeyInflight = new Map<string, Promise<ClearKeyResult>>();
+
+type ClearKeyResult = { ok: true; json: string } | { ok: false; status: number; error: string };
+
+function clearKeyCacheUrl(origin: string, streamId: string, kidHex: string): string {
+  return `${origin}/__clearkey-cache/${streamId}-${kidHex}`;
+}
+
+function workerCache(): Cache | null {
+  try {
+    return (caches as unknown as { default?: Cache }).default ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function readClearKeyCache(origin: string, streamId: string, kidHex: string): Promise<string | null> {
+  const key = `${streamId}:${kidHex}`;
+  const mem = clearKeyMemoryCache.get(key);
+  if (mem && mem.expiresAt > Date.now()) return mem.json;
+  if (mem) clearKeyMemoryCache.delete(key);
+  const cache = workerCache();
+  if (!cache) return null;
+  try {
+    const cached = await cache.match(clearKeyCacheUrl(origin, streamId, kidHex));
+    if (!cached) return null;
+    const json = await cached.text();
+    clearKeyMemoryCache.set(key, { json, expiresAt: Date.now() + CLEARKEY_TTL_MS });
+    return json;
+  } catch {
+    return null;
+  }
+}
+
+async function storeClearKeyCache(origin: string, streamId: string, kidHex: string, json: string): Promise<void> {
+  clearKeyMemoryCache.set(`${streamId}:${kidHex}`, { json, expiresAt: Date.now() + CLEARKEY_TTL_MS });
+  const cache = workerCache();
+  if (!cache) return;
+  try {
+    await cache.put(
+      clearKeyCacheUrl(origin, streamId, kidHex),
+      new Response(json, { headers: { "cache-control": "max-age=86400" } }),
+    );
+  } catch {
+    // Cache API tidak tersedia (mis. domain workers.dev) — memori saja.
+  }
+}
+
+/**
  * Endpoint kunci ClearKey (KHUSUS live stream — VOD tetap Widevine). Player
  * hasil patch (skema ClearKey) mem-posting key request W3C {"kids":[...]} ke
  * sini. Worker mengambil license URL production dari stream (kredensial
  * ultimate hardcode), membangun PSSH dari kid, menukarkannya dengan konten
- * key di go-widevine, lalu menjawab JSON W3C clearkey.
+ * key di go-widevine, lalu menjawab JSON W3C clearkey. Hasil sukses di-cache
+ * 1 hari per stream+kid sehingga decrypt hanya terjadi 1x per hari.
  */
 async function handleClearKeyRequest(request: Request): Promise<Response> {
   const url = new URL(request.url);
@@ -398,10 +455,38 @@ async function handleClearKeyRequest(request: Request): Promise<Response> {
     return new Response(JSON.stringify({ error: "missing or invalid kid" }), { status: 400, headers: jsonHeaders });
   }
 
+  const cacheKey = `${streamId}:${kidHex}`;
+  const cachedJson = await readClearKeyCache(url.origin, streamId, kidHex);
+  if (cachedJson) {
+    return new Response(cachedJson, { status: 200, headers: jsonHeaders });
+  }
+  const inflight = clearKeyInflight.get(cacheKey);
+  if (inflight) {
+    const shared = await inflight;
+    if (shared.ok) return new Response(shared.json, { status: 200, headers: jsonHeaders });
+    return new Response(JSON.stringify({ error: shared.error }), { status: shared.status, headers: jsonHeaders });
+  }
+
+  const task = decryptClearKeyOnce(request, streamId, kidHex)
+    .then((result) => {
+      if (result.ok) void storeClearKeyCache(url.origin, streamId, kidHex, result.json);
+      return result;
+    })
+    .finally(() => {
+      clearKeyInflight.delete(cacheKey);
+    });
+  clearKeyInflight.set(cacheKey, task);
+  const result = await task;
+  if (result.ok) return new Response(result.json, { status: 200, headers: jsonHeaders });
+  return new Response(JSON.stringify({ error: result.error }), { status: result.status, headers: jsonHeaders });
+}
+
+/** Decrypt sekali: license URL fresh → PSSH → go-widevine → JSON W3C. */
+async function decryptClearKeyOnce(request: Request, streamId: string, kidHex: string): Promise<ClearKeyResult> {
   // License URL production harus fresh (kedaluwarsa ±5 menit).
   const stream = await proxyUltimateStream(streamId, ULTIMATE_CREDENTIAL, request, CHROME_UA);
   if (!stream || stream.status !== 200) {
-    return new Response(JSON.stringify({ error: "upstream unavailable" }), { status: 502, headers: jsonHeaders });
+    return { ok: false, status: 502, error: "upstream unavailable" };
   }
   let licenseUrl = "";
   try {
@@ -416,16 +501,16 @@ async function handleClearKeyRequest(request: Request): Promise<Response> {
     licenseUrl = "";
   }
   if (!licenseUrl) {
-    return new Response(JSON.stringify({ error: "no license url" }), { status: 404, headers: jsonHeaders });
+    return { ok: false, status: 404, error: "no license url" };
   }
 
   const pssh = buildWidevinePssh(kidHex);
   if (!pssh) {
-    return new Response(JSON.stringify({ error: "bad kid" }), { status: 400, headers: jsonHeaders });
+    return { ok: false, status: 400, error: "bad kid" };
   }
   const token = await getWidevineToken();
   if (!token) {
-    return new Response(JSON.stringify({ error: "key service unavailable" }), { status: 502, headers: jsonHeaders });
+    return { ok: false, status: 502, error: "key service unavailable" };
   }
   let contentKey: string | null = null;
   try {
@@ -443,11 +528,11 @@ async function handleClearKeyRequest(request: Request): Promise<Response> {
       signal: AbortSignal.timeout(30_000),
     });
     if (!res.ok) {
-      return new Response(JSON.stringify({ error: "key service error" }), { status: 502, headers: jsonHeaders });
+      return { ok: false, status: 502, error: "key service error" };
     }
     const data = (await res.json()) as { keys?: unknown; status?: unknown };
     if (data.status !== "ok" || !Array.isArray(data.keys)) {
-      return new Response(JSON.stringify({ error: "no key" }), { status: 404, headers: jsonHeaders });
+      return { ok: false, status: 404, error: "no key" };
     }
     for (const entry of data.keys) {
       if (
@@ -459,16 +544,17 @@ async function handleClearKeyRequest(request: Request): Promise<Response> {
       }
     }
   } catch {
-    return new Response(JSON.stringify({ error: "key service error" }), { status: 502, headers: jsonHeaders });
+    return { ok: false, status: 502, error: "key service error" };
   }
   if (!contentKey) {
-    return new Response(JSON.stringify({ error: "no content key" }), { status: 404, headers: jsonHeaders });
+    return { ok: false, status: 404, error: "no content key" };
   }
   const keyB64 = bytesToB64Url(hexToBytes(contentKey) ?? new Uint8Array());
-  return new Response(
-    JSON.stringify({ keys: [{ kty: "oct", k: keyB64, kid: bytesToB64Url(hexToBytes(kidHex)!) }], type: "temporary" }),
-    { status: 200, headers: jsonHeaders },
-  );
+  const json = JSON.stringify({
+    keys: [{ kty: "oct", k: keyB64, kid: bytesToB64Url(hexToBytes(kidHex)!) }],
+    type: "temporary",
+  });
+  return { ok: true, json };
 }
 
 // Respons upstream yang berarti kredensial ultimate tidak bisa dipakai untuk
@@ -1185,6 +1271,14 @@ async function selfCheck(): Promise<void> {
   }
   if (buildWidevinePssh("zz") !== null) {
     throw new Error("Invalid kid must fail PSSH build");
+  }
+
+  // Cache clearkey: simpan lalu baca kembali (lapisan memori).
+  const ckKid = "a".repeat(32);
+  await storeClearKeyCache("https://cache.test", "1", ckKid, '{"keys":[]}');
+  const ckCached = await readClearKeyCache("https://cache.test", "1", ckKid);
+  if (ckCached !== '{"keys":[]}') {
+    throw new Error("clearkey cache roundtrip failed");
   }
 
   // Error upstream yang memicu fallback ke kredensial asli user
