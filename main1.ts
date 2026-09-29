@@ -29,6 +29,16 @@ const USER_AGENT = "tv-android/ (1020";
 // Sumber MPD live stream: API staging dengan akun tv-android khusus.
 // License URL untuk decrypt Widevine TETAP dari stream production ultimate.
 const STAGING_API_ORIGIN = "https://api.staging.vidio.com";
+// Mirror Indonesia untuk API Vidio + CDN akamaized — format:
+// https://score.xxxxxxx.my.id/<host>/<path> (tanpa geo-block, tanpa proxy).
+const VIDIO_MIRROR_ORIGIN = "https://score.xxxxxxx.my.id";
+
+/** URL lewat mirror Indonesia: https://host/path → mirror/host/path. */
+function viaMirror(url: string): string {
+  return url.startsWith("https://")
+    ? `${VIDIO_MIRROR_ORIGIN}/${url.slice("https://".length)}`
+    : url;
+}
 const STAGING_UA = "tv-android/2608.2.4 (1020)";
 const STAGING_CREDENTIAL = {
   email: "@gmail.com",
@@ -509,8 +519,7 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
     const dash = typeof attrs.dash === "string" ? attrs.dash : "";
     if (!dash) return body;
     try {
-      const res = await fetch(dash, {
-        ...proxyFetchInit(),
+      const res = await fetch(viaMirror(dash), {
         headers: { "user-agent": CHROME_UA, accept: "*/*" },
         redirect: "follow",
         signal: AbortSignal.timeout(15_000),
@@ -936,10 +945,8 @@ export async function proxyStagingStream(streamId: string, request?: Request): P
   });
   try {
     const upstream = await fetch(
-      `${STAGING_API_ORIGIN}/livestreamings/${encodeURIComponent(streamId)}/stream${search}`,
+      viaMirror(`${STAGING_API_ORIGIN}/livestreamings/${encodeURIComponent(streamId)}/stream${search}`),
       {
-        // Staging juga geo-locked — lewat proxy DataImpulse (exit Indonesia).
-        ...proxyFetchInit(),
         headers,
         redirect: "follow",
         signal: AbortSignal.timeout(30_000),
