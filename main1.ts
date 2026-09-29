@@ -520,6 +520,8 @@ function extractPsshFromMpd(mpdText: string): string | null {
 // → JSON untuk endpoint tersebut, diisi setiap kali key berhasil didecrypt.
 const clearKeyStore = new Map<string, string>();
 const clearKeyByStream = new Map<string, string>();
+// Indeks kid (b64url & hex) → streamId agar /clearkey bisa self-service.
+const kidStreamIndex = new Map<string, string>();
 
 function registerClearKeyJson(streamId: string, json: string): void {
   try {
@@ -530,7 +532,10 @@ function registerClearKeyJson(streamId: string, json: string): void {
       clearKeyStore.set(key.kid, entry);
       const kidBytes = b64UrlToBytes(key.kid);
       if (kidBytes) {
-        clearKeyStore.set([...kidBytes].map((b) => b.toString(16).padStart(2, "0")).join(""), entry);
+        const kidHex = [...kidBytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+        clearKeyStore.set(kidHex, entry);
+        kidStreamIndex.set(key.kid, streamId);
+        kidStreamIndex.set(kidHex, streamId);
       }
     }
     clearKeyByStream.set(streamId, json);
@@ -549,8 +554,6 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   }
   const attrs = jsonApiAttributeRecords(parsed)[0];
   if (!attrs) return body;
-
-  const servers = attrs.license_servers;
 
   // Sumber PSSH: MPD dari respons itu sendiri (dash staging saat sumber
   // staging, dash production saat fallback). Fetch SELALU lewat proxy
@@ -610,13 +613,13 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   registerClearKeyJson(streamId, json);
 
   attrs.clearkey = { keys, type: "temporary" };
-  // Aplikasi menjadwalkan refresh & playback dari expires_in — paksa 240
-  // agar tidak kena URL yang mati dalam hitungan detik.
+  // Mode clearkey APK seamless: custom_data & license_servers KOSONG +
+  // is_drm true → patch aplikasi memakai scheme "clearkey" dan mengambil
+  // kunci dari <proxyHost>/clearkey. expires_in 240 untuk jadwal refresh.
   attrs.expires_in = 240;
+  attrs.is_drm = true;
   delete attrs.custom_data;
-  if (servers && typeof servers === "object") {
-    delete (servers as Record<string, unknown>).drm_license_url;
-  }
+  delete attrs.license_servers;
   return JSON.stringify(parsed);
 }
 
@@ -1435,12 +1438,36 @@ async function handleClearKeyEndpoint(request: Request, url: URL): Promise<Respo
       // Body bukan JSON — coba lookup per stream.
     }
   }
-  const json = (kid ? clearKeyStore.get(kid) ?? clearKeyStore.get(kid.toLowerCase()) : undefined)
-    ?? (streamId ? clearKeyByStream.get(streamId) : undefined);
+  const lookup = (k: string) => clearKeyStore.get(k) ?? clearKeyStore.get(k.toLowerCase());
+  let json = kid ? lookup(kid) : undefined;
+  if (!json && streamId) json = clearKeyByStream.get(streamId);
+  // Self-service: kunci belum terdaftar — baca langsung dari API stream
+  // (production), decrypt ulang, lalu simpan. Tanpa parameter manual.
+  if (!json && kid) {
+    const resolved = kidStreamIndex.get(kid) ?? kidStreamIndex.get(kid.toLowerCase()) ?? streamId;
+    if (resolved && (await selfServeClearKey(request, resolved))) {
+      json = lookup(kid) ?? clearKeyByStream.get(resolved);
+    }
+  }
   if (!json) {
     return new Response(JSON.stringify({ error: "key not found" }), { status: 404, headers: jsonHeaders });
   }
   return new Response(json, { status: 200, headers: jsonHeaders });
+}
+
+/** Fetch stream production + embed ulang (decrypt) untuk mengisi registri. */
+async function selfServeClearKey(request: Request, streamId: string): Promise<boolean> {
+  for (const cred of PRODUCTION_CREDENTIALS) {
+    const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA);
+    if (r?.status !== 200 || !r.body.includes("custom_data")) continue;
+    const out = await embedClearKeyInBody(r.body, request, streamId);
+    try {
+      return Boolean(JSON.parse(out)?.data?.attributes?.clearkey);
+    } catch {
+      return false;
+    }
+  }
+  return false;
 }
 
 async function handleRequest(request: Request): Promise<Response> {
