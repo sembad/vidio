@@ -613,13 +613,19 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   registerClearKeyJson(streamId, json);
 
   attrs.clearkey = { keys, type: "temporary" };
-  // Mode clearkey APK seamless: custom_data & license_servers KOSONG +
-  // is_drm true → patch aplikasi memakai scheme "clearkey" dan mengambil
-  // kunci dari <proxyHost>/clearkey. expires_in 240 untuk jadwal refresh.
+  // Mode clearkey APK seamless: custom_data dihapus + is_drm true → patch
+  // aplikasi memakai scheme "clearkey". drm_license_url menunjuk ke URL
+  // stream INI (stream?initialize=true): permintaan lisensi ClearKey CDM
+  // (POST body {"kids":[...]}) dijawab handler stream di bawah dengan JSON
+  // kunci dari registri — TANPA endpoint /clearkey terpisah.
+  // expires_in 240 untuk jadwal refresh.
   attrs.expires_in = 240;
   attrs.is_drm = true;
   delete attrs.custom_data;
-  delete attrs.license_servers;
+  const licenseHost = new URL(request.url).host;
+  attrs.license_servers = {
+    drm_license_url: `https://${licenseHost}/livestreamings/${streamId}/stream?initialize=true`,
+  };
   return JSON.stringify(parsed);
 }
 
@@ -1422,14 +1428,14 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
 // Endpoint lisensi ClearKey untuk APK seamless-clearkey: Android ClearKey
 // CDM POST {"kids":["<kid-b64url>"],"type":"temporary"} dan mengharapkan
 // respons {"keys":[{"kty":"oct","k":...,"kid":...}],"type":"temporary"}.
-async function handleClearKeyEndpoint(request: Request, url: URL): Promise<Response> {
+async function handleClearKeyEndpoint(request: Request, url: URL, pathStreamId = ""): Promise<Response> {
   const jsonHeaders = {
     ...securityHeaders,
     "content-type": "application/json; charset=utf-8",
     "cache-control": "no-store, no-cache, must-revalidate",
   };
   let kid = url.searchParams.get("kid") ?? "";
-  const streamId = url.searchParams.get("stream_id") ?? url.searchParams.get("stream") ?? "";
+  const streamId = pathStreamId || url.searchParams.get("stream_id") || url.searchParams.get("stream") || "";
   if (!kid && request.method === "POST") {
     try {
       const parsed = JSON.parse(await request.text()) as { kids?: unknown };
@@ -1482,6 +1488,9 @@ async function handleRequest(request: Request): Promise<Response> {
 
   const streamMatch = url.pathname.match(STREAM_PATH);
   if (streamMatch) {
+    // POST lisensi ClearKey CDM (body {"kids":[...]}) dijawab langsung di
+    // URL stream — kunci dari registri, tanpa endpoint /clearkey terpisah.
+    if (request.method === "POST") return handleClearKeyEndpoint(request, url, streamMatch[1]);
     if (request.method !== "GET") return textResponse("method not allowed", 405);
     return proxyStream(streamMatch[1], request);
   }
