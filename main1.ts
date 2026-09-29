@@ -1027,29 +1027,35 @@ async function verifyLiveVidioSession(
     testHeaders["x-authorization"] = jwt;
   }
 
-  try {
-    const res = await fetch("https://api.vidio.com/profiles", {
-      // api.vidio.com geo-locked — verifikasi sesi juga lewat proxy DataImpulse.
-      ...proxyFetchInit(),
-      method: "GET",
-      headers: testHeaders,
-      signal: AbortSignal.timeout(8_000),
-    } as RequestInit);
-    if (res.ok) {
-      const body: unknown = await res.json();
-      if (isRecord(body) && Array.isArray(body.data) && body.data.length > 0) {
-        for (const item of body.data) {
-          if (!isRecord(item) || !isRecord(item.attributes)) continue;
-          const remoteEmail = typeof item.attributes.email === "string"
-            ? item.attributes.email
-            : (typeof item.attributes.identifier === "string" ? item.attributes.identifier : null);
-          if (remoteEmail && normalizeEmail(remoteEmail) === normEmail) {
-            return true;
+  // Verifikasi sesi TIDAK boleh lewat proxy — Vidio menolak auth (401)
+  // dari IP proxy. Worker umumnya berjalan di IP Indonesia, jadi direct
+  // dulu; proxy hanya cadangan bila direct gagal total (geo-block).
+  for (const viaProxy of [false, true]) {
+    try {
+      const res = await fetch("https://api.vidio.com/profiles", {
+        ...(viaProxy ? proxyFetchInit() : {}),
+        method: "GET",
+        headers: testHeaders,
+        signal: AbortSignal.timeout(8_000),
+      } as RequestInit);
+      if (res.ok) {
+        const body: unknown = await res.json();
+        if (isRecord(body) && Array.isArray(body.data) && body.data.length > 0) {
+          for (const item of body.data) {
+            if (!isRecord(item) || !isRecord(item.attributes)) continue;
+            const remoteEmail = typeof item.attributes.email === "string"
+              ? item.attributes.email
+              : (typeof item.attributes.identifier === "string" ? item.attributes.identifier : null);
+            if (remoteEmail && normalizeEmail(remoteEmail) === normEmail) {
+              return true;
+            }
           }
         }
       }
-    }
-  } catch {}
+    } catch {}
+    if (!viaProxy) continue;
+    break;
+  }
 
   try {
     const res = await fetch("https://api.vidio.com/users/data", {
