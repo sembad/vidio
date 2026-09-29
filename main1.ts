@@ -392,26 +392,6 @@ function rewriteDashUrlInBody(body: string, dashUrl: string): string {
   }
 }
 
-/**
- * Arahkan license URL DRM ke endpoint /clearkey worker. Player hasil patch
- * memakai skema ClearKey dan meminta kunci ke URL ini; endpoint mengembalikan
- * JSON kunci W3C yang dimengerti MediaDrm ClearKey.
- */
-function rewriteLicenseUrlToClearKey(body: string, clearKeyUrl: string): string {
-  try {
-    const parsed: unknown = JSON.parse(body);
-    for (const record of jsonApiAttributeRecords(parsed)) {
-      const servers = record.license_servers;
-      if (servers && typeof servers === "object") {
-        (servers as Record<string, unknown>).drm_license_url = clearKeyUrl;
-      }
-    }
-    return JSON.stringify(parsed);
-  } catch {
-    return body;
-  }
-}
-
 /** Ambil semua KID (hex, unik) dari teks MPD via atribut cenc:default_KID. */
 function extractKidsFromMpd(mpdText: string): string[] {
   const kids = new Set<string>();
@@ -426,20 +406,18 @@ function extractKidsFromMpd(mpdText: string): string[] {
  * Ganti custom_data + drm_license_url dengan clearkey yang SUDAH didecrypt:
  * KID diambil dari MPD (yang benar-benar diputar player), key didecrypt via
  * go-widevine memakai license URL production, lalu JSON W3C clearkey
- * di-embed langsung ke attributes.clearkey. Bila ada langkah gagal, fallback
- * ke perilaku lama (drm_license_url → endpoint /clearkey) agar playback
- * tidak pernah mati.
+ * di-embed langsung ke attributes.clearkey. TANPA link /clearkey apa pun.
+ * Bila ada langkah gagal, body dikembalikan apa adanya (nilai upstream).
  */
 async function embedClearKeyInBody(body: string, streamId: string, origin: string): Promise<string> {
-  const fallback = (): string => rewriteLicenseUrlToClearKey(body, `${origin}/clearkey?stream_id=${streamId}`);
   let parsed: unknown;
   try {
     parsed = JSON.parse(body);
   } catch {
-    return fallback();
+    return body;
   }
   const attrs = jsonApiAttributeRecords(parsed)[0];
-  if (!attrs) return fallback();
+  if (!attrs) return body;
 
   const dash = typeof attrs.dash === "string" ? attrs.dash : "";
   const servers = attrs.license_servers;
@@ -447,7 +425,7 @@ async function embedClearKeyInBody(body: string, streamId: string, origin: strin
       typeof (servers as Record<string, unknown>).drm_license_url === "string"
     ? ((servers as Record<string, unknown>).drm_license_url as string)
     : "";
-  if (!dash || !licenseUrl) return fallback();
+  if (!dash || !licenseUrl) return body;
 
   let mpdText: string;
   try {
@@ -455,26 +433,26 @@ async function embedClearKeyInBody(body: string, streamId: string, origin: strin
       headers: { "user-agent": CHROME_UA, accept: "*/*" },
       signal: AbortSignal.timeout(15_000),
     });
-    if (!res.ok) return fallback();
+    if (!res.ok) return body;
     mpdText = await res.text();
   } catch {
-    return fallback();
+    return body;
   }
   const kids = extractKidsFromMpd(mpdText);
-  if (kids.length === 0) return fallback();
+  if (kids.length === 0) return body;
 
   const keys: Array<{ kty: string; k: string; kid: string }> = [];
   for (const kidHex of kids) {
     let json = await readClearKeyCache(origin, streamId, kidHex);
     if (!json) {
       const result = await decryptKidWithLicenseUrl(licenseUrl, kidHex);
-      if (!result.ok) return fallback();
+      if (!result.ok) return body;
       json = result.json;
       void storeClearKeyCache(origin, streamId, kidHex, json);
     }
     try {
       const parsedKeys = (JSON.parse(json) as { keys?: unknown }).keys;
-      if (!Array.isArray(parsedKeys)) return fallback();
+      if (!Array.isArray(parsedKeys)) return body;
       for (const key of parsedKeys) {
         if (key && typeof key === "object" &&
           typeof (key as Record<string, unknown>).kty === "string" &&
@@ -485,10 +463,10 @@ async function embedClearKeyInBody(body: string, streamId: string, origin: strin
         }
       }
     } catch {
-      return fallback();
+      return body;
     }
   }
-  if (keys.length === 0) return fallback();
+  if (keys.length === 0) return body;
 
   attrs.clearkey = { keys, type: "temporary" };
   delete attrs.custom_data;
@@ -1566,12 +1544,11 @@ async function selfCheck(): Promise<void> {
     throw new Error("MPD without kids must yield empty list");
   }
 
-  // embedClearKeyInBody: body tanpa dash/license URL harus fallback ke
-  // rewriteLicenseUrlToClearKey (perilaku lama), bukan merusak body.
+  // embedClearKeyInBody: body tanpa dash/license URL dikembalikan utuh —
+  // TIDAK boleh ada link /clearkey yang disuntikkan ke respons.
   const noDrmBody = JSON.stringify({ data: { attributes: { hls: "https://x/hls.m3u8", license_servers: {} } } });
-  const embeddedFallback = await embedClearKeyInBody(noDrmBody, "1", "https://cache.test");
-  if (!embeddedFallback.includes("clearkey%3Fstream_id%3D1") && !embeddedFallback.includes("/clearkey?stream_id=1")) {
-    throw new Error("embedClearKeyInBody fallback must keep clearkey license URL");
+  if (await embedClearKeyInBody(noDrmBody, "1", "https://cache.test") !== noDrmBody) {
+    throw new Error("embedClearKeyInBody must pass through body without DRM info unchanged");
   }
   if (await embedClearKeyInBody("not-json", "1", "https://cache.test") !== "not-json") {
     throw new Error("embedClearKeyInBody must pass through invalid body");
