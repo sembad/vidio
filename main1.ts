@@ -674,13 +674,16 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
 
   attrs.clearkey = { keys, type: "temporary" };
   // Mode clearkey APK seamless: custom_data dihapus + is_drm true → patch
-  // aplikasi memakai scheme "clearkey". Kunci diambil dari attributes.clearkey
-  // via ClearKeyHolder. expires_in 240 untuk jadwal refresh.
-  // custom_data & license_servers TETAP dihapus — APK FIX3 dipatch agar
-  // toleran terhadap field yang hilang (tidak lagi melempar c$k/Unknown).
+  // aplikasi memakai scheme "clearkey". drm_license_url menunjuk ke URL
+  // stream INI (stream?initialize=true): permintaan lisensi ClearKey CDM
+  // (POST body {"kids":[...]}) dijawab handler stream di bawah dengan JSON
+  // kunci dari registri — TANPA endpoint /clearkey terpisah.
+  // expires_in 240 untuk jadwal refresh.
   attrs.expires_in = 240;
   attrs.is_drm = true;
   delete attrs.custom_data;
+  // license_servers/drm_license_url tidak dikirim sama sekali: APK clearkey
+  // mengambil kunci langsung dari attributes.clearkey.
   delete attrs.license_servers;
   return JSON.stringify(parsed);
 }
