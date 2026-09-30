@@ -683,12 +683,8 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   attrs.is_drm = true;
   delete attrs.custom_data;
   const licenseHost = new URL(request.url).host;
-  // URL license WAJIB mengandung "/clearkey": pemilih skema DRM aplikasi
-  // (s7/h.e) memakai CLEARKEY_UUID hanya bila URL mengandung "/clearkey",
-  // selain itu jatuh ke Widevine. Endpoint /clearkey menjawab JSON kunci
-  // W3C dari registri yang sama dengan attributes.clearkey.
   attrs.license_servers = {
-    drm_license_url: `https://${licenseHost}/clearkey`,
+    drm_license_url: `https://${licenseHost}/livestreamings/${streamId}/stream?initialize=true`,
   };
   return JSON.stringify(parsed);
 }
@@ -1520,72 +1516,13 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
   return renderUpstream(result, shouldEncrypt);
 }
 
-// Endpoint lisensi ClearKey untuk APK seamless-clearkey: Android ClearKey
-// CDM POST {"kids":["<kid-b64url>"],"type":"temporary"} dan mengharapkan
-// respons {"keys":[{"kty":"oct","k":...,"kid":...}],"type":"temporary"}.
-async function handleClearKeyEndpoint(request: Request, url: URL, pathStreamId = ""): Promise<Response> {
-  const jsonHeaders = {
-    ...securityHeaders,
-    "content-type": "application/json; charset=utf-8",
-    "cache-control": "no-store, no-cache, must-revalidate",
-  };
-  let kid = url.searchParams.get("kid") ?? "";
-  const streamId = pathStreamId || url.searchParams.get("stream_id") || url.searchParams.get("stream") || "";
-  if (!kid && request.method === "POST") {
-    try {
-      const parsed = JSON.parse(await request.text()) as { kids?: unknown };
-      if (Array.isArray(parsed.kids) && typeof parsed.kids[0] === "string") kid = parsed.kids[0];
-    } catch {
-      // Body bukan JSON — coba lookup per stream.
-    }
-  }
-  const lookup = (k: string) => clearKeyStore.get(k) ?? clearKeyStore.get(k.toLowerCase());
-  let json = kid ? lookup(kid) : undefined;
-  if (!json && streamId) json = clearKeyByStream.get(streamId);
-  // Self-service: kunci belum terdaftar — baca langsung dari API stream
-  // (production), decrypt ulang, lalu simpan. Tanpa parameter manual.
-  if (!json && kid) {
-    const resolved = kidStreamIndex.get(kid) ?? kidStreamIndex.get(kid.toLowerCase()) ?? streamId;
-    if (resolved && (await selfServeClearKey(request, resolved))) {
-      json = lookup(kid) ?? clearKeyByStream.get(resolved);
-    }
-  }
-  if (!json) {
-    return new Response(JSON.stringify({ error: "key not found" }), { status: 404, headers: jsonHeaders });
-  }
-  return new Response(json, { status: 200, headers: jsonHeaders });
-}
-
-/** Fetch stream production + embed ulang (decrypt) untuk mengisi registri. */
-async function selfServeClearKey(request: Request, streamId: string): Promise<boolean> {
-  for (const cred of PRODUCTION_CREDENTIALS) {
-    const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA);
-    if (r?.status !== 200 || !r.body.includes("custom_data")) continue;
-    const out = await embedClearKeyInBody(r.body, request, streamId);
-    try {
-      return Boolean(JSON.parse(out)?.data?.attributes?.clearkey);
-    } catch {
-      return false;
-    }
-  }
-  return false;
-}
-
 async function handleRequest(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
   if (url.searchParams.has("ua")) return textResponse(USER_AGENT);
 
-  if (url.pathname === "/clearkey" || url.pathname.endsWith("/clearkey")) {
-    return handleClearKeyEndpoint(request, url);
-  }
-
-
   const streamMatch = url.pathname.match(STREAM_PATH);
   if (streamMatch) {
-    // POST lisensi ClearKey CDM (body {"kids":[...]}) dijawab langsung di
-    // URL stream — kunci dari registri, tanpa endpoint /clearkey terpisah.
-    if (request.method === "POST") return handleClearKeyEndpoint(request, url, streamMatch[1]);
     if (request.method !== "GET") return textResponse("method not allowed", 405);
     return proxyStream(streamMatch[1], request);
   }
