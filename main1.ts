@@ -241,11 +241,11 @@ interface UltimateCredential {
   token: string;
 }
 
-// Cache respons stream per ID. Aplikasi menjadwalkan refresh dari field
-// `expires_in` upstream apa adanya (mis. 5040 dtk) — tidak di-rewrite. Cache
-// tetap hanya dilayani 60 dtk pertama; hit yang lebih tua memicu fetch fresh
-// (dedup) yang sekaligus meng-refresh cache.
-const STREAM_CACHE_SERVE_WINDOW_MS = 4 * 60_000;
+// Cache respons stream (link MPD/HLS dari API staging) per ID stream.
+// Window layan TETAP 2,5 menit: user pertama memicu fetch staging, user
+// berikutnya dalam 2,5 menit mengambil dari cache — tidak auto-fetch ulang
+// ke staging untuk setiap user, apa pun `expires_in` upstream.
+const STREAM_CACHE_SERVE_WINDOW_MS = 2 * 60_000 + 30_000;
 
 interface CachedStreamResponse {
   status: number;
@@ -260,15 +260,9 @@ const streamResponseInflight = new Map<string, Promise<UpstreamResult | null>>()
 function getCachedStreamResponse(key: string, nowMs = Date.now()): CachedStreamResponse | null {
   const cached = streamResponseCache.get(key);
   if (!cached) return null;
-  // URL upstream kini bisa sangat pendek (expires_in ~21 dtk). Window layan
-  // menyesuaikan: URL pendek dilayani maksimal 10 dtk agar yang sampai ke
-  // aplikasi masih hidup; URL panjang tetap 4 menit.
-  const m = cached.body.match(/"expires_in"\s*:\s*(\d+)/);
-  const upstreamExpires = m ? Number(m[1]) : Number.POSITIVE_INFINITY;
-  const windowMs = upstreamExpires < 300
-    ? Math.max(10_000, upstreamExpires * 500)
-    : STREAM_CACHE_SERVE_WINDOW_MS;
-  if (nowMs - cached.fetchedAt >= windowMs) {
+  // Window layan tetap 2,5 menit sejak fetch — tidak dipendekkan oleh
+  // `expires_in` upstream agar user 2/3 dst selalu kena cache.
+  if (nowMs - cached.fetchedAt >= STREAM_CACHE_SERVE_WINDOW_MS) {
     streamResponseCache.delete(key);
     return null;
   }
@@ -305,13 +299,8 @@ async function getCachedStreamResponseWithKv(
     fetchedAt: typeof stored.fetchedAt === "number" ? stored.fetchedAt : 0,
   };
   if (!cached.body || cached.status !== 200) return null;
-  // Window layan sama seperti memori: URL upstream pendek tidak dilayani basi.
-  const m = cached.body.match(/"expires_in"\s*:\s*(\d+)/);
-  const upstreamExpires = m ? Number(m[1]) : Number.POSITIVE_INFINITY;
-  const windowMs = upstreamExpires < 300
-    ? Math.max(10_000, upstreamExpires * 500)
-    : STREAM_CACHE_SERVE_WINDOW_MS;
-  if (nowMs - cached.fetchedAt >= windowMs) return null;
+  // Window layan sama seperti memori: tetap 2,5 menit sejak fetch.
+  if (nowMs - cached.fetchedAt >= STREAM_CACHE_SERVE_WINDOW_MS) return null;
   streamResponseCache.set(key, cached);
   return cached;
 }
