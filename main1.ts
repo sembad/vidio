@@ -277,12 +277,43 @@ function getCachedStreamResponse(key: string, nowMs = Date.now()): CachedStreamR
 
 function storeStreamResponse(key: string, result: UpstreamResult, nowMs = Date.now()): void {
   if (result.status !== 200 || upstreamStreamQuality(result.body) !== "full") return;
-  streamResponseCache.set(key, {
+  const cached: CachedStreamResponse = {
     status: result.status,
     body: result.body,
     headers: result.headers,
     fetchedAt: nowMs,
-  });
+  };
+  streamResponseCache.set(key, cached);
+  // Deno KV (TTL 1 hari, auto-hapus): respons final — termasuk clearkey —
+  // tetap dilayani walau isolate berbeda/restart.
+  void kvSet(["streamresp", key], cached);
+}
+
+/** Seperti getCachedStreamResponse, dengan fallback Deno KV lintas-isolate. */
+async function getCachedStreamResponseWithKv(
+  key: string,
+  nowMs = Date.now(),
+): Promise<CachedStreamResponse | null> {
+  const mem = getCachedStreamResponse(key, nowMs);
+  if (mem) return mem;
+  const stored = await kvGet(["streamresp", key]);
+  if (!isRecord(stored)) return null;
+  const cached: CachedStreamResponse = {
+    status: typeof stored.status === "number" ? stored.status : 0,
+    body: typeof stored.body === "string" ? stored.body : "",
+    headers: isRecord(stored.headers) ? stored.headers as Record<string, string> : {},
+    fetchedAt: typeof stored.fetchedAt === "number" ? stored.fetchedAt : 0,
+  };
+  if (!cached.body || cached.status !== 200) return null;
+  // Window layan sama seperti memori: URL upstream pendek tidak dilayani basi.
+  const m = cached.body.match(/"expires_in"\s*:\s*(\d+)/);
+  const upstreamExpires = m ? Number(m[1]) : Number.POSITIVE_INFINITY;
+  const windowMs = upstreamExpires < 300
+    ? Math.max(10_000, upstreamExpires * 500)
+    : STREAM_CACHE_SERVE_WINDOW_MS;
+  if (nowMs - cached.fetchedAt >= windowMs) return null;
+  streamResponseCache.set(key, cached);
+  return cached;
 }
 
 /** Fetch fresh dengan dedup: request bersamaan memakai satu scan yang sama. */
@@ -362,30 +393,40 @@ async function readMpdCache(origin: string, streamId: string): Promise<string | 
   if (mem && mem.expiresAt > Date.now()) return mem.text;
   if (mem) mpdMemoryCache.delete(streamId);
   const cache = workerCache();
-  if (!cache) return null;
-  try {
-    const cached = await cache.match(mpdCacheUrl(origin, streamId));
-    if (!cached) return null;
-    const text = await cached.text();
-    mpdMemoryCache.set(streamId, { text, expiresAt: Date.now() + MPD_TTL_MS });
-    return text;
-  } catch {
-    return null;
+  if (cache) {
+    try {
+      const cached = await cache.match(mpdCacheUrl(origin, streamId));
+      if (cached) {
+        const text = await cached.text();
+        mpdMemoryCache.set(streamId, { text, expiresAt: Date.now() + MPD_TTL_MS });
+        return text;
+      }
+    } catch {
+      // Cache API tidak tersedia — lanjut ke Deno KV.
+    }
   }
+  const kvText = await kvGet(["mpd", streamId]);
+  if (typeof kvText === "string" && kvText) {
+    mpdMemoryCache.set(streamId, { text: kvText, expiresAt: Date.now() + MPD_TTL_MS });
+    return kvText;
+  }
+  return null;
 }
 
 async function storeMpdCache(origin: string, streamId: string, text: string): Promise<void> {
   mpdMemoryCache.set(streamId, { text, expiresAt: Date.now() + MPD_TTL_MS });
   const cache = workerCache();
-  if (!cache) return;
-  try {
-    await cache.put(
-      mpdCacheUrl(origin, streamId),
-      new Response(text, { headers: { "cache-control": "max-age=240" } }),
-    );
-  } catch {
-    // Cache API tidak tersedia — memori saja.
+  if (cache) {
+    try {
+      await cache.put(
+        mpdCacheUrl(origin, streamId),
+        new Response(text, { headers: { "cache-control": "max-age=240" } }),
+      );
+    } catch {
+      // Cache API tidak tersedia — memori + KV saja.
+    }
   }
+  await kvSet(["mpd", streamId], text);
 }
 
 /**
@@ -616,32 +657,32 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   const attrs = jsonApiAttributeRecords(parsed)[0];
   if (!attrs) return body;
 
-  // Sumber PSSH: MPD dari respons itu sendiri (dash staging saat sumber
-  // staging, dash production saat fallback). Fetch SELALU lewat proxy
-  // DataImpulse (exit Indonesia) dan di-SIMPAN 4 menit per stream —
-  // request berikutnya tidak fetch ulang.
-  // Cache MPD body 4 menit per stream — hanya untuk sumber PSSH decrypt
-  // clearkey. URL dash/hls di respons TIDAK diubah: klien menerima URL
-  // hdnts asli dan melakukan exchange redirect hdntl sendiri (hdntl hasil
-  // exchange server bersifat sekali pakai → 403 bila dipakai klien).
-  let mpdText = await readMpdCache(origin, streamId);
-  if (!mpdText) {
-    const dash = typeof attrs.dash === "string" ? attrs.dash : "";
-    if (!dash) return body;
-    const mpdBody = await fetchMpdBody(dash);
-    if (!mpdBody) return body;
-    mpdText = mpdBody;
-    void storeMpdCache(origin, streamId, mpdText);
-  }
-
-  const pssh = extractPsshFromMpd(mpdText);
-  if (!pssh) return body;
-
-  // Cache clearkey dicek DULU: kalau sudah ada (TTL 24 jam), skip
-  // fetchProductionCustomData sama sekali — itu satu panggilan upstream
-  // penuh lewat proxy yang hanya dibutuhkan saat decrypt pertama.
+  // Cache clearkey dicek PALING DULU (tahan restart via Deno KV, TTL 1
+  // hari): kalau sudah ada, skip fetch MPD + decrypt sama sekali — respons
+  // tetap mendapat clearkey walau layanan decrypt/upstream sedang gagal.
   let json = await readClearKeyCache(origin, streamId);
   if (!json) {
+    // Sumber PSSH: MPD dari respons itu sendiri (dash staging saat sumber
+    // staging, dash production saat fallback). Fetch SELALU lewat proxy
+    // DataImpulse (exit Indonesia) dan di-SIMPAN 4 menit per stream —
+    // request berikutnya tidak fetch ulang.
+    // Cache MPD body 4 menit per stream — hanya untuk sumber PSSH decrypt
+    // clearkey. URL dash/hls di respons TIDAK diubah: klien menerima URL
+    // hdnts asli dan melakukan exchange redirect hdntl sendiri (hdntl hasil
+    // exchange server bersifat sekali pakai → 403 bila dipakai klien).
+    let mpdText = await readMpdCache(origin, streamId);
+    if (!mpdText) {
+      const dash = typeof attrs.dash === "string" ? attrs.dash : "";
+      if (!dash) return body;
+      const mpdBody = await fetchMpdBody(dash);
+      if (!mpdBody) return body;
+      mpdText = mpdBody;
+      void storeMpdCache(origin, streamId, mpdText);
+    }
+
+    const pssh = extractPsshFromMpd(mpdText);
+    if (!pssh) return body;
+
     // License: PRODUCTION + custom_data production fresh (flow terbukti).
     const prodCd = await fetchProductionCustomData(streamId, request);
     if (!prodCd) return body;
@@ -771,36 +812,106 @@ function workerCache(): Cache | null {
   }
 }
 
+/**
+ * Penyimpanan tahan-restart: Deno KV. Memori isolate hilang saat isolate
+ * berputar/restart (Deno Deploy multi-isolate) — itulah sebabnya clearkey
+ * "hilang setelah beberapa menit". Semua nilai di KV auto-hapus 1 hari
+ * (expireIn) agar database tidak penuh. Runtime tanpa Deno (Bun/Node)
+ * melewati lapisan KV dan memakai memori saja.
+ */
+const KV_TTL_MS = 24 * 60 * 60 * 1000;
+
+type KvLike = {
+  get: (key: unknown[]) => Promise<{ value: unknown }>;
+  set: (key: unknown[], value: unknown, opts?: { expireIn?: number }) => Promise<unknown>;
+};
+
+let kvPromise: Promise<KvLike> | null = null;
+
+function openKv(): Promise<KvLike> | null {
+  const g = globalThis as unknown as { Deno?: { openKv?: () => Promise<KvLike> } };
+  if (!g.Deno?.openKv) return null;
+  if (!kvPromise) {
+    kvPromise = g.Deno.openKv().catch(() => {
+      kvPromise = null;
+      throw new Error("kv unavailable");
+    });
+  }
+  return kvPromise;
+}
+
+async function kvGet(key: unknown[]): Promise<unknown | null> {
+  let kv: KvLike | null = null;
+  try {
+    kv = (await openKv()) ?? null;
+  } catch {
+    return null;
+  }
+  if (!kv) return null;
+  try {
+    const entry = await kv.get(key);
+    return entry.value ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function kvSet(key: unknown[], value: unknown): Promise<void> {
+  let kv: KvLike | null = null;
+  try {
+    kv = (await openKv()) ?? null;
+  } catch {
+    return;
+  }
+  if (!kv) return;
+  try {
+    await kv.set(key, value, { expireIn: KV_TTL_MS });
+  } catch {
+    // KV gagal — lapisan memori tetap berjalan.
+  }
+}
+
 async function readClearKeyCache(origin: string, streamId: string): Promise<string | null> {
   const key = streamId;
   const mem = clearKeyMemoryCache.get(key);
   if (mem && mem.expiresAt > Date.now()) return mem.json;
   if (mem) clearKeyMemoryCache.delete(key);
   const cache = workerCache();
-  if (!cache) return null;
-  try {
-    const cached = await cache.match(clearKeyCacheUrl(origin, streamId));
-    if (!cached) return null;
-    const json = await cached.text();
-    clearKeyMemoryCache.set(key, { json, expiresAt: Date.now() + CLEARKEY_TTL_MS });
-    return json;
-  } catch {
-    return null;
+  if (cache) {
+    try {
+      const cached = await cache.match(clearKeyCacheUrl(origin, streamId));
+      if (cached) {
+        const json = await cached.text();
+        clearKeyMemoryCache.set(key, { json, expiresAt: Date.now() + CLEARKEY_TTL_MS });
+        return json;
+      }
+    } catch {
+      // Cache API tidak tersedia — lanjut ke Deno KV.
+    }
   }
+  // Deno KV: tahan restart/isolate — sumber kebenaran clearkey 1 hari.
+  const kvJson = await kvGet(["clearkey", streamId]);
+  if (typeof kvJson === "string" && kvJson) {
+    clearKeyMemoryCache.set(key, { json: kvJson, expiresAt: Date.now() + CLEARKEY_TTL_MS });
+    return kvJson;
+  }
+  return null;
 }
 
 async function storeClearKeyCache(origin: string, streamId: string, json: string): Promise<void> {
   clearKeyMemoryCache.set(streamId, { json, expiresAt: Date.now() + CLEARKEY_TTL_MS });
   const cache = workerCache();
-  if (!cache) return;
-  try {
-    await cache.put(
-      clearKeyCacheUrl(origin, streamId),
-      new Response(json, { headers: { "cache-control": "max-age=86400" } }),
-    );
-  } catch {
-    // Cache API tidak tersedia (mis. domain workers.dev) — memori saja.
+  if (cache) {
+    try {
+      await cache.put(
+        clearKeyCacheUrl(origin, streamId),
+        new Response(json, { headers: { "cache-control": "max-age=86400" } }),
+      );
+    } catch {
+      // Cache API tidak tersedia (mis. domain workers.dev) — memori + KV saja.
+    }
   }
+  await kvSet(["clearkey", streamId], json);
 }
 
 /** Tukar PSSH (base64 dari MPD) menjadi content key via go-widevine. */
@@ -1301,7 +1412,7 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   // Cache per stream ID: user pertama fetch fresh, user berikutnya dalam
   // window 4 menit memakai respons yang sama (akun pool tetap awet).
   const cacheKey = `stream:${streamId}`;
-  const cached = getCachedStreamResponse(cacheKey);
+  const cached = await getCachedStreamResponseWithKv(cacheKey);
   if (cached) {
     return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
   }
@@ -1485,7 +1596,7 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
   // Cache per video ID, sama seperti stream. VOD tidak disentuh expires_in-nya
   // (URL VOD berlaku lama); hanya treatment preview yang dimatikan.
   const cacheKey = `video:${videoId}`;
-  const cached = getCachedStreamResponse(cacheKey);
+  const cached = await getCachedStreamResponseWithKv(cacheKey);
   if (cached) {
     return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
   }
@@ -1676,6 +1787,20 @@ async function selfCheck(): Promise<void> {
   const ckCached = await readClearKeyCache("https://cache.test", "1");
   if (ckCached !== '{"keys":[]}') {
     throw new Error("clearkey cache roundtrip failed");
+  }
+
+  // Deno KV: roundtrip + TTL 1 hari (auto-hapus). Runtime tanpa Deno
+  // (Bun/Node) melewati pemeriksaan ini.
+  if (openKv()) {
+    await kvSet(["selfcheck", "k"], "v");
+    if ((await kvGet(["selfcheck", "k"])) !== "v") {
+      throw new Error("Deno KV roundtrip failed");
+    }
+    await kvSet(["selfcheck", "k2"], { a: 1 });
+    const kvObj = await kvGet(["selfcheck", "k2"]);
+    if (!isRecord(kvObj) || kvObj.a !== 1) {
+      throw new Error("Deno KV object roundtrip failed");
+    }
   }
 
   // Rewrite dash: URL staging menggantikan dash production di body JSON:API.
