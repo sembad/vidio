@@ -439,36 +439,58 @@ async function storeStreamUrlCache(origin: string, streamId: string, urls: Final
 }
 
 /**
- * Fetch manifest (hls/dash) lewat mirror dan ambil URL FINAL hasil redirect.
- * Mirror dapat meneruskan 302 (Location terbaca) atau mengikuti redirect
- * sendiri — keduanya ditangani. Gagal → null (pemanggil memakai URL asli).
+ * Fetch manifest (hls/dash) dan ambil URL FINAL hasil redirect (hdntl).
+ * Akamai merespons 301 + Location berisi URL hdntl (±5 menit) — jadi fetch
+ * LANGSUNG ke host manifest dengan redirect:"manual" untuk menangkap
+ * Location, lalu ambil body-nya. Mirror TIDAK bisa dipakai untuk ini karena
+ * mirror mengikuti redirect secara internal (200 langsung, res.url tetap
+ * URL asli). Mirror hanya fallback bila direct gagal (geo-block dsb).
  */
 async function fetchManifestFinal(url: string): Promise<{ text: string; finalUrl: string } | null> {
-  const headers = { "user-agent": CHROME_UA, accept: "*/*" };
+  const headers = { "user-agent": CHROME_UA, accept: "*/*", referer: "https://www.vidio.com/" };
+  // 1) Direct ke host manifest: tangkap Location hasil redirect.
   try {
-    const res = await fetch(viaMirror(url), {
+    const res = await fetch(url, {
       headers,
       redirect: "manual",
       signal: AbortSignal.timeout(15_000),
     } as RequestInit);
+    console.log("[v0] fetchManifestFinal direct status=", res.status);
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get("location");
-      if (!location) return null;
-      const redirected = new URL(location, url).toString();
-      const res2 = await fetch(viaMirror(redirected), {
-        headers,
-        redirect: "follow",
-        signal: AbortSignal.timeout(15_000),
-      } as RequestInit);
-      if (!res2.ok) return null;
-      return { text: await res2.text(), finalUrl: unviaMirror(res2.url) || redirected };
+      console.log("[v0] fetchManifestFinal direct location ada?", !!location);
+      if (location) {
+        const redirected = new URL(location, url).toString();
+        const res2 = await fetch(redirected, {
+          headers,
+          redirect: "follow",
+          signal: AbortSignal.timeout(15_000),
+        } as RequestInit);
+        console.log("[v0] fetchManifestFinal direct body status=", res2.status);
+        if (res2.ok) {
+          return { text: await res2.text(), finalUrl: redirected };
+        }
+      }
+    } else if (res.ok) {
+      // Tidak di-redirect (sudah hdntl misalnya) — URL sama saja.
+      return { text: await res.text(), finalUrl: url };
     }
+  } catch (e) {
+    console.log("[v0] fetchManifestFinal direct error:", String(e));
+  }
+  // 2) Fallback lewat mirror (redirect diikuti internal, URL final = asli).
+  try {
+    const res = await fetch(viaMirror(url), {
+      headers,
+      redirect: "follow",
+      signal: AbortSignal.timeout(15_000),
+    } as RequestInit);
+    console.log("[v0] fetchManifestFinal mirror status=", res.status);
     if (res.ok) {
-      // Mirror mengikuti redirect sendiri: res.url = URL mirror final.
       return { text: await res.text(), finalUrl: unviaMirror(res.url) || url };
     }
-  } catch {
-    return null;
+  } catch (e) {
+    console.log("[v0] fetchManifestFinal mirror error:", String(e));
   }
   return null;
 }
@@ -567,9 +589,12 @@ async function fetchProductionCustomData(streamId: string, request?: Request): P
   if (cached) prodCdMemoryCache.delete(streamId);
 
   for (const cred of PRODUCTION_CREDENTIALS) {
-    if (!isAccountAvailable(streamId, cred.token)) continue;
+    const avail = isAccountAvailable(streamId, cred.token);
+    console.log("[v0] prodCd cred avail=", avail, "email=", cred.email);
+    if (!avail) continue;
     markAccountUsed(streamId, cred.token);
     const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA);
+    console.log("[v0] prodCd upstream status=", r?.status ?? "null");
     if (!r || r.status !== 200) continue;
     try {
       const attrs = jsonApiAttributeRecords(JSON.parse(r.body))[0];
@@ -675,6 +700,7 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
     // DASH: fetch MPD sekalian jadi sumber PSSH untuk decrypt clearkey.
     if (dash && !mpdText) {
       const dashResult = await fetchManifestFinal(dash);
+      console.log("[v0] dashResult null?", dashResult === null);
       if (!dashResult) return body;
       mpdText = dashResult.text;
       resolved.dash = dashResult.finalUrl;
@@ -702,6 +728,7 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   body = JSON.stringify(parsed);
 
   const pssh = extractPsshFromMpd(mpdText);
+  console.log("[v0] pssh ditemukan?", !!pssh);
   if (!pssh) return body;
 
   // Cache clearkey dicek DULU: kalau sudah ada (TTL 24 jam), skip
@@ -711,9 +738,11 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   if (!json) {
     // License: PRODUCTION + custom_data production fresh (flow terbukti).
     const prodCd = await fetchProductionCustomData(streamId, request);
+    console.log("[v0] prodCd null?", prodCd === null);
     if (!prodCd) return body;
     const licenseUrl = `https://license.vidio.com/ri/licenseManager.do?pallycon-customdata-v2=${prodCd}`;
     const result = await decryptPsshWithLicenseUrl(pssh, licenseUrl);
+    console.log("[v0] decrypt ok?", result.ok, "status=", result.status, "err=", result.error ?? "-");
     if (!result.ok) return body;
     json = result.json;
     void storeClearKeyCache(origin, streamId, json);
