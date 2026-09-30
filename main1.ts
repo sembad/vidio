@@ -860,6 +860,46 @@ async function kvSet(key: unknown[], value: unknown): Promise<void> {
   }
 }
 
+/** IP klien: x-forwarded-for (hop pertama) / cf-connecting-ip / remoteAddr. */
+function clientIpFromRequest(request: Request): string | null {
+  const fwd = request.headers.get("x-forwarded-for");
+  if (fwd) {
+    const first = fwd.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  const cf = request.headers.get("cf-connecting-ip");
+  if (cf && cf.trim()) return cf.trim();
+  const conn = (request as unknown as { conn?: { remoteAddr?: string } }).conn;
+  const remote = typeof conn?.remoteAddr === "string" ? conn.remoteAddr : null;
+  return remote && remote.trim() ? remote.trim() : null;
+}
+
+/**
+ * Kunci JWT ke IP: x-authorization WAJIB ada; IP pertama yang memakai JWT
+ * tersebut dicatat di Deno KV (TTL 1 hari, auto-hapus), dan IP kedua dan
+ * seterusnya dengan JWT yang sama ditolak 403.
+ */
+async function enforceJwtIpLock(request: Request): Promise<Response | null> {
+  const jwt = request.headers.get("x-authorization")?.trim();
+  if (!jwt) {
+    return textResponse("forbidden", 403);
+  }
+  const ip = clientIpFromRequest(request);
+  if (!ip) {
+    // Tanpa IP yang bisa dipercaya, kunci tidak bisa ditegakkan — tolak.
+    return textResponse("forbidden", 403);
+  }
+  const bound = await kvGet(["jwtip", jwt]);
+  if (typeof bound !== "string" || !bound) {
+    await kvSet(["jwtip", jwt], ip);
+    return null;
+  }
+  if (bound !== ip) {
+    return textResponse("forbidden", 403);
+  }
+  return null;
+}
+
 async function readClearKeyCache(origin: string, streamId: string): Promise<string | null> {
   const key = streamId;
   const mem = clearKeyMemoryCache.get(key);
@@ -1331,6 +1371,10 @@ async function verifyLiveVidioSessionUpstream(
 }
 
 async function proxyStream(streamId: string, request: Request): Promise<Response> {
+  // x-authorization (JWT) wajib dan terkunci ke IP pertama yang memakainya.
+  const jwtGate = await enforceJwtIpLock(request);
+  if (jwtGate) return jwtGate;
+
   const userEmail = request.headers.get("x-user-email");
   const userToken = request.headers.get("x-user-token");
 
@@ -1472,6 +1516,10 @@ function redirectToOfficial(
 }
 
 async function proxyVideoData(videoId: string, request: Request): Promise<Response> {
+  // x-authorization (JWT) wajib dan terkunci ke IP pertama yang memakainya.
+  const jwtGate = await enforceJwtIpLock(request);
+  if (jwtGate) return jwtGate;
+
   const userEmail = request.headers.get("x-user-email");
   const userToken = request.headers.get("x-user-token");
 
@@ -1695,6 +1743,13 @@ async function selfCheck(): Promise<void> {
     const kvObj = await kvGet(["selfcheck", "k2"]);
     if (!isRecord(kvObj) || kvObj.a !== 1) {
       throw new Error("Deno KV object roundtrip failed");
+    }
+
+    // Lock JWT-IP: JWT pertama mengikat IP-nya; IP lain ditolak.
+    await kvSet(["jwtip", "jwt-selfcheck"], "1.2.3.4");
+    const bound = await kvGet(["jwtip", "jwt-selfcheck"]);
+    if (bound !== "1.2.3.4") {
+      throw new Error("JWT IP-lock roundtrip failed");
     }
   }
 
