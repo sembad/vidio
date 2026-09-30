@@ -1165,17 +1165,22 @@ async function fetchUpstream(
   }
 }
 
+export function isStagingVideoPlaylist(body: string): boolean {
+  try {
+    const attributes = JSON.parse(body)?.data?.attributes;
+    if (typeof attributes?.hls !== "string" || attributes?.dash != null) return false;
+    const url = new URL(attributes.hls);
+    return url.hostname === "www.staging.vidio.com" && /^\/videos\/\d+\//.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
 function renderUpstream(result: UpstreamResult | null, shouldEncrypt: boolean): Response {
   if (!result) {
     return textResponse("upstream unavailable", 502);
   }
-  // API staging mengembalikan URL playback di host staging (mis.
-  // https://www.staging.vidio.com/videos/.../playlist.m3u8?ott=...).
-  // Tulis ulang ke host official dengan path & query yang sama persis
-  // sehingga player selalu memuat dari www.vidio.com, bukan staging.
-  const body = result.body.includes("staging.vidio.com")
-    ? result.body.replace(/staging\.vidio\.com/g, "vidio.com")
-    : result.body;
+  const body = result.body;
   if (shouldEncrypt) {
     const encrypted = encryptStreamPayload(result.headers, body);
     return new Response(JSON.stringify(encrypted), {
@@ -1478,6 +1483,10 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   const cacheKey = `stream:${streamId}`;
   const cached = await getCachedStreamResponseWithKv(cacheKey);
   if (cached) {
+    if (isStagingVideoPlaylist(cached.body)) {
+      const official = await proxyUltimateStream(streamId, { email: requestedEmail, token: trimmedToken }, request, CHROME_UA);
+      return renderUpstream(official, shouldEncrypt);
+    }
     return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
   }
 
@@ -1497,6 +1506,10 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     return null;
   });
   let result = fullResult;
+  if (result && isStagingVideoPlaylist(result.body)) {
+    const official = await proxyUltimateStream(streamId, { email: requestedEmail, token: trimmedToken }, request, CHROME_UA);
+    return renderUpstream(official, shouldEncrypt);
+  }
   if (!result) {
     // Kredensial hardcode gagal → coba kredensial asli user yang request
     const own = await proxyUltimateStream(
@@ -1677,6 +1690,13 @@ async function handleRequest(request: Request): Promise<Response> {
 }
 
 async function selfCheck(): Promise<void> {
+  const stagingSample = JSON.stringify({ data: { attributes: { hls: "https://www.staging.vidio.com/videos/2384351/common_tokenized_playlist.m3u8?ott=test", dash: null } } });
+  if (!isStagingVideoPlaylist(stagingSample)
+    || isStagingVideoPlaylist(stagingSample.replace("www.staging.vidio.com", "www.vidio.com"))
+    || isStagingVideoPlaylist(stagingSample.replace("/videos/", "/livestreamings/"))
+    || isStagingVideoPlaylist("invalid json")) {
+    throw new Error("Staging video fallback self-check failed");
+  }
   const now = Math.floor(Date.now() / 1000);
   const sample = {
     akun_mobile: { plan: { first: { email: "Allowed@Example.com" } } },
