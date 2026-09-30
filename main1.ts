@@ -455,10 +455,8 @@ async function fetchManifestFinal(url: string): Promise<{ text: string; finalUrl
       redirect: "manual",
       signal: AbortSignal.timeout(15_000),
     } as RequestInit);
-    console.log("[v0] fetchManifestFinal direct status=", res.status);
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get("location");
-      console.log("[v0] fetchManifestFinal direct location ada?", !!location);
       if (location) {
         const redirected = new URL(location, url).toString();
         const res2 = await fetch(redirected, {
@@ -466,7 +464,6 @@ async function fetchManifestFinal(url: string): Promise<{ text: string; finalUrl
           redirect: "follow",
           signal: AbortSignal.timeout(15_000),
         } as RequestInit);
-        console.log("[v0] fetchManifestFinal direct body status=", res2.status);
         if (res2.ok) {
           return { text: await res2.text(), finalUrl: redirected };
         }
@@ -475,8 +472,8 @@ async function fetchManifestFinal(url: string): Promise<{ text: string; finalUrl
       // Tidak di-redirect (sudah hdntl misalnya) — URL sama saja.
       return { text: await res.text(), finalUrl: url };
     }
-  } catch (e) {
-    console.log("[v0] fetchManifestFinal direct error:", String(e));
+  } catch {
+    // Direct gagal (network/geo-block) → coba mirror.
   }
   // 2) Fallback lewat mirror (redirect diikuti internal, URL final = asli).
   try {
@@ -485,12 +482,11 @@ async function fetchManifestFinal(url: string): Promise<{ text: string; finalUrl
       redirect: "follow",
       signal: AbortSignal.timeout(15_000),
     } as RequestInit);
-    console.log("[v0] fetchManifestFinal mirror status=", res.status);
     if (res.ok) {
       return { text: await res.text(), finalUrl: unviaMirror(res.url) || url };
     }
-  } catch (e) {
-    console.log("[v0] fetchManifestFinal mirror error:", String(e));
+  } catch {
+    // Mirror juga gagal.
   }
   return null;
 }
@@ -589,12 +585,9 @@ async function fetchProductionCustomData(streamId: string, request?: Request): P
   if (cached) prodCdMemoryCache.delete(streamId);
 
   for (const cred of PRODUCTION_CREDENTIALS) {
-    const avail = isAccountAvailable(streamId, cred.token);
-    console.log("[v0] prodCd cred avail=", avail, "email=", cred.email);
-    if (!avail) continue;
+    if (!isAccountAvailable(streamId, cred.token)) continue;
     markAccountUsed(streamId, cred.token);
     const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA);
-    console.log("[v0] prodCd upstream status=", r?.status ?? "null");
     if (!r || r.status !== 200) continue;
     try {
       const attrs = jsonApiAttributeRecords(JSON.parse(r.body))[0];
@@ -700,7 +693,6 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
     // DASH: fetch MPD sekalian jadi sumber PSSH untuk decrypt clearkey.
     if (dash && !mpdText) {
       const dashResult = await fetchManifestFinal(dash);
-      console.log("[v0] dashResult null?", dashResult === null);
       if (!dashResult) return body;
       mpdText = dashResult.text;
       resolved.dash = dashResult.finalUrl;
@@ -728,7 +720,6 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   body = JSON.stringify(parsed);
 
   const pssh = extractPsshFromMpd(mpdText);
-  console.log("[v0] pssh ditemukan?", !!pssh);
   if (!pssh) return body;
 
   // Cache clearkey dicek DULU: kalau sudah ada (TTL 24 jam), skip
@@ -738,11 +729,9 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   if (!json) {
     // License: PRODUCTION + custom_data production fresh (flow terbukti).
     const prodCd = await fetchProductionCustomData(streamId, request);
-    console.log("[v0] prodCd null?", prodCd === null);
     if (!prodCd) return body;
     const licenseUrl = `https://license.vidio.com/ri/licenseManager.do?pallycon-customdata-v2=${prodCd}`;
     const result = await decryptPsshWithLicenseUrl(pssh, licenseUrl);
-    console.log("[v0] decrypt ok?", result.ok, "status=", result.status, "err=", result.error ?? "-");
     if (!result.ok) return body;
     json = result.json;
     void storeClearKeyCache(origin, streamId, json);
