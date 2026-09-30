@@ -460,8 +460,11 @@ public final class LoginGate {
     }
 
     static String streamApiHostForAccountMode(Boolean ultimate) {
+        // No showStreamLoading() here: this host selector runs for EVERY API
+        // request, so showing the overlay from here re-triggers it constantly
+        // while the stream is already playing. The overlay is shown only by
+        // StreamRetry when a stream request actually needs retrying.
         if (Boolean.TRUE.equals(ultimate)) {
-            showStreamLoading();
             return getEffectiveStreamProxyHost();
         }
         return STREAM_SOURCE_HOST;
@@ -494,6 +497,11 @@ public final class LoginGate {
     }
 
     static String streamProxyUrlForAccountMode(String value, Boolean ultimate) {
+        // Staging playback hosts (e.g. www.staging.vidio.com m3u8/dash URLs) are
+        // redirected to the official host with the same path and query.
+        if (value != null && value.contains("staging.vidio.com")) {
+            return value.replace("staging.vidio.com", "vidio.com");
+        }
         String proxyHost = getEffectiveStreamProxyHost();
         // Block all api.vidio.com/users/content_access traffic for every user,
         // Ultimate or not. Routing it to the proxy means the paywall offer is never
@@ -528,7 +536,9 @@ public final class LoginGate {
         try {
             URL source = new URL(value);
             String query = source.getQuery();
-            showStreamLoading();
+            // No showStreamLoading() here either: the overlay is shown only by
+            // StreamRetry when the request actually needs retrying, and hidden
+            // as soon as the final response resolves.
             return "https://" + proxyHost + source.getPath() + (query != null ? "?" + query : "?initialize=true");
         } catch (IOException | IllegalArgumentException ignored) {
             return null;

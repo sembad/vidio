@@ -1169,8 +1169,15 @@ function renderUpstream(result: UpstreamResult | null, shouldEncrypt: boolean): 
   if (!result) {
     return textResponse("upstream unavailable", 502);
   }
+  // API staging mengembalikan URL playback di host staging (mis.
+  // https://www.staging.vidio.com/videos/.../playlist.m3u8?ott=...).
+  // Tulis ulang ke host official dengan path & query yang sama persis
+  // sehingga player selalu memuat dari www.vidio.com, bukan staging.
+  const body = result.body.includes("staging.vidio.com")
+    ? result.body.replace(/staging\.vidio\.com/g, "vidio.com")
+    : result.body;
   if (shouldEncrypt) {
-    const encrypted = encryptStreamPayload(result.headers, result.body);
+    const encrypted = encryptStreamPayload(result.headers, body);
     return new Response(JSON.stringify(encrypted), {
       status: result.status,
       headers: {
@@ -1187,7 +1194,7 @@ function renderUpstream(result: UpstreamResult | null, shouldEncrypt: boolean): 
   responseHeaders.set("cache-control", "no-store");
   // Never expose a redirect location header to the client
   responseHeaders.delete("location");
-  return new Response(result.body, {
+  return new Response(body, {
     status: result.status,
     headers: responseHeaders,
   });
