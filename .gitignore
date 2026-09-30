@@ -1,4 +1,4 @@
-.apk-patch-tools/
+.apk-patch-tools
 *.keystore
 !tools/patch.keystore
 *.jks

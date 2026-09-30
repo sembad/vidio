@@ -152,7 +152,7 @@ if grep -Fxq "assets/audience_network.dex" "$WORK_DIR/universal-entries.txt"; th
   fi
 fi
 
-java -jar "$TOOLS_DIR/apktool.jar" d -f --frame-path "$WORK_DIR/framework" "$WORK_DIR/universal.apk" -o "$WORK_DIR/decoded"
+java -jar "$TOOLS_DIR/apktool.jar" d -f --only-main-classes --frame-path "$WORK_DIR/framework" "$WORK_DIR/universal.apk" -o "$WORK_DIR/decoded"
 
 if [[ $LOGIN_GATE_PRESENT == false ]]; then
   mapfile -t splash_sources < <(find "$WORK_DIR/decoded" -path "*/$SPLASH_REL" -print)

@@ -229,7 +229,9 @@ public final class LoginGate {
     private static volatile boolean playerPlaying;
     private static volatile boolean streamFrameRendered;
     private static volatile boolean streamRequestPending;
+    private static volatile boolean streamPlaybackFailed;
     private static volatile String loadingStreamPath;
+    private static String lastLoadingWindowError;
     private static volatile String cachedAccountEmail;
     private static volatile Boolean cachedUltimate;
     private static volatile long lastUltimateCheckMs = 0;
@@ -909,16 +911,16 @@ public final class LoginGate {
                         @Override
                         public Object invoke(Object proxyObj, java.lang.reflect.Method method, Object[] args) {
                             String name = method.getName();
-                            if ("onActivityResumed".equals(name) || "onActivityStarted".equals(name)) {
+                            if ("onActivityResumed".equals(name)) {
                                 if (args != null && args.length > 0 && args[0] != null) {
-                                    currentActivity = args[0];
+                                    onStreamActivityResumed(args[0]);
                                 }
                                 if (Boolean.TRUE.equals(cachedUltimate) && cachedAccountEmail != null) {
                                     checkUltimateExpiryAsync(cachedAccountEmail);
                                 }
-                            } else if ("onActivityDestroyed".equals(name)) {
-                                if (args != null && args.length > 0 && args[0] == currentActivity) {
-                                    currentActivity = null;
+                            } else if ("onActivityPaused".equals(name) || "onActivityDestroyed".equals(name)) {
+                                if (args != null && args.length > 0) {
+                                    onStreamActivityPaused(args[0]);
                                 }
                             }
                             return null;
@@ -941,14 +943,17 @@ public final class LoginGate {
             loadingStreamPath = path;
             playerPlaying = false;
             streamFrameRendered = false;
+            streamPlaybackFailed = false;
             streamRequestPending = true;
+            lastLoadingWindowError = null;
+            logStreamEvent("STREAM_BEGIN FIX24");
             showStreamLoading();
         } catch (IOException ignored) {
         }
     }
 
     public static void onStreamPlaying(boolean playing) {
-        if (streamRequestPending) return;
+        if (streamRequestPending || streamPlaybackFailed) return;
         playerPlaying = playing;
         if (playing && streamFrameRendered) hideStreamLoading();
     }
@@ -956,6 +961,7 @@ public final class LoginGate {
     public static void onStreamResponse(String url, int status) {
         try {
             if (!new URL(url).getPath().equals(loadingStreamPath)) return;
+            logStreamEvent("STREAM_RESPONSE " + status);
             if (status == 200) streamRequestPending = false;
             else if (status >= 400) {
                 streamRequestPending = false;
@@ -966,13 +972,38 @@ public final class LoginGate {
     }
 
     public static void onStreamFirstFrame() {
-        if (streamRequestPending) return;
+        if (streamRequestPending || streamPlaybackFailed) return;
+        if (!streamFrameRendered) logStreamEvent("FIRST_FRAME");
         streamFrameRendered = true;
         hideStreamLoading();
     }
 
+    public static void onStreamPlayerError(Object error) {
+        logStreamEvent("PLAYER_ERROR " + error);
+        Throwable cause = error instanceof Throwable ? (Throwable) error : null;
+        for (int depth = 0; depth < 3 && cause != null; depth++) {
+            cause = cause.getCause();
+            if (cause != null) logStreamEvent("PLAYER_CAUSE " + cause);
+        }
+        if (loadingStreamPath == null || streamRequestPending) return;
+        playerPlaying = false;
+        streamFrameRendered = false;
+        streamPlaybackFailed = true;
+        hideStreamLoading();
+        showToast("Siaran gagal diputar. Coba buka ulang channel.");
+    }
+
+    public static void logStreamEvent(String event) {
+        try {
+            Class.forName("com.vidio.android.patch.TrafficLog").getMethod("log", String.class)
+                    .invoke(null, "PLAYER " + event + " stream=" + loadingStreamPath);
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+        }
+    }
+
     public static void onStreamPlaybackState(int state) {
-        if (loadingStreamPath == null) return;
+        if (loadingStreamPath == null || streamPlaybackFailed) return;
+        logStreamEvent("STATE " + state);
         if (state == 2) {
             playerPlaying = false;
             showStreamLoading();
@@ -984,8 +1015,14 @@ public final class LoginGate {
     }
 
     public static void onStreamActivityResumed(Object activity) {
+        Object previousActivity = currentActivity;
         currentActivity = activity;
-        if (streamLoadingShown) refreshStreamLoading();
+        if (streamLoadingShown) {
+            if (activity != null && activity != previousActivity) {
+                logStreamEvent("ACTIVITY_RESUMED " + activity.getClass().getName());
+            }
+            refreshStreamLoading();
+        }
     }
 
     public static void onStreamActivityPaused(Object activity) {
@@ -1055,6 +1092,7 @@ public final class LoginGate {
             loadingActivity = activity;
             loadingView = box;
             popupClass.getMethod("showAtLocation", viewClass, int.class, int.class, int.class).invoke(popup, decor, 17, 0, 0);
+            logStreamEvent("LOADING_VISIBLE");
         } catch (ReflectiveOperationException | RuntimeException error) {
             reportLoadingWindowError(error);
             dismissStreamLoadingWindow();
@@ -1077,8 +1115,14 @@ public final class LoginGate {
     }
 
     private static void reportLoadingWindowError(Throwable error) {
+        Throwable cause = error instanceof InvocationTargetException && error.getCause() != null
+                ? error.getCause() : error;
+        String message = cause.toString();
+        if (message.equals(lastLoadingWindowError)) return;
+        lastLoadingWindowError = message;
+        logStreamEvent("LOADING_WINDOW_ERROR " + message);
         try {
-            Class.forName("android.util.Log").getMethod("w", String.class, String.class).invoke(null, "VidioLoading", error.toString());
+            Class.forName("android.util.Log").getMethod("w", String.class, String.class).invoke(null, "VidioLoading", message);
         } catch (ReflectiveOperationException ignored) {
         }
     }
@@ -1260,8 +1304,11 @@ public final class LoginGate {
             onStreamPlaying(true);
             if (!isStreamLoading()) throw new AssertionError("Playing before a video frame must retain loading");
             onStreamFirstFrame();
+            onStreamPlayerError(new IOException("Previous player error"));
             onStreamPlaybackState(1);
-            if (!isStreamLoading()) throw new AssertionError("Old player events must not hide a pending stream");
+            if (!isStreamLoading() || streamFrameRendered || streamPlaybackFailed) {
+                throw new AssertionError("Old player events must not hide or fail a pending stream");
+            }
             onStreamResponse("https://api.example.com/livestreamings/" + (channel + 10) + "/stream", 200);
             onStreamFirstFrame();
             if (!isStreamLoading()) throw new AssertionError("Another channel response must not clear pending state");
@@ -1292,6 +1339,23 @@ public final class LoginGate {
         if (currentActivity != nextActivity || !isStreamLoading()) throw new AssertionError("Resuming a new Activity must retain pending loading");
         onStreamPlaybackState(4);
         if (isStreamLoading()) throw new AssertionError("Ended playback must clear loading");
+        String failedStream = "https://api.example.com/livestreamings/50/stream?initialize=true";
+        beginStreamLoading(failedStream);
+        onStreamResponse(failedStream, 200);
+        onStreamPlayerError(new IOException("Decoder failed", new IllegalStateException("No video output")));
+        onStreamFirstFrame();
+        onStreamPlaybackState(1);
+        onStreamPlaying(true);
+        if (isStreamLoading() || streamFrameRendered || playerPlaying || !streamPlaybackFailed) {
+            throw new AssertionError("A player error must not be mistaken for a frame or restart loading");
+        }
+        beginStreamLoading(failedStream);
+        if (!isStreamLoading() || streamPlaybackFailed) throw new AssertionError("Reopening a failed channel must reset its error");
+        onStreamResponse(failedStream, 200);
+        onStreamPlaybackState(3);
+        if (!isStreamLoading()) throw new AssertionError("READY without a frame must retain loading");
+        onStreamFirstFrame();
+        if (isStreamLoading()) throw new AssertionError("A reopened channel must recover after its first frame");
         if (!parsePermission(new BufferedReader(new java.io.StringReader("true\n")))) {
             throw new AssertionError("True permission response was rejected");
         }

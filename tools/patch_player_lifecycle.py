@@ -22,6 +22,30 @@ def replace_run(path, body):
     path.write_text(text)
 
 
+def patch_player_callbacks(text):
+    callbacks = {
+        'onRenderedFirstFrame': 'onStreamFirstFrame()V',
+        'onPlayerError': 'onStreamPlayerError(Ljava/lang/Object;)V',
+        'onPlaybackStateChanged': 'onStreamPlaybackState(I)V',
+        'onIsPlayingChanged': 'onStreamPlaying(Z)V',
+    }
+    events = r'onRenderedFirstFrame\(\)V|onPlayerError\(L[^;\n]+;\)V|onPlaybackStateChanged\(I\)V|onIsPlayingChanged\(Z\)V'
+    hooks = rf'(?:^[ \t]*invoke-static(?:/range)? \{{[^}}\n]*\}}, {re.escape(GATE)}->(?:hideStreamLoading|onStreamFirstFrame|onStreamPlayerError|onStreamPlaybackState|onStreamPlaying)\([^\n]*\)V[ \t]*\n[ \t\n]*)*'
+    call = rf'(?P<call>^(?P<indent>[ \t]*)invoke-interface(?:/range)? \{{(?P<registers>[^}}\n]+)\}}, L[^;\n]+;->(?P<event>{events})[ \t]*)'
+
+    def replace_callback(match):
+        event = match.group('event').split('(', 1)[0]
+        if event == 'onRenderedFirstFrame':
+            instruction = 'invoke-static {}'
+        else:
+            register = re.split(r'\s*,\s*|\s+\.\.\s+', match.group('registers').strip())[-1]
+            instruction = f'invoke-static/range {{{register} .. {register}}}'
+        return f"{match.group('indent')}{instruction}, {GATE}->{callbacks[event]}\n\n{match.group('call')}"
+
+    # A file can dispatch both errors and frames; never rewrite its hooks wholesale.
+    return re.sub(hooks + call, replace_callback, text, flags=re.M)
+
+
 def patch(root):
     root = Path(root)
     retry = next(root.glob('smali*/com/vidio/android/patch/StreamRetry.smali'))
@@ -30,7 +54,8 @@ def patch(root):
     bridge = next(root.glob(f'smali*/{chain.rsplit("/", 1)[0]}/a.smali'))
     b = bridge.read_text()
     b = b.replace(f'    invoke-static {{}}, {GATE}->showStreamLoading()V', f'    invoke-static {{v10}}, {GATE}->beginStreamLoading(Ljava/lang/String;)V')
-    b = replace_once(b, '    :try_start_0\n', f'''    :try_start_0
+    if MARKER not in b:
+        b = replace_once(b, '    :try_start_0\n', f'''    :try_start_0
     const-string v2, "{MARKER}"
 
     invoke-virtual {{v0, v2}}, L{http}/f0;->d(Ljava/lang/String;)Ljava/lang/String;
@@ -44,7 +69,8 @@ def patch(root):
     anchor = f'''    invoke-virtual {{v2, v10}}, L{http}/f0$a;->{url_method}(Ljava/lang/String;)V
 
     invoke-virtual {{v2}}, L{http}/f0$a;->b()L{http}/f0;'''
-    b = replace_once(b, anchor, f'''    invoke-virtual {{v2, v10}}, L{http}/f0$a;->{url_method}(Ljava/lang/String;)V
+    if b.count(MARKER) < 2:
+        b = replace_once(b, anchor, f'''    invoke-virtual {{v2, v10}}, L{http}/f0$a;->{url_method}(Ljava/lang/String;)V
 
     const-string v3, "/livestreamings/"
 
@@ -73,7 +99,8 @@ def patch(root):
     :player_scope_done
     invoke-virtual {{v2}}, L{http}/f0$a;->b()L{http}/f0;''')
     bridge.write_text(b)
-    text = replace_once(text, '    if-eq v2, v3, :cond_ready\n', '''    if-eq v2, v3, :cond_ready
+    if 'const/16 v3, 0x1ad' not in text:
+        text = replace_once(text, '    if-eq v2, v3, :cond_ready\n', '''    if-eq v2, v3, :cond_ready
 
     const/16 v3, 0x12c
 
@@ -238,20 +265,24 @@ def patch(root):
     return-void
 .end method''')
     dispatch_count = 0
+    primary_dispatchers = []
     for path in root.glob('smali*/androidx/media3/exoplayer/*.smali'):
-        text = path.read_text()
-        for event in ('onRenderedFirstFrame()V', 'onPlayerError(Landroidx/media3/common/PlaybackException;)V'):
-            pattern = rf'(    invoke-interface .*?->{re.escape(event)})'
-            hook = f'    invoke-static {{}}, {GATE}->hideStreamLoading()V\n\n'
-            if re.search(pattern, text) and hook not in text and not (event == 'onRenderedFirstFrame()V' and '->onStreamFirstFrame()V' in text):
-                text = re.sub(pattern, lambda m: hook + m.group(1), text)
-                dispatch_count += 1
-        playing_pattern = r'(    invoke-interface \{[^,]+, (\w+)\}, [^;]+;->onIsPlayingChanged\(Z\)V)'
-        if re.search(playing_pattern, text) and '->onStreamPlaying(Z)V' not in text:
-            text = re.sub(playing_pattern, lambda m: f'    invoke-static {{{m.group(2)}}}, {GATE}->onStreamPlaying(Z)V\n\n' + m.group(1), text)
+        original = path.read_text()
+        text = patch_player_callbacks(original)
+        if text != original:
+            path.write_text(text)
             dispatch_count += 1
-        path.write_text(text)
-    print(f'Patched {root.name}: stream-only retry, native redirect handoff, UI state, {dispatch_count} player dispatchers')
+        if http != 'bb0' and path.relative_to(root).parts[0] == 'smali' and GATE in text:
+            primary_dispatchers.append(path)
+    # Mobile's primary DEX has 65,533 method references; keep new hooks in another DEX.
+    if primary_dispatchers:
+        dex_index = max([1] + [int(path.name[13:]) for path in root.glob('smali_classes[0-9]*')]) + 1
+        extra_dex = root / f'smali_classes{dex_index}'
+        for path in primary_dispatchers:
+            destination = extra_dex / path.relative_to(root / 'smali')
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            path.rename(destination)
+    print(f'Patched {root.name}: stream-only retry, native redirect handoff, UI state, {dispatch_count} player dispatchers, {len(primary_dispatchers)} moved out of primary DEX')
 
 
 if __name__ == '__main__':

@@ -14,10 +14,22 @@ def patch(root):
         if f'.field private static {field}' not in gate:
             gate = gate.replace('.source "LoginGate.java"', f'.source "LoginGate.java"\n\n.field private static {field}', 1)
     gate = method(gate, 'onStreamActivityResumed(Ljava/lang/Object;)V', f'''.method public static onStreamActivityResumed(Ljava/lang/Object;)V
-    .locals 1
+    .locals 2
+    sget-object v1, {GATE}->currentActivity:Ljava/lang/Object;
     sput-object p0, {GATE}->currentActivity:Ljava/lang/Object;
     sget-boolean v0, {GATE}->streamLoadingShown:Z
     if-eqz v0, :done
+    if-eq p0, v1, :refresh
+    if-eqz p0, :refresh
+    invoke-virtual {{p0}}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+    move-result-object v1
+    invoke-virtual {{v1}}, Ljava/lang/Class;->getName()Ljava/lang/String;
+    move-result-object v1
+    const-string v0, "ACTIVITY_RESUMED "
+    invoke-virtual {{v0, v1}}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
+    move-result-object v0
+    invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
+    :refresh
     invoke-static {{}}, {GATE}->refreshStreamLoading()V
     :done
     return-void
@@ -29,6 +41,24 @@ def patch(root):
     const/4 v0, 0x0
     sput-object v0, {GATE}->currentActivity:Ljava/lang/Object;
     invoke-static {{}}, {GATE}->dismissStreamLoadingWindow()V
+    :done
+    return-void
+.end method''')
+    gate = method(gate, 'reportLoadingWindowError(Ljava/lang/Throwable;)V', f'''.method public static reportLoadingWindowError(Ljava/lang/Throwable;)V
+    .locals 2
+    invoke-virtual {{p0}}, Ljava/lang/Throwable;->toString()Ljava/lang/String;
+    move-result-object v0
+    sget-object v1, {GATE}->lastLoadingWindowError:Ljava/lang/String;
+    invoke-virtual {{v0, v1}}, Ljava/lang/String;->equals(Ljava/lang/Object;)Z
+    move-result v1
+    if-nez v1, :done
+    sput-object v0, {GATE}->lastLoadingWindowError:Ljava/lang/String;
+    const-string v1, "VidioLoading"
+    invoke-static {{v1, v0}}, Landroid/util/Log;->w(Ljava/lang/String;Ljava/lang/String;)I
+    const-string v1, "LOADING_WINDOW_ERROR "
+    invoke-virtual {{v1, v0}}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
+    move-result-object v0
+    invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
     :done
     return-void
 .end method''')
@@ -47,10 +77,7 @@ def patch(root):
     goto :done
     :failed
     move-exception v0
-    const-string v1, "VidioLoading"
-    invoke-virtual {{v0}}, Ljava/lang/Throwable;->toString()Ljava/lang/String;
-    move-result-object v0
-    invoke-static {{v1, v0}}, Landroid/util/Log;->w(Ljava/lang/String;Ljava/lang/String;)I
+    invoke-static {{v0}}, {GATE}->reportLoadingWindowError(Ljava/lang/Throwable;)V
     :done
     return-void
 .end method''')
@@ -139,24 +166,21 @@ def patch(root):
     sput-object v2, {GATE}->loadingView:Ljava/lang/Object;
     const/16 v4, 0x11
     invoke-virtual {{v3, v1, v4, v5, v5}}, Landroid/widget/PopupWindow;->showAtLocation(Landroid/view/View;III)V
+    const-string v0, "LOADING_VISIBLE"
+    invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
     :try_end
     .catch Ljava/lang/RuntimeException; {{:try_start .. :try_end}} :failed
     goto :tick
     :failed
     move-exception v0
-    const-string v1, "VidioLoading"
-    invoke-virtual {{v0}}, Ljava/lang/Throwable;->toString()Ljava/lang/String;
-    move-result-object v0
-    invoke-static {{v1, v0}}, Landroid/util/Log;->w(Ljava/lang/String;Ljava/lang/String;)I
+    invoke-static {{v0}}, {GATE}->reportLoadingWindowError(Ljava/lang/Throwable;)V
     invoke-static {{}}, {GATE}->dismissStreamLoadingWindow()V
     :tick
     invoke-static {{}}, {GATE}->scheduleStreamLoadingTick()V
     :done
     return-void
 .end method''')
-    state = re.search(r'\.method public static onStreamPlaybackState\(I\)V\n.*?\.end method', gate, re.S).group()
-    state = state.replace('    if-eq p0, v0, :hide', f'    if-ne p0, v0, :check_ended\n    sget-boolean v0, {GATE}->streamFrameRendered:Z\n    if-nez v0, :hide\n    invoke-static {{}}, {GATE}->showStreamLoading()V\n    goto :done\n    :check_ended')
-    gate = method(gate, 'onStreamPlaybackState(I)V', state)
+
     gate_path.write_text(gate)
     for suffix, body in [('$3', f'''    invoke-static {{}}, {GATE}->renderStreamLoadingWindow()V'''), ('$4', f'''    invoke-static {{}}, {GATE}->isStreamLoading()Z
     move-result v0
