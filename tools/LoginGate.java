@@ -221,6 +221,8 @@ public final class LoginGate {
     private static volatile Object currentActivity;
     private static volatile Object loadingView;
     private static Object loadingHandler;
+    private static Object loadingPopup;
+    private static Object loadingActivity;
     private static Runnable loadingTask;
     // Refreshing a currently playing channel must not reopen the loading overlay.
     private static volatile boolean streamLoadingShown = false;
@@ -974,9 +976,22 @@ public final class LoginGate {
         if (state == 2) {
             playerPlaying = false;
             showStreamLoading();
-        } else if (!streamRequestPending && (state == 1 || state == 4)) {
+        } else if (!streamRequestPending && (state == 4 || (state == 1 && streamFrameRendered))) {
             hideStreamLoading();
+        } else if (state == 1 && !streamFrameRendered) {
+            showStreamLoading();
         }
+    }
+
+    public static void onStreamActivityResumed(Object activity) {
+        currentActivity = activity;
+        if (streamLoadingShown) refreshStreamLoading();
+    }
+
+    public static void onStreamActivityPaused(Object activity) {
+        if (activity != currentActivity) return;
+        currentActivity = null;
+        dismissStreamLoadingWindow();
     }
 
     public static void showStreamLoading() {
@@ -984,69 +999,88 @@ public final class LoginGate {
         if (loadingTask == null) loadingTask = new Runnable() {
             @Override
             public void run() {
-                try {
-                    if (!streamLoadingShown) return;
-                    Object activity = currentActivity;
-                    if (activity == null) return;
-                    Object window = Class.forName("android.app.Activity").getMethod("getWindow").invoke(activity);
-                    Object decorView = Class.forName("android.view.Window").getMethod("getDecorView").invoke(window);
-                    if (loadingView != null) {
-                        Class<?> viewClass = Class.forName("android.view.View");
-                        Object parent = viewClass.getMethod("getParent").invoke(loadingView);
-                        if (parent == decorView) {
-                            viewClass.getMethod("setVisibility", int.class).invoke(loadingView, 0);
-                            viewClass.getMethod("bringToFront").invoke(loadingView);
-                            return;
-                        }
-                        if (parent != null) Class.forName("android.view.ViewGroup").getMethod("removeView", viewClass).invoke(parent, loadingView);
-                        loadingView = null;
-                    }
-                    Class<?> contextClass = Class.forName("android.content.Context");
-                    Class<?> viewClass = Class.forName("android.view.View");
-                    Class<?> viewGroupClass = Class.forName("android.view.ViewGroup");
-                    Class<?> frameLayoutClass = Class.forName("android.widget.FrameLayout");
-                    Class<?> frameLpClass = Class.forName("android.widget.FrameLayout$LayoutParams");
-                    Class<?> linearLayoutClass = Class.forName("android.widget.LinearLayout");
-                    Class<?> progressBarClass = Class.forName("android.widget.ProgressBar");
-                    Class<?> textViewClass = Class.forName("android.widget.TextView");
-
-                    int matchParent = -1;
-                    int wrapContent = -2;
-                    int gravityCenter = 17;
-
-                    Object overlay = frameLayoutClass.getConstructor(contextClass).newInstance(activity);
-                    Object overlayLp = frameLpClass.getConstructor(int.class, int.class).newInstance(matchParent, matchParent);
-                    viewClass.getMethod("setLayoutParams", Class.forName("android.view.ViewGroup$LayoutParams")).invoke(overlay, overlayLp);
-                    viewClass.getMethod("setBackgroundColor", int.class).invoke(overlay, 0x88000000);
-                    viewClass.getMethod("setClickable", boolean.class).invoke(overlay, false);
-
-                    Object box = linearLayoutClass.getConstructor(contextClass).newInstance(activity);
-                    linearLayoutClass.getMethod("setOrientation", int.class).invoke(box, 1);
-                    linearLayoutClass.getMethod("setGravity", int.class).invoke(box, gravityCenter);
-                    Object boxLp = frameLpClass.getConstructor(int.class, int.class, int.class).newInstance(wrapContent, wrapContent, gravityCenter);
-                    viewClass.getMethod("setLayoutParams", Class.forName("android.view.ViewGroup$LayoutParams")).invoke(box, boxLp);
-
-                    Object spinner = progressBarClass.getConstructor(contextClass).newInstance(activity);
-                    viewGroupClass.getMethod("addView", viewClass).invoke(box, spinner);
-
-                    Object text = textViewClass.getConstructor(contextClass).newInstance(activity);
-                    textViewClass.getMethod("setText", CharSequence.class).invoke(text, "Memuat siaran...");
-                    textViewClass.getMethod("setTextColor", int.class).invoke(text, 0xFFFFFFFF);
-                    textViewClass.getMethod("setTextSize", float.class).invoke(text, 15.0f);
-                    viewClass.getMethod("setPadding", int.class, int.class, int.class, int.class).invoke(text, 0, 20, 0, 0);
-                    viewGroupClass.getMethod("addView", viewClass).invoke(box, text);
-
-                    viewGroupClass.getMethod("addView", viewClass).invoke(overlay, box);
-
-                    viewGroupClass.getMethod("addView", viewClass).invoke(decorView, overlay);
-                    loadingView = overlay;
-                } catch (Throwable ignored) {
-                } finally {
-                    scheduleStreamLoadingTick();
-                }
+                renderStreamLoadingWindow();
             }
         };
         refreshStreamLoading();
+    }
+
+    public static void renderStreamLoadingWindow() {
+        if (!streamLoadingShown) return;
+        try {
+            Object activity = currentActivity;
+            Class<?> activityClass = Class.forName("android.app.Activity");
+            if (!activityClass.isInstance(activity)) return;
+            if ((Boolean) activityClass.getMethod("isFinishing").invoke(activity)
+                    || (Boolean) activityClass.getMethod("isDestroyed").invoke(activity)) return;
+            Object window = activityClass.getMethod("getWindow").invoke(activity);
+            Object decor = Class.forName("android.view.Window").getMethod("getDecorView").invoke(window);
+            Class<?> viewClass = Class.forName("android.view.View");
+            if (viewClass.getMethod("getWindowToken").invoke(decor) == null) return;
+            Class<?> popupClass = Class.forName("android.widget.PopupWindow");
+            if (loadingPopup != null && loadingActivity == activity
+                    && (Boolean) popupClass.getMethod("isShowing").invoke(loadingPopup)) return;
+            dismissStreamLoadingWindow();
+            Class<?> contextClass = Class.forName("android.content.Context");
+            Class<?> viewGroupClass = Class.forName("android.view.ViewGroup");
+            Class<?> linearClass = Class.forName("android.widget.LinearLayout");
+            Object box = linearClass.getConstructor(contextClass).newInstance(activity);
+            linearClass.getMethod("setOrientation", int.class).invoke(box, 1);
+            linearClass.getMethod("setGravity", int.class).invoke(box, 17);
+            viewClass.getMethod("setBackgroundColor", int.class).invoke(box, 0xE61C1C1C);
+            Object resources = contextClass.getMethod("getResources").invoke(activity);
+            Object metrics = Class.forName("android.content.res.Resources").getMethod("getDisplayMetrics").invoke(resources);
+            float density = Class.forName("android.util.DisplayMetrics").getField("density").getFloat(metrics);
+            int padding = (int) (24 * density);
+            viewClass.getMethod("setPadding", int.class, int.class, int.class, int.class).invoke(box, padding, padding, padding, padding);
+            Class<?> progressClass = Class.forName("android.widget.ProgressBar");
+            Object spinner = progressClass.getConstructor(contextClass).newInstance(activity);
+            progressClass.getMethod("setIndeterminate", boolean.class).invoke(spinner, true);
+            Class<?> tintClass = Class.forName("android.content.res.ColorStateList");
+            Object tint = tintClass.getMethod("valueOf", int.class).invoke(null, -1);
+            progressClass.getMethod("setIndeterminateTintList", tintClass).invoke(spinner, tint);
+            int size = (int) (56 * density);
+            Object spinnerParams = Class.forName("android.widget.LinearLayout$LayoutParams").getConstructor(int.class, int.class).newInstance(size, size);
+            viewGroupClass.getMethod("addView", viewClass, Class.forName("android.view.ViewGroup$LayoutParams")).invoke(box, spinner, spinnerParams);
+            Class<?> textClass = Class.forName("android.widget.TextView");
+            Object text = textClass.getConstructor(contextClass).newInstance(activity);
+            textClass.getMethod("setText", CharSequence.class).invoke(text, "Memuat siaran...");
+            textClass.getMethod("setTextColor", int.class).invoke(text, -1);
+            textClass.getMethod("setTextSize", float.class).invoke(text, 15f);
+            viewGroupClass.getMethod("addView", viewClass).invoke(box, text);
+            Object popup = popupClass.getConstructor(viewClass, int.class, int.class, boolean.class).newInstance(box, -2, -2, false);
+            popupClass.getMethod("setTouchable", boolean.class).invoke(popup, false);
+            popupClass.getMethod("setAnimationStyle", int.class).invoke(popup, 0);
+            loadingPopup = popup;
+            loadingActivity = activity;
+            loadingView = box;
+            popupClass.getMethod("showAtLocation", viewClass, int.class, int.class, int.class).invoke(popup, decor, 17, 0, 0);
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            reportLoadingWindowError(error);
+            dismissStreamLoadingWindow();
+        } finally {
+            scheduleStreamLoadingTick();
+        }
+    }
+
+    public static void dismissStreamLoadingWindow() {
+        Object popup = loadingPopup;
+        loadingPopup = null;
+        loadingActivity = null;
+        loadingView = null;
+        if (popup == null) return;
+        try {
+            Class.forName("android.widget.PopupWindow").getMethod("dismiss").invoke(popup);
+        } catch (ReflectiveOperationException | RuntimeException error) {
+            reportLoadingWindowError(error);
+        }
+    }
+
+    private static void reportLoadingWindowError(Throwable error) {
+        try {
+            Class.forName("android.util.Log").getMethod("w", String.class, String.class).invoke(null, "VidioLoading", error.toString());
+        } catch (ReflectiveOperationException ignored) {
+        }
     }
 
     public static synchronized void refreshStreamLoading() {
@@ -1081,20 +1115,7 @@ public final class LoginGate {
         runOnMainThread(new Runnable() {
             @Override
             public void run() {
-                try {
-                    if (streamLoadingShown) return;
-                    Object view = loadingView;
-                    if (view != null) {
-                        Class<?> viewClass = Class.forName("android.view.View");
-                        viewClass.getMethod("setVisibility", int.class).invoke(view, 8);
-                        Object parent = viewClass.getMethod("getParent").invoke(view);
-                        if (parent != null) {
-                            Class.forName("android.view.ViewGroup").getMethod("removeView", viewClass).invoke(parent, view);
-                        }
-                        loadingView = null;
-                    }
-                } catch (Throwable ignored) {
-                }
+                if (!streamLoadingShown) dismissStreamLoadingWindow();
             }
         });
     }
@@ -1248,6 +1269,8 @@ public final class LoginGate {
             onStreamFirstFrame();
             if (!isStreamLoading()) throw new AssertionError("A redirect must not declare the stream ready");
             onStreamResponse("https://api.example.com/livestreamings/" + channel + "/stream", 200);
+            onStreamPlaybackState(1);
+            if (!isStreamLoading()) throw new AssertionError("Idle before first frame must retain loading");
             onStreamFirstFrame();
             if (isStreamLoading()) throw new AssertionError("First frame must clear loading");
             onStreamPlaybackState(2);
@@ -1258,6 +1281,15 @@ public final class LoginGate {
             if (isStreamLoading()) throw new AssertionError("Playing channel refresh must remain seamless");
         }
         onStreamPlaybackState(2);
+        Object firstActivity = new Object();
+        Object nextActivity = new Object();
+        onStreamActivityResumed(firstActivity);
+        onStreamActivityPaused(nextActivity);
+        if (currentActivity != firstActivity) throw new AssertionError("An unrelated Activity pause must not clear the player");
+        onStreamActivityPaused(firstActivity);
+        if (currentActivity != null || !isStreamLoading()) throw new AssertionError("Pausing must clear the window owner without losing loading state");
+        onStreamActivityResumed(nextActivity);
+        if (currentActivity != nextActivity || !isStreamLoading()) throw new AssertionError("Resuming a new Activity must retain pending loading");
         onStreamPlaybackState(4);
         if (isStreamLoading()) throw new AssertionError("Ended playback must clear loading");
         if (!parsePermission(new BufferedReader(new java.io.StringReader("true\n")))) {
