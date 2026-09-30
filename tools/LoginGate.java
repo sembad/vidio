@@ -220,9 +220,13 @@ public final class LoginGate {
     private static volatile Object applicationContext;
     private static volatile Object currentActivity;
     private static volatile Object loadingView;
+    private static Object loadingHandler;
+    private static Runnable loadingTask;
     // Refreshing a currently playing channel must not reopen the loading overlay.
     private static volatile boolean streamLoadingShown = false;
     private static volatile boolean playerPlaying;
+    private static volatile boolean streamFrameRendered;
+    private static volatile boolean streamRequestPending;
     private static volatile String loadingStreamPath;
     private static volatile String cachedAccountEmail;
     private static volatile Boolean cachedUltimate;
@@ -934,33 +938,68 @@ public final class LoginGate {
             if (path.equals(loadingStreamPath) && playerPlaying) return;
             loadingStreamPath = path;
             playerPlaying = false;
+            streamFrameRendered = false;
+            streamRequestPending = true;
             showStreamLoading();
         } catch (IOException ignored) {
         }
     }
 
     public static void onStreamPlaying(boolean playing) {
+        if (streamRequestPending) return;
         playerPlaying = playing;
-        if (playing) hideStreamLoading();
+        if (playing && streamFrameRendered) hideStreamLoading();
+    }
+
+    public static void onStreamResponse(String url, int status) {
+        try {
+            if (!new URL(url).getPath().equals(loadingStreamPath)) return;
+            if (status == 200) streamRequestPending = false;
+            else if (status >= 400) {
+                streamRequestPending = false;
+                hideStreamLoading();
+            }
+        } catch (IOException ignored) {
+        }
+    }
+
+    public static void onStreamFirstFrame() {
+        if (streamRequestPending) return;
+        streamFrameRendered = true;
+        hideStreamLoading();
+    }
+
+    public static void onStreamPlaybackState(int state) {
+        if (loadingStreamPath == null) return;
+        if (state == 2) {
+            playerPlaying = false;
+            showStreamLoading();
+        } else if (!streamRequestPending && (state == 1 || state == 4)) {
+            hideStreamLoading();
+        }
     }
 
     public static void showStreamLoading() {
-        if (streamLoadingShown) {
-            return;
-        }
         streamLoadingShown = true;
-        runOnMainThread(new Runnable() {
+        if (loadingTask == null) loadingTask = new Runnable() {
             @Override
             public void run() {
                 try {
                     if (!streamLoadingShown) return;
                     Object activity = currentActivity;
-                    if (activity == null) {
-                        showToast("Memuat siaran...");
-                        return;
-                    }
+                    if (activity == null) return;
+                    Object window = Class.forName("android.app.Activity").getMethod("getWindow").invoke(activity);
+                    Object decorView = Class.forName("android.view.Window").getMethod("getDecorView").invoke(window);
                     if (loadingView != null) {
-                        return;
+                        Class<?> viewClass = Class.forName("android.view.View");
+                        Object parent = viewClass.getMethod("getParent").invoke(loadingView);
+                        if (parent == decorView) {
+                            viewClass.getMethod("setVisibility", int.class).invoke(loadingView, 0);
+                            viewClass.getMethod("bringToFront").invoke(loadingView);
+                            return;
+                        }
+                        if (parent != null) Class.forName("android.view.ViewGroup").getMethod("removeView", viewClass).invoke(parent, loadingView);
+                        loadingView = null;
                     }
                     Class<?> contextClass = Class.forName("android.content.Context");
                     Class<?> viewClass = Class.forName("android.view.View");
@@ -999,18 +1038,39 @@ public final class LoginGate {
 
                     viewGroupClass.getMethod("addView", viewClass).invoke(overlay, box);
 
-                    Object window = activity.getClass().getMethod("getWindow").invoke(activity);
-                    Object decorView = window.getClass().getMethod("getDecorView").invoke(window);
                     viewGroupClass.getMethod("addView", viewClass).invoke(decorView, overlay);
-
                     loadingView = overlay;
-
-
-                } catch (Throwable t) {
-                    showToast("Memuat siaran...");
+                } catch (Throwable ignored) {
+                } finally {
+                    scheduleStreamLoadingTick();
                 }
             }
-        });
+        };
+        refreshStreamLoading();
+    }
+
+    public static synchronized void refreshStreamLoading() {
+        try {
+            Class<?> handlerClass = Class.forName("android.os.Handler");
+            if (loadingHandler == null) {
+                Class<?> looperClass = Class.forName("android.os.Looper");
+                Object looper = looperClass.getMethod("getMainLooper").invoke(null);
+                loadingHandler = handlerClass.getConstructor(looperClass).newInstance(looper);
+            }
+            handlerClass.getMethod("removeCallbacks", Runnable.class).invoke(loadingHandler, loadingTask);
+            handlerClass.getMethod("post", Runnable.class).invoke(loadingHandler, loadingTask);
+        } catch (ReflectiveOperationException ignored) {
+        }
+    }
+
+    public static synchronized void scheduleStreamLoadingTick() {
+        if (!streamLoadingShown) return;
+        try {
+            Class<?> handlerClass = Class.forName("android.os.Handler");
+            handlerClass.getMethod("removeCallbacks", Runnable.class).invoke(loadingHandler, loadingTask);
+            handlerClass.getMethod("postDelayed", Runnable.class, long.class).invoke(loadingHandler, loadingTask, 250L);
+        } catch (ReflectiveOperationException ignored) {
+        }
     }
 
     public static void hideStreamLoading() {
@@ -1173,6 +1233,33 @@ public final class LoginGate {
     }
 
     public static void main(String[] args) throws Exception {
+        for (int channel = 1; channel <= 4; channel++) {
+            beginStreamLoading("https://api.example.com/livestreamings/" + channel + "/stream?initialize=true");
+            if (!isStreamLoading()) throw new AssertionError("Channel switch must show loading");
+            onStreamPlaying(true);
+            if (!isStreamLoading()) throw new AssertionError("Playing before a video frame must retain loading");
+            onStreamFirstFrame();
+            onStreamPlaybackState(1);
+            if (!isStreamLoading()) throw new AssertionError("Old player events must not hide a pending stream");
+            onStreamResponse("https://api.example.com/livestreamings/" + (channel + 10) + "/stream", 200);
+            onStreamFirstFrame();
+            if (!isStreamLoading()) throw new AssertionError("Another channel response must not clear pending state");
+            onStreamResponse("https://api.example.com/livestreamings/" + channel + "/stream", 307);
+            onStreamFirstFrame();
+            if (!isStreamLoading()) throw new AssertionError("A redirect must not declare the stream ready");
+            onStreamResponse("https://api.example.com/livestreamings/" + channel + "/stream", 200);
+            onStreamFirstFrame();
+            if (isStreamLoading()) throw new AssertionError("First frame must clear loading");
+            onStreamPlaybackState(2);
+            if (!isStreamLoading()) throw new AssertionError("Buffering must show loading");
+            onStreamPlaying(true);
+            if (isStreamLoading()) throw new AssertionError("Buffer recovery must clear loading");
+            beginStreamLoading("https://api.example.com/livestreamings/" + channel + "/stream?initialize=true");
+            if (isStreamLoading()) throw new AssertionError("Playing channel refresh must remain seamless");
+        }
+        onStreamPlaybackState(2);
+        onStreamPlaybackState(4);
+        if (isStreamLoading()) throw new AssertionError("Ended playback must clear loading");
         if (!parsePermission(new BufferedReader(new java.io.StringReader("true\n")))) {
             throw new AssertionError("True permission response was rejected");
         }

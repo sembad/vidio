@@ -243,7 +243,7 @@ def patch(root):
         for event in ('onRenderedFirstFrame()V', 'onPlayerError(Landroidx/media3/common/PlaybackException;)V'):
             pattern = rf'(    invoke-interface .*?->{re.escape(event)})'
             hook = f'    invoke-static {{}}, {GATE}->hideStreamLoading()V\n\n'
-            if re.search(pattern, text) and hook not in text:
+            if re.search(pattern, text) and hook not in text and not (event == 'onRenderedFirstFrame()V' and '->onStreamFirstFrame()V' in text):
                 text = re.sub(pattern, lambda m: hook + m.group(1), text)
                 dispatch_count += 1
         playing_pattern = r'(    invoke-interface \{[^,]+, (\w+)\}, [^;]+;->onIsPlayingChanged\(Z\)V)'
