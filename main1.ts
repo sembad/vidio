@@ -76,12 +76,6 @@ function shuffled<T>(items: readonly T[]): T[] {
 
 /** Batas waktu satu akun saat retry: 15 detik. */
 const PER_ACCOUNT_TIMEOUT_MS = 15_000;
-// Aplikasi TIDAK pernah auto-retry request stream: sekali gagal, layar error
-// "Langganan untuk akses" tampil sampai user reload manual. Karena itu scan
-// diulang di worker dalam budget ini — request aplikasi tetap pending
-// (overlay loading) sampai stream siap atau budget habis.
-const STREAM_RETRY_BUDGET_MS = 40_000;
-const STREAM_RETRY_DELAY_MS = 4_000;
 const STAGING_API_AUTH = "cubixarIhu8une5OP33upogocaTeWerU";
 const STAGING_SIGNATURE = "81627641f8168b4c6707e4de044f63da3e662a90f0bf9d5c06a149e9af3de1ee";
 const STAGING_CLIENT = "1790311747";
@@ -1484,37 +1478,28 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   // Retry akun demi akun sampai 200 OK — maksimal 15 detik per akun.
   // Cadangan: production (urutan ACAK, retry sama) → kredensial user.
   // Semua lewat cache 2,5 menit — staging maksimal 1 GET per window cache.
-  // Semua itu dibungkus loop retry ber-budget waktu: selama budget belum
-  // habis, ronde scan diulang (staging → production → kredensial user)
-  // dengan jeda singkat, sehingga decrypt/akun yang sedang sibuk tidak
-  // langsung dijawab 502 ke aplikasi.
   const fullResult = await fetchStreamResultShared(cacheKey, async () => {
-    const deadline = Date.now() + STREAM_RETRY_BUDGET_MS;
-    let own: UpstreamResult | null = null;
-    for (;;) {
-      for (const token of shuffled(STAGING_TOKENS)) {
-        if (Date.now() >= deadline) return own;
-        const staging = await proxyStagingStream(streamId, request, token);
-        if (staging && staging.status === 200) return staging;
-      }
-      for (const cred of shuffled(PRODUCTION_CREDENTIALS)) {
-        if (Date.now() >= deadline) return own;
-        const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA, PER_ACCOUNT_TIMEOUT_MS);
-        if (r && r.status === 200) return r;
-      }
-      // Kredensial hardcode gagal → coba kredensial asli user yang request
-      own = await proxyUltimateStream(
-        streamId,
-        { email: requestedEmail, token: trimmedToken },
-        request,
-        CHROME_UA,
-      );
-      if (own && own.status === 200) return own;
-      if (Date.now() >= deadline) return own;
-      await new Promise((resolve) => setTimeout(resolve, STREAM_RETRY_DELAY_MS));
+    for (const token of shuffled(STAGING_TOKENS)) {
+      const staging = await proxyStagingStream(streamId, request, token);
+      if (staging && staging.status === 200) return staging;
     }
+    for (const cred of shuffled(PRODUCTION_CREDENTIALS)) {
+      const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA, PER_ACCOUNT_TIMEOUT_MS);
+      if (r && r.status === 200) return r;
+    }
+    return null;
   });
   let result = fullResult;
+  if (!result) {
+    // Kredensial hardcode gagal → coba kredensial asli user yang request
+    const own = await proxyUltimateStream(
+      streamId,
+      { email: requestedEmail, token: trimmedToken },
+      request,
+      CHROME_UA,
+    );
+    result = own ?? null;
+  }
   if (result) {
     // Sembunyikan treatment preview (badge) supaya aplikasi tidak melewatkan
     // penjadwalan refresh stream-nya.
