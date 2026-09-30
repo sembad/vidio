@@ -1165,15 +1165,25 @@ async function fetchUpstream(
   }
 }
 
-export function isStagingVideoPlaylist(body: string): boolean {
+export function isHlsOnlyStream(body: string): boolean {
   try {
     const attributes = JSON.parse(body)?.data?.attributes;
-    if (typeof attributes?.hls !== "string" || attributes?.dash != null) return false;
-    const url = new URL(attributes.hls);
-    return url.hostname === "www.staging.vidio.com" && /^\/videos\/\d+\//.test(url.pathname);
+    return typeof attributes?.hls === "string" && attributes.hls.trim().length > 0
+      && (typeof attributes.dash !== "string" || attributes.dash.trim().length === 0);
   } catch {
     return false;
   }
+}
+
+export function redirectOfficialStream(streamId: string, request: Request): Response {
+  const target = new URL(`/livestreamings/${encodeURIComponent(streamId)}/stream`, UPSTREAM_ORIGIN);
+  target.search = new URL(request.url).search;
+  target.searchParams.delete("encrypt");
+  if (!target.searchParams.has("initialize")) target.searchParams.set("initialize", "true");
+  return new Response(null, {
+    status: 307,
+    headers: { ...securityHeaders, location: target.toString(), "cache-control": "no-store" },
+  });
 }
 
 function renderUpstream(result: UpstreamResult | null, shouldEncrypt: boolean): Response {
@@ -1483,9 +1493,8 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   const cacheKey = `stream:${streamId}`;
   const cached = await getCachedStreamResponseWithKv(cacheKey);
   if (cached) {
-    if (isStagingVideoPlaylist(cached.body)) {
-      const official = await proxyUltimateStream(streamId, { email: requestedEmail, token: trimmedToken }, request, CHROME_UA);
-      return renderUpstream(official, shouldEncrypt);
+    if (isHlsOnlyStream(cached.body)) {
+      return redirectOfficialStream(streamId, request);
     }
     return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
   }
@@ -1506,9 +1515,8 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     return null;
   });
   let result = fullResult;
-  if (result && isStagingVideoPlaylist(result.body)) {
-    const official = await proxyUltimateStream(streamId, { email: requestedEmail, token: trimmedToken }, request, CHROME_UA);
-    return renderUpstream(official, shouldEncrypt);
+  if (result && isHlsOnlyStream(result.body)) {
+    return redirectOfficialStream(streamId, request);
   }
   if (!result) {
     // Kredensial hardcode gagal → coba kredensial asli user yang request
@@ -1520,6 +1528,7 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     );
     result = own ?? null;
   }
+  if (result && isHlsOnlyStream(result.body)) return redirectOfficialStream(streamId, request);
   if (result) {
     // Sembunyikan treatment preview (badge) supaya aplikasi tidak melewatkan
     // penjadwalan refresh stream-nya.
@@ -1691,11 +1700,17 @@ async function handleRequest(request: Request): Promise<Response> {
 
 async function selfCheck(): Promise<void> {
   const stagingSample = JSON.stringify({ data: { attributes: { hls: "https://www.staging.vidio.com/videos/2384351/common_tokenized_playlist.m3u8?ott=test", dash: null } } });
-  if (!isStagingVideoPlaylist(stagingSample)
-    || isStagingVideoPlaylist(stagingSample.replace("www.staging.vidio.com", "www.vidio.com"))
-    || isStagingVideoPlaylist(stagingSample.replace("/videos/", "/livestreamings/"))
-    || isStagingVideoPlaylist("invalid json")) {
-    throw new Error("Staging video fallback self-check failed");
+  if (!isHlsOnlyStream(stagingSample)
+    || !isHlsOnlyStream(stagingSample.replace("www.staging.vidio.com", "www.vidio.com"))
+    || !isHlsOnlyStream(stagingSample.replace('"dash":null', '"dash":""'))
+    || isHlsOnlyStream(stagingSample.replace('"dash":null', '"dash":"https://cdn.example/live.mpd"'))
+    || isHlsOnlyStream("invalid json")) {
+    throw new Error("HLS-only fallback self-check failed");
+  }
+  const redirect = redirectOfficialStream("6685", new Request("https://api.vidiot.my.id/livestreamings/6685/stream?initialize=true&encrypt=1"));
+  if (redirect.status !== 307 || redirect.headers.get("location") !== "https://api.vidio.com/livestreamings/6685/stream?initialize=true"
+    || redirect.headers.has("x-encrypted") || await redirect.text() !== "") {
+    throw new Error("Official stream redirect self-check failed");
   }
   const now = Math.floor(Date.now() / 1000);
   const sample = {

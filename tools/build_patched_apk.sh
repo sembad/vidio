@@ -14,6 +14,8 @@ export PATH=$JAVA_HOME/bin:$TOOLS/build-tools:$PATH
 WORK=$(mktemp -d /tmp/apkbuild-XXXXXX)
 trap 'rm -rf "$WORK"' EXIT
 
+python3 "$ROOT/tools/patch_player_lifecycle.py" "$DECODED"
+
 echo "[build] apktool b $DECODED"
 "$JAVA_HOME/bin/java" -jar "$TOOLS/apktool.jar" b "$DECODED" -o "$WORK/rebuilt.apk"
 

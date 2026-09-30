@@ -220,9 +220,10 @@ public final class LoginGate {
     private static volatile Object applicationContext;
     private static volatile Object currentActivity;
     private static volatile Object loadingView;
-    // Overlay "Memuat siaran..." hanya untuk load pertama; swap/refresh stream
-    // native app harus seamless tanpa overlay agar tidak mengganggu tontonan.
+    // Refreshing a currently playing channel must not reopen the loading overlay.
     private static volatile boolean streamLoadingShown = false;
+    private static volatile boolean playerPlaying;
+    private static volatile String loadingStreamPath;
     private static volatile String cachedAccountEmail;
     private static volatile Boolean cachedUltimate;
     private static volatile long lastUltimateCheckMs = 0;
@@ -531,9 +532,6 @@ public final class LoginGate {
         try {
             URL source = new URL(value);
             String query = source.getQuery();
-            // No showStreamLoading() here either: the overlay is shown only by
-            // StreamRetry when the request actually needs retrying, and hidden
-            // as soon as the final response resolves.
             return "https://" + proxyHost + source.getPath() + (query != null ? "?" + query : "?initialize=true");
         } catch (IOException | IllegalArgumentException ignored) {
             return null;
@@ -926,6 +924,26 @@ public final class LoginGate {
         }
     }
 
+    public static boolean isStreamLoading() {
+        return streamLoadingShown;
+    }
+
+    public static void beginStreamLoading(String url) {
+        try {
+            String path = new URL(url).getPath();
+            if (path.equals(loadingStreamPath) && playerPlaying) return;
+            loadingStreamPath = path;
+            playerPlaying = false;
+            showStreamLoading();
+        } catch (IOException ignored) {
+        }
+    }
+
+    public static void onStreamPlaying(boolean playing) {
+        playerPlaying = playing;
+        if (playing) hideStreamLoading();
+    }
+
     public static void showStreamLoading() {
         if (streamLoadingShown) {
             return;
@@ -935,6 +953,7 @@ public final class LoginGate {
             @Override
             public void run() {
                 try {
+                    if (!streamLoadingShown) return;
                     Object activity = currentActivity;
                     if (activity == null) {
                         showToast("Memuat siaran...");
@@ -986,12 +1005,7 @@ public final class LoginGate {
 
                     loadingView = overlay;
 
-                    postDelayedOnMainThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            hideStreamLoading();
-                        }
-                    }, 45000);
+
                 } catch (Throwable t) {
                     showToast("Memuat siaran...");
                 }
@@ -1008,14 +1022,16 @@ public final class LoginGate {
             @Override
             public void run() {
                 try {
+                    if (streamLoadingShown) return;
                     Object view = loadingView;
                     if (view != null) {
-                        loadingView = null;
-                        Object parent = view.getClass().getMethod("getParent").invoke(view);
+                        Class<?> viewClass = Class.forName("android.view.View");
+                        viewClass.getMethod("setVisibility", int.class).invoke(view, 8);
+                        Object parent = viewClass.getMethod("getParent").invoke(view);
                         if (parent != null) {
-                            Class<?> viewClass = Class.forName("android.view.View");
-                            parent.getClass().getMethod("removeView", viewClass).invoke(parent, view);
+                            Class.forName("android.view.ViewGroup").getMethod("removeView", viewClass).invoke(parent, view);
                         }
+                        loadingView = null;
                     }
                 } catch (Throwable ignored) {
                 }
