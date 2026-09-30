@@ -986,7 +986,7 @@ public final class LoginGate {
                         public void run() {
                             hideStreamLoading();
                         }
-                    }, 7000);
+                    }, 45000);
                 } catch (Throwable t) {
                     showToast("Memuat siaran...");
                 }
@@ -995,6 +995,10 @@ public final class LoginGate {
     }
 
     public static void hideStreamLoading() {
+        // Reset the gate flag so the overlay shows again on the next stream
+        // request (channel switch). Without this, the "Memuat siaran..."
+        // overlay only ever appears on the first stream of the session.
+        streamLoadingShown = false;
         runOnMainThread(new Runnable() {
             @Override
             public void run() {
