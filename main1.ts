@@ -43,11 +43,30 @@ function viaMirror(url: string): string {
     ? `${VIDIO_MIRROR_ORIGIN}/${url.slice("https://".length)}`
     : url;
 }
+
+/** Kembalikan URL asli dari URL mirror: mirror/host/path → https://host/path. */
+function unviaMirror(url: string): string {
+  const prefix = `${VIDIO_MIRROR_ORIGIN}/`;
+  return url.startsWith(prefix) ? `https://${url.slice(prefix.length)}` : url;
+}
 const STAGING_UA = "tv-android/2608.2.4 (1020)";
-const STAGING_CREDENTIAL = {
-  email: "@gmail.com",
-  token: "e2Rhbc_sNjv1ry_Q_4Ds",
-};
+// Kredensial staging: 5 token berputar. Token dipakai bergantian; bila
+// upstream menolak (401/error auth), index maju ke token berikutnya.
+const STAGING_EMAIL = "@gmail.com";
+const STAGING_TOKENS = [
+  "73CSxBpvZTuZj3748QaQ",
+  "RkE6AhGLZgyWzQ8ZpyRv",
+  "yHHS1vrMVYeUHHsCxA3Q",
+  "TU6pkXrGnpLKzi1Mzgwm",
+  "wfBA1ZDuRoDcTHPs1AMz",
+];
+let stagingTokenIndex = 0;
+function currentStagingToken(): string {
+  return STAGING_TOKENS[stagingTokenIndex % STAGING_TOKENS.length] as string;
+}
+function rotateStagingToken(): void {
+  stagingTokenIndex = (stagingTokenIndex + 1) % STAGING_TOKENS.length;
+}
 const STAGING_API_AUTH = "cubixarIhu8une5OP33upogocaTeWerU";
 const STAGING_SIGNATURE = "81627641f8168b4c6707e4de044f63da3e662a90f0bf9d5c06a149e9af3de1ee";
 const STAGING_CLIENT = "1790311747";
@@ -376,6 +395,85 @@ async function storeMpdCache(origin: string, streamId: string, text: string): Pr
 }
 
 /**
+ * Cache URL final (hasil redirect) hls + dash per stream — 4 menit, sama
+ * dengan cache MPD. hdnts upstream hanya berlaku ±3 menit; URL hasil
+ * redirect (hdntl) ±5 menit, jadi URL final inilah yang dipakai.
+ */
+type FinalStreamUrls = { hls: string; dash: string };
+const streamUrlMemoryCache = new Map<string, { urls: FinalStreamUrls; expiresAt: number }>();
+
+function streamUrlCacheUrl(origin: string, streamId: string): string {
+  return `${origin}/__stream-url-cache/${streamId}`;
+}
+
+async function readStreamUrlCache(origin: string, streamId: string): Promise<FinalStreamUrls | null> {
+  const mem = streamUrlMemoryCache.get(streamId);
+  if (mem && mem.expiresAt > Date.now()) return mem.urls;
+  if (mem) streamUrlMemoryCache.delete(streamId);
+  const cache = workerCache();
+  if (!cache) return null;
+  try {
+    const cached = await cache.match(streamUrlCacheUrl(origin, streamId));
+    if (!cached) return null;
+    const urls = (await cached.json()) as FinalStreamUrls | null;
+    if (!urls) return null;
+    streamUrlMemoryCache.set(streamId, { urls, expiresAt: Date.now() + MPD_TTL_MS });
+    return urls;
+  } catch {
+    return null;
+  }
+}
+
+async function storeStreamUrlCache(origin: string, streamId: string, urls: FinalStreamUrls): Promise<void> {
+  streamUrlMemoryCache.set(streamId, { urls, expiresAt: Date.now() + MPD_TTL_MS });
+  const cache = workerCache();
+  if (!cache) return;
+  try {
+    await cache.put(
+      streamUrlCacheUrl(origin, streamId),
+      new Response(JSON.stringify(urls), { headers: { "cache-control": "max-age=240" } }),
+    );
+  } catch {
+    // Cache API tidak tersedia — memori saja.
+  }
+}
+
+/**
+ * Fetch manifest (hls/dash) lewat mirror dan ambil URL FINAL hasil redirect.
+ * Mirror dapat meneruskan 302 (Location terbaca) atau mengikuti redirect
+ * sendiri — keduanya ditangani. Gagal → null (pemanggil memakai URL asli).
+ */
+async function fetchManifestFinal(url: string): Promise<{ text: string; finalUrl: string } | null> {
+  const headers = { "user-agent": CHROME_UA, accept: "*/*" };
+  try {
+    const res = await fetch(viaMirror(url), {
+      headers,
+      redirect: "manual",
+      signal: AbortSignal.timeout(15_000),
+    } as RequestInit);
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get("location");
+      if (!location) return null;
+      const redirected = new URL(location, url).toString();
+      const res2 = await fetch(viaMirror(redirected), {
+        headers,
+        redirect: "follow",
+        signal: AbortSignal.timeout(15_000),
+      } as RequestInit);
+      if (!res2.ok) return null;
+      return { text: await res2.text(), finalUrl: unviaMirror(res2.url) || redirected };
+    }
+    if (res.ok) {
+      // Mirror mengikuti redirect sendiri: res.url = URL mirror final.
+      return { text: await res.text(), finalUrl: unviaMirror(res.url) || url };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/**
  * Ganti custom_data + drm_license_url dengan clearkey yang SUDAH didecrypt:
  * KID diambil dari MPD STAGING (host staging tidak geo-locked; URL-nya
  * di-cache 4 menit per stream sehingga staging hanya kena 1 request/4 menit),
@@ -559,23 +657,50 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   // staging, dash production saat fallback). Fetch SELALU lewat proxy
   // DataImpulse (exit Indonesia) dan di-SIMPAN 4 menit per stream —
   // request berikutnya tidak fetch ulang.
+  // URL final (hasil redirect hdntl) hls + dash per stream, cache 4 menit:
+  // hdnts asli hanya berlaku ±3 menit sedangkan URL hasil redirect (hdntl)
+  // ±5 menit — jadi URL final inilah yang disimpan dan ditulis ke body.
+  let finalUrls = await readStreamUrlCache(origin, streamId);
   let mpdText = await readMpdCache(origin, streamId);
-  if (!mpdText) {
+  if (!finalUrls || !mpdText) {
     const dash = typeof attrs.dash === "string" ? attrs.dash : "";
-    if (!dash) return body;
-    try {
-      const res = await fetch(viaMirror(dash), {
-        headers: { "user-agent": CHROME_UA, accept: "*/*" },
-        redirect: "follow",
-        signal: AbortSignal.timeout(15_000),
-      } as RequestInit);
-      if (!res.ok) return body;
-      mpdText = await res.text();
+    const hls = typeof attrs.hls === "string" ? attrs.hls : "";
+    if (!dash && !hls) return body;
+
+    const resolved: FinalStreamUrls = {
+      hls: finalUrls?.hls || hls,
+      dash: finalUrls?.dash || dash,
+    };
+
+    // DASH: fetch MPD sekalian jadi sumber PSSH untuk decrypt clearkey.
+    if (dash && !mpdText) {
+      const dashResult = await fetchManifestFinal(dash);
+      if (!dashResult) return body;
+      mpdText = dashResult.text;
+      resolved.dash = dashResult.finalUrl;
       void storeMpdCache(origin, streamId, mpdText);
-    } catch {
-      return body;
     }
+
+    // HLS: resolve URL final juga (cache → maksimal 1 fetch/4 menit/stream).
+    if (hls && !finalUrls?.hls) {
+      const hlsResult = await fetchManifestFinal(hls);
+      if (hlsResult) resolved.hls = hlsResult.finalUrl;
+    }
+
+    finalUrls = resolved;
+    void storeStreamUrlCache(origin, streamId, finalUrls);
+    if (!mpdText) return body;
   }
+
+  // Tulis URL final ke SEMUA record attributes sejak sekarang agar semua
+  // jalur keluar (sukses maupun gagal decrypt) memakai URL final hasil
+  // redirect, bukan hdnts asli yang lebih pendek masa berlakunya.
+  for (const record of jsonApiAttributeRecords(parsed)) {
+    if (finalUrls.dash && "dash" in record) record.dash = finalUrls.dash;
+    if (finalUrls.hls && "hls" in record) record.hls = finalUrls.hls;
+  }
+  body = JSON.stringify(parsed);
+
   const pssh = extractPsshFromMpd(mpdText);
   if (!pssh) return body;
 
@@ -998,8 +1123,8 @@ export async function proxyStagingStream(streamId: string, request?: Request): P
     "x-api-auth": STAGING_API_AUTH,
     "x-api-app-info": STAGING_APP_INFO,
     "accept-language": "id",
-    "x-user-email": STAGING_CREDENTIAL.email,
-    "x-user-token": STAGING_CREDENTIAL.token,
+    "x-user-email": STAGING_EMAIL,
+    "x-user-token": currentStagingToken(),
     "x-visitor-id": STAGING_VISITOR_ID,
     "content-type": "application/vnd.api+json",
   });
@@ -1016,8 +1141,12 @@ export async function proxyStagingStream(streamId: string, request?: Request): P
     upstream.headers.forEach((val, key) => {
       if (key.toLowerCase() !== "content-encoding") headerMap[key] = val;
     });
+    // Token ditolak upstream (401/403) → maju ke token berikutnya agar
+    // request staging berikutnya memakai kredensial lain dari daftar.
+    if (upstream.status === 401 || upstream.status === 403) rotateStagingToken();
     return { status: upstream.status, headers: headerMap, body: await upstream.text() };
   } catch {
+    rotateStagingToken();
     return null;
   }
 }
