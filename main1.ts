@@ -455,8 +455,10 @@ async function fetchManifestFinal(url: string): Promise<{ text: string; finalUrl
       redirect: "manual",
       signal: AbortSignal.timeout(15_000),
     } as RequestInit);
+    console.log("[v0] TMP hdnts=", url);
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get("location");
+      console.log("[v0] TMP L1=", location);
       if (location) {
         const redirected = new URL(location, url).toString();
         const res2 = await fetch(redirected, {
