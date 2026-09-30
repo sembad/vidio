@@ -1471,51 +1471,6 @@ function redirectToOfficial(
   });
 }
 
-async function proxyUltimateVideoData(
-  videoId: string,
-  credential: UltimateCredential,
-  request?: Request,
-  userAgent: string = CHROME_UA,
-): Promise<UpstreamResult | null> {
-  const incoming = request ? new URL(request.url) : null;
-  const search = incoming ? incoming.search : "?initialize=true";
-  // Sama seperti proxyUltimateStream: jangan teruskan visitor-id device user
-  // maupun JWT (x-authorization) miliknya — keduanya membuat akun pool
-  // mendapat treatment preview di mata upstream.
-  const defaultVisitorId = "c0f1cf62-ab27-45fb-9663-5e056ca0e3b3";
-
-  const headers = new Headers({
-    "accept-encoding": "gzip",
-    accept: "application/json",
-    "content-type": "application/json",
-    "accept-charset": "UTF-8",
-    "x-signature": "13ae5f8a3dcda6cadddf3f8bdc8947ba8afce28457bba8cb92eeb396b2006e8a",
-    "x-client": "1790592605",
-    "x-device-brand": "Redmi",
-    "x-device-model": "M2006C3LG",
-    "x-device-form-factor": "phone",
-    "x-device-soc": "mt6762 dandelion",
-    "x-device-os": "Android 10 (API 29)",
-    "x-device-android-mpc": "0",
-    "x-device-cpu-arch": "armeabi-v7a",
-    referer: "android-app://com.vidio.android",
-    "x-api-platform": "app-android",
-    "x-api-auth": API_AUTH,
-    "x-api-app-info": "android/10/2609.1.14-c11a00be7f-3191940",
-    "user-agent": ULTIMATE_UA,
-    "accept-language": "id",
-    "x-visitor-id": ULTIMATE_VISITOR_ID,
-    "x-user-id": ULTIMATE_USER_ID,
-    "x-user-email": credential.email,
-    "x-user-token": credential.token,
-  });
-
-  const partnerSig = request?.headers.get("x-partner-signature");
-  if (partnerSig !== null && partnerSig !== undefined) headers.set("x-partner-signature", partnerSig);
-
-  return fetchUpstream(originalVideoDataUrl(videoId, search), headers);
-}
-
 async function proxyVideoData(videoId: string, request: Request): Promise<Response> {
   const userEmail = request.headers.get("x-user-email");
   const userToken = request.headers.get("x-user-token");
@@ -1554,65 +1509,16 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
     return textResponse("upstream unavailable", 502);
   }
 
-  const activeUltimate = findActiveUltimateCredential(data, requestedEmail);
-  // Kredensial upstream: satu akun ultimate HARDCODED (tanpa pool API).
-  if (!activeUltimate) {
-    return redirectToOfficial(
-      `api/stream/v1/video_data/${encodeURIComponent(videoId)}`,
-      data,
-      requestedEmail,
-      request,
-    );
-  }
-
-  const trimmedToken = userToken.trim();
-  const matchesDirectUltimate = trimmedToken === activeUltimate.token.trim()
-    || (await productionAccountTokens()).has(trimmedToken);
-  if (!matchesDirectUltimate) {
-    const isLiveValid = await verifyLiveVidioSession(
-      requestedEmail,
-      trimmedToken,
-      request.headers.get("x-authorization"),
-    );
-    if (!isLiveValid) {
-      return textResponse("forbidden", 403);
-    }
-  }
-
-  const shouldEncrypt = request.headers.get("x-encrypt-response") === "aes"
-    || new URL(request.url).searchParams.has("encrypt");
-
-  // Cache per video ID, sama seperti stream. VOD tidak disentuh expires_in-nya
-  // (URL VOD berlaku lama); hanya treatment preview yang dimatikan.
-  const cacheKey = `video:${videoId}`;
-  const cached = await getCachedStreamResponseWithKv(cacheKey);
-  if (cached) {
-    return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
-  }
-
-  const fullResult = await fetchStreamResultShared(cacheKey, async () => {
-    for (const cred of PRODUCTION_CREDENTIALS) {
-      const r = await proxyUltimateVideoData(videoId, cred, request, CHROME_UA);
-      if (r && r.status === 200) return r;
-    }
-    return null;
-  });
-  let result = fullResult;
-  if (!result) {
-    const own = await proxyUltimateVideoData(
-      videoId,
-      { email: requestedEmail, token: trimmedToken },
-      request,
-      CHROME_UA,
-    );
-    result = own ?? null;
-  }
-  if (fullResult) {
-    // VOD tetap Widevine: license URL production diteruskan apa adanya.
-    fullResult.body = forcePreviewOffInBody(fullResult.body);
-    storeStreamResponse(cacheKey, fullResult);
-  }
-  return renderUpstream(result, shouldEncrypt);
+  // VOD SELALU redirect ke api.vidio.com resmi — apa pun akunnya (ultimate
+  // maupun bukan). App mengejar redirect memakai x-user-email / x-user-token
+  // ASLINYA sendiri ke server resmi; tidak diproxy lewat sini, tanpa cache.
+  // bot_data hanya untuk gerbang: akun tak dikenal tetap 403.
+  return redirectToOfficial(
+    `api/stream/v1/video_data/${encodeURIComponent(videoId)}`,
+    data,
+    requestedEmail,
+    request,
+  );
 }
 
 async function handleRequest(request: Request): Promise<Response> {
