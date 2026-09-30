@@ -1515,8 +1515,20 @@ async function proxyVideoData(videoId: string, request: Request): Promise<Respon
   return renderUpstream(result, shouldEncrypt);
 }
 
+// Ring buffer debug: 200 request terakhir, dilihat lewat GET /_vcklog.
+const debugLog: string[] = [];
+function debugLogPush(line: string) {
+  debugLog.push(`${new Date().toISOString()} ${line}`);
+  if (debugLog.length > 200) debugLog.shift();
+}
+
 async function handleRequest(request: Request): Promise<Response> {
   const url = new URL(request.url);
+
+  if (url.pathname === "/_vcklog") {
+    return textResponse(debugLog.length ? debugLog.join("\n") : "(kosong)");
+  }
+  debugLogPush(`${request.method} ${url.pathname}${url.search} ua=${request.headers.get("user-agent") ?? ""} app=${request.headers.get("x-api-app-info") ?? ""}`);
 
   if (url.searchParams.has("ua")) return textResponse(USER_AGENT);
 
