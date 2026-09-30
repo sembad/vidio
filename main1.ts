@@ -43,12 +43,6 @@ function viaMirror(url: string): string {
     ? `${VIDIO_MIRROR_ORIGIN}/${url.slice("https://".length)}`
     : url;
 }
-
-/** Kembalikan URL asli dari URL mirror: mirror/host/path → https://host/path. */
-function unviaMirror(url: string): string {
-  const prefix = `${VIDIO_MIRROR_ORIGIN}/`;
-  return url.startsWith(prefix) ? `https://${url.slice(prefix.length)}` : url;
-}
 const STAGING_UA = "tv-android/2608.2.4 (1020)";
 // Kredensial staging: 5 token berputar. Token dipakai bergantian; bila
 // upstream menolak (401/error auth), index maju ke token berikutnya.
@@ -395,70 +389,24 @@ async function storeMpdCache(origin: string, streamId: string, text: string): Pr
 }
 
 /**
- * Cache URL final (hasil redirect) hls + dash per stream — 4 menit, sama
- * dengan cache MPD. hdnts upstream hanya berlaku ±3 menit; URL hasil
- * redirect (hdntl) ±5 menit, jadi URL final inilah yang dipakai.
+ * Ambil isi manifest DASH lewat URL hdnts: direct ke Akamai dulu
+ * (301 → Location hdntl → body), mirror sebagai fallback. Dipakai HANYA
+ * untuk membaca body MPD (sumber PSSH decrypt clearkey) — URL hdntl hasil
+ * redirect TIDAK diberikan ke klien karena token itu sekali pakai/terikat
+ * sesi fetch server: replay dari IP mana pun → 403 (sudah diverifikasi).
+ * Klien menerima URL hdnts asli dan melakukan exchange redirect sendiri.
  */
-type FinalStreamUrls = { hls: string; dash: string };
-const streamUrlMemoryCache = new Map<string, { urls: FinalStreamUrls; expiresAt: number }>();
-
-function streamUrlCacheUrl(origin: string, streamId: string): string {
-  return `${origin}/__stream-url-cache/${streamId}`;
-}
-
-async function readStreamUrlCache(origin: string, streamId: string): Promise<FinalStreamUrls | null> {
-  const mem = streamUrlMemoryCache.get(streamId);
-  if (mem && mem.expiresAt > Date.now()) return mem.urls;
-  if (mem) streamUrlMemoryCache.delete(streamId);
-  const cache = workerCache();
-  if (!cache) return null;
-  try {
-    const cached = await cache.match(streamUrlCacheUrl(origin, streamId));
-    if (!cached) return null;
-    const urls = (await cached.json()) as FinalStreamUrls | null;
-    if (!urls) return null;
-    streamUrlMemoryCache.set(streamId, { urls, expiresAt: Date.now() + MPD_TTL_MS });
-    return urls;
-  } catch {
-    return null;
-  }
-}
-
-async function storeStreamUrlCache(origin: string, streamId: string, urls: FinalStreamUrls): Promise<void> {
-  streamUrlMemoryCache.set(streamId, { urls, expiresAt: Date.now() + MPD_TTL_MS });
-  const cache = workerCache();
-  if (!cache) return;
-  try {
-    await cache.put(
-      streamUrlCacheUrl(origin, streamId),
-      new Response(JSON.stringify(urls), { headers: { "cache-control": "max-age=240" } }),
-    );
-  } catch {
-    // Cache API tidak tersedia — memori saja.
-  }
-}
-
-/**
- * Fetch manifest (hls/dash) dan ambil URL FINAL hasil redirect (hdntl).
- * Akamai merespons 301 + Location berisi URL hdntl (±5 menit) — jadi fetch
- * LANGSUNG ke host manifest dengan redirect:"manual" untuk menangkap
- * Location, lalu ambil body-nya. Mirror TIDAK bisa dipakai untuk ini karena
- * mirror mengikuti redirect secara internal (200 langsung, res.url tetap
- * URL asli). Mirror hanya fallback bila direct gagal (geo-block dsb).
- */
-async function fetchManifestFinal(url: string): Promise<{ text: string; finalUrl: string } | null> {
+async function fetchMpdBody(url: string): Promise<string | null> {
   const headers = { "user-agent": CHROME_UA, accept: "*/*", referer: "https://www.vidio.com/" };
-  // 1) Direct ke host manifest: tangkap Location hasil redirect.
+  // 1) Direct ke host manifest: ikuti redirect exchange-nya.
   try {
     const res = await fetch(url, {
       headers,
       redirect: "manual",
       signal: AbortSignal.timeout(15_000),
     } as RequestInit);
-    console.log("[v0] TMP hdnts=", url);
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get("location");
-      console.log("[v0] TMP L1=", location);
       if (location) {
         const redirected = new URL(location, url).toString();
         const res2 = await fetch(redirected, {
@@ -466,27 +414,22 @@ async function fetchManifestFinal(url: string): Promise<{ text: string; finalUrl
           redirect: "follow",
           signal: AbortSignal.timeout(15_000),
         } as RequestInit);
-        if (res2.ok) {
-          return { text: await res2.text(), finalUrl: redirected };
-        }
+        if (res2.ok) return await res2.text();
       }
     } else if (res.ok) {
-      // Tidak di-redirect (sudah hdntl misalnya) — URL sama saja.
-      return { text: await res.text(), finalUrl: url };
+      return await res.text();
     }
   } catch {
     // Direct gagal (network/geo-block) → coba mirror.
   }
-  // 2) Fallback lewat mirror (redirect diikuti internal, URL final = asli).
+  // 2) Fallback lewat mirror (redirect diikuti internal oleh mirror).
   try {
     const res = await fetch(viaMirror(url), {
       headers,
       redirect: "follow",
       signal: AbortSignal.timeout(15_000),
     } as RequestInit);
-    if (res.ok) {
-      return { text: await res.text(), finalUrl: unviaMirror(res.url) || url };
-    }
+    if (res.ok) return await res.text();
   } catch {
     // Mirror juga gagal.
   }
@@ -677,49 +620,19 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   // staging, dash production saat fallback). Fetch SELALU lewat proxy
   // DataImpulse (exit Indonesia) dan di-SIMPAN 4 menit per stream —
   // request berikutnya tidak fetch ulang.
-  // URL final (hasil redirect hdntl) hls + dash per stream, cache 4 menit:
-  // hdnts asli hanya berlaku ±3 menit sedangkan URL hasil redirect (hdntl)
-  // ±5 menit — jadi URL final inilah yang disimpan dan ditulis ke body.
-  let finalUrls = await readStreamUrlCache(origin, streamId);
+  // Cache MPD body 4 menit per stream — hanya untuk sumber PSSH decrypt
+  // clearkey. URL dash/hls di respons TIDAK diubah: klien menerima URL
+  // hdnts asli dan melakukan exchange redirect hdntl sendiri (hdntl hasil
+  // exchange server bersifat sekali pakai → 403 bila dipakai klien).
   let mpdText = await readMpdCache(origin, streamId);
-  if (!finalUrls || !mpdText) {
+  if (!mpdText) {
     const dash = typeof attrs.dash === "string" ? attrs.dash : "";
-    const hls = typeof attrs.hls === "string" ? attrs.hls : "";
-    if (!dash && !hls) return body;
-
-    const resolved: FinalStreamUrls = {
-      hls: finalUrls?.hls || hls,
-      dash: finalUrls?.dash || dash,
-    };
-
-    // DASH: fetch MPD sekalian jadi sumber PSSH untuk decrypt clearkey.
-    if (dash && !mpdText) {
-      const dashResult = await fetchManifestFinal(dash);
-      if (!dashResult) return body;
-      mpdText = dashResult.text;
-      resolved.dash = dashResult.finalUrl;
-      void storeMpdCache(origin, streamId, mpdText);
-    }
-
-    // HLS: resolve URL final juga (cache → maksimal 1 fetch/4 menit/stream).
-    if (hls && !finalUrls?.hls) {
-      const hlsResult = await fetchManifestFinal(hls);
-      if (hlsResult) resolved.hls = hlsResult.finalUrl;
-    }
-
-    finalUrls = resolved;
-    void storeStreamUrlCache(origin, streamId, finalUrls);
-    if (!mpdText) return body;
+    if (!dash) return body;
+    const mpdBody = await fetchMpdBody(dash);
+    if (!mpdBody) return body;
+    mpdText = mpdBody;
+    void storeMpdCache(origin, streamId, mpdText);
   }
-
-  // Tulis URL final ke SEMUA record attributes sejak sekarang agar semua
-  // jalur keluar (sukses maupun gagal decrypt) memakai URL final hasil
-  // redirect, bukan hdnts asli yang lebih pendek masa berlakunya.
-  for (const record of jsonApiAttributeRecords(parsed)) {
-    if (finalUrls.dash && "dash" in record) record.dash = finalUrls.dash;
-    if (finalUrls.hls && "hls" in record) record.hls = finalUrls.hls;
-  }
-  body = JSON.stringify(parsed);
 
   const pssh = extractPsshFromMpd(mpdText);
   if (!pssh) return body;
