@@ -682,10 +682,9 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   attrs.expires_in = 240;
   attrs.is_drm = true;
   delete attrs.custom_data;
-  const licenseHost = new URL(request.url).host;
-  attrs.license_servers = {
-    drm_license_url: `https://${licenseHost}/livestreamings/${streamId}/stream?initialize=true`,
-  };
+  // license_servers/drm_license_url tidak dikirim sama sekali: APK clearkey
+  // mengambil kunci langsung dari attributes.clearkey.
+  delete attrs.license_servers;
   return JSON.stringify(parsed);
 }
 
