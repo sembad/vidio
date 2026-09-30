@@ -61,6 +61,21 @@ function currentStagingToken(): string {
 function rotateStagingToken(): void {
   stagingTokenIndex = (stagingTokenIndex + 1) % STAGING_TOKENS.length;
 }
+
+/** Salinan array dengan urutan acak (Fisher-Yates) — pemilihan akun acak. */
+function shuffled<T>(items: readonly T[]): T[] {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = arr[i] as T;
+    arr[i] = arr[j] as T;
+    arr[j] = tmp;
+  }
+  return arr;
+}
+
+/** Batas waktu satu akun saat retry: 15 detik. */
+const PER_ACCOUNT_TIMEOUT_MS = 15_000;
 const STAGING_API_AUTH = "cubixarIhu8une5OP33upogocaTeWerU";
 const STAGING_SIGNATURE = "81627641f8168b4c6707e4de044f63da3e662a90f0bf9d5c06a149e9af3de1ee";
 const STAGING_CLIENT = "1790311747";
@@ -559,10 +574,13 @@ async function fetchProductionCustomData(streamId: string, request?: Request): P
   if (cached && cached.expiresAt > Date.now()) return cached.cd;
   if (cached) prodCdMemoryCache.delete(streamId);
 
-  for (const cred of PRODUCTION_CREDENTIALS) {
+  // Urutan akun ACAK; retry akun demi akun sampai custom_data didapat,
+  // maksimal 15 detik per akun. Akun yang sudah dipakai untuk stream ini
+  // tidak dipakai lagi selama 24 jam WIB.
+  for (const cred of shuffled(PRODUCTION_CREDENTIALS)) {
     if (!isAccountAvailable(streamId, cred.token)) continue;
     markAccountUsed(streamId, cred.token);
-    const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA);
+    const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA, PER_ACCOUNT_TIMEOUT_MS);
     if (!r || r.status !== 200) continue;
     try {
       const attrs = jsonApiAttributeRecords(JSON.parse(r.body))[0];
@@ -1124,13 +1142,14 @@ interface UpstreamResult {
 async function fetchUpstream(
   upstreamUrl: string,
   headers: Headers,
+  timeoutMs: number = 30_000,
 ): Promise<UpstreamResult | null> {
   try {
     const fetchOptions: RequestInit = {
       method: "GET",
       headers,
       redirect: "follow",
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(timeoutMs),
     };
 
     const upstream = await fetch(viaUpstreamProxy(upstreamUrl), fetchOptions);
@@ -1182,7 +1201,11 @@ const CHROME_UA =
  * curl yang terbukti sukses. Staging dibatasi 1 GET/menit, jadi hasilnya
  * WAJIB lewat cache stream 4 menit (jangan dipanggil di luar loader cache).
  */
-export async function proxyStagingStream(streamId: string, request?: Request): Promise<UpstreamResult | null> {
+export async function proxyStagingStream(
+  streamId: string,
+  request?: Request,
+  token?: string,
+): Promise<UpstreamResult | null> {
   const incoming = request ? new URL(request.url) : null;
   const search = incoming && incoming.search ? incoming.search : "?initialize=true";
   const headers = new Headers({
@@ -1196,7 +1219,7 @@ export async function proxyStagingStream(streamId: string, request?: Request): P
     "x-api-app-info": STAGING_APP_INFO,
     "accept-language": "id",
     "x-user-email": STAGING_EMAIL,
-    "x-user-token": currentStagingToken(),
+    "x-user-token": token ?? currentStagingToken(),
     "x-visitor-id": STAGING_VISITOR_ID,
     "content-type": "application/vnd.api+json",
   });
@@ -1206,7 +1229,7 @@ export async function proxyStagingStream(streamId: string, request?: Request): P
       {
         headers,
         redirect: "follow",
-        signal: AbortSignal.timeout(30_000),
+        signal: AbortSignal.timeout(PER_ACCOUNT_TIMEOUT_MS),
       } as RequestInit,
     );
     const headerMap: Record<string, string> = {};
@@ -1228,6 +1251,7 @@ async function proxyUltimateStream(
   credential: UltimateCredential,
   request?: Request,
   userAgent: string = CHROME_UA,
+  timeoutMs: number = 30_000,
 ): Promise<UpstreamResult | null> {
   const incoming = request ? new URL(request.url) : null;
   const search = incoming ? incoming.search : "?initialize=true";
@@ -1260,12 +1284,12 @@ async function proxyUltimateStream(
   applyForwardedStreamHeaders(headers, request);
 
   const url = originalStreamUrl(streamId, search);
-  const result = await fetchUpstream(url, headers);
+  const result = await fetchUpstream(url, headers, timeoutMs);
   // Akamai (CDN Vidio) kadang memblokir satu request lewat ("Access Denied")
   // sesaat — bukan penolakan auth. Coba sekali lagi: koneksi proxy baru bisa
   // dapat exit IP berbeda dan lolos.
   if (result?.status === 403 && result.body.includes("Access Denied")) {
-    return fetchUpstream(url, headers);
+    return fetchUpstream(url, headers, timeoutMs);
   }
   return result;
 }
@@ -1450,14 +1474,17 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
   }
 
-  // Sumber utama: API staging (akun tv-android staging, curl terbukti).
-  // Cadangan: production (token baru → token lama) → kredensial user.
-  // Semua lewat cache 4 menit — staging maksimal 1 GET per 4 menit.
+  // Sumber utama: API staging (akun tv-android staging, urutan ACAK).
+  // Retry akun demi akun sampai 200 OK — maksimal 15 detik per akun.
+  // Cadangan: production (urutan ACAK, retry sama) → kredensial user.
+  // Semua lewat cache 2,5 menit — staging maksimal 1 GET per window cache.
   const fullResult = await fetchStreamResultShared(cacheKey, async () => {
-    const staging = await proxyStagingStream(streamId, request);
-    if (staging) return staging;
-    for (const cred of PRODUCTION_CREDENTIALS) {
-      const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA);
+    for (const token of shuffled(STAGING_TOKENS)) {
+      const staging = await proxyStagingStream(streamId, request, token);
+      if (staging && staging.status === 200) return staging;
+    }
+    for (const cred of shuffled(PRODUCTION_CREDENTIALS)) {
+      const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA, PER_ACCOUNT_TIMEOUT_MS);
       if (r && r.status === 200) return r;
     }
     return null;
