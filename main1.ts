@@ -683,8 +683,12 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   attrs.is_drm = true;
   delete attrs.custom_data;
   const licenseHost = new URL(request.url).host;
+  // URL license WAJIB mengandung "/clearkey": pemilih skema DRM aplikasi
+  // (s7/h.e) memakai CLEARKEY_UUID hanya bila URL mengandung "/clearkey",
+  // selain itu jatuh ke Widevine. Endpoint /clearkey menjawab JSON kunci
+  // W3C dari registri yang sama dengan attributes.clearkey.
   attrs.license_servers = {
-    drm_license_url: `https://${licenseHost}/livestreamings/${streamId}/stream?initialize=true`,
+    drm_license_url: `https://${licenseHost}/clearkey`,
   };
   return JSON.stringify(parsed);
 }
