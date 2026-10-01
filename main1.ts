@@ -1550,6 +1550,25 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     return redirectOfficialStream(streamId, request);
   }
   if (result && isHlsOnlyStream(result.body)) {
+    // Staging hanya menyediakan HLS (mis. beIN) — tidak ada MPD/PSSH untuk
+    // clearkey, dan redirect ke official menemui 403 not_subscribed karena
+    // akun pribadi user tidak punya paket. Fallback: fetch stream resmi
+    // memakai kredensial ultimate pool (punya DASH+Widevine), lalu
+    // decrypt clearkey seperti channel lain.
+    if (activeUltimate) {
+      const prod = await proxyUltimateStream(streamId, activeUltimate, request);
+      if (
+        prod &&
+        prod.status === 200 &&
+        !isHlsOnlyStream(prod.body) &&
+        !isStagingCdnStream(prod.body)
+      ) {
+        prod.body = forcePreviewOffInBody(prod.body);
+        prod.body = await embedClearKeyInBody(prod.body, request, streamId);
+        storeStreamResponse(cacheKey, prod);
+        return renderUpstream(prod, shouldEncrypt);
+      }
+    }
     return redirectOfficialStream(streamId, request);
   }
   if (result) {
