@@ -12,6 +12,7 @@ from zipfile import ZipFile
 from patch_player_lifecycle import GATE, patch_player_callbacks
 from patch_loading_recovery import patch_player_lifetime
 from patch_clearkey_embedded import FIELD, HOLDER, LICENSE_METHOD, SPECS, detect_profile, patch_adapter, patch_method, unique_path
+import patch_force_update
 
 
 class PlayerCallbackTests(unittest.TestCase):
@@ -160,6 +161,11 @@ class DrmResponseTests(unittest.TestCase):
 
 def verify_decoded_apk(root):
     root = Path(root)
+    if detect_profile(root) == 'tv':
+        use_case = patch_force_update.find_use_case(root).read_text()
+        gate = use_case.index(patch_force_update.MARKER)
+        if use_case.index('version_force') < gate or 'sget-object p0, Ltr/b;->a:Ltr/b;' not in use_case[:gate + 200]:
+            raise AssertionError('TV force-update gate is not disabled at tr/h->j')
     retry = next(root.glob('smali*/com/vidio/android/patch/StreamRetry.smali')).read_text()
     chain = re.search(r'retry\(L([^;]+);L[^/]+/f0;', retry).group(1)
     bridge = next(root.glob(f'smali*/{chain.rsplit("/", 1)[0]}/a.smali')).read_text()
