@@ -1524,19 +1524,17 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
   }
 
-  // Sumber utama: API staging (akun tv-android staging, urutan ACAK).
-  // Retry akun demi akun sampai 200 OK — maksimal 15 detik per akun.
-  // Cadangan: production (urutan ACAK, retry sama) → kredensial user.
-  // Semua lewat cache 2,5 menit — staging maksimal 1 GET per window cache.
+  // Sumber TUNGGAL: API staging (akun tv-android staging, urutan ACAK).
+  // DILARANG production di MPD/HLS — tidak ada fallback kredensial
+  // production maupun kredensial user di endpoint stream.
+  // Respons staging ber-URL CDN staging (etslive-staging-*) ditolak karena
+  // MPD-nya 404 di device; coba token staging berikutnya sampai dapat URL
+  // yang bisa diputar. Semua lewat cache 2,5 menit.
   const fullResult = await fetchStreamResultShared(cacheKey, async () => {
     for (const token of shuffled(STAGING_TOKENS)) {
       const staging = await proxyStagingStream(streamId, request, token);
-      if (staging && staging.status === 200) {
-        // Respons staging yang URL playback-nya menunjuk CDN staging
-        // (etslive-staging-*) tidak bisa diputar: MPD-nya 404 di device
-        // (terbukti di log playback). Tolak agar loop lanjut ke kredensial
-        // production yang URL-nya CDN production dan terbukti jalan.
-        if (!isStagingCdnStream(staging.body)) return staging;
+      if (staging && staging.status === 200 && !isStagingCdnStream(staging.body)) {
+        return staging;
       }
       // Staging menolak dengan "Verifikasi Email untuk Nonton" (403) →
       // akun staging tidak berhak; langsung redirect ke api.vidio.com resmi
@@ -1544,10 +1542,6 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
       if (staging && staging.status === 403 && isEmailVerificationError(staging.body)) {
         return REDIRECT_OFFICIAL_SENTINEL;
       }
-    }
-    for (const cred of shuffled(PRODUCTION_CREDENTIALS)) {
-      const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA, PER_ACCOUNT_TIMEOUT_MS);
-      if (r && r.status === 200) return r;
     }
     return null;
   });
@@ -1558,17 +1552,6 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   if (result && isHlsOnlyStream(result.body)) {
     return redirectOfficialStream(streamId, request);
   }
-  if (!result) {
-    // Kredensial hardcode gagal → coba kredensial asli user yang request
-    const own = await proxyUltimateStream(
-      streamId,
-      { email: requestedEmail, token: trimmedToken },
-      request,
-      CHROME_UA,
-    );
-    result = own ?? null;
-  }
-  if (result && isHlsOnlyStream(result.body)) return redirectOfficialStream(streamId, request);
   if (result) {
     // Sembunyikan treatment preview (badge) supaya aplikasi tidak melewatkan
     // penjadwalan refresh stream-nya.
