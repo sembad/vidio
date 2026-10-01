@@ -47,6 +47,8 @@ def patch(root):
         retry_interceptor.write_text(native)
 
     retry = retry.replace('.field private static deadlines:Ljava/util/WeakHashMap;', '.field private static deadlines:Ljava/util/Map;')
+    if '.field private static stagingRetries:I' not in retry:
+        retry = retry.replace('.source "StreamRetry.smali"', '.source "StreamRetry.smali"\n\n.field private static stagingRetries:I')
     if '.field private static deadlines:Ljava/util/Map;' not in retry:
         retry = retry.replace('.source "StreamRetry.smali"', '.source "StreamRetry.smali"\n\n.field private static deadlines:Ljava/util/Map;')
     retry = method(retry, '<clinit>()V', f'''.method static constructor <clinit>()V
@@ -60,6 +62,8 @@ def patch(root):
 .end method''')
     retry = method(retry, 'beginCall(Ljava/lang/Object;)V', f'''.method public static beginCall(Ljava/lang/Object;)V
     .locals 3
+    const/4 v0, 0x0
+    sput v0, {RETRY}->stagingRetries:I
     sget-object v0, {RETRY}->deadlines:Ljava/util/Map;
     invoke-static {{}}, Landroid/os/SystemClock;->elapsedRealtime()J
     move-result-wide v1
@@ -128,6 +132,89 @@ def patch(root):
 
     const/16 v3, 0xc8
 ''', 1)
+    if 'etslive-staging' not in retry:
+        anchor = '    :cond_2\n    return-object p2'
+        assert anchor in retry, 'retry 200 path not found'
+        # Nama kelas/method okhttp ter-obfuscate berbeda antar tree (phone vs
+        # TV) — turunkan semuanya dari file Response masing-masing tree.
+        resp_path = next(root.glob(f'smali*/{http}/l0.smali'))
+        resp_text = resp_path.read_text()
+        body_getter = body_cls = None
+        for m in re.finditer(rf'\.method public final (\w+)\(\)L{http}/(\w+);', resp_text):
+            cand = next(root.glob(f'smali*/{http}/{m.group(2)}.smali'), None)
+            if cand and '.method public final string()Ljava/lang/String;' in cand.read_text():
+                body_getter, body_cls = m.group(1), m.group(2)
+                break
+        assert body_cls, 'response body class not found'
+        body_text = next(root.glob(f'smali*/{http}/{body_cls}.smali')).read_text()
+        assert f'.method public static final create(Ljava/lang/String;L{http}/a0;)L{http}/{body_cls};' in body_text
+        hdr_getter = re.search(rf'\.method public final (\w+)\(Ljava/lang/String;Ljava/lang/String;\)Ljava/lang/String;', resp_text).group(1)
+        bld_text = next(root.glob(f'smali*/{http}/l0$a.smali')).read_text()
+        bset = re.search(rf'\.method public final (\w+)\(L{http}/{body_cls};\)V', bld_text).group(1)
+        url_getter = re.search(rf'invoke-virtual \{{p1\}}, L{http}/f0;->(\w+)\(\)L{http}/y;', retry).group(1)
+        assert '.locals 7' in retry and ':catch_1' in retry and ':goto_0' in retry
+        retry = retry.replace(anchor, f'''    :cond_2
+    const/16 v3, 0xc8
+    if-eq v2, v3, :cond_2_staging
+    return-object p2
+    :cond_2_staging
+    # FIX32: 200 ber-URL CDN staging (etslive-staging) tidak bisa diputar
+    # (MPD staging 404 di device). Baca body; bila staging, perlakukan
+    # sebagai transient: request BARU = akun/token berikutnya di proxy.
+    const-string v2, "Content-Encoding"
+    invoke-virtual {{p2, v2}}, L{http}/l0;->{hdr_getter}(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+    move-result-object v2
+    if-eqz v2, :cond_2_read
+    return-object p2
+    :cond_2_read
+    invoke-virtual {{p2}}, L{http}/l0;->{body_getter}()L{http}/{body_cls};
+    move-result-object v2
+    invoke-virtual {{v2}}, L{http}/{body_cls};->string()Ljava/lang/String;
+    move-result-object v4
+    const-string v2, "etslive-staging"
+    invoke-virtual {{v4, v2}}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+    move-result v2
+    if-eqz v2, :cond_2_rebuild
+    sget v2, {RETRY}->stagingRetries:I
+    const/4 v3, 0x5
+    if-ge v2, v3, :cond_2_rebuild
+    add-int/lit8 v2, v2, 0x1
+    sput v2, {RETRY}->stagingRetries:I
+    invoke-static {{}}, Ljava/lang/System;->currentTimeMillis()J
+    move-result-wide v5
+    cmp-long v2, v5, v0
+    if-gez v2, :cond_2_rebuild
+    invoke-virtual {{p1}}, L{http}/f0;->{url_getter}()L{http}/y;
+    move-result-object v2
+    invoke-virtual {{v2}}, L{http}/y;->toString()Ljava/lang/String;
+    move-result-object v2
+    invoke-virtual {{p2}}, L{http}/l0;->f()I
+    move-result v3
+    invoke-static {{v2, v3}}, Lcom/vidio/android/patch/TrafficLog;->logRetry(Ljava/lang/String;I)V
+    invoke-virtual {{p2}}, L{http}/l0;->close()V
+    const-wide/16 v5, 0x3e8
+    :try_start_2
+    invoke-static {{v5, v6}}, Ljava/lang/Thread;->sleep(J)V
+    :try_end_2
+    .catch Ljava/lang/InterruptedException; {{:try_start_2 .. :try_end_2}} :catch_1
+    invoke-virtual {{p0, p1}}, L{chain};->a(L{http}/f0;)L{http}/l0;
+    move-result-object p2
+    goto :goto_0
+    :cond_2_rebuild
+    # string() mengkonsumsi body — bangun ulang respons sebelum dikembalikan
+    invoke-virtual {{p2}}, L{http}/l0;->{body_getter}()L{http}/{body_cls};
+    move-result-object v2
+    invoke-virtual {{v2}}, L{http}/{body_cls};->contentType()L{http}/a0;
+    move-result-object v3
+    invoke-static {{v4, v3}}, L{http}/{body_cls};->create(Ljava/lang/String;L{http}/a0;)L{http}/{body_cls};
+    move-result-object v2
+    new-instance v3, L{http}/l0$a;
+    invoke-direct {{v3, p2}}, L{http}/l0$a;-><init>(L{http}/l0;)V
+    invoke-virtual {{v3, v2}}, L{http}/l0$a;->{bset}(L{http}/{body_cls};)V
+    invoke-virtual {{v3}}, L{http}/l0$a;->c()L{http}/l0;
+    move-result-object p2
+    :cond_2_keep
+    return-object p2''', 1)
     retry_path.write_text(retry)
 
     gate_path = next(root.glob('smali*/com/vidio/android/patch/LoginGate.smali'))
