@@ -271,6 +271,9 @@ interface CachedStreamResponse {
 
 const streamResponseCache = new Map<string, CachedStreamResponse>();
 const streamResponseInflight = new Map<string, Promise<UpstreamResult | null>>();
+// Penanda hasil loader "redirect ke API resmi" (bukan respons upstream;
+// status 0 menjamin tidak pernah ter-cache atau diperlakukan sebagai body).
+const REDIRECT_OFFICIAL_SENTINEL: UpstreamResult = { status: 0, body: "", headers: {} };
 
 function getCachedStreamResponse(key: string, nowMs = Date.now()): CachedStreamResponse | null {
   const cached = streamResponseCache.get(key);
@@ -1046,6 +1049,19 @@ function upstreamHasFatalErrors(body: string): boolean {
   }
 }
 
+/** 403 staging "Verifikasi Email untuk Nonton" → sinyal redirect ke API resmi. */
+function isEmailVerificationError(body: string): boolean {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (!isRecord(parsed) || !Array.isArray(parsed.errors)) return false;
+    return parsed.errors.some((error) =>
+      isRecord(error) && typeof error.title === "string"
+      && error.title.startsWith("Verifikasi Email"));
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Mengklasifikasi respons stream/video_data dari upstream, tanpa hardcode
  * hostname apa pun:
@@ -1507,6 +1523,12 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     for (const token of shuffled(STAGING_TOKENS)) {
       const staging = await proxyStagingStream(streamId, request, token);
       if (staging && staging.status === 200) return staging;
+      // Staging menolak dengan "Verifikasi Email untuk Nonton" (403) →
+      // akun staging tidak berhak; langsung redirect ke api.vidio.com resmi
+      // agar app mengejar redirect dengan kredensial user sendiri.
+      if (staging && staging.status === 403 && isEmailVerificationError(staging.body)) {
+        return REDIRECT_OFFICIAL_SENTINEL;
+      }
     }
     for (const cred of shuffled(PRODUCTION_CREDENTIALS)) {
       const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA, PER_ACCOUNT_TIMEOUT_MS);
@@ -1515,6 +1537,9 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     return null;
   });
   let result = fullResult;
+  if (result === REDIRECT_OFFICIAL_SENTINEL) {
+    return redirectOfficialStream(streamId, request);
+  }
   if (result && isHlsOnlyStream(result.body)) {
     return redirectOfficialStream(streamId, request);
   }
@@ -1857,6 +1882,14 @@ async function selfCheck(): Promise<void> {
   }
   if (upstreamHasFatalErrors(JSON.stringify({ data: { id: "1" } })) || upstreamHasFatalErrors("not json")) {
     throw new Error("Non-fatal upstream bodies must pass through unchanged");
+  }
+
+  // Deteksi 403 "Verifikasi Email" staging → redirect ke API resmi
+  if (!isEmailVerificationError(JSON.stringify({ errors: [{ title: "Verifikasi Email untuk Nonton", detail: "Selesaikan verifikasi email profil utama" }] }))) {
+    throw new Error("Email-verification 403 must be detected for official redirect");
+  }
+  if (isEmailVerificationError(JSON.stringify({ errors: [{ title: "not_logged_in" }] })) || isEmailVerificationError("not json")) {
+    throw new Error("Non-verification errors must not trigger the official redirect");
   }
 
   // Klasifikasi kualitas respons upstream: full (ada URL) / error
