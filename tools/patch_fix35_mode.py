@@ -146,9 +146,12 @@ def patch_login_gate(gate: Path) -> None:
 '''.replace('{GATE}', GATE)
     if 'FIX35: no cached mode' not in src:
         if old_fallback not in src:
-            raise SystemExit('[fix35] loadAccountMode fallback block not found')
-        src = src.replace(old_fallback, new_fallback, 1)
-        print('[fix35] LoginGate.loadAccountMode -> fresh fetchPermission fallback')
+            # FIX37 rewrote loadAccountMode entirely (no network in the
+            # interceptor hot path); the FIX35 fallback is obsolete there.
+            print('[fix35] loadAccountMode fallback block not found (superseded by FIX37, skipping)')
+        else:
+            src = src.replace(old_fallback, new_fallback, 1)
+            print('[fix35] LoginGate.loadAccountMode -> fresh fetchPermission fallback')
 
     gate.write_text(src)
 
