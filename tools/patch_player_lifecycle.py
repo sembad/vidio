@@ -133,7 +133,9 @@ def patch(root):
 
     const-string v2, "x-user-email"
 '''
-    if 'vck_early_done' not in b:
+    # Hook sudah terpasang baik lewat blok :vck_early_done maupun bentuk
+    # manual sebelumnya (label :cond_0) — keduanya memanggil beginStreamLoading.
+    if 'beginStreamLoading' not in b:
         b = replace_once(b, early_anchor, early_block)
         print('[player-lifecycle] early beginStreamLoading hooked in intercept()')
     bridge.write_text(b)
