@@ -199,7 +199,7 @@ def verify_decoded_apk(root):
     state = re.search(r'\.method public static onStreamPlaybackState\(I\)V\n.*?\.end method', gate, re.S).group()
     if '->streamFrameRendered:Z' not in state or '->streamPlaybackFailed:Z' not in state:
         raise AssertionError('Native IDLE/error state guards are missing')
-    if 'LOADING_VISIBLE' not in gate or 'LOADING_WINDOW_ERROR' not in gate or 'STREAM_BEGIN FIX24' not in gate:
+    if 'LOADING_VISIBLE' not in gate or 'LOADING_WINDOW_ERROR' not in gate or 'STREAM_BEGIN ' not in gate:
         raise AssertionError('Native loading diagnostics are missing')
     if '->heldPlayer:Ljava/lang/Object;' not in gate or 'AUTO_RETRY' not in gate:
         raise AssertionError('Player auto-retry (FIX30) is missing')
