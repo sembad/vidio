@@ -198,6 +198,8 @@ def patch(root):
         gate = gate.replace('.field private static volatile playerPlaying:Z', '.field private static volatile streamRequestPending:Z\n\n.field private static volatile playerPlaying:Z')
     if '.field private static volatile streamFrameRendered:Z' not in gate:
         gate = gate.replace('.field private static volatile playerPlaying:Z', '.field private static volatile streamFrameRendered:Z\n\n.field private static volatile playerPlaying:Z')
+    if '.field private static failToastTask:Ljava/lang/Runnable;' not in gate:
+        gate = gate.replace('.source "LoginGate.java"', '.source "LoginGate.java"\n\n.field private static failToastTask:Ljava/lang/Runnable;', 1)
     gate = method(gate, 'beginStreamLoading(Ljava/lang/String;)V', f'''.method public static beginStreamLoading(Ljava/lang/String;)V
     .locals 2
     invoke-static {{p0}}, Landroid/net/Uri;->parse(Ljava/lang/String;)Landroid/net/Uri;
@@ -216,6 +218,7 @@ def patch(root):
     sput-boolean v1, {GATE}->playerPlaying:Z
     sput-boolean v1, {GATE}->streamFrameRendered:Z
     sput-boolean v1, {GATE}->streamPlaybackFailed:Z
+    invoke-static {{}}, {GATE}->cancelFailToast()V
     sput-object v1, {GATE}->lastLoadingWindowError:Ljava/lang/String;
     const/4 v1, 0x1
     sput-boolean v1, {GATE}->streamRequestPending:Z
@@ -238,6 +241,7 @@ def patch(root):
     :hide
     const/4 v0, 0x1
     sput-boolean v0, {GATE}->streamFrameRendered:Z
+    invoke-static {{}}, {GATE}->cancelFailToast()V
     invoke-static {{}}, {GATE}->hideStreamLoading()V
     :done
     return-void
@@ -250,6 +254,7 @@ def patch(root):
     if-nez v0, :done
     sput-boolean p0, {GATE}->playerPlaying:Z
     if-eqz p0, :done
+    invoke-static {{}}, {GATE}->cancelFailToast()V
     sget-boolean v0, {GATE}->streamFrameRendered:Z
     if-eqz v0, :done
     invoke-static {{}}, {GATE}->hideStreamLoading()V
@@ -292,8 +297,60 @@ def patch(root):
     const/4 v0, 0x1
     sput-boolean v0, {GATE}->streamPlaybackFailed:Z
     invoke-static {{}}, {GATE}->hideStreamLoading()V
+    # Jangan toast langsung: retry internal sering berhasil beberapa detik
+    # kemudian (mis. cdmError 6 lalu FIRST_FRAME). Tunda toast 8 detik dan
+    # batalkan bila frame berhasil dirender.
+    invoke-static {{}}, {GATE}->scheduleFailToast()V
+    :done
+    return-void
+.end method''')
+    gate = method(gate, 'scheduleFailToast()V', f'''.method public static scheduleFailToast()V
+    .locals 4
+    sget-object v0, {GATE}->failToastTask:Ljava/lang/Runnable;
+    if-eqz v0, :new_task
+    sget-object v0, {GATE}->loadingHandler:Landroid/os/Handler;
+    if-eqz v0, :fallback
+    sget-object v0, {GATE}->loadingHandler:Landroid/os/Handler;
+    sget-object v1, {GATE}->failToastTask:Ljava/lang/Runnable;
+    invoke-virtual {{v0, v1}}, Landroid/os/Handler;->removeCallbacks(Ljava/lang/Runnable;)V
+    goto :post
+    :new_task
+    new-instance v0, Lcom/vidio/android/patch/LoginGate$6;
+    invoke-direct {{v0}}, Lcom/vidio/android/patch/LoginGate$6;-><init>()V
+    sput-object v0, {GATE}->failToastTask:Ljava/lang/Runnable;
+    :post
+    sget-object v0, {GATE}->loadingHandler:Landroid/os/Handler;
+    if-eqz v0, :fallback
+    sget-object v0, {GATE}->loadingHandler:Landroid/os/Handler;
+    sget-object v1, {GATE}->failToastTask:Ljava/lang/Runnable;
+    const-wide/16 v2, 0x1f40
+    invoke-virtual {{v0, v1, v2, v3}}, Landroid/os/Handler;->postDelayed(Ljava/lang/Runnable;J)Z
+    return-void
+    :fallback
     const-string v0, "Siaran gagal diputar. Coba buka ulang channel."
     invoke-static {{v0}}, {GATE}->showToast(Ljava/lang/String;)V
+    return-void
+.end method''')
+    gate = method(gate, 'maybeShowFailToast()V', f'''.method public static maybeShowFailToast()V
+    .locals 1
+    sget-boolean v0, {GATE}->streamPlaybackFailed:Z
+    if-eqz v0, :done
+    sget-boolean v0, {GATE}->playerPlaying:Z
+    if-nez v0, :done
+    sget-boolean v0, {GATE}->streamFrameRendered:Z
+    if-nez v0, :done
+    const-string v0, "Siaran gagal diputar. Coba buka ulang channel."
+    invoke-static {{v0}}, {GATE}->showToast(Ljava/lang/String;)V
+    :done
+    return-void
+.end method''')
+    gate = method(gate, 'cancelFailToast()V', f'''.method public static cancelFailToast()V
+    .locals 2
+    sget-object v0, {GATE}->loadingHandler:Landroid/os/Handler;
+    if-eqz v0, :done
+    sget-object v1, {GATE}->failToastTask:Ljava/lang/Runnable;
+    if-eqz v1, :done
+    invoke-virtual {{v0, v1}}, Landroid/os/Handler;->removeCallbacks(Ljava/lang/Runnable;)V
     :done
     return-void
 .end method''')
@@ -363,6 +420,30 @@ def patch(root):
     return-void
 .end method''')
     gate_path.write_text(gate)
+    gate6 = gate_path.parent / 'LoginGate$6.smali'
+    gate6.write_text(f'''.class Lcom/vidio/android/patch/LoginGate$6;
+.super Ljava/lang/Object;
+.source "LoginGate.java"
+
+# interfaces
+.implements Ljava/lang/Runnable;
+
+
+# direct methods
+.method constructor <init>()V
+    .locals 0
+    invoke-direct {{p0}}, Ljava/lang/Object;-><init>()V
+    return-void
+.end method
+
+
+# virtual methods
+.method public run()V
+    .locals 0
+    invoke-static {{}}, {GATE}->maybeShowFailToast()V
+    return-void
+.end method
+''')
     bridge = next(root.glob(f'smali*/{chain.rsplit("/", 1)[0]}/a.smali'))
     text = bridge.read_text()
     anchor = '    invoke-static {v1, v12, v13, v2}, Lcom/vidio/android/patch/TrafficLog;->logRequest(Ljava/lang/String;JI)V'
@@ -416,8 +497,10 @@ def patch(root):
     const/4 v2, 0x0
     invoke-static {{v2}}, {GATE}->access$702(Ljava/lang/Object;)Ljava/lang/Object;
     :create_overlay'''
-    if new not in show:
-        assert old in show
+    # Blok enhancement $3 (access$700 overlay) sudah digantikan pendekatan
+    # PopupWindow di patch_visible_loading yang menimpa run() secara penuh —
+    # terapkan hanya bila versi aslinya masih ada.
+    if new not in show and old in show:
         show = show.replace(old, new, 1).replace('    :done\n    return-void', f'    :tick\n    invoke-static {{}}, {GATE}->scheduleStreamLoadingTick()V\n\n    :done\n    return-void', 1)
     show_path.write_text(show)
     for path in root.glob('smali*/androidx/media3/exoplayer/*.smali'):

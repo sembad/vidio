@@ -113,59 +113,45 @@ def patch(root):
     :replace
     invoke-static {{}}, {GATE}->dismissStreamLoadingWindow()V
     :create
+    # Gaya loading sama seperti saat login: spinner indeterminate merah Vidio
+    # (#EF2041) di tengah layar, tanpa kotak dialog dan tanpa teks "Memuat".
     new-instance v2, Landroid/widget/LinearLayout;
     invoke-direct {{v2, v0}}, Landroid/widget/LinearLayout;-><init>(Landroid/content/Context;)V
     const/4 v3, 0x1
     invoke-virtual {{v2, v3}}, Landroid/widget/LinearLayout;->setOrientation(I)V
     const/16 v3, 0x11
     invoke-virtual {{v2, v3}}, Landroid/widget/LinearLayout;->setGravity(I)V
-    const v3, 0xe61c1c1c
-    invoke-virtual {{v2, v3}}, Landroid/view/View;->setBackgroundColor(I)V
+    new-instance v4, Landroid/widget/ProgressBar;
+    invoke-direct {{v4, v0}}, Landroid/widget/ProgressBar;-><init>(Landroid/content/Context;)V
+    const/4 v5, 0x1
+    invoke-virtual {{v4, v5}}, Landroid/widget/ProgressBar;->setIndeterminate(Z)V
+    const v5, 0xef2041
+    invoke-static {{v5}}, Landroid/content/res/ColorStateList;->valueOf(I)Landroid/content/res/ColorStateList;
+    move-result-object v5
+    invoke-virtual {{v4, v5}}, Landroid/widget/ProgressBar;->setIndeterminateTintList(Landroid/content/res/ColorStateList;)V
     invoke-virtual {{v0}}, Landroid/content/Context;->getResources()Landroid/content/res/Resources;
     move-result-object v3
     invoke-virtual {{v3}}, Landroid/content/res/Resources;->getDisplayMetrics()Landroid/util/DisplayMetrics;
     move-result-object v3
     iget v3, v3, Landroid/util/DisplayMetrics;->density:F
-    const/high16 v4, 0x41c00000
-    mul-float/2addr v4, v3
-    float-to-int v4, v4
-    invoke-virtual {{v2, v4, v4, v4, v4}}, Landroid/view/View;->setPadding(IIII)V
-    new-instance v4, Landroid/widget/ProgressBar;
-    invoke-direct {{v4, v0}}, Landroid/widget/ProgressBar;-><init>(Landroid/content/Context;)V
-    const/4 v5, 0x1
-    invoke-virtual {{v4, v5}}, Landroid/widget/ProgressBar;->setIndeterminate(Z)V
-    const/4 v5, -0x1
-    invoke-static {{v5}}, Landroid/content/res/ColorStateList;->valueOf(I)Landroid/content/res/ColorStateList;
-    move-result-object v5
-    invoke-virtual {{v4, v5}}, Landroid/widget/ProgressBar;->setIndeterminateTintList(Landroid/content/res/ColorStateList;)V
     const/high16 v5, 0x42600000
-    mul-float/2addr v3, v5
-    float-to-int v3, v3
-    new-instance v5, Landroid/widget/LinearLayout$LayoutParams;
-    invoke-direct {{v5, v3, v3}}, Landroid/widget/LinearLayout$LayoutParams;-><init>(II)V
-    invoke-virtual {{v2, v4, v5}}, Landroid/view/ViewGroup;->addView(Landroid/view/View;Landroid/view/ViewGroup$LayoutParams;)V
-    new-instance v4, Landroid/widget/TextView;
-    invoke-direct {{v4, v0}}, Landroid/widget/TextView;-><init>(Landroid/content/Context;)V
-    const-string v3, "Memuat siaran..."
-    invoke-virtual {{v4, v3}}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
-    const/4 v3, -0x1
-    invoke-virtual {{v4, v3}}, Landroid/widget/TextView;->setTextColor(I)V
-    const/high16 v3, 0x41700000
-    invoke-virtual {{v4, v3}}, Landroid/widget/TextView;->setTextSize(F)V
-    const/4 v3, 0x0
-    invoke-virtual {{v4, v3, v3, v3, v3}}, Landroid/view/View;->setPadding(IIII)V
-    invoke-virtual {{v2, v4}}, Landroid/view/ViewGroup;->addView(Landroid/view/View;)V
+    mul-float/2addr v5, v3
+    float-to-int v5, v5
+    new-instance v6, Landroid/widget/LinearLayout$LayoutParams;
+    invoke-direct {{v6, v5, v5}}, Landroid/widget/LinearLayout$LayoutParams;-><init>(II)V
+    invoke-virtual {{v2, v4, v6}}, Landroid/view/ViewGroup;->addView(Landroid/view/View;Landroid/view/ViewGroup$LayoutParams;)V
     new-instance v3, Landroid/widget/PopupWindow;
-    const/4 v4, -0x2
-    const/4 v5, 0x0
-    invoke-direct {{v3, v2, v4, v4, v5}}, Landroid/widget/PopupWindow;-><init>(Landroid/view/View;IIZ)V
-    invoke-virtual {{v3, v5}}, Landroid/widget/PopupWindow;->setTouchable(Z)V
-    invoke-virtual {{v3, v5}}, Landroid/widget/PopupWindow;->setAnimationStyle(I)V
+    const/4 v4, -0x1
+    const/4 v5, -0x1
+    const/4 v6, 0x0
+    invoke-direct {{v3, v2, v4, v5, v6}}, Landroid/widget/PopupWindow;-><init>(Landroid/view/View;IIZ)V
+    invoke-virtual {{v3, v6}}, Landroid/widget/PopupWindow;->setTouchable(Z)V
+    invoke-virtual {{v3, v6}}, Landroid/widget/PopupWindow;->setAnimationStyle(I)V
     sput-object v3, {GATE}->loadingPopup:Landroid/widget/PopupWindow;
     sput-object v0, {GATE}->loadingActivity:Ljava/lang/Object;
     sput-object v2, {GATE}->loadingView:Ljava/lang/Object;
     const/16 v4, 0x11
-    invoke-virtual {{v3, v1, v4, v5, v5}}, Landroid/widget/PopupWindow;->showAtLocation(Landroid/view/View;III)V
+    invoke-virtual {{v3, v1, v4, v6, v6}}, Landroid/widget/PopupWindow;->showAtLocation(Landroid/view/View;III)V
     const-string v0, "LOADING_VISIBLE"
     invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
     :try_end
