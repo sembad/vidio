@@ -18,6 +18,7 @@ python3 "$ROOT/tools/patch_player_lifecycle.py" "$DECODED"
 python3 "$ROOT/tools/patch_loading_recovery.py" "$DECODED"
 python3 "$ROOT/tools/patch_visible_loading.py" "$DECODED"
 python3 "$ROOT/tools/patch_fix35_mode.py" "$DECODED"
+python3 "$ROOT/tools/patch_fix36_traffic.py" "$DECODED"
 
 echo "[build] apktool b $DECODED"
 "$JAVA_HOME/bin/java" -jar "$TOOLS/apktool.jar" b "$DECODED" -o "$WORK/rebuilt.apk"
