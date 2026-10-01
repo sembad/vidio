@@ -132,14 +132,40 @@ def patch(root):
     gate = gate_path.read_text().replace('.field private static loadingHandler:Ljava/lang/Object;', '.field private static loadingHandler:Landroid/os/Handler;')
     if '.field private static loadingHandler:Landroid/os/Handler;' not in gate:
         gate = gate.replace('.field private static volatile streamLoadingShown:Z', '.field private static loadingHandler:Landroid/os/Handler;\n\n.field private static loadingTask:Ljava/lang/Runnable;\n\n.field private static volatile streamLoadingShown:Z')
-    for field in ('.field private static volatile streamPlaybackFailed:Z', '.field private static lastLoadingWindowError:Ljava/lang/String;'):
+    for field in ('.field private static volatile streamPlaybackFailed:Z', '.field private static lastLoadingWindowError:Ljava/lang/String;',
+                  '.field private static volatile streamPlayerClosed:Z', '.field private static volatile streamActivity:Ljava/lang/Object;'):
         if field not in gate:
             gate = gate.replace('.source "LoginGate.java"', '.source "LoginGate.java"\n\n' + field, 1)
     gate = method(gate, 'showStreamLoading()V', f'''.method public static showStreamLoading()V
     .locals 1
+    sget-boolean v0, {GATE}->streamPlayerClosed:Z
+    if-nez v0, :done
+    sget-object v0, {GATE}->loadingStreamPath:Ljava/lang/String;
+    if-eqz v0, :done
     const/4 v0, 0x1
     sput-boolean v0, {GATE}->streamLoadingShown:Z
     invoke-static {{}}, {GATE}->refreshStreamLoading()V
+    :done
+    return-void
+.end method''')
+    gate = method(gate, 'cancelStreamLoadingTick()V', f'''.method public static declared-synchronized cancelStreamLoadingTick()V
+    .locals 2
+    sget-object v0, {GATE}->loadingHandler:Landroid/os/Handler;
+    if-eqz v0, :done
+    sget-object v1, {GATE}->loadingTask:Ljava/lang/Runnable;
+    if-eqz v1, :done
+    invoke-virtual {{v0, v1}}, Landroid/os/Handler;->removeCallbacks(Ljava/lang/Runnable;)V
+    :done
+    return-void
+.end method''')
+    gate = method(gate, 'hideStreamLoading()V', f'''.method public static hideStreamLoading()V
+    .locals 1
+    const/4 v0, 0x0
+    sput-boolean v0, {GATE}->streamLoadingShown:Z
+    invoke-static {{}}, {GATE}->cancelStreamLoadingTick()V
+    new-instance v0, Lcom/vidio/android/patch/LoginGate$4;
+    invoke-direct {{v0}}, Lcom/vidio/android/patch/LoginGate$4;-><init>()V
+    invoke-static {{v0}}, {GATE}->runOnMainThread(Ljava/lang/Runnable;)V
     return-void
 .end method''')
     gate = method(gate, 'refreshStreamLoading()V', f'''.method public static declared-synchronized refreshStreamLoading()V
@@ -164,6 +190,12 @@ def patch(root):
     .locals 4
     sget-boolean v0, {GATE}->streamLoadingShown:Z
     if-eqz v0, :done
+    sget-boolean v0, {GATE}->streamPlayerClosed:Z
+    if-nez v0, :done
+    sget-object v0, {GATE}->currentActivity:Ljava/lang/Object;
+    if-eqz v0, :done
+    sget-object v1, {GATE}->streamActivity:Ljava/lang/Object;
+    if-ne v0, v1, :done
     sget-object v0, {GATE}->loadingHandler:Landroid/os/Handler;
     sget-object v1, {GATE}->loadingTask:Ljava/lang/Runnable;
     invoke-virtual {{v0, v1}}, Landroid/os/Handler;->removeCallbacks(Ljava/lang/Runnable;)V
@@ -180,8 +212,10 @@ def patch(root):
         gate = gate.replace('.field private static volatile playerPlaying:Z', '.field private static volatile streamFrameRendered:Z\n\n.field private static volatile playerPlaying:Z')
     if '.field private static failToastTask:Ljava/lang/Runnable;' not in gate:
         gate = gate.replace('.source "LoginGate.java"', '.source "LoginGate.java"\n\n.field private static failToastTask:Ljava/lang/Runnable;', 1)
-    gate = method(gate, 'beginStreamLoading(Ljava/lang/String;)V', f'''.method public static beginStreamLoading(Ljava/lang/String;)V
+    gate = method(gate, 'beginStreamLoading(Ljava/lang/String;)V', f'''.method public static declared-synchronized beginStreamLoading(Ljava/lang/String;)V
     .locals 2
+    sget-boolean v0, {GATE}->streamPlayerClosed:Z
+    if-nez v0, :done
     invoke-static {{p0}}, Landroid/net/Uri;->parse(Ljava/lang/String;)Landroid/net/Uri;
     move-result-object v0
     invoke-virtual {{v0}}, Landroid/net/Uri;->getPath()Ljava/lang/String;
@@ -194,6 +228,8 @@ def patch(root):
     if-nez v1, :done
     :new_stream
     sput-object v0, {GATE}->loadingStreamPath:Ljava/lang/String;
+    sget-object v1, {GATE}->currentActivity:Ljava/lang/Object;
+    sput-object v1, {GATE}->streamActivity:Ljava/lang/Object;
     const/4 v1, 0x0
     sput v1, {GATE}->autoRetries:I
     sput-boolean v1, {GATE}->playerPlaying:Z
@@ -210,6 +246,10 @@ def patch(root):
 .end method''')
     gate = method(gate, 'onStreamFirstFrame()V', f'''.method public static onStreamFirstFrame()V
     .locals 1
+    sget-boolean v0, {GATE}->streamPlayerClosed:Z
+    if-nez v0, :done
+    sget-object v0, {GATE}->loadingStreamPath:Ljava/lang/String;
+    if-eqz v0, :done
     sget-boolean v0, {GATE}->streamRequestPending:Z
     if-nez v0, :done
     sget-boolean v0, {GATE}->streamPlaybackFailed:Z
@@ -229,6 +269,10 @@ def patch(root):
 .end method''')
     gate = method(gate, 'onStreamPlaying(Z)V', f'''.method public static onStreamPlaying(Z)V
     .locals 1
+    sget-boolean v0, {GATE}->streamPlayerClosed:Z
+    if-nez v0, :done
+    sget-object v0, {GATE}->loadingStreamPath:Ljava/lang/String;
+    if-eqz v0, :done
     sget-boolean v0, {GATE}->streamRequestPending:Z
     if-nez v0, :done
     sget-boolean v0, {GATE}->streamPlaybackFailed:Z
@@ -244,6 +288,8 @@ def patch(root):
 .end method''')
     gate = method(gate, 'onStreamPlayerError(Ljava/lang/Object;)V', f'''.method public static onStreamPlayerError(Ljava/lang/Object;)V
     .locals 4
+    sget-boolean v0, {GATE}->streamPlayerClosed:Z
+    if-nez v0, :done
     const-string v0, "PLAYER_ERROR "
     invoke-static {{p0}}, Ljava/lang/String;->valueOf(Ljava/lang/Object;)Ljava/lang/String;
     move-result-object v1
@@ -310,6 +356,10 @@ def patch(root):
 .end method''')
     gate = method(gate, 'maybeShowFailToast()V', f'''.method public static maybeShowFailToast()V
     .locals 4
+    sget-boolean v0, {GATE}->streamPlayerClosed:Z
+    if-nez v0, :done
+    sget-object v0, {GATE}->loadingStreamPath:Ljava/lang/String;
+    if-eqz v0, :done
     # FIX31: tanpa syarat streamPlaybackFailed — watchdog dari respons 200
     # menangkap kegagalan senyap (idle tanpa PLAYER_ERROR) juga.
     sget-boolean v0, {GATE}->playerPlaying:Z
@@ -353,10 +403,34 @@ def patch(root):
     :done
     return-void
 .end method''')
-    gate = method(gate, 'holdPlayer(Ljava/lang/Object;)V', f'''.method public static holdPlayer(Ljava/lang/Object;)V
+    gate = method(gate, 'holdPlayer(Ljava/lang/Object;)V', f'''.method public static declared-synchronized holdPlayer(Ljava/lang/Object;)V
     .locals 1
     if-eqz p0, :done
     sput-object p0, {GATE}->heldPlayer:Ljava/lang/Object;
+    const/4 v0, 0x0
+    sput-boolean v0, {GATE}->streamPlayerClosed:Z
+    :done
+    return-void
+.end method''')
+    gate = method(gate, 'onStreamPlayerClosed(Ljava/lang/Object;)V', f'''.method public static declared-synchronized onStreamPlayerClosed(Ljava/lang/Object;)V
+    .locals 1
+    if-eqz p0, :close
+    sget-object v0, {GATE}->heldPlayer:Ljava/lang/Object;
+    if-ne p0, v0, :done
+    :close
+    const/4 v0, 0x1
+    sput-boolean v0, {GATE}->streamPlayerClosed:Z
+    const/4 v0, 0x0
+    sput-object v0, {GATE}->heldPlayer:Ljava/lang/Object;
+    sput-object v0, {GATE}->loadingStreamPath:Ljava/lang/String;
+    sput-object v0, {GATE}->streamActivity:Ljava/lang/Object;
+    sput-boolean v0, {GATE}->streamRequestPending:Z
+    sput-boolean v0, {GATE}->streamPlaybackFailed:Z
+    sput-boolean v0, {GATE}->streamFrameRendered:Z
+    sput-boolean v0, {GATE}->playerPlaying:Z
+    sput v0, {GATE}->autoRetries:I
+    invoke-static {{}}, {GATE}->cancelFailToast()V
+    invoke-static {{}}, {GATE}->hideStreamLoading()V
     :done
     return-void
 .end method''')
@@ -372,6 +446,8 @@ def patch(root):
 .end method''')
     gate = method(gate, 'onStreamPlaybackState(I)V', f'''.method public static onStreamPlaybackState(I)V
     .locals 2
+    sget-boolean v0, {GATE}->streamPlayerClosed:Z
+    if-nez v0, :done
     sget-object v0, {GATE}->loadingStreamPath:Ljava/lang/String;
     if-eqz v0, :done
     sget-boolean v0, {GATE}->streamPlaybackFailed:Z
@@ -399,6 +475,9 @@ def patch(root):
     :check_ended
     const/4 v0, 0x4
     if-ne p0, v0, :done
+    const/4 v0, 0x0
+    invoke-static {{v0}}, {GATE}->onStreamPlayerClosed(Ljava/lang/Object;)V
+    goto :done
     :hide
     invoke-static {{}}, {GATE}->hideStreamLoading()V
     :done
@@ -406,6 +485,8 @@ def patch(root):
 .end method''')
     gate = method(gate, 'onStreamResponse(Ljava/lang/String;I)V', f'''.method public static onStreamResponse(Ljava/lang/String;I)V
     .locals 2
+    sget-boolean v0, {GATE}->streamPlayerClosed:Z
+    if-nez v0, :done
     invoke-static {{p0}}, Landroid/net/Uri;->parse(Ljava/lang/String;)Landroid/net/Uri;
     move-result-object v0
     invoke-virtual {{v0}}, Landroid/net/Uri;->getPath()Ljava/lang/String;
@@ -533,31 +614,56 @@ def patch(root):
     print(f'Recovery patched {root.name}: activity-aware spinner, buffering, bounded native timeout retries, player auto-retry')
 
 
+def patch_player_lifetime(text):
+    # p0 bisa berada di atas v15 (constructor ExoPlayerImpl .locals 35),
+    # jadi wajib invoke-static/range.
+    hold = f'    invoke-static/range {{p0 .. p0}}, {GATE}->holdPlayer(Ljava/lang/Object;)V\n'
+    close = f'    invoke-static/range {{p0 .. p0}}, {GATE}->onStreamPlayerClosed(Ljava/lang/Object;)V\n'
+
+    def constructor(match):
+        block = match.group()
+        if hold.strip() in block:
+            return block
+        index = block.rfind('    return-void')
+        if index < 0:
+            raise ValueError('Player constructor has no return')
+        return block[:index] + hold + block[index:]
+
+    text, count = re.subn(r'\.method public constructor <init>\([^)]*\)V\n.*?\.end method',
+                          constructor, text, flags=re.S)
+    if count == 0:
+        raise ValueError('Player constructor not found')
+    events = set()
+
+    def lifecycle(match):
+        event = match.group(1)
+        events.add(event)
+        hook = hold if event == 'prepare' else close
+        block = match.group()
+        if hook.strip() in block:
+            return block
+        block, count = re.subn(r'(?m)^(    \.(?:locals|registers) \d+\n)',
+                               lambda m: m.group() + '\n' + hook, block, count=1)
+        if count != 1:
+            raise ValueError(f'{event}: register directive not found')
+        return block
+
+    text = re.sub(r'\.method public(?: final)? (prepare|stop|release)\((?:Z)?\)V\n.*?\.end method',
+                  lifecycle, text, flags=re.S)
+    if events != {'prepare', 'stop', 'release'}:
+        raise ValueError(f'Player lifecycle methods missing: {events}')
+    return text
+
+
 def patch_player_hold(root):
     # Simpan instance player terakhir agar kegagalan DRM sementara bisa
     # dipulihkan dengan re-prepare (setara buka ulang channel).
     impls = [path for path in root.glob('smali*/androidx/media3/exoplayer/*.smali')
              if '.implements Landroidx/media3/exoplayer/ExoPlayer;' in path.read_text()]
     assert impls, 'ExoPlayer implementation not found'
-    # p0 bisa berada di atas v15 (constructor ExoPlayerImpl .locals 35),
-    # jadi wajib invoke-static/range.
-    hook = f'    invoke-static/range {{p0 .. p0}}, {GATE}->holdPlayer(Ljava/lang/Object;)V\n'
-
-    def inject(match):
-        block = match.group(0)
-        idx = block.rfind('    return-void')
-        return block[:idx] + hook + block[idx:]
-
     for path in impls:
-        text = path.read_text()
-        if '->holdPlayer(Ljava/lang/Object;)V' in text:
-            continue
-        text, count = re.subn(
-            r'\.method public constructor <init>\([^)]*\)V\n.*?\.end method',
-            inject, text, flags=re.S)
-        assert count >= 1, path
-        path.write_text(text)
-        print(f'Player hold hooked in {path.name} ({count} constructor)')
+        path.write_text(patch_player_lifetime(path.read_text()))
+        print(f'Player lifetime hooked in {path.name}: constructor, prepare, stop, release')
 
 
 if __name__ == '__main__':

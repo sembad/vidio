@@ -9,14 +9,17 @@ ROOT=/vercel/share/v0-project
 TOOLS=$ROOT/tools/.apk-patch-tools
 
 export JAVA_HOME=$TOOLS/jdk
-export PATH=$JAVA_HOME/bin:$TOOLS/build-tools:$PATH
+export PATH=$JAVA_HOME/bin:$TOOLS/build-tools:$TOOLS/android-15:$PATH
 
 WORK=$(mktemp -d /tmp/apkbuild-XXXXXX)
-trap 'rm -rf "$WORK"' EXIT
+SIGNED=$(mktemp "$(dirname "$OUTPUT")/.apk-sign-XXXXXX")
+trap 'rm -rf "$WORK"; rm -f "$SIGNED"' EXIT
 
+python3 "$ROOT/tools/patch_clearkey_embedded.py" "$DECODED"
 python3 "$ROOT/tools/patch_player_lifecycle.py" "$DECODED"
 python3 "$ROOT/tools/patch_loading_recovery.py" "$DECODED"
 python3 "$ROOT/tools/patch_visible_loading.py" "$DECODED"
+python3 "$ROOT/tools/test_player_loading.py" "$DECODED"
 
 echo "[build] apktool b $DECODED"
 "$JAVA_HOME/bin/java" -jar "$TOOLS/apktool.jar" b "$DECODED" -o "$WORK/rebuilt.apk"
@@ -37,9 +40,11 @@ apksigner sign \
   --v3-signing-enabled true --v4-signing-enabled false \
   --ks "$ROOT/tools/patch.keystore" --ks-key-alias v0patch \
   --ks-pass pass:changeit --key-pass pass:changeit \
-  --out "$OUTPUT" "$WORK/aligned.apk"
+  --out "$SIGNED" "$WORK/aligned.apk"
 
-zipalign -c -p 4 "$OUTPUT"
-apksigner verify "$OUTPUT"
+zipalign -c -p 4 "$SIGNED"
+apksigner verify "$SIGNED"
+python3 "$ROOT/tools/test_player_loading.py" --apk-only "$SIGNED"
+mv -f -- "$SIGNED" "$OUTPUT"
 sha256sum "$OUTPUT"
 echo "[build] OK $OUTPUT"

@@ -230,6 +230,9 @@ public final class LoginGate {
     private static volatile boolean streamFrameRendered;
     private static volatile boolean streamRequestPending;
     private static volatile boolean streamPlaybackFailed;
+    private static volatile boolean streamPlayerClosed;
+    private static volatile Object heldPlayer;
+    private static volatile Object streamActivity;
     private static volatile String loadingStreamPath;
     private static String lastLoadingWindowError;
     private static volatile String cachedAccountEmail;
@@ -936,11 +939,13 @@ public final class LoginGate {
         return streamLoadingShown;
     }
 
-    public static void beginStreamLoading(String url) {
+    public static synchronized void beginStreamLoading(String url) {
+        if (streamPlayerClosed) return;
         try {
             String path = new URL(url).getPath();
             if (path.equals(loadingStreamPath) && playerPlaying) return;
             loadingStreamPath = path;
+            streamActivity = currentActivity;
             playerPlaying = false;
             streamFrameRendered = false;
             streamPlaybackFailed = false;
@@ -951,13 +956,33 @@ public final class LoginGate {
         }
     }
 
+    public static synchronized void holdPlayer(Object player) {
+        if (player == null) return;
+        heldPlayer = player;
+        streamPlayerClosed = false;
+    }
+
+    public static synchronized void onStreamPlayerClosed(Object player) {
+        if (player != null && player != heldPlayer) return;
+        streamPlayerClosed = true;
+        heldPlayer = null;
+        streamActivity = null;
+        loadingStreamPath = null;
+        streamRequestPending = false;
+        streamPlaybackFailed = false;
+        streamFrameRendered = false;
+        playerPlaying = false;
+        hideStreamLoading();
+    }
+
     public static void onStreamPlaying(boolean playing) {
-        if (streamRequestPending || streamPlaybackFailed) return;
+        if (streamPlayerClosed || loadingStreamPath == null || streamRequestPending || streamPlaybackFailed) return;
         playerPlaying = playing;
         if (playing && streamFrameRendered) hideStreamLoading();
     }
 
     public static void onStreamResponse(String url, int status) {
+        if (streamPlayerClosed) return;
         try {
             if (!new URL(url).getPath().equals(loadingStreamPath)) return;
             if (status == 200) streamRequestPending = false;
@@ -970,13 +995,13 @@ public final class LoginGate {
     }
 
     public static void onStreamFirstFrame() {
-        if (streamRequestPending || streamPlaybackFailed) return;
+        if (streamPlayerClosed || loadingStreamPath == null || streamRequestPending || streamPlaybackFailed) return;
         streamFrameRendered = true;
         hideStreamLoading();
     }
 
     public static void onStreamPlayerError(Object error) {
-        if (loadingStreamPath == null || streamRequestPending) return;
+        if (streamPlayerClosed || loadingStreamPath == null || streamRequestPending) return;
         playerPlaying = false;
         streamFrameRendered = false;
         streamPlaybackFailed = true;
@@ -985,11 +1010,13 @@ public final class LoginGate {
     }
 
     public static void onStreamPlaybackState(int state) {
-        if (loadingStreamPath == null || streamPlaybackFailed) return;
+        if (streamPlayerClosed || loadingStreamPath == null || streamPlaybackFailed) return;
         if (state == 2) {
             playerPlaying = false;
             showStreamLoading();
-        } else if (!streamRequestPending && (state == 4 || (state == 1 && streamFrameRendered))) {
+        } else if (!streamRequestPending && state == 4) {
+            onStreamPlayerClosed(null);
+        } else if (!streamRequestPending && state == 1 && streamFrameRendered) {
             hideStreamLoading();
         } else if (state == 1 && !streamFrameRendered) {
             showStreamLoading();
@@ -997,20 +1024,30 @@ public final class LoginGate {
     }
 
     public static void onStreamActivityResumed(Object activity) {
-        Object previousActivity = currentActivity;
         currentActivity = activity;
-        if (streamLoadingShown) {
-            refreshStreamLoading();
+        if (loadingStreamPath != null && streamActivity != null && streamActivity != activity) {
+            boolean changingConfigurations = false;
+            try {
+                changingConfigurations = Boolean.TRUE.equals(streamActivity.getClass()
+                        .getMethod("isChangingConfigurations").invoke(streamActivity));
+            } catch (ReflectiveOperationException ignored) {
+            }
+            if (changingConfigurations) streamActivity = activity;
+            else onStreamPlayerClosed(null);
         }
+        if (!streamPlayerClosed && loadingStreamPath != null && streamActivity == null) streamActivity = activity;
+        if (streamLoadingShown) refreshStreamLoading();
     }
 
     public static void onStreamActivityPaused(Object activity) {
         if (activity != currentActivity) return;
         currentActivity = null;
+        cancelStreamLoadingTick();
         dismissStreamLoadingWindow();
     }
 
     public static void showStreamLoading() {
+        if (streamPlayerClosed || loadingStreamPath == null) return;
         streamLoadingShown = true;
         if (loadingTask == null) loadingTask = new Runnable() {
             @Override
@@ -1022,9 +1059,10 @@ public final class LoginGate {
     }
 
     public static void renderStreamLoadingWindow() {
-        if (!streamLoadingShown) return;
+        if (!streamLoadingShown || streamPlayerClosed) return;
         try {
             Object activity = currentActivity;
+            if (activity != streamActivity) return;
             Class<?> activityClass = Class.forName("android.app.Activity");
             if (!activityClass.isInstance(activity)) return;
             if ((Boolean) activityClass.getMethod("isFinishing").invoke(activity)
@@ -1115,11 +1153,20 @@ public final class LoginGate {
     }
 
     public static synchronized void scheduleStreamLoadingTick() {
-        if (!streamLoadingShown) return;
+        if (!streamLoadingShown || streamPlayerClosed || currentActivity == null) return;
         try {
             Class<?> handlerClass = Class.forName("android.os.Handler");
             handlerClass.getMethod("removeCallbacks", Runnable.class).invoke(loadingHandler, loadingTask);
             handlerClass.getMethod("postDelayed", Runnable.class, long.class).invoke(loadingHandler, loadingTask, 250L);
+        } catch (ReflectiveOperationException ignored) {
+        }
+    }
+
+    public static synchronized void cancelStreamLoadingTick() {
+        if (loadingHandler == null || loadingTask == null) return;
+        try {
+            Class.forName("android.os.Handler").getMethod("removeCallbacks", Runnable.class)
+                    .invoke(loadingHandler, loadingTask);
         } catch (ReflectiveOperationException ignored) {
         }
     }
@@ -1129,6 +1176,7 @@ public final class LoginGate {
         // request (channel switch). Without this, the "Memuat siaran..."
         // overlay only ever appears on the first stream of the session.
         streamLoadingShown = false;
+        cancelStreamLoadingTick();
         runOnMainThread(new Runnable() {
             @Override
             public void run() {
@@ -1308,11 +1356,41 @@ public final class LoginGate {
         if (currentActivity != firstActivity) throw new AssertionError("An unrelated Activity pause must not clear the player");
         onStreamActivityPaused(firstActivity);
         if (currentActivity != null || !isStreamLoading()) throw new AssertionError("Pausing must clear the window owner without losing loading state");
+        onStreamActivityResumed(firstActivity);
+        if (!isStreamLoading()) throw new AssertionError("Resuming the same Activity must retain loading");
         onStreamActivityResumed(nextActivity);
-        if (currentActivity != nextActivity || !isStreamLoading()) throw new AssertionError("Resuming a new Activity must retain pending loading");
-        onStreamPlaybackState(4);
-        if (isStreamLoading()) throw new AssertionError("Ended playback must clear loading");
+        if (currentActivity != nextActivity || isStreamLoading() || loadingStreamPath != null) {
+            throw new AssertionError("Leaving the player Activity must end its loading session");
+        }
         String failedStream = "https://api.example.com/livestreamings/50/stream?initialize=true";
+        beginStreamLoading(failedStream);
+        onStreamResponse(failedStream, 200);
+        onStreamPlaybackState(2);
+        onStreamPlaying(true);
+        onStreamFirstFrame();
+        onStreamPlayerError(new IOException("Late error after close"));
+        showStreamLoading();
+        if (isStreamLoading() || playerPlaying || streamFrameRendered || loadingStreamPath != null) {
+            throw new AssertionError("Late callbacks and retries must not reopen a closed player");
+        }
+        Object oldPlayer = new Object();
+        Object newPlayer = new Object();
+        holdPlayer(oldPlayer);
+        beginStreamLoading(failedStream);
+        onStreamPlayerClosed(oldPlayer);
+        if (isStreamLoading() || heldPlayer != null || streamRequestPending) {
+            throw new AssertionError("Closing the active player must clear its pending loading state");
+        }
+        holdPlayer(newPlayer);
+        beginStreamLoading(failedStream);
+        onStreamPlayerClosed(oldPlayer);
+        if (!isStreamLoading() || heldPlayer != newPlayer) {
+            throw new AssertionError("Closing an old player must not cancel the new player");
+        }
+        onStreamResponse(failedStream, 200);
+        onStreamPlaybackState(4);
+        if (isStreamLoading() || !streamPlayerClosed) throw new AssertionError("Ended playback must end loading");
+        holdPlayer(newPlayer);
         beginStreamLoading(failedStream);
         onStreamResponse(failedStream, 200);
         onStreamPlayerError(new IOException("Decoder failed", new IllegalStateException("No video output")));

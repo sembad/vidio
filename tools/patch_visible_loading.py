@@ -15,21 +15,30 @@ def patch(root):
             gate = gate.replace('.source "LoginGate.java"', f'.source "LoginGate.java"\n\n.field private static {field}', 1)
     gate = method(gate, 'onStreamActivityResumed(Ljava/lang/Object;)V', f'''.method public static onStreamActivityResumed(Ljava/lang/Object;)V
     .locals 2
-    sget-object v1, {GATE}->currentActivity:Ljava/lang/Object;
     sput-object p0, {GATE}->currentActivity:Ljava/lang/Object;
+    sget-boolean v0, {GATE}->streamPlayerClosed:Z
+    if-nez v0, :done
+    sget-object v0, {GATE}->loadingStreamPath:Ljava/lang/String;
+    if-eqz v0, :done
+    sget-object v1, {GATE}->streamActivity:Ljava/lang/Object;
+    if-eqz v1, :bind
+    if-eq p0, v1, :refresh
+    instance-of v0, v1, Landroid/app/Activity;
+    if-eqz v0, :close
+    check-cast v1, Landroid/app/Activity;
+    invoke-virtual {{v1}}, Landroid/app/Activity;->isChangingConfigurations()Z
+    move-result v0
+    if-eqz v0, :close
+    :bind
+    sput-object p0, {GATE}->streamActivity:Ljava/lang/Object;
+    :refresh
     sget-boolean v0, {GATE}->streamLoadingShown:Z
     if-eqz v0, :done
-    if-eq p0, v1, :refresh
-    if-eqz p0, :refresh
-    invoke-virtual {{p0}}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
-    move-result-object v1
-    invoke-virtual {{v1}}, Ljava/lang/Class;->getName()Ljava/lang/String;
-    move-result-object v1
-    const-string v0, "ACTIVITY_RESUMED "
-    invoke-virtual {{v0, v1}}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
-    move-result-object v0
-    :refresh
     invoke-static {{}}, {GATE}->refreshStreamLoading()V
+    goto :done
+    :close
+    const/4 v0, 0x0
+    invoke-static {{v0}}, {GATE}->onStreamPlayerClosed(Ljava/lang/Object;)V
     :done
     return-void
 .end method''')
@@ -39,6 +48,7 @@ def patch(root):
     if-ne p0, v0, :done
     const/4 v0, 0x0
     sput-object v0, {GATE}->currentActivity:Ljava/lang/Object;
+    invoke-static {{}}, {GATE}->cancelStreamLoadingTick()V
     invoke-static {{}}, {GATE}->dismissStreamLoadingWindow()V
     :done
     return-void
@@ -83,8 +93,12 @@ def patch(root):
     .locals 10
     sget-boolean v0, {GATE}->streamLoadingShown:Z
     if-eqz v0, :done
+    sget-boolean v0, {GATE}->streamPlayerClosed:Z
+    if-nez v0, :done
     :try_start
     sget-object v0, {GATE}->currentActivity:Ljava/lang/Object;
+    sget-object v1, {GATE}->streamActivity:Ljava/lang/Object;
+    if-ne v0, v1, :done
     instance-of v1, v0, Landroid/app/Activity;
     if-eqz v1, :tick
     check-cast v0, Landroid/app/Activity;

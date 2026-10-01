@@ -133,7 +133,8 @@ def patch(root):
 
     const-string v2, "x-user-email"
 '''
-    if 'vck_early_done' not in b:
+    early_section = b.split('    const-string v2, "x-user-email"', 1)[0]
+    if '->beginStreamLoading(Ljava/lang/String;)V' not in early_section:
         b = replace_once(b, early_anchor, early_block)
         print('[player-lifecycle] early beginStreamLoading hooked in intercept()')
     bridge.write_text(b)
