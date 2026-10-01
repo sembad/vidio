@@ -18,6 +18,9 @@ def method(text, signature, body):
 
 def patch(root):
     root = Path(root)
+    # Interface Player diobfuscasi per build; resolusi dinamis dari ExoPlayer.
+    exo = next(root.glob('smali*/androidx/media3/exoplayer/ExoPlayer.smali'))
+    player_iface = re.search(r'^\.implements (L[^;]+;)$', exo.read_text(), re.M).group(1)
     retry_path = next(root.glob('smali*/com/vidio/android/patch/StreamRetry.smali'))
     retry = retry_path.read_text()
     chain, http = re.search(r'retry\(L([^;]+);L([^/]+)/f0;', retry).groups()
@@ -196,6 +199,8 @@ def patch(root):
 .end method''')
     if '.field private static volatile streamRequestPending:Z' not in gate:
         gate = gate.replace('.field private static volatile playerPlaying:Z', '.field private static volatile streamRequestPending:Z\n\n.field private static volatile playerPlaying:Z')
+    if '.field private static volatile heldPlayer:Ljava/lang/Object;' not in gate:
+        gate = gate.replace('.field private static volatile playerPlaying:Z', '.field private static volatile heldPlayer:Ljava/lang/Object;\n\n.field private static autoRetries:I\n\n.field private static volatile playerPlaying:Z')
     if '.field private static volatile streamFrameRendered:Z' not in gate:
         gate = gate.replace('.field private static volatile playerPlaying:Z', '.field private static volatile streamFrameRendered:Z\n\n.field private static volatile playerPlaying:Z')
     if '.field private static failToastTask:Ljava/lang/Runnable;' not in gate:
@@ -215,6 +220,7 @@ def patch(root):
     :new_stream
     sput-object v0, {GATE}->loadingStreamPath:Ljava/lang/String;
     const/4 v1, 0x0
+    sput v1, {GATE}->autoRetries:I
     sput-boolean v1, {GATE}->playerPlaying:Z
     sput-boolean v1, {GATE}->streamFrameRendered:Z
     sput-boolean v1, {GATE}->streamPlaybackFailed:Z
@@ -239,6 +245,8 @@ def patch(root):
     const-string v0, "FIRST_FRAME"
     invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
     :hide
+    const/4 v0, 0x0
+    sput v0, {GATE}->autoRetries:I
     const/4 v0, 0x1
     sput-boolean v0, {GATE}->streamFrameRendered:Z
     invoke-static {{}}, {GATE}->cancelFailToast()V
@@ -297,9 +305,8 @@ def patch(root):
     const/4 v0, 0x1
     sput-boolean v0, {GATE}->streamPlaybackFailed:Z
     invoke-static {{}}, {GATE}->hideStreamLoading()V
-    # Jangan toast: cdmError 6 sering sementara dan retry berikutnya berhasil.
-    # Tunda 8 detik; bila tetap tanpa frame, tutup overlay agar user kembali
-    # ke perilaku native (layar hitam) dan bisa buka ulang channel.
+    # Jangan toast: cdmError 6 sering sementara. Tunda 8 detik; bila tetap
+    # tanpa frame, auto-retry player (maks 2x) sebelum menutup overlay.
     invoke-static {{}}, {GATE}->scheduleFailToast()V
     :done
     return-void
@@ -331,7 +338,7 @@ def patch(root):
     return-void
 .end method''')
     gate = method(gate, 'maybeShowFailToast()V', f'''.method public static maybeShowFailToast()V
-    .locals 1
+    .locals 4
     sget-boolean v0, {GATE}->streamPlaybackFailed:Z
     if-eqz v0, :done
     sget-boolean v0, {GATE}->playerPlaying:Z
@@ -340,9 +347,47 @@ def patch(root):
     if-nez v0, :done
     const-string v0, "STREAM_FAIL_CONFIRMED"
     invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
-    # Toast dihapus (FIX29): kegagalan ditandai dengan menutup overlay
-    # loading, bukan notifikasi. User tinggal buka ulang channel.
+    # FIX30: cdmError 6 sering sementara (buka ulang channel selalu berhasil),
+    # jadi re-prepare player maksimal 2x sebelum menyerah.
+    sget v0, {GATE}->autoRetries:I
+    const/4 v1, 0x2
+    if-lt v0, v1, :try_retry
+    goto :giveup
+    :try_retry
+    add-int/lit8 v0, v0, 0x1
+    sput v0, {GATE}->autoRetries:I
+    sget-object v1, {GATE}->heldPlayer:Ljava/lang/Object;
+    if-eqz v1, :giveup
+    check-cast v1, {player_iface}
+    const-string v2, "AUTO_RETRY "
+    invoke-static {{v0}}, Ljava/lang/String;->valueOf(I)Ljava/lang/String;
+    move-result-object v3
+    invoke-virtual {{v2, v3}}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
+    move-result-object v2
+    invoke-static {{v2}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
+    const/4 v2, 0x0
+    sput-boolean v2, {GATE}->streamPlaybackFailed:Z
+    sput-boolean v2, {GATE}->streamFrameRendered:Z
+    sput-boolean v2, {GATE}->playerPlaying:Z
+    invoke-static {{}}, {GATE}->cancelFailToast()V
+    invoke-static {{}}, {GATE}->showStreamLoading()V
+    const/4 v2, 0x1
+    :try_start
+    invoke-interface {{v1, v2}}, {player_iface}->setPlayWhenReady(Z)V
+    invoke-interface {{v1}}, {player_iface}->seekToDefaultPosition()V
+    invoke-interface {{v1}}, {player_iface}->prepare()V
+    :try_end
+    .catch Ljava/lang/Exception; {{:try_start .. :try_end}} :giveup
+    goto :done
+    :giveup
     invoke-static {{}}, {GATE}->hideStreamLoading()V
+    :done
+    return-void
+.end method''')
+    gate = method(gate, 'holdPlayer(Ljava/lang/Object;)V', f'''.method public static holdPlayer(Ljava/lang/Object;)V
+    .locals 1
+    if-eqz p0, :done
+    sput-object p0, {GATE}->heldPlayer:Ljava/lang/Object;
     :done
     return-void
 .end method''')
@@ -510,7 +555,35 @@ def patch(root):
         text = patch_player_callbacks(original)
         if text != original:
             path.write_text(text)
-    print(f'Recovery patched {root.name}: activity-aware spinner, buffering, bounded native timeout retries')
+    patch_player_hold(root)
+    print(f'Recovery patched {root.name}: activity-aware spinner, buffering, bounded native timeout retries, player auto-retry')
+
+
+def patch_player_hold(root):
+    # Simpan instance player terakhir agar kegagalan DRM sementara bisa
+    # dipulihkan dengan re-prepare (setara buka ulang channel).
+    impls = [path for path in root.glob('smali*/androidx/media3/exoplayer/*.smali')
+             if '.implements Landroidx/media3/exoplayer/ExoPlayer;' in path.read_text()]
+    assert impls, 'ExoPlayer implementation not found'
+    # p0 bisa berada di atas v15 (constructor ExoPlayerImpl .locals 35),
+    # jadi wajib invoke-static/range.
+    hook = f'    invoke-static/range {{p0 .. p0}}, {GATE}->holdPlayer(Ljava/lang/Object;)V\n'
+
+    def inject(match):
+        block = match.group(0)
+        idx = block.rfind('    return-void')
+        return block[:idx] + hook + block[idx:]
+
+    for path in impls:
+        text = path.read_text()
+        if '->holdPlayer(Ljava/lang/Object;)V' in text:
+            continue
+        text, count = re.subn(
+            r'\.method public constructor <init>\([^)]*\)V\n.*?\.end method',
+            inject, text, flags=re.S)
+        assert count >= 1, path
+        path.write_text(text)
+        print(f'Player hold hooked in {path.name} ({count} constructor)')
 
 
 if __name__ == '__main__':

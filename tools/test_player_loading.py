@@ -77,6 +77,13 @@ def verify_decoded_apk(root):
         raise AssertionError('Native IDLE/error state guards are missing')
     if 'LOADING_VISIBLE' not in gate or 'LOADING_WINDOW_ERROR' not in gate or 'STREAM_BEGIN FIX24' not in gate:
         raise AssertionError('Native loading diagnostics are missing')
+    if '->heldPlayer:Ljava/lang/Object;' not in gate or 'AUTO_RETRY' not in gate:
+        raise AssertionError('Player auto-retry (FIX30) is missing')
+    if '.method public static holdPlayer(Ljava/lang/Object;)V' not in gate:
+        raise AssertionError('Player hold method is missing')
+    impls = [path for path in paths if '.implements Landroidx/media3/exoplayer/ExoPlayer;' in path.read_text()]
+    if not impls or not all('->holdPlayer(Ljava/lang/Object;)V' in path.read_text() for path in impls):
+        raise AssertionError('Player hold hook is missing from ExoPlayer implementation')
     print(f'{root.name}: verified player hooks {dict(counts)} and native loading guards')
 
 
