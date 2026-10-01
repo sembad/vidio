@@ -13,6 +13,11 @@ Flow per akun (terbukti end-to-end):
      -> merge bundling partner (tcl / polytron)
   8. Verifikasi: GET /livestreamings/{id}/stream
 
+Aturan retry: TIDAK ada langkah yang berhenti/ganti akun saat gagal.
+Setiap langkah diulang sampai sukses. Register gagal / email sudah dipakai
+-> ulangi dengan email temp baru. Merge gagal / email sudah dipakai -> ulangi
+merge. Satu akun di-loop penuh sampai status "sukses" (stream 200).
+
 Hasil disimpan ke bulk_accounts.json
 """
 
@@ -36,6 +41,13 @@ PARTNERS = ["tcl", "polytron_PDBM11ADL"]
 TEST_CHANNEL = "6686"  # Champions TV 2 — butuh email terverifikasi
 
 RESULTS_FILE = "bulk_accounts.json"
+
+# Pengaturan retry — semua langkah diulang sampai sukses, bukan berhenti.
+DELAY = 6                # jeda antar percobaan (detik)
+MAX_STEP_TRIES = 15      # partner auth / login / merge / stream
+MAX_REGISTER_TRIES = 10  # register (email baru tiap percobaan bila email sudah dipakai)
+MAX_CONFIRM_ROUNDS = 8   # poll inbox + ekstrak token + konfirmasi
+MAX_ACCOUNT_ROUNDS = 5   # ronde ulang satu akun penuh di loop utama
 
 
 def rapid_get(path, params):
@@ -270,16 +282,31 @@ def anonymous_partner_auth(partner):
         return s, None
 
 
+def extract_confirmation_token(email, msg):
+    """Ambil confirmation_token dari message inbox. Return token atau None."""
+    body = get_message_body(email, msg["mid"])
+    # link di body dibungkus click-tracker SendGrid -> resolve Location-nya
+    links = re.findall(r'href=["\'](https://u53475141\.ct\.sendgrid\.net/ls/click[^"\']+)["\']', body)
+    for link in links:
+        ctoken = extract_token_from_sendgrid(link)
+        if ctoken:
+            return ctoken
+    # fallback: token langsung di body (kalau tidak dibungkus tracker)
+    m = re.search(r"confirmation_token=([A-Za-z0-9_\-]+)", body)
+    return m.group(1) if m else None
+
+
 def process_one(partner):
     out = {"partner": partner, "status": None}
     try:
-        # [0] partner auth anonim -> akun bundling fake partner
-        s, p = None, None
-        for attempt in range(3):
+        # [0] partner auth anonim — retry sampai sukses, jangan berhenti
+        p = None
+        for attempt in range(1, MAX_STEP_TRIES + 1):
             s, p = anonymous_partner_auth(partner)
             if s == 200 and isinstance(p, dict) and p.get("token"):
                 break
-            time.sleep(5)
+            print(f"    partner auth -> {s}, retry {attempt}/{MAX_STEP_TRIES}")
+            time.sleep(DELAY)
         out["partner_email"] = p.get("email") if isinstance(p, dict) else None
         out["partner_token"] = p.get("token") if isinstance(p, dict) else None
         out["partner_uid"] = p.get("uid") if isinstance(p, dict) else None
@@ -289,55 +316,61 @@ def process_one(partner):
             out["detail"] = str(p)[:150]
             return out
 
-        email, ts = get_temp_email()
-        out["email"] = email
-        print(f"  [1] email temp: {email}")
-
-        s, t = None, ""
-        for attempt in range(3):
+        # [1-2] email temp + register — kalau gagal / email sudah dipakai,
+        # ulangi dengan email temp baru sampai register sukses
+        reg_ok = False
+        t = ""
+        for attempt in range(1, MAX_REGISTER_TRIES + 1):
+            email, ts = get_temp_email()
+            out["email"] = email
+            print(f"  [1] email temp: {email}")
             s, t = register_account(email)
+            out["register_status"] = s
+            print(f"  [2] register -> {s}")
             if s in (200, 201):
+                reg_ok = True
                 break
-            time.sleep(5)
-        out["register_status"] = s
-        print(f"  [2] register -> {s}")
-        if s not in (200, 201):
+            print(f"    register gagal / email sudah dipakai -> coba email baru ({attempt}/{MAX_REGISTER_TRIES})")
+            time.sleep(DELAY)
+        if not reg_ok:
             out["status"] = "register_gagal"
             out["detail"] = t[:150]
             return out
 
-        msg = poll_inbox(email, ts)
-        if not msg:
-            out["status"] = "email_konfirmasi_tidak_datang"
-            return out
-        print(f"  [3] inbox: dari={msg.get('textFrom')} subj={msg.get('textSubject')}")
-
-        body = get_message_body(email, msg["mid"])
-        # link di body dibungkus click-tracker SendGrid -> resolve Location-nya
-        links = re.findall(r'href=["\'](https://u53475141\.ct\.sendgrid\.net/ls/click[^"\']+)["\']', body)
-        ctoken = None
-        for link in links:
-            ctoken = extract_token_from_sendgrid(link)
-            if ctoken:
+        # [3-5] inbox + token + konfirmasi — ulang sampai konfirmasi OK
+        confirmed = False
+        for attempt in range(1, MAX_CONFIRM_ROUNDS + 1):
+            msg = poll_inbox(email, ts)
+            if not msg:
+                print(f"    email konfirmasi belum datang ({attempt}/{MAX_CONFIRM_ROUNDS}), minta kirim ulang...")
+                # register ulang untuk trigger kirim email lagi (422 tidak apa-apa)
+                register_account(email)
+                continue
+            print(f"  [3] inbox: dari={msg.get('textFrom')} subj={msg.get('textSubject')}")
+            ctoken = extract_confirmation_token(email, msg)
+            if not ctoken:
+                print(f"    token belum ketemu ({attempt}/{MAX_CONFIRM_ROUNDS}), ulang...")
+                continue
+            print(f"  [4] confirmation_token: {ctoken[:16]}...")
+            if confirm_email(email, ctoken):
+                confirmed = True
                 break
-        if not ctoken:
-            # fallback: token langsung di body (kalau tidak dibungkus tracker)
-            m = re.search(r"confirmation_token=([A-Za-z0-9_\-]+)", body)
-            ctoken = m.group(1) if m else None
-        if not ctoken:
-            out["status"] = "token_tidak_ketemu"
-            out["detail"] = body[:200]
-            return out
-        print(f"  [4] confirmation_token: {ctoken[:16]}...")
-
-        ok = confirm_email(email, ctoken)
-        out["confirmed"] = ok
-        print(f"  [5] konfirmasi -> {'OK' if ok else 'GAGAL'}")
-        if not ok:
+            print(f"    konfirmasi gagal ({attempt}/{MAX_CONFIRM_ROUNDS}), ulang...")
+            time.sleep(DELAY)
+        out["confirmed"] = confirmed
+        print(f"  [5] konfirmasi -> {'OK' if confirmed else 'GAGAL'}")
+        if not confirmed:
             out["status"] = "konfirmasi_gagal"
             return out
 
-        token, uid = login(email)
+        # [6] login — retry sampai dapat token
+        token = uid = None
+        for attempt in range(1, MAX_STEP_TRIES + 1):
+            token, uid = login(email)
+            if token:
+                break
+            print(f"    login gagal ({attempt}/{MAX_STEP_TRIES}), retry...")
+            time.sleep(DELAY)
         out["uid"] = uid
         out["token"] = token
         print(f"  [6] login -> uid={uid} token={bool(token)}")
@@ -345,7 +378,14 @@ def process_one(partner):
             out["status"] = "login_gagal"
             return out
 
-        s, t = merge_partner(email, token, partner)
+        # [7] merge — kalau gagal / email sudah dipakai, ulang sampai 200
+        s, t = None, ""
+        for attempt in range(1, MAX_STEP_TRIES + 1):
+            s, t = merge_partner(email, token, partner)
+            if s == 200:
+                break
+            print(f"    merge -> {s} ({t[:80]}) retry {attempt}/{MAX_STEP_TRIES}")
+            time.sleep(DELAY)
         out["merge_status"] = s
         try:
             d = json.loads(t)
@@ -354,9 +394,19 @@ def process_one(partner):
         except Exception:
             out["detail"] = t[:150]
         print(f"  [7] merge {partner} -> {s} (email: {out.get('merge_email')})")
+        if s != 200:
+            out["status"] = "merge_gagal"
+            return out
 
+        # [8] verifikasi stream — retry sampai 200/hls
         use_token = out.get("merge_token") or token
-        s, has_hls = verify_stream(email, use_token)
+        has_hls = False
+        for attempt in range(1, MAX_STEP_TRIES + 1):
+            s, has_hls = verify_stream(email, use_token)
+            if has_hls or s == 200:
+                break
+            print(f"    stream -> {s} hls={has_hls}, retry {attempt}/{MAX_STEP_TRIES}")
+            time.sleep(DELAY)
         out["stream_status"] = s
         out["has_hls"] = has_hls
         print(f"  [8] stream {TEST_CHANNEL} -> {s} hls={has_hls}")
@@ -386,6 +436,14 @@ if __name__ == "__main__":
         partner = PARTNERS[i % len(PARTNERS)]
         print(f"\n=== Akun {i + 1} (partner: {partner}) ===")
         r = process_one(partner)
+        # akun yang sama diulang sampai sukses — jangan langsung ganti akun
+        retry_round = 0
+        while r.get("status") != "sukses" and retry_round < MAX_ACCOUNT_ROUNDS:
+            retry_round += 1
+            print(f"  !! {r.get('status')} -> ulangi akun {i + 1} (ronde {retry_round}/{MAX_ACCOUNT_ROUNDS})")
+            time.sleep(10)
+            r = process_one(partner)
+            r["retry_round"] = retry_round
         results.append(r)
         save_results(results)
         print(f"  => {r['status']}")
