@@ -44,10 +44,8 @@ RESULTS_FILE = "bulk_accounts.json"
 
 # Pengaturan retry — semua langkah diulang sampai sukses, bukan berhenti.
 DELAY = 6                # jeda antar percobaan (detik)
-MAX_STEP_TRIES = 15      # partner auth / login / merge / stream
-MAX_REGISTER_TRIES = 10  # register (email baru tiap percobaan bila email sudah dipakai)
-MAX_CONFIRM_ROUNDS = 8   # poll inbox + ekstrak token + konfirmasi
-MAX_ACCOUNT_ROUNDS = 5   # ronde ulang satu akun penuh di loop utama
+# Semua langkah diulang TANPA BATAS sampai sukses — tidak ada limit percobaan,
+# akun tidak pernah ditinggalkan begitu saja kalau ada langkah yang gagal.
 
 
 def rapid_get(path, params):
@@ -299,28 +297,27 @@ def extract_confirmation_token(email, msg):
 def process_one(partner):
     out = {"partner": partner, "status": None}
     try:
-        # [0] partner auth anonim — retry sampai sukses, jangan berhenti
+        # [0] partner auth anonim — diulang sampai dapat token
         p = None
-        for attempt in range(1, MAX_STEP_TRIES + 1):
+        attempt = 0
+        while True:
+            attempt += 1
             s, p = anonymous_partner_auth(partner)
             if s == 200 and isinstance(p, dict) and p.get("token"):
                 break
-            print(f"    partner auth -> {s}, retry {attempt}/{MAX_STEP_TRIES}")
+            print(f"    partner auth -> {s}, ulang ke-{attempt}")
             time.sleep(DELAY)
         out["partner_email"] = p.get("email") if isinstance(p, dict) else None
         out["partner_token"] = p.get("token") if isinstance(p, dict) else None
         out["partner_uid"] = p.get("uid") if isinstance(p, dict) else None
         print(f"  [0] partner {partner} -> {s} email={out['partner_email']}")
-        if s != 200 or not out["partner_token"]:
-            out["status"] = "partner_auth_gagal"
-            out["detail"] = str(p)[:150]
-            return out
 
         # [1-2] email temp + register — kalau gagal / email sudah dipakai,
-        # ulangi dengan email temp baru sampai register sukses
-        reg_ok = False
+        # ulangi dengan email temp baru SAMPAI register sukses
         t = ""
-        for attempt in range(1, MAX_REGISTER_TRIES + 1):
+        attempt = 0
+        while True:
+            attempt += 1
             email, ts = get_temp_email()
             out["email"] = email
             print(f"  [1] email temp: {email}")
@@ -328,63 +325,60 @@ def process_one(partner):
             out["register_status"] = s
             print(f"  [2] register -> {s}")
             if s in (200, 201):
-                reg_ok = True
                 break
-            print(f"    register gagal / email sudah dipakai -> coba email baru ({attempt}/{MAX_REGISTER_TRIES})")
+            print(f"    register gagal / email sudah dipakai -> coba email baru (ulang ke-{attempt})")
             time.sleep(DELAY)
-        if not reg_ok:
-            out["status"] = "register_gagal"
-            out["detail"] = t[:150]
-            return out
 
-        # [3-5] inbox + token + konfirmasi — ulang sampai konfirmasi OK
+        # [3-5] inbox + token + konfirmasi — diulang sampai konfirmasi OK
         confirmed = False
-        for attempt in range(1, MAX_CONFIRM_ROUNDS + 1):
+        attempt = 0
+        while True:
+            attempt += 1
             msg = poll_inbox(email, ts)
             if not msg:
-                print(f"    email konfirmasi belum datang ({attempt}/{MAX_CONFIRM_ROUNDS}), minta kirim ulang...")
+                print(f"    email konfirmasi belum datang (ulang ke-{attempt}), minta kirim ulang...")
                 # register ulang untuk trigger kirim email lagi (422 tidak apa-apa)
                 register_account(email)
+                time.sleep(DELAY)
                 continue
             print(f"  [3] inbox: dari={msg.get('textFrom')} subj={msg.get('textSubject')}")
             ctoken = extract_confirmation_token(email, msg)
             if not ctoken:
-                print(f"    token belum ketemu ({attempt}/{MAX_CONFIRM_ROUNDS}), ulang...")
+                print(f"    token belum ketemu (ulang ke-{attempt}), ulang...")
+                time.sleep(DELAY)
                 continue
             print(f"  [4] confirmation_token: {ctoken[:16]}...")
             if confirm_email(email, ctoken):
                 confirmed = True
                 break
-            print(f"    konfirmasi gagal ({attempt}/{MAX_CONFIRM_ROUNDS}), ulang...")
+            print(f"    konfirmasi gagal (ulang ke-{attempt}), ulang...")
             time.sleep(DELAY)
         out["confirmed"] = confirmed
-        print(f"  [5] konfirmasi -> {'OK' if confirmed else 'GAGAL'}")
-        if not confirmed:
-            out["status"] = "konfirmasi_gagal"
-            return out
+        print("  [5] konfirmasi -> OK")
 
-        # [6] login — retry sampai dapat token
+        # [6] login — diulang sampai dapat token
         token = uid = None
-        for attempt in range(1, MAX_STEP_TRIES + 1):
+        attempt = 0
+        while True:
+            attempt += 1
             token, uid = login(email)
             if token:
                 break
-            print(f"    login gagal ({attempt}/{MAX_STEP_TRIES}), retry...")
+            print(f"    login gagal (ulang ke-{attempt}), retry...")
             time.sleep(DELAY)
         out["uid"] = uid
         out["token"] = token
         print(f"  [6] login -> uid={uid} token={bool(token)}")
-        if not token:
-            out["status"] = "login_gagal"
-            return out
 
-        # [7] merge — kalau gagal / email sudah dipakai, ulang sampai 200
+        # [7] merge — kalau gagal / email sudah dipakai, diulang sampai 200
         s, t = None, ""
-        for attempt in range(1, MAX_STEP_TRIES + 1):
+        attempt = 0
+        while True:
+            attempt += 1
             s, t = merge_partner(email, token, partner)
             if s == 200:
                 break
-            print(f"    merge -> {s} ({t[:80]}) retry {attempt}/{MAX_STEP_TRIES}")
+            print(f"    merge -> {s} ({t[:80]}) ulang ke-{attempt}")
             time.sleep(DELAY)
         out["merge_status"] = s
         try:
@@ -394,24 +388,23 @@ def process_one(partner):
         except Exception:
             out["detail"] = t[:150]
         print(f"  [7] merge {partner} -> {s} (email: {out.get('merge_email')})")
-        if s != 200:
-            out["status"] = "merge_gagal"
-            return out
 
-        # [8] verifikasi stream — retry sampai 200/hls
+        # [8] verifikasi stream — diulang sampai 200/hls
         use_token = out.get("merge_token") or token
         has_hls = False
-        for attempt in range(1, MAX_STEP_TRIES + 1):
+        attempt = 0
+        while True:
+            attempt += 1
             s, has_hls = verify_stream(email, use_token)
             if has_hls or s == 200:
                 break
-            print(f"    stream -> {s} hls={has_hls}, retry {attempt}/{MAX_STEP_TRIES}")
+            print(f"    stream -> {s} hls={has_hls}, ulang ke-{attempt}")
             time.sleep(DELAY)
         out["stream_status"] = s
         out["has_hls"] = has_hls
         print(f"  [8] stream {TEST_CHANNEL} -> {s} hls={has_hls}")
 
-        out["status"] = "sukses" if (has_hls or s == 200) else "merge_ok_stream_gagal"
+        out["status"] = "sukses"
     except Exception as ex:
         out["status"] = f"error: {str(ex)[:100]}"
     return out
@@ -436,11 +429,11 @@ if __name__ == "__main__":
         partner = PARTNERS[i % len(PARTNERS)]
         print(f"\n=== Akun {i + 1} (partner: {partner}) ===")
         r = process_one(partner)
-        # akun yang sama diulang sampai sukses — jangan langsung ganti akun
+        # akun yang sama diulang sampai sukses — TANPA batas ronde
         retry_round = 0
-        while r.get("status") != "sukses" and retry_round < MAX_ACCOUNT_ROUNDS:
+        while r.get("status") != "sukses":
             retry_round += 1
-            print(f"  !! {r.get('status')} -> ulangi akun {i + 1} (ronde {retry_round}/{MAX_ACCOUNT_ROUNDS})")
+            print(f"  !! {r.get('status')} -> ulangi akun {i + 1} (ronde {retry_round})")
             time.sleep(10)
             r = process_one(partner)
             r["retry_round"] = retry_round
