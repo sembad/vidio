@@ -166,6 +166,10 @@ def verify_decoded_apk(root):
         gate = use_case.index(patch_force_update.MARKER)
         if use_case.index('version_force') < gate or 'sget-object p0, Ltr/b;->a:Ltr/b;' not in use_case[:gate + 200]:
             raise AssertionError('TV force-update gate is not disabled at tr/h->j')
+        for name, _, _ in patch_force_update.PRODUCERS:
+            path = next(root.glob(f'smali*/{name}'))
+            if 'c0$q0' in path.read_text():
+                raise AssertionError(f'Update-app blocker producer still active in {path}')
     retry = next(root.glob('smali*/com/vidio/android/patch/StreamRetry.smali')).read_text()
     chain = re.search(r'retry\(L([^;]+);L[^/]+/f0;', retry).group(1)
     bridge = next(root.glob(f'smali*/{chain.rsplit("/", 1)[0]}/a.smali')).read_text()

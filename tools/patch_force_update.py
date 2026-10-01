@@ -42,6 +42,46 @@ def patch(root):
     print(f'[force-update] {path.name}->j now always returns no-update')
 
 
+# The player also blocks playback with the same update dialog when the stream
+# response reports an update-required event. Neutralize both producers so the
+# blocker never enters the player state.
+PRODUCERS = (
+    ('ct/h2.smali',
+     '''    sget-object v1, Lcom/vidio/android/tv/watch/blocker/c0$q0;->e:Lcom/vidio/android/tv/watch/blocker/c0$q0;
+
+    invoke-virtual {v0, v1}, Lct/b1;->E2(Lcom/vidio/android/tv/watch/blocker/c0;)V
+
+    goto/16 :goto_6''',
+     '    goto/16 :goto_6'),
+    ('qt/o1.smali',
+     '''    sget-object v1, Lcom/vidio/android/tv/watch/blocker/c0$q0;->e:Lcom/vidio/android/tv/watch/blocker/c0$q0;
+
+    .line 981
+    .line 982
+    invoke-virtual {v0, v1}, Lqt/w0;->O1(Lcom/vidio/android/tv/watch/blocker/c0;)V
+
+    .line 983
+    .line 984
+    .line 985
+    return-void''',
+     '    return-void'),
+)
+
+
+def patch_player_blockers(root: Path):
+    for name, old, new in PRODUCERS:
+        matches = [path for path in root.glob(f'smali*/{name}') if old in path.read_text()]
+        if not matches:
+            path = next(root.glob(f'smali*/{name}'))
+            if new in path.read_text():
+                continue
+            raise AssertionError(f'Update-blocker producer not found in {path}')
+        path = matches[0]
+        path.write_text(path.read_text().replace(old, new, 1))
+        print(f'[force-update] update-app blocker producer disabled in {path.relative_to(root)}')
+
+
 if __name__ == '__main__':
     for arg in sys.argv[1:]:
         patch(arg)
+        patch_player_blockers(Path(arg))
