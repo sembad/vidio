@@ -98,6 +98,44 @@ def patch(root):
 
     :player_scope_done
     invoke-virtual {{v2}}, L{http}/f0$a;->b()L{http}/f0;''')
+    # beginStreamLoading harus tetap terpanggil walau streamProxyUrl() return null
+    # (URL stream yang sudah memakai host proxy tidak di-rewrite lagi), jadi hook
+    # ini dipasang di awal intercept() tepat setelah URL asli diketahui.
+    early_anchor = f'''    invoke-virtual {{v10}}, L{http}/y;->toString()Ljava/lang/String;
+
+    move-result-object v10
+
+    const-string v2, "x-user-email"
+'''
+    early_block = f'''    invoke-virtual {{v10}}, L{http}/y;->toString()Ljava/lang/String;
+
+    move-result-object v10
+
+    const-string v2, "/livestreamings/"
+
+    invoke-virtual {{v10, v2}}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+
+    move-result v3
+
+    if-eqz v3, :vck_early_done
+
+    const-string v2, "/stream?"
+
+    invoke-virtual {{v10, v2}}, Ljava/lang/String;->contains(Ljava/lang/CharSequence;)Z
+
+    move-result v3
+
+    if-eqz v3, :vck_early_done
+
+    invoke-static {{v10}}, {GATE}->beginStreamLoading(Ljava/lang/String;)V
+
+    :vck_early_done
+
+    const-string v2, "x-user-email"
+'''
+    if 'vck_early_done' not in b:
+        b = replace_once(b, early_anchor, early_block)
+        print('[player-lifecycle] early beginStreamLoading hooked in intercept()')
     bridge.write_text(b)
     if 'const/16 v3, 0x1ad' not in text:
         text = replace_once(text, '    if-eq v2, v3, :cond_ready\n', '''    if-eq v2, v3, :cond_ready
