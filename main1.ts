@@ -1063,6 +1063,15 @@ function isEmailVerificationError(body: string): boolean {
 }
 
 /**
+ * Respons stream yang URL playback-nya di CDN staging tidak bisa diputar:
+ * manifest staging 404 di device (log playback 777). CDN production memakai
+ * host etslive-v3 / geo-id-etslive-v3 tanpa "-staging".
+ */
+function isStagingCdnStream(body: string): boolean {
+  return body.includes("etslive-staging");
+}
+
+/**
  * Mengklasifikasi respons stream/video_data dari upstream, tanpa hardcode
  * hostname apa pun:
  * - "full": ada URL hls/dash yang bisa dipakai.
@@ -1522,7 +1531,13 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   const fullResult = await fetchStreamResultShared(cacheKey, async () => {
     for (const token of shuffled(STAGING_TOKENS)) {
       const staging = await proxyStagingStream(streamId, request, token);
-      if (staging && staging.status === 200) return staging;
+      if (staging && staging.status === 200) {
+        // Respons staging yang URL playback-nya menunjuk CDN staging
+        // (etslive-staging-*) tidak bisa diputar: MPD-nya 404 di device
+        // (terbukti di log playback). Tolak agar loop lanjut ke kredensial
+        // production yang URL-nya CDN production dan terbukti jalan.
+        if (!isStagingCdnStream(staging.body)) return staging;
+      }
       // Staging menolak dengan "Verifikasi Email untuk Nonton" (403) →
       // akun staging tidak berhak; langsung redirect ke api.vidio.com resmi
       // agar app mengejar redirect dengan kredensial user sendiri.
@@ -1890,6 +1905,14 @@ async function selfCheck(): Promise<void> {
   }
   if (isEmailVerificationError(JSON.stringify({ errors: [{ title: "not_logged_in" }] })) || isEmailVerificationError("not json")) {
     throw new Error("Non-verification errors must not trigger the official redirect");
+  }
+
+  // Respons stream ber-URL CDN staging harus ditolak (MPD staging 404 di device)
+  if (!isStagingCdnStream('{"stream_url":"https://etslive-staging-v3-vidio-com-tokenized.akamaized.net/stream/777/file/stream.mpd"}')) {
+    throw new Error("Staging-CDN stream responses must be rejected");
+  }
+  if (isStagingCdnStream('{"stream_url":"https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/733/stream.mpd"}')) {
+    throw new Error("Production-CDN stream responses must be accepted");
   }
 
   // Klasifikasi kualitas respons upstream: full (ada URL) / error
