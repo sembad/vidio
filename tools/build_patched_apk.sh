@@ -19,6 +19,7 @@ python3 "$ROOT/tools/patch_clearkey_embedded.py" "$DECODED"
 python3 "$ROOT/tools/patch_player_lifecycle.py" "$DECODED"
 python3 "$ROOT/tools/patch_loading_recovery.py" "$DECODED"
 python3 "$ROOT/tools/patch_visible_loading.py" "$DECODED"
+python3 "$ROOT/tools/patch_debug_logger.py" "$DECODED"
 python3 "$ROOT/tools/test_player_loading.py" "$DECODED"
 
 echo "[build] apktool b $DECODED"
