@@ -1643,26 +1643,23 @@ async function handleRequest(request: Request): Promise<Response> {
   }
 
   if (CONTENT_ACCESS_PATH.test(url.pathname)) {
-    return new Response(
-      JSON.stringify({
-        data: {
-          has_access: true,
-          allowed: true,
-        },
-        meta: {
-          player_offer: null,
-          bottom_sheet: null,
-        },
-      }),
-      {
-        status: 200,
-        headers: {
-          ...securityHeaders,
-          "content-type": "application/json; charset=utf-8",
-          "cache-control": "no-store, no-cache, must-revalidate",
-        },
+    // content_access selalu di-redirect 307 ke api.vidio.com resmi — app
+    // mengikuti redirect dengan x-user-email/x-user-token aslinya sendiri,
+    // jadi jawaban entitlement asli (200/403) datang langsung dari upstream,
+    // tanpa proxy pool dan tanpa cache. Redirect follow-up OkHttp tidak
+    // melewati ulang hook rewrite di APK, jadi tidak ada loop.
+    const upstreamUrl = new URL(`${UPSTREAM_ORIGIN}${url.pathname}`);
+    for (const [key, val] of url.searchParams.entries()) {
+      upstreamUrl.searchParams.set(key, val);
+    }
+    return new Response(null, {
+      status: 307,
+      headers: {
+        ...securityHeaders,
+        location: upstreamUrl.toString(),
+        "cache-control": "no-store",
       },
-    );
+    });
   }
 
   const selectedQuery = getSelectedQuery(url);
