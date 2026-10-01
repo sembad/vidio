@@ -297,9 +297,9 @@ def patch(root):
     const/4 v0, 0x1
     sput-boolean v0, {GATE}->streamPlaybackFailed:Z
     invoke-static {{}}, {GATE}->hideStreamLoading()V
-    # Jangan toast langsung: retry internal sering berhasil beberapa detik
-    # kemudian (mis. cdmError 6 lalu FIRST_FRAME). Tunda toast 8 detik dan
-    # batalkan bila frame berhasil dirender.
+    # Jangan toast: cdmError 6 sering sementara dan retry berikutnya berhasil.
+    # Tunda 8 detik; bila tetap tanpa frame, tutup overlay agar user kembali
+    # ke perilaku native (layar hitam) dan bisa buka ulang channel.
     invoke-static {{}}, {GATE}->scheduleFailToast()V
     :done
     return-void
@@ -327,8 +327,7 @@ def patch(root):
     invoke-virtual {{v0, v1, v2, v3}}, Landroid/os/Handler;->postDelayed(Ljava/lang/Runnable;J)Z
     return-void
     :fallback
-    const-string v0, "Siaran gagal diputar. Coba buka ulang channel."
-    invoke-static {{v0}}, {GATE}->showToast(Ljava/lang/String;)V
+    invoke-static {{}}, {GATE}->hideStreamLoading()V
     return-void
 .end method''')
     gate = method(gate, 'maybeShowFailToast()V', f'''.method public static maybeShowFailToast()V
@@ -339,8 +338,11 @@ def patch(root):
     if-nez v0, :done
     sget-boolean v0, {GATE}->streamFrameRendered:Z
     if-nez v0, :done
-    const-string v0, "Siaran gagal diputar. Coba buka ulang channel."
-    invoke-static {{v0}}, {GATE}->showToast(Ljava/lang/String;)V
+    const-string v0, "STREAM_FAIL_CONFIRMED"
+    invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
+    # Toast dihapus (FIX29): kegagalan ditandai dengan menutup overlay
+    # loading, bukan notifikasi. User tinggal buka ulang channel.
+    invoke-static {{}}, {GATE}->hideStreamLoading()V
     :done
     return-void
 .end method''')
