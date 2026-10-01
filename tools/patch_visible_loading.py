@@ -82,7 +82,7 @@ def patch(root):
     return-void
 .end method''')
     gate = method(gate, 'renderStreamLoadingWindow()V', f'''.method public static renderStreamLoadingWindow()V
-    .locals 7
+    .locals 10
     sget-boolean v0, {GATE}->streamLoadingShown:Z
     if-eqz v0, :done
     :try_start
@@ -113,38 +113,73 @@ def patch(root):
     :replace
     invoke-static {{}}, {GATE}->dismissStreamLoadingWindow()V
     :create
-    # Gaya loading sama seperti saat login: spinner indeterminate merah Vidio
-    # (#EF2041) di tengah layar, tanpa kotak dialog dan tanpa teks "Memuat".
+    # Gaya loading sama seperti halaman login: logo Vidio pink + teks
+    # "Tunggu sebentar ya" dalam kartu bulat gelap di tengah layar.
+    # Popup wrap-content, BUKAN full-screen: window PopupWindow tanpa
+    # background drawable beropaqa hitam sehingga versi full-screen
+    # menutupi seluruh video (penyebab layar blank hitam FIX26).
     new-instance v2, Landroid/widget/LinearLayout;
     invoke-direct {{v2, v0}}, Landroid/widget/LinearLayout;-><init>(Landroid/content/Context;)V
     const/4 v3, 0x1
     invoke-virtual {{v2, v3}}, Landroid/widget/LinearLayout;->setOrientation(I)V
     const/16 v3, 0x11
     invoke-virtual {{v2, v3}}, Landroid/widget/LinearLayout;->setGravity(I)V
-    new-instance v4, Landroid/widget/ProgressBar;
-    invoke-direct {{v4, v0}}, Landroid/widget/ProgressBar;-><init>(Landroid/content/Context;)V
-    const/4 v5, 0x1
-    invoke-virtual {{v4, v5}}, Landroid/widget/ProgressBar;->setIndeterminate(Z)V
-    const v5, 0xef2041
-    invoke-static {{v5}}, Landroid/content/res/ColorStateList;->valueOf(I)Landroid/content/res/ColorStateList;
-    move-result-object v5
-    invoke-virtual {{v4, v5}}, Landroid/widget/ProgressBar;->setIndeterminateTintList(Landroid/content/res/ColorStateList;)V
     invoke-virtual {{v0}}, Landroid/content/Context;->getResources()Landroid/content/res/Resources;
     move-result-object v3
     invoke-virtual {{v3}}, Landroid/content/res/Resources;->getDisplayMetrics()Landroid/util/DisplayMetrics;
-    move-result-object v3
-    iget v3, v3, Landroid/util/DisplayMetrics;->density:F
-    const/high16 v5, 0x42600000
-    mul-float/2addr v5, v3
+    move-result-object v4
+    iget v9, v4, Landroid/util/DisplayMetrics;->density:F
+    new-instance v4, Landroid/graphics/drawable/GradientDrawable;
+    invoke-direct {{v4}}, Landroid/graphics/drawable/GradientDrawable;-><init>()V
+    const v5, 0xe6141414
+    invoke-virtual {{v4, v5}}, Landroid/graphics/drawable/GradientDrawable;->setColor(I)V
+    const/high16 v5, 0x41a00000
+    mul-float/2addr v5, v9
+    invoke-virtual {{v4, v5}}, Landroid/graphics/drawable/GradientDrawable;->setCornerRadius(F)V
+    invoke-virtual {{v2, v4}}, Landroid/view/View;->setBackground(Landroid/graphics/drawable/Drawable;)V
+    const/high16 v5, 0x41e00000
+    mul-float/2addr v5, v9
     float-to-int v5, v5
-    new-instance v6, Landroid/widget/LinearLayout$LayoutParams;
-    invoke-direct {{v6, v5, v5}}, Landroid/widget/LinearLayout$LayoutParams;-><init>(II)V
-    invoke-virtual {{v2, v4, v6}}, Landroid/view/ViewGroup;->addView(Landroid/view/View;Landroid/view/ViewGroup$LayoutParams;)V
-    new-instance v3, Landroid/widget/PopupWindow;
-    const/4 v4, -0x1
+    invoke-virtual {{v2, v5, v5, v5, v5}}, Landroid/view/View;->setPadding(IIII)V
+    invoke-virtual {{v0}}, Landroid/content/Context;->getPackageName()Ljava/lang/String;
+    move-result-object v6
+    const-string v7, "ic_app_vidio_logo"
+    const-string v8, "drawable"
+    invoke-virtual {{v3, v7, v8, v6}}, Landroid/content/res/Resources;->getIdentifier(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I
+    move-result v6
+    if-lez v6, :no_logo
+    new-instance v4, Landroid/widget/ImageView;
+    invoke-direct {{v4, v0}}, Landroid/widget/ImageView;-><init>(Landroid/content/Context;)V
+    invoke-virtual {{v4, v6}}, Landroid/widget/ImageView;->setImageResource(I)V
+    const/high16 v7, 0x42480000
+    mul-float/2addr v7, v9
+    float-to-int v7, v7
+    new-instance v8, Landroid/widget/LinearLayout$LayoutParams;
+    invoke-direct {{v8, v7, v7}}, Landroid/widget/LinearLayout$LayoutParams;-><init>(II)V
+    invoke-virtual {{v2, v4, v8}}, Landroid/view/ViewGroup;->addView(Landroid/view/View;Landroid/view/ViewGroup$LayoutParams;)V
+    :no_logo
+    new-instance v4, Landroid/widget/TextView;
+    invoke-direct {{v4, v0}}, Landroid/widget/TextView;-><init>(Landroid/content/Context;)V
+    const-string v5, "Tunggu sebentar ya"
+    invoke-virtual {{v4, v5}}, Landroid/widget/TextView;->setText(Ljava/lang/CharSequence;)V
     const/4 v5, -0x1
+    invoke-virtual {{v4, v5}}, Landroid/widget/TextView;->setTextColor(I)V
+    const/high16 v5, 0x41800000
+    invoke-virtual {{v4, v5}}, Landroid/widget/TextView;->setTextSize(F)V
+    sget-object v5, Landroid/graphics/Typeface;->DEFAULT_BOLD:Landroid/graphics/Typeface;
+    invoke-virtual {{v4, v5}}, Landroid/widget/TextView;->setTypeface(Landroid/graphics/Typeface;)V
+    invoke-virtual {{v2, v4}}, Landroid/view/ViewGroup;->addView(Landroid/view/View;)V
+    new-instance v3, Landroid/widget/PopupWindow;
+    const/4 v4, -0x2
+    const/4 v5, -0x2
     const/4 v6, 0x0
     invoke-direct {{v3, v2, v4, v5, v6}}, Landroid/widget/PopupWindow;-><init>(Landroid/view/View;IIZ)V
+    # Background transparan membuat surface window popup translusen,
+    # sehingga sudut kartu yang membulat tidak jadi kotak hitam.
+    new-instance v4, Landroid/graphics/drawable/ColorDrawable;
+    const/4 v5, 0x0
+    invoke-direct {{v4, v5}}, Landroid/graphics/drawable/ColorDrawable;-><init>(I)V
+    invoke-virtual {{v3, v4}}, Landroid/widget/PopupWindow;->setBackgroundDrawable(Landroid/graphics/drawable/Drawable;)V
     invoke-virtual {{v3, v6}}, Landroid/widget/PopupWindow;->setTouchable(Z)V
     invoke-virtual {{v3, v6}}, Landroid/widget/PopupWindow;->setAnimationStyle(I)V
     sput-object v3, {GATE}->loadingPopup:Landroid/widget/PopupWindow;
