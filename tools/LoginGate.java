@@ -946,7 +946,6 @@ public final class LoginGate {
             streamPlaybackFailed = false;
             streamRequestPending = true;
             lastLoadingWindowError = null;
-            logStreamEvent("STREAM_BEGIN FIX24");
             showStreamLoading();
         } catch (IOException ignored) {
         }
@@ -961,7 +960,6 @@ public final class LoginGate {
     public static void onStreamResponse(String url, int status) {
         try {
             if (!new URL(url).getPath().equals(loadingStreamPath)) return;
-            logStreamEvent("STREAM_RESPONSE " + status);
             if (status == 200) streamRequestPending = false;
             else if (status >= 400) {
                 streamRequestPending = false;
@@ -973,18 +971,11 @@ public final class LoginGate {
 
     public static void onStreamFirstFrame() {
         if (streamRequestPending || streamPlaybackFailed) return;
-        if (!streamFrameRendered) logStreamEvent("FIRST_FRAME");
         streamFrameRendered = true;
         hideStreamLoading();
     }
 
     public static void onStreamPlayerError(Object error) {
-        logStreamEvent("PLAYER_ERROR " + error);
-        Throwable cause = error instanceof Throwable ? (Throwable) error : null;
-        for (int depth = 0; depth < 3 && cause != null; depth++) {
-            cause = cause.getCause();
-            if (cause != null) logStreamEvent("PLAYER_CAUSE " + cause);
-        }
         if (loadingStreamPath == null || streamRequestPending) return;
         playerPlaying = false;
         streamFrameRendered = false;
@@ -993,17 +984,8 @@ public final class LoginGate {
         showToast("Siaran gagal diputar. Coba buka ulang channel.");
     }
 
-    public static void logStreamEvent(String event) {
-        try {
-            Class.forName("com.vidio.android.patch.TrafficLog").getMethod("log", String.class)
-                    .invoke(null, "PLAYER " + event + " stream=" + loadingStreamPath);
-        } catch (ReflectiveOperationException | RuntimeException ignored) {
-        }
-    }
-
     public static void onStreamPlaybackState(int state) {
         if (loadingStreamPath == null || streamPlaybackFailed) return;
-        logStreamEvent("STATE " + state);
         if (state == 2) {
             playerPlaying = false;
             showStreamLoading();
@@ -1018,9 +1000,6 @@ public final class LoginGate {
         Object previousActivity = currentActivity;
         currentActivity = activity;
         if (streamLoadingShown) {
-            if (activity != null && activity != previousActivity) {
-                logStreamEvent("ACTIVITY_RESUMED " + activity.getClass().getName());
-            }
             refreshStreamLoading();
         }
     }
@@ -1092,7 +1071,6 @@ public final class LoginGate {
             loadingActivity = activity;
             loadingView = box;
             popupClass.getMethod("showAtLocation", viewClass, int.class, int.class, int.class).invoke(popup, decor, 17, 0, 0);
-            logStreamEvent("LOADING_VISIBLE");
         } catch (ReflectiveOperationException | RuntimeException error) {
             reportLoadingWindowError(error);
             dismissStreamLoadingWindow();
@@ -1120,11 +1098,6 @@ public final class LoginGate {
         String message = cause.toString();
         if (message.equals(lastLoadingWindowError)) return;
         lastLoadingWindowError = message;
-        logStreamEvent("LOADING_WINDOW_ERROR " + message);
-        try {
-            Class.forName("android.util.Log").getMethod("w", String.class, String.class).invoke(null, "VidioLoading", message);
-        } catch (ReflectiveOperationException ignored) {
-        }
     }
 
     public static synchronized void refreshStreamLoading() {

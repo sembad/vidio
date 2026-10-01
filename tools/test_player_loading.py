@@ -68,7 +68,7 @@ def verify_decoded_apk(root):
     gate = next(root.glob('smali*/com/vidio/android/patch/LoginGate.smali')).read_text()
     for signature in ('beginStreamLoading(Ljava/lang/String;)V', 'onStreamFirstFrame()V',
                       'onStreamPlayerError(Ljava/lang/Object;)V', 'onStreamPlaybackState(I)V',
-                      'logStreamEvent(Ljava/lang/String;)V', 'renderStreamLoadingWindow()V'):
+                      'renderStreamLoadingWindow()V'):
         pattern = rf'^\.method [^\n]* {re.escape(signature)}$'
         if len(re.findall(pattern, gate, re.M)) != 1:
             raise AssertionError(f'Missing or duplicate gate method: {signature}')

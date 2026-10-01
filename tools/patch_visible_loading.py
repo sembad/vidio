@@ -28,7 +28,6 @@ def patch(root):
     const-string v0, "ACTIVITY_RESUMED "
     invoke-virtual {{v0, v1}}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
     move-result-object v0
-    invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
     :refresh
     invoke-static {{}}, {GATE}->refreshStreamLoading()V
     :done
@@ -58,7 +57,6 @@ def patch(root):
     const-string v1, "LOADING_WINDOW_ERROR "
     invoke-virtual {{v1, v0}}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
     move-result-object v0
-    invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
     :done
     return-void
 .end method''')
@@ -168,7 +166,6 @@ def patch(root):
     const/16 v7, 0x11
     invoke-virtual {{v6, v1, v7, v9, v9}}, Landroid/widget/PopupWindow;->showAtLocation(Landroid/view/View;III)V
     const-string v0, "LOADING_VISIBLE"
-    invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
     :try_end
     .catch Ljava/lang/RuntimeException; {{:try_start .. :try_end}} :failed
     goto :tick

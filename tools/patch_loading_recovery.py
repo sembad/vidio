@@ -100,8 +100,6 @@ def patch(root):
     const-wide/32 v1, 0x15f90
     cmp-long v1, v3, v1
     if-gez v1, :expired
-    const/4 v1, -0x1
-    invoke-static {{v0, v1}}, Lcom/vidio/android/patch/TrafficLog;->logRetry(Ljava/lang/String;I)V
     invoke-static {{v0}}, {GATE}->beginStreamLoading(Ljava/lang/String;)V
     const/4 v0, 0x1
     return v0
@@ -137,29 +135,6 @@ def patch(root):
     for field in ('.field private static volatile streamPlaybackFailed:Z', '.field private static lastLoadingWindowError:Ljava/lang/String;'):
         if field not in gate:
             gate = gate.replace('.source "LoginGate.java"', '.source "LoginGate.java"\n\n' + field, 1)
-    gate = method(gate, 'logStreamEvent(Ljava/lang/String;)V', f'''.method public static logStreamEvent(Ljava/lang/String;)V
-    .locals 2
-    :try_start
-    new-instance v0, Ljava/lang/StringBuilder;
-    invoke-direct {{v0}}, Ljava/lang/StringBuilder;-><init>()V
-    const-string v1, "PLAYER "
-    invoke-virtual {{v0, v1}}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-    invoke-virtual {{v0, p0}}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-    const-string v1, " stream="
-    invoke-virtual {{v0, v1}}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-    sget-object v1, {GATE}->loadingStreamPath:Ljava/lang/String;
-    invoke-virtual {{v0, v1}}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
-    invoke-virtual {{v0}}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
-    move-result-object v0
-    invoke-static {{v0}}, Lcom/vidio/android/patch/TrafficLog;->log(Ljava/lang/String;)V
-    :try_end
-    .catchall {{:try_start .. :try_end}} :failed
-    goto :done
-    :failed
-    move-exception v0
-    :done
-    return-void
-.end method''')
     gate = method(gate, 'showStreamLoading()V', f'''.method public static showStreamLoading()V
     .locals 1
     const/4 v0, 0x1
@@ -229,7 +204,6 @@ def patch(root):
     const/4 v1, 0x1
     sput-boolean v1, {GATE}->streamRequestPending:Z
     const-string v1, "STREAM_BEGIN FIX24"
-    invoke-static {{v1}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
     invoke-static {{}}, {GATE}->showStreamLoading()V
     :done
     return-void
@@ -243,7 +217,6 @@ def patch(root):
     sget-boolean v0, {GATE}->streamFrameRendered:Z
     if-nez v0, :hide
     const-string v0, "FIRST_FRAME"
-    invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
     :hide
     const/4 v0, 0x0
     sput v0, {GATE}->autoRetries:I
@@ -276,7 +249,6 @@ def patch(root):
     move-result-object v1
     invoke-virtual {{v0, v1}}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
     move-result-object v0
-    invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
     instance-of v0, p0, Ljava/lang/Throwable;
     if-eqz v0, :check_stream
     move-object v1, p0
@@ -291,7 +263,6 @@ def patch(root):
     const-string v0, "PLAYER_CAUSE "
     invoke-virtual {{v0, v3}}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
     move-result-object v0
-    invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
     add-int/lit8 v2, v2, -0x1
     if-gtz v2, :cause
     :check_stream
@@ -346,7 +317,6 @@ def patch(root):
     sget-boolean v0, {GATE}->streamFrameRendered:Z
     if-nez v0, :done
     const-string v0, "STREAM_FAIL_CONFIRMED"
-    invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
     # FIX30: cdmError 6 sering sementara (buka ulang channel selalu berhasil),
     # jadi re-prepare player maksimal 2x sebelum menyerah.
     sget v0, {GATE}->autoRetries:I
@@ -364,7 +334,6 @@ def patch(root):
     move-result-object v3
     invoke-virtual {{v2, v3}}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
     move-result-object v2
-    invoke-static {{v2}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
     const/4 v2, 0x0
     sput-boolean v2, {GATE}->streamPlaybackFailed:Z
     sput-boolean v2, {GATE}->streamFrameRendered:Z
@@ -412,7 +381,6 @@ def patch(root):
     move-result-object v1
     invoke-virtual {{v0, v1}}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
     move-result-object v0
-    invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
     const/4 v0, 0x2
     if-ne p0, v0, :terminal
     const/4 v0, 0x0
@@ -451,7 +419,6 @@ def patch(root):
     move-result-object v1
     invoke-virtual {{v0, v1}}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
     move-result-object v0
-    invoke-static {{v0}}, {GATE}->logStreamEvent(Ljava/lang/String;)V
     const/16 v0, 0xc8
     if-ne p1, v0, :failure
     const/4 v0, 0x0
@@ -496,10 +463,14 @@ def patch(root):
 ''')
     bridge = next(root.glob(f'smali*/{chain.rsplit("/", 1)[0]}/a.smali'))
     text = bridge.read_text()
-    anchor = '    invoke-static {v1, v12, v13, v2}, Lcom/vidio/android/patch/TrafficLog;->logRequest(Ljava/lang/String;JI)V'
+    # Sisipan self-contained: hitung URL + kode respons, lalu laporkan ke gate.
+    # (anchor lama memakai invoke logRequest yang sudah dihapus total)
+    anchor = f'''    invoke-virtual {{p1}}, L{{http}}/l0;->f()I
+
+    move-result v2'''
     if '->onStreamResponse(Ljava/lang/String;I)V' not in text:
-        assert anchor in text
-        text = text.replace(anchor, anchor + f'\n\n    invoke-static {{v1, v2}}, {GATE}->onStreamResponse(Ljava/lang/String;I)V', 1)
+        assert text.count(anchor) == 1, 'bridge response-code anchor not unique'
+        text = text.replace(anchor, anchor + f'\n\n    invoke-virtual {{v0}}, L{{http}}/f0;->j()L{{http}}/y;\n\n    move-result-object v1\n\n    invoke-virtual {{v1}}, L{{http}}/y;->toString()Ljava/lang/String;\n\n    move-result-object v1\n\n    invoke-static {{v1, v2}}, {GATE}->onStreamResponse(Ljava/lang/String;I)V', 1)
     timeout_guard = '    instance-of v3, v2, Ljava/net/SocketTimeoutException;\n    if-nez v3, :catch_io_done\n\n'
     anchor = f'    if-eqz v11, :catch_io_done\n\n    invoke-static {{}}, {GATE}->hideStreamLoading()V'
     if 'instance-of v3, v2, Ljava/net/SocketTimeoutException;' not in text:
