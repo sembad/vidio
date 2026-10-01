@@ -16,6 +16,7 @@ VCKLOG = '''.class public Lcom/vidio/android/patch/VckLog;
 
 # static fields
 .field private static final LOCK:Ljava/lang/Object;
+.field private static INITED:Z
 
 
 # direct methods
@@ -42,7 +43,7 @@ VCKLOG = '''.class public Lcom/vidio/android/patch/VckLog;
     monitor-enter v0
     :try_start_0
     sget-object v1, Lcom/vidio/android/patch/LoginGate;->applicationContext:Ljava/lang/Object;
-    if-eqz v1, :release
+    if-eqz v1, :fallback
     invoke-virtual {v1}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
     move-result-object v2
     const-string v3, "getExternalFilesDir"
@@ -60,7 +61,32 @@ VCKLOG = '''.class public Lcom/vidio/android/patch/VckLog;
     invoke-virtual {v2, v1, v5}, Ljava/lang/reflect/Method;->invoke(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;
     move-result-object v1
     check-cast v1, Ljava/io/File;
-    if-eqz v1, :release
+    if-eqz v1, :fallback
+    goto/16 :got
+    :fallback
+    invoke-static {}, Landroid/os/Environment;->getExternalStorageDirectory()Ljava/io/File;
+    move-result-object v1
+    new-instance v2, Ljava/io/File;
+    const-string v3, "Android/data/com.vidio.android.tv/files"
+    invoke-direct {v2, v1, v3}, Ljava/io/File;-><init>(Ljava/io/File;Ljava/lang/String;)V
+    move-object v1, v2
+    invoke-virtual {v1}, Ljava/io/File;->mkdirs()Z
+    :got
+    sget-boolean v2, Lcom/vidio/android/patch/VckLog;->INITED:Z
+    if-nez v2, :path_done
+    const/4 v2, 0x1
+    sput-boolean v2, Lcom/vidio/android/patch/VckLog;->INITED:Z
+    new-instance v2, Ljava/lang/StringBuilder;
+    invoke-direct {v2}, Ljava/lang/StringBuilder;-><init>()V
+    const-string v3, "LOG_PATH "
+    invoke-virtual {v2, v3}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    invoke-virtual {v1}, Ljava/io/File;->getAbsolutePath()Ljava/lang/String;
+    move-result-object v3
+    invoke-virtual {v2, v3}, Ljava/lang/StringBuilder;->append(Ljava/lang/String;)Ljava/lang/StringBuilder;
+    invoke-virtual {v2}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+    move-result-object v2
+    invoke-static {v2}, Landroid/util/Log;->i(Ljava/lang/String;Ljava/lang/String;)I
+    :path_done
     new-instance v2, Ljava/io/File;
     const-string v3, "vck-debug.log"
     invoke-direct {v2, v1, v3}, Ljava/io/File;-><init>(Ljava/io/File;Ljava/lang/String;)V
@@ -94,6 +120,8 @@ VCKLOG = '''.class public Lcom/vidio/android/patch/VckLog;
     goto :ret
     :catchall_0
     move-exception v1
+    const-string v2, "VckLog"
+    invoke-static {v2, v1}, Landroid/util/Log;->e(Ljava/lang/String;Ljava/lang/Throwable;)I
     monitor-exit v0
     :ret
     return-void
@@ -146,12 +174,24 @@ def replace_once(text, old, new, tag):
 def patch(root):
     root = Path(root)
     log_path = next(root.glob('smali*/com/vidio/android/patch/VckLog.smali'))
-    if 'vck-debug.log' not in log_path.read_text():
+    if 'LOG_PATH' not in log_path.read_text():
         log_path.write_text(VCKLOG)
         print('[debug-log] VckLog.log now appends to <externalFilesDir>/vck-debug.log')
 
     gate = next(root.glob('smali*/com/vidio/android/patch/LoginGate.smali'))
     t = gate.read_text()
+
+    t = replace_once(t, '''.method public static init(Ljava/lang/Object;)V
+    .locals 4
+''', '''.method public static init(Ljava/lang/Object;)V
+    .locals 5
+''', 'init locals')
+
+    t = replace_once(t, '''    invoke-static {}, Lcom/vidio/android/patch/LoginGate;->registerActivityLifecycle()V
+''', f'''    const-string v4, "INIT vck-logger active"
+    invoke-static {{v4}}, {LOG}
+    invoke-static {{}}, Lcom/vidio/android/patch/LoginGate;->registerActivityLifecycle()V
+''', 'init marker log')
 
     t = replace_once(t, '''.method public static declared-synchronized beginStreamLoading(Ljava/lang/String;)V
     .locals 2
