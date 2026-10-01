@@ -339,8 +339,8 @@ def patch(root):
 .end method''')
     gate = method(gate, 'maybeShowFailToast()V', f'''.method public static maybeShowFailToast()V
     .locals 4
-    sget-boolean v0, {GATE}->streamPlaybackFailed:Z
-    if-eqz v0, :done
+    # FIX31: tanpa syarat streamPlaybackFailed — watchdog dari respons 200
+    # menangkap kegagalan senyap (idle tanpa PLAYER_ERROR) juga.
     sget-boolean v0, {GATE}->playerPlaying:Z
     if-nez v0, :done
     sget-boolean v0, {GATE}->streamFrameRendered:Z
@@ -456,6 +456,9 @@ def patch(root):
     if-ne p1, v0, :failure
     const/4 v0, 0x0
     sput-boolean v0, {GATE}->streamRequestPending:Z
+    # FIX31: watchdog juga dari respons 200 — kegagalan senyap (player
+    # langsung idle tanpa PLAYER_ERROR) tetap terkonfirmasi 8 detik.
+    invoke-static {{}}, {GATE}->scheduleFailToast()V
     goto :done
     :failure
     const/16 v0, 0x190

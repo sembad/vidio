@@ -84,6 +84,12 @@ def verify_decoded_apk(root):
     impls = [path for path in paths if '.implements Landroidx/media3/exoplayer/ExoPlayer;' in path.read_text()]
     if not impls or not all('->holdPlayer(Ljava/lang/Object;)V' in path.read_text() for path in impls):
         raise AssertionError('Player hold hook is missing from ExoPlayer implementation')
+    response = re.search(r'\.method public static onStreamResponse\(Ljava/lang/String;I\)V\n.*?\.end method', gate, re.S).group()
+    if '->scheduleFailToast()V' not in response:
+        raise AssertionError('Silent-failure watchdog on stream 200 (FIX31) is missing')
+    maybe = re.search(r'\.method public static maybeShowFailToast\(\)V\n.*?\.end method', gate, re.S).group()
+    if re.search(r'sget-boolean v0, [^\n]+streamPlaybackFailed:Z\n\s+if-eqz v0', maybe):
+        raise AssertionError('Fail confirmation must not require the error flag (FIX31)')
     print(f'{root.name}: verified player hooks {dict(counts)} and native loading guards')
 
 
