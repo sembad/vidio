@@ -15,21 +15,25 @@ def patch(root):
             gate = gate.replace('.source "LoginGate.java"', f'.source "LoginGate.java"\n\n.field private static {field}', 1)
     gate = method(gate, 'onStreamActivityResumed(Ljava/lang/Object;)V', f'''.method public static onStreamActivityResumed(Ljava/lang/Object;)V
     .locals 2
-    sget-object v1, {GATE}->currentActivity:Ljava/lang/Object;
     sput-object p0, {GATE}->currentActivity:Ljava/lang/Object;
+    # FIX41: popup loading stream hanya boleh tampil di atas activity player
+    # (WatchActivity). Flag streamLoadingShown yang tertinggal dari player
+    # membuat popup menempel di halaman mana pun setelah keluar dari player;
+    # saat activity selain player yang resume, paksa sembunyi total.
+    invoke-virtual {{p0}}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+    move-result-object v0
+    invoke-virtual {{v0}}, Ljava/lang/Class;->getName()Ljava/lang/String;
+    move-result-object v0
+    const-string v1, "WatchActivity"
+    invoke-virtual {{v0, v1}}, Ljava/lang/String;->endsWith(Ljava/lang/String;)Z
+    move-result v1
+    if-eqz v1, :hide
     sget-boolean v0, {GATE}->streamLoadingShown:Z
     if-eqz v0, :done
-    if-eq p0, v1, :refresh
-    if-eqz p0, :refresh
-    invoke-virtual {{p0}}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
-    move-result-object v1
-    invoke-virtual {{v1}}, Ljava/lang/Class;->getName()Ljava/lang/String;
-    move-result-object v1
-    const-string v0, "ACTIVITY_RESUMED "
-    invoke-virtual {{v0, v1}}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
-    move-result-object v0
-    :refresh
     invoke-static {{}}, {GATE}->refreshStreamLoading()V
+    goto :done
+    :hide
+    invoke-static {{}}, {GATE}->hideStreamLoading()V
     :done
     return-void
 .end method''')
