@@ -42,14 +42,14 @@ DISMISS_OLD = """    .line 438
 """
 
 DISMISS_NEW = """    .line 438
-    new-instance v0, Lcom/vidio/android/tv/watch/blocker/e0$d;
+    new-instance v5, Lcom/vidio/android/tv/watch/blocker/e0$d;
 
-    sget-object v5, Lcom/vidio/android/tv/watch/blocker/PostBlockerAction$RefreshStream;->d:Lcom/vidio/android/tv/watch/blocker/PostBlockerAction$RefreshStream;
+    sget-object v7, Lcom/vidio/android/tv/watch/blocker/PostBlockerAction$RefreshStream;->d:Lcom/vidio/android/tv/watch/blocker/PostBlockerAction$RefreshStream;
 
-    invoke-direct {v0, v5}, Lcom/vidio/android/tv/watch/blocker/e0$d;-><init>(Lcom/vidio/android/tv/watch/blocker/PostBlockerAction;)V
+    invoke-direct {v5, v7}, Lcom/vidio/android/tv/watch/blocker/e0$d;-><init>(Lcom/vidio/android/tv/watch/blocker/PostBlockerAction;)V
 
     .line 439
-    invoke-direct {v3, v1, v0}, Lcom/vidio/android/tv/watch/blocker/a1;-><init>(Ljava/lang/String;Lcom/vidio/android/tv/watch/blocker/e0;)V
+    invoke-direct {v3, v1, v5}, Lcom/vidio/android/tv/watch/blocker/a1;-><init>(Ljava/lang/String;Lcom/vidio/android/tv/watch/blocker/e0;)V
 """
 
 # fz/a.b(): simpan drm_license_url asli sebelum ditimpa ClearKeyHolder.take(),
@@ -87,13 +87,33 @@ FALLBACK_BLOCK = """    const-string v1, "TRACE DRM clearkey present"
 
     invoke-static {v6}, Lcom/vidio/android/patch/VckTrace;->log(Ljava/lang/String;)V
 
-    if-eqz v6, :cond_7
+    if-eqz v6, :vck_null
 
     move-object v2, v6
 
     :vck_build
     .line 60
     new-instance v1, Lfz/c;
+"""
+
+# Jalur "license url juga kosong" tidak boleh melompat ke :cond_7 dengan v1
+# masih berisi String (register log) — merge di return-object v1 menjadi Object
+# dan verifier menolak (VerifyError 0xC4). Blok tersendiri dengan v1 = null.
+B_TAIL_OLD = """    :cond_7
+    :goto_4
+    return-object v1
+.end method
+"""
+
+B_TAIL_NEW = """    :cond_7
+    :goto_4
+    return-object v1
+
+    :vck_null
+    const/4 v1, 0x0
+
+    return-object v1
+.end method
 """
 
 
@@ -139,6 +159,12 @@ def patch_fz_a(root: Path) -> str:
     if text.count(BUILD_ANCHOR) != 1:
         raise SystemExit(f"[update-blocker] fz/a: expected one build anchor, found {text.count(BUILD_ANCHOR)}")
     text = text.replace(BUILD_ANCHOR, FALLBACK_BLOCK, 1)
+    # a() dan b() berakhir dengan pola sama; b() adalah method terakhir di file,
+    # jadi anchor tail diambil dari kemunculan terakhir.
+    tail_idx = text.rfind(B_TAIL_OLD)
+    if tail_idx == -1:
+        raise SystemExit("[update-blocker] fz/a: b() tail anchor not found")
+    text = text[:tail_idx] + B_TAIL_NEW + text[tail_idx + len(B_TAIL_OLD):]
     path.write_text(text)
     return "fz/a: clearkey fallback -> real license server"
 
