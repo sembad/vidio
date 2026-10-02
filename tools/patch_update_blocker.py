@@ -74,12 +74,15 @@ BUILD_ANCHOR = """    .line 60
     new-instance v1, Lfz/c;
 """
 
-FALLBACK_BLOCK = """    :vck_fallback
+FALLBACK_BLOCK = """    goto :vck_build
+
+    :vck_fallback
     if-eqz v6, :cond_7
 
     move-object v2, v6
 
     :vck_build
+    .line 60
     new-instance v1, Lfz/c;
 """
 
@@ -110,9 +113,16 @@ def patch_fz_a(root: Path) -> str:
     if ":vck_fallback" in text:
         print("[update-blocker] fz/a: already patched, skipped")
         return "fz/a: skipped"
-    if ".locals 6" not in text:
-        raise SystemExit("[update-blocker] fz/a: .locals 6 not found")
-    text = text.replace(".locals 6", ".locals 7", 1)
+    # b() adalah method kedua di file; .locals-nya harus ditarget spesifik,
+    # jangan replace pertama (milik method a()).
+    b_marker = ".method public static final b(Lez/c;)Lfz/c;"
+    b_idx = text.find(b_marker)
+    if b_idx == -1:
+        raise SystemExit("[update-blocker] fz/a: method b not found")
+    b_locals_idx = text.find(".locals 6", b_idx)
+    if b_locals_idx == -1:
+        raise SystemExit("[update-blocker] fz/a: .locals 6 not found in method b")
+    text = text[:b_locals_idx] + ".locals 7" + text[b_locals_idx + len(".locals 6"):]
     if text.count(TAKE_OLD) != 1:
         raise SystemExit(f"[update-blocker] fz/a: expected one take() anchor, found {text.count(TAKE_OLD)}")
     text = text.replace(TAKE_OLD, TAKE_NEW, 1)
