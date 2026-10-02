@@ -169,10 +169,28 @@ def patch_fz_a(root: Path) -> str:
     return "fz/a: clearkey fallback -> real license server"
 
 
+def patch_ez_c_access(root: Path) -> str:
+    # b() asli membaca ez.c.i (private) dari fz.a. Di APK asli jalur ini dead code
+    # karena blocker menghentikan stream lebih awal, jadi IllegalAccessError laten
+    # tidak pernah muncul. Setelah blocker dibuka jalurnya dieksekusi -> error.
+    # Lebarkan access flag-nya; hanya fz/a yang mengakses field ini dari luar.
+    path = root / "smali_classes5/ez/c.smali"
+    text = path.read_text()
+    old = ".field private final i:Z"
+    new = ".field public final i:Z"
+    if new in text:
+        return "ez/c: already public, skipped"
+    if text.count(old) != 1:
+        raise SystemExit(f"[update-blocker] ez/c: expected one field i, found {text.count(old)}")
+    path.write_text(text.replace(old, new, 1))
+    return "ez/c: field i private -> public"
+
+
 def main() -> None:
     root = Path(sys.argv[1])
     print("[update-blocker]", patch_u0(root))
     print("[update-blocker]", patch_fz_a(root))
+    print("[update-blocker]", patch_ez_c_access(root))
 
 
 if __name__ == "__main__":
