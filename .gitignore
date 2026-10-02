@@ -14,3 +14,4 @@ hshsha-*.txt
 bima_token.json
 __pycache__/
 workspace/
+tools/*.har
