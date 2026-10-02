@@ -21,7 +21,7 @@
 .method private constructor <init>()V
     .locals 0
 
-    .line 90
+    .line 95
     invoke-direct {p0}, Ljava/lang/Object;-><init>()V
 
     return-void
@@ -30,7 +30,7 @@
 .method synthetic constructor <init>(Lcom/vidio/android/patch/VckTrace$1;)V
     .locals 0
 
-    .line 90
+    .line 95
     invoke-direct {p0}, Lcom/vidio/android/patch/VckTrace$Lifecycle;-><init>()V
 
     return-void
@@ -41,7 +41,7 @@
 .method public onActivityCreated(Landroid/app/Activity;Landroid/os/Bundle;)V
     .locals 1
 
-    .line 93
+    .line 98
     new-instance p2, Ljava/lang/StringBuilder;
 
     invoke-direct {p2}, Ljava/lang/StringBuilder;-><init>()V
@@ -70,14 +70,14 @@
 
     invoke-static {p1}, Lcom/vidio/android/patch/VckTrace;->log(Ljava/lang/String;)V
 
-    .line 94
+    .line 99
     return-void
 .end method
 
 .method public onActivityDestroyed(Landroid/app/Activity;)V
     .locals 2
 
-    .line 122
+    .line 127
     new-instance v0, Ljava/lang/StringBuilder;
 
     invoke-direct {v0}, Ljava/lang/StringBuilder;-><init>()V
@@ -106,14 +106,14 @@
 
     invoke-static {p1}, Lcom/vidio/android/patch/VckTrace;->log(Ljava/lang/String;)V
 
-    .line 123
+    .line 128
     return-void
 .end method
 
 .method public onActivityPaused(Landroid/app/Activity;)V
     .locals 2
 
-    .line 108
+    .line 113
     new-instance v0, Ljava/lang/StringBuilder;
 
     invoke-direct {v0}, Ljava/lang/StringBuilder;-><init>()V
@@ -142,14 +142,14 @@
 
     invoke-static {p1}, Lcom/vidio/android/patch/VckTrace;->log(Ljava/lang/String;)V
 
-    .line 109
+    .line 114
     return-void
 .end method
 
 .method public onActivityResumed(Landroid/app/Activity;)V
     .locals 2
 
-    .line 103
+    .line 108
     new-instance v0, Ljava/lang/StringBuilder;
 
     invoke-direct {v0}, Ljava/lang/StringBuilder;-><init>()V
@@ -178,21 +178,21 @@
 
     invoke-static {p1}, Lcom/vidio/android/patch/VckTrace;->log(Ljava/lang/String;)V
 
-    .line 104
+    .line 109
     return-void
 .end method
 
 .method public onActivitySaveInstanceState(Landroid/app/Activity;Landroid/os/Bundle;)V
     .locals 0
 
-    .line 118
+    .line 123
     return-void
 .end method
 
 .method public onActivityStarted(Landroid/app/Activity;)V
     .locals 2
 
-    .line 98
+    .line 103
     new-instance v0, Ljava/lang/StringBuilder;
 
     invoke-direct {v0}, Ljava/lang/StringBuilder;-><init>()V
@@ -221,14 +221,14 @@
 
     invoke-static {p1}, Lcom/vidio/android/patch/VckTrace;->log(Ljava/lang/String;)V
 
-    .line 99
+    .line 104
     return-void
 .end method
 
 .method public onActivityStopped(Landroid/app/Activity;)V
     .locals 2
 
-    .line 113
+    .line 118
     new-instance v0, Ljava/lang/StringBuilder;
 
     invoke-direct {v0}, Ljava/lang/StringBuilder;-><init>()V
@@ -257,6 +257,6 @@
 
     invoke-static {p1}, Lcom/vidio/android/patch/VckTrace;->log(Ljava/lang/String;)V
 
-    .line 114
+    .line 119
     return-void
 .end method

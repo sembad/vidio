@@ -76,6 +76,11 @@ public class VckTrace {
         log(prefix + (o == null ? "null" : o.getClass().getName()));
     }
 
+    /** Log detail dengan toString() penuh untuk pesan exception/model error. */
+    public static void logError(String tag, Object o) {
+        log("HOOK " + tag + " | " + (o == null ? "null" : o.toString()));
+    }
+
     public static void logStack(Throwable t) {
         if (t == null) {
             log("STACK: (null throwable)");

@@ -26,6 +26,8 @@ TV_APP = "smali_classes4/com/vidio/android/tv/TvApplication.smali"
 U0 = "smali_classes4/com/vidio/android/tv/watch/blocker/u0.smali"
 X2 = "smali_classes4/com/vidio/domain/usecase/x2.smali"
 FZ_A = "smali_classes5/fz/a.smali"
+I2 = "smali_classes5/n00/i2.smali"
+GLUE = "smali_classes4/com/vidio/android/tv/error/ErrorActivityGlue.smali"
 
 APP_INIT_OLD = "    invoke-super {v0}, Lcom/vidio/android/tv/Hilt_TvApplication;->onCreate()V\n"
 APP_INIT_NEW = APP_INIT_OLD + "\n    invoke-static {v0}, Lcom/vidio/android/patch/VckTrace;->init(Landroid/app/Application;)V\n"
@@ -45,6 +47,64 @@ FZ_B_SIG = ".method public static final b(Lez/c;)Lfz/c;"
 FZ_B_HOOK = """    const-string v0, "STREAM DRM mapper b() entry"
 
     invoke-static {v0}, Lcom/vidio/android/patch/VckTrace;->log(Ljava/lang/String;)V
+"""
+
+# n00/i2.c: setelah log bawaan "API Stream exception with reason: ...", log
+# cause asli LivestreamException (field e) + stack-nya. p3 dead setelah titik ini,
+# p1/p2 masih dipakai kode asli dan tidak dilanggar.
+I2_ANCHOR = "    invoke-static {p3, p2}, Lum/d;->d(Ljava/lang/String;Ljava/lang/String;)V\n"
+I2_HOOK = I2_ANCHOR + """
+    invoke-virtual {p1}, Lcom/vidio/kmm/stream/data/LivestreamException;->getCause()Ljava/lang/Throwable;
+
+    move-result-object p3
+
+    invoke-static {p2, p3}, Lcom/vidio/android/patch/VckTrace;->logError(Ljava/lang/String;Ljava/lang/Object;)V
+
+    invoke-static {p3}, Lcom/vidio/android/patch/VckTrace;->logStack(Ljava/lang/Throwable;)V
+"""
+
+# ErrorActivityGlue.d/e: entry penampil error UI (tag + model tv/c).
+# Hook harus SETELAH .end param — .param tidak boleh mendahului instruksi.
+GLUE_D_ANCHOR = """    .end param
+
+    .line 1
+    iget-object v0, p0, Lcom/vidio/android/tv/error/ErrorActivityGlue;->a:Landroid/content/Context;
+
+    .line 2
+    .line 3
+    if-nez p3, :cond_0
+"""
+GLUE_D_NEW = """    .end param
+
+""" + """    invoke-static {p1, p3}, Lcom/vidio/android/patch/VckTrace;->logError(Ljava/lang/String;Ljava/lang/Object;)V
+""" + """    .line 1
+    iget-object v0, p0, Lcom/vidio/android/tv/error/ErrorActivityGlue;->a:Landroid/content/Context;
+
+    .line 2
+    .line 3
+    if-nez p3, :cond_0
+"""
+
+GLUE_E_ANCHOR = """    .end param
+
+    .line 1
+    invoke-virtual {p1}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 2
+    .line 3
+    .line 4
+    const-string v0, "extra_tag"
+"""
+GLUE_E_NEW = """    .end param
+
+""" + """    invoke-static {p1, p2}, Lcom/vidio/android/patch/VckTrace;->logError(Ljava/lang/String;Ljava/lang/Object;)V
+""" + """    .line 1
+    invoke-virtual {p1}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 2
+    .line 3
+    .line 4
+    const-string v0, "extra_tag"
 """
 
 
@@ -97,6 +157,9 @@ def main() -> None:
     text, msg = insert_after_locals((root / FZ_A).read_text(), FZ_B_SIG, FZ_B_HOOK, "fz/a.b")
     (root / FZ_A).write_text(text)
     print("[trace]", msg)
+    print("[trace]", hook(root / I2, I2_ANCHOR, I2_HOOK, "n00/i2.c cause"))
+    print("[trace]", hook(root / GLUE, GLUE_D_ANCHOR, GLUE_D_NEW, "ErrorGlue.d"))
+    print("[trace]", hook(root / GLUE, GLUE_E_ANCHOR, GLUE_E_NEW, "ErrorGlue.e"))
 
 
 if __name__ == "__main__":
