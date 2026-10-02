@@ -15,6 +15,7 @@ WORK=$(mktemp -d /tmp/apkbuild-XXXXXX)
 trap 'rm -rf "$WORK"' EXIT
 
 python3 "$ROOT/tools/patch_update_blocker.py" "$DECODED"
+python3 "$ROOT/tools/patch_trace.py" "$DECODED"
 python3 "$ROOT/tools/patch_player_lifecycle.py" "$DECODED"
 python3 "$ROOT/tools/patch_loading_recovery.py" "$DECODED"
 python3 "$ROOT/tools/patch_visible_loading.py" "$DECODED"

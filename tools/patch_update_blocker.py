@@ -74,9 +74,19 @@ BUILD_ANCHOR = """    .line 60
     new-instance v1, Lfz/c;
 """
 
-FALLBACK_BLOCK = """    goto :vck_build
+FALLBACK_BLOCK = """    const-string v1, "TRACE DRM clearkey present"
+
+    invoke-static {v1}, Lcom/vidio/android/patch/VckTrace;->log(Ljava/lang/String;)V
+
+    goto :vck_build
 
     :vck_fallback
+    const-string v1, "TRACE DRM clearkey EMPTY -> fallback license server"
+
+    invoke-static {v1}, Lcom/vidio/android/patch/VckTrace;->log(Ljava/lang/String;)V
+
+    invoke-static {v6}, Lcom/vidio/android/patch/VckTrace;->log(Ljava/lang/String;)V
+
     if-eqz v6, :cond_7
 
     move-object v2, v6
