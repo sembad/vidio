@@ -717,16 +717,18 @@ Endpoint `fo` ditemukan via performance entry browser + grep orch.js; segmen `34
 
 ## 4.3 Kenapa token captcha API tidak cukup (terverifikasi)
 
-Diuji dengan MuaraiCaptcha (`TurnstileTaskProxyless`, $1.38/1k):
+Diuji dengan MuaraiCaptcha (`TurnstileTaskProxyless`, $1.38/1k) mengikuti persis format docs-nya untuk challenge page:
 
-1. Sitekey challenge asli `0x4AAAAAAADnPIDROrmt1Wwj` → **ditolak** `ERROR_BAD_PARAMETERS` (dengan/tanpa action/data/pagedata). Sitekey lain diterima — berarti penolakan spesifik untuk sitekey challenge CF.
-2. Sitekey mirip yang terbenam di blob orch.js (`0x5ot2d5mfGWJTNcF4kOeZo2...`) juga ditolak — itu fragmen base64, bukan sitekey.
-3. Hook fetch/XHR di browser menangkap exchange POST asli: body-nya **payload terenkripsi** (`FRVabFoalJFguvDsM51$g5XTj...`) — token Turnstile terbenam di dalam blob yang hanya bisa dibangun oleh JS Cloudflare sendiri.
+1. **Parameter asli berhasil diekstrak** dari `_cf_chl_opt` di HTML 403 (keys plain di source): `sitekey=0x4AAAAAAADnPIDROrmt1Wwj`, `action=cType="managed"`, `data=cData=cN` (nonce 22 char), `pagedata=chlPageData=cH` (127 char). Sitekey terkonfirmasi juga dari URL iframe Turnstile di browser.
+2. **API menerima task** dengan format itu (tanpa `data`+`pagedata` → `ERROR_BAD_PARAMETERS`; dengan keduanya → task dibuat).
+3. **Solver selalu gagal**: `ERROR_CAPTCHA_UNSOLVABLE` 5/5 percobaan (varian `cN+cH`, `cN+md`, retry 3x). Bukan transient.
+4. Hook fetch/XHR di browser menangkap exchange POST asli ke `/cdn-cgi/challenge-platform/h/b/fo/3426666802:<ts>:<hash>/<cRay>/<cH>`: body-nya **payload terenkripsi** (`FRVabFoalJFguvDsM51$g5XTj...`) — token Turnstile terbenam di dalam blob yang hanya bisa dibangun oleh JS Cloudflare sendiri.
 
-Kesimpulan: solver token-only (Muarai, 2captcha turnstile, dll.) tidak bisa menyelesaikan managed challenge. Layanan yang mengklaim bisa (CapSolver AntiCloudflareTask, FlareSolverr) menjalankan engine JS/browser sungguhan di belakang layar.
+Kesimpulan: docs Muarai mengklaim dukungan challenge page, tapi solver-nya gagal konsisten pada target ini. Kemungkinan akar masalah: token challenge page terikat pada IP solver (proxyless = IP Muarai), sementara cf_clearance diterbitkan untuk IP penelepon exchange. Satu jalan tersisa yang belum teruji: `TurnstileTask` **dengan proxy residential** yang IP-nya sama dengan IP yang melakukan exchange — tapi itu tetap butuh proxy, dan exchange berbasis blob terenkripsi tetap harus diverifikasi.
 
 ## 4.4 Solusi yang berlaku
 
 1. **IP residential (utama)** — jalankan `astro_go.py` dari WiFi rumah Malaysia: challenge tidak pernah muncul, seluruh flow jalan tanpa cookie tambahan.
 2. **cf_clearance manual (fallback)** — isi `CONFIG["cf_clearance"]` dari browser + samakan `CONFIG["ua"]` dengan UA browser tersebut (cookie terikat UA + IP).
-3. reCAPTCHA v2 login Kratos tetap ter-solve via Muarai (`RecaptchaV2TaskProxyless`) — itu widget standalone, token-nya memang cukup.
+3. **(Belum teruji) TurnstileTask + proxy residential** — solve via Muarai dengan proxy yang IP-nya sama dengan IP exchange. Butuh proxy residential berbayar; format task sudah terdokumentasi di 4.3.
+4. reCAPTCHA v2 login Kratos tetap ter-solve via Muarai (`RecaptchaV2TaskProxyless`) — itu widget standalone, token-nya memang cukup.
