@@ -559,3 +559,122 @@ Cookie lain (semua signed cookie Express format `s:<payload>.<sig>`): `settings`
 | DRM | Widevine mDRM | mDRM + device_assertion | VGE MultiDVM + service certificate |
 
 Implikasi praktis: untuk mereplikasi klien web, yang dibutuhkan hanyalah (1) cookie `WsbSession` yang valid, (2) Bearer token dari fragment `authorizeEnd`, (3) header `Origin`/`Referer` yang benar — tanpa FLOW_CONTEXT, tanpa device-state, tanpa PKCE. Server-lah yang mengisi flow context, sehingga permintaan tanpa header tersebut tetap diterima selama cookie sesi dan Bearer valid.
+
+---
+
+# Bagian 3: Rantai Playback — Playsession, MPD, License
+
+Sumber: HAR web (sesi playback nyata) + strings XML APK + tes live. Bagian ini hanya mendokumentasikan format request/response — MPD dan license tidak dibuka langsung.
+
+## 3.1 Playsession LINEAR (live TV)
+
+Request — body **kosong**, semua parameter di query:
+
+```
+POST https://api-ivp.astro.com.my/ctap/r1.6.0/devices/me/playsessions?channelId=5601
+Authorization: Bearer <JWT>
+Content-Type: application/json
+Accept-Language: en
+```
+
+Response 200 (dari HAR, sesi login nyata):
+
+```json
+{
+  "id": "5601_1759476123456",
+  "channelId": "5601",
+  "sessionType": "pip",
+  "playUrl": "https://linearjitp-playback.astro.com.my/dash-wv/linear/5601/default_ott.mpd",
+  "drmProperties": {
+    "drm": "WIDEVINE",
+    "blob": "<AuthToken — dikirim sebagai authorizationToken ke license server>"
+  },
+  "streamType": "HLS",
+  "isLive": true
+}
+```
+
+Kunci: `playUrl` = MPD, `drmProperties.blob` = authorization token untuk license.
+
+## 3.2 Playsession VOD / Catchup
+
+Pakai `instanceId` (bukan channelId) + `sessionType`:
+
+```
+POST /ctap/r1.6.0/devices/me/playsessions?instanceId=prg:1:10000712:57473162~...&sessionType=pip
+```
+
+`sessionType=pip` ternyata tipe sesi VOD/preview — bukan picture-in-picture. Nilai yang diterima server (diverifikasi live): `pip`, `live`, `vod`, `catchup`; nilai salah ditolak dengan `invalid_request_error / invalid sessionType`.
+
+## 3.3 Struktur MPD (dari HAR, tidak dibuka langsung)
+
+- Host CDN: `linearjitp-playback.astro.com.my` (CloudFront, geo-block Malaysia — 403 dari luar)
+- Path: `/dash-wv/linear/<channelId>/default_ott.mpd`
+- MPD berisi PSSH Widevine cenc dengan AssetId = channelId (`08 01 12 01 00 01 15 5f ... 5601`)
+- Period tunggal live, AdaptationSet video (multiple rendisi) + audio
+- Akses MPD butuh header `Origin: https://astrogo.astro.com.my` + `Referer` (CORS check CloudFront) — dan IP Malaysia
+
+## 3.4 License Widevine
+
+Endpoint (dari strings XML APK `res/values/strings.xml` — bocoran langsung):
+
+```
+POST https://api-ivp.astro.com.my/vgemultidrm/v1/widevine/license
+Authorization: Bearer <JWT>
+Content-Type: application/json
+```
+
+Body (format persis dari APK):
+
+```json
+{
+  "contentID": "5601",
+  "contentType": "LINEAR",
+  "authorizationToken": "<drmProperties.blob dari playsession>",
+  "licenseChallenge": "<base64 Widevine PSSH challenge dari CDM>"
+}
+```
+
+Verifikasi live endpoint (dengan token dummy): server merespons **bukan 404/405** melainkan error bisnis:
+
+```json
+{ "errorCode": 1007, "errorReason": "Invalid authorization token" }
+```
+
+Artinya: format request benar, validasi berjalan sampai tahap token — `authorizationToken` harus `drmProperties.blob` asli dari playsession yang sukses.
+
+License server fallback (dari HAR, CONNECT tunnel terenkripsi TLS): `13.250.167.128:9443` dan `18.140.144.126:9443` — port 9443 klasik Synamedia/VGE license. Web browser memakai EME sehingga license request tidak terekam plaintext di HAR.
+
+## 3.5 Keep-alive sesi
+
+```
+POST /ctap/r1.6.0/devices/me/playsessions/<sessionId>/keepAlive
+```
+
+Dipanggil berkala selama playback; response 200 kosong. Tanpa keep-alive, sesi expire dan license berikutnya ditolak.
+
+## 3.6 Rantai lengkap & blokir yang tersisa
+
+```
+1. POST /oauth2/register        → client_id
+2. GET  /oauth2/authorize       → code (PKCE)
+3. POST /oauth2/token           → access_token + refresh_token
+4. POST /ctap/r1.6.0/devices/me/playsessions?channelId=X
+   → playUrl (MPD) + drmProperties.blob (AuthToken)
+5. GET  playUrl                 → MPD (butuh Origin/Referer + IP MY)
+6. POST /vgemultidrm/v1/widevine/license
+   → licenseChallenge CDM + authorizationToken=blob → license key
+7. POST .../keepAlive           → jaga sesi tetap hidup
+```
+
+Status verifikasi:
+
+| Langkah | Status |
+|---|---|
+| 1–3 (auth guest) | Berhasil live — token valid |
+| 4 (playsession) | Format benar; guest terblokir entitlement `601-ANONYMOUS_IP_ADDRESS` (geo/VPN check) |
+| 5 (MPD) | Tidak dibuka langsung; butuh IP Malaysia + header CORS |
+| 6 (license) | Endpoint hidup, format benar (error 1007 = tahap token, bukan format) |
+| 7 (keepAlive) | Format dari HAR |
+
+Blokir tunggal yang tersisa: **geo/entitlement** — playsession menolak IP cloud (terdeteksi VPN) dan guest tidak punya hak channel. Dengan IP Malaysia + akun berlangganan (atau token sesi login nyata seperti di HAR), langkah 4–6 akan menghasilkan MPD dan license secara penuh. Semua format request/response sudah terdokumentasi di atas dan siap dipakai.
