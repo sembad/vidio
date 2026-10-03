@@ -60,9 +60,19 @@ CONFIG = {
     # PENTING: cf_clearance terikat pada User-Agent + IP — kalau dipakai,
     # samakan "ua" di bawah dengan UA browser yang membuatkannya.
     "cf_clearance": "",
+    # OPSIONAL: proxy residential Malaysia (format http://user:pass@host:port).
+    # Contoh DataImpulse: http://<user>__cr.my:<pass>@gw.dataimpulse.com:823
+    # Kalau diisi, SEMUA request lewat proxy ini — Cloudflare challenge
+    # tidak muncul dan geo-check playsession lolos (IP MY residential).
+    "proxy": "",
 }
 
 IMP = "chrome124"  # TLS fingerprint Chrome -> lolos Cloudflare dasar
+
+# override via env: ASTRO_PROXY=http://user:pass@host:port
+CONFIG["proxy"] = os.environ.get("ASTRO_PROXY", CONFIG["proxy"])
+# override via env: ASTRO_UA=android -> pakai UA webview Android
+CONFIG["ua"] = os.environ.get("ASTRO_UA", "")
 
 
 # ---------------------------------------------------------------- helper ----
@@ -115,6 +125,12 @@ def follow_chain(s: requests.Session, url: str, max_hops=12):
     for i in range(max_hops):
         r = s.get(url, allow_redirects=False, timeout=30)
         show(r, body_limit=300, label=f"hop {i + 1}")
+        if urlparse(url).path.endswith("/authorizeEnd"):
+            st = parse_qs(urlparse(url).query).get("state", [""])[0]
+            sj = decode_jwt(st)
+            if sj:
+                print(f"  authorizeEnd state JWT: client_id={sj.get('client_id')} "
+                      f"redirect_uri={sj.get('redirect_uri')} response_type={sj.get('response_type')}")
         if r.status_code == 403 and "Just a moment" in r.text:
             sys.exit(
                 "\n!! Cloudflare managed challenge di: " + url[:100] +
@@ -137,7 +153,8 @@ def follow_chain(s: requests.Session, url: str, max_hops=12):
             code = (q.get("code") or [None])[0]
         if not loc:
             return r, code, url
-        if not loc.startswith("http"):
+        if not loc.startswith(("http://", "https://")):
+            # deep link non-http (pastro://) -> berhenti
             print(f"  >> non-http redirect (deep link): {loc[:160]}")
             return r, code, loc
         url = urljoin(url, loc)
@@ -178,23 +195,46 @@ def solve_recaptcha(api_key: str, sitekey: str, pageurl: str) -> str:
             print(f"  token: {token[:60]}... ({len(token)} chars)")
             return token
         if d.get("errorId"):
+            # task kadang hilang di sisi solver -> recreate sekali
+            if d.get("errorCode") == "ERROR_NO_SUCH_CAPCHA_ID" and i < 3:
+                print("  task hilang -> recreate")
+                r = requests.post(
+                    "https://api.muaraicaptcha.com/v1/createTask",
+                    json={
+                        "clientKey": api_key,
+                        "task": {
+                            "type": "RecaptchaV2TaskProxyless",
+                            "websiteURL": pageurl,
+                            "websiteKey": sitekey,
+                        },
+                    },
+                    timeout=30,
+                )
+                task_id = r.json().get("taskId")
+                if not task_id:
+                    sys.exit(f"createTask gagal: {r.text}")
+                continue
             sys.exit(f"error: {d}")
     sys.exit("captcha timeout")
 
 
 # ----------------------------------------------------------------- login ----
-def kratos_login(s: requests.Session) -> None:
-    """login Ory Kratos: flow -> csrf -> recaptcha -> POST /api/login"""
+def kratos_login(s: requests.Session, flow: str = None):
+    """login Ory Kratos: flow -> csrf -> recaptcha -> POST /api/login.
+    flow=None -> buat flow baru. Return (flow_id, response_login)."""
     cfg = CONFIG
 
-    step(1, "Buat login flow (Kratos)")
-    r = s.get(f"{cfg['auth']}/self-service/login/browser", allow_redirects=True, timeout=30)
-    show(r, body_limit=200, label="GET /self-service/login/browser")
-    m = re.search(r"flow=([a-f0-9-]{36})", r.url)
-    if not m:
-        sys.exit("flow id tidak ketemu")
-    flow = m.group(1)
-    print(f"flow: {flow}")
+    if not flow:
+        step(1, "Buat login flow (Kratos)")
+        r = s.get(f"{cfg['auth']}/self-service/login/browser", allow_redirects=True, timeout=30)
+        show(r, body_limit=200, label="GET /self-service/login/browser")
+        m = re.search(r"flow=([a-f0-9-]{36})", r.url)
+        if not m:
+            sys.exit("flow id tidak ketemu")
+        flow = m.group(1)
+        print(f"flow: {flow}")
+    else:
+        print(f"re-login dengan flow eksisting (login_challenge): {flow}")
 
     step(2, "Ambil csrf_token dari halaman login")
     r = s.get(f"{cfg['auth']}/login?flow={flow}", timeout=30)
@@ -235,11 +275,12 @@ def kratos_login(s: requests.Session) -> None:
         timeout=30,
     )
     show(r, body_limit=500, label="POST /api/login")
-    if r.status_code not in (200, 302):
+    if r.status_code not in (200, 302, 303):
         sys.exit(f"login gagal: HTTP {r.status_code}")
     who = decode_jwt(s.cookies.get("ory_kratos_session") or "")
     print("login OK - session:", bool(s.cookies.get("ory_kratos_session")),
           "| email:", (who.get("identity") or {}).get("traits", {}).get("email"))
+    return flow, r
 
 
 # ------------------------------------------------------------ oauth chain ----
@@ -250,13 +291,26 @@ def oauth_get_code(s: requests.Session, guest=False):
     state = f"py{uuid.uuid4().hex[:8]}"
     nonce = str(uuid.uuid4())
 
-    step(5, f"GET /oauth2/authorize (PKCE, scope={'guest' if guest else 'user'})")
-    authz = (
-        f"{cfg['api']}/oauth2/authorize?response_type=code"
-        f"&client_id={quote(cfg['client_id'])}&state={state}"
-        f"&code_challenge_method=S256&ui_locales=en&code_challenge={challenge}"
-        f"&redirect_uri={quote(cfg['redirect_uri'])}&scope={quote(scope)}"
-    )
+    if guest:
+        # APK: authorize PKCE -> pastro://code langsung (guest short-circuit)
+        step(5, "GET /oauth2/authorize (PKCE, scope=guest, client APK)")
+        authz = (
+            f"{cfg['api']}/oauth2/authorize?response_type=code"
+            f"&client_id={quote(cfg['client_id'])}&state={state}"
+            f"&code_challenge_method=S256&ui_locales=en&code_challenge={challenge}"
+            f"&redirect_uri={quote(cfg['redirect_uri'])}&scope={quote(scope)}"
+        )
+    else:
+        # web SSO (astrogo): bootstrap client browser -> chain Hydra ->
+        # authorizeEnd -> fragment #access_token scope "browse playback".
+        # (authorize client APK untuk user justru memberi token
+        #  device_management - flow device-login, bukan playback)
+        step(5, "GET /oauth2/authorize (bootstrap client browser, response_type=token)")
+        authz = (
+            f"{cfg['api']}/oauth2/authorize?client_id=browser&state=bootup"
+            f"&redirect_uri={quote('https://astrogo.astro.com.my')}"
+            f"&response_type=token"
+        )
     r = s.get(authz, allow_redirects=False, timeout=30)
     show(r, body_limit=200)
     loc = r.headers.get("location", "")
@@ -264,16 +318,34 @@ def oauth_get_code(s: requests.Session, guest=False):
         sys.exit("authorize tidak redirect")
 
     # guest: code langsung di deep link pastro:// dari 302 pertama
-    if not loc.startswith("http"):
+    if not loc.startswith(("http://", "https://")):
         q = parse_qs(urlparse(loc).query)
         code = (q.get("code") or [None])[0]
         if code:
             print(f"CODE (deep link langsung): {code[:60]}... ({len(code)} chars)")
-            return code, verifier
+            return code, verifier, False
         sys.exit(f"deep link tanpa code: {loc[:150]}")
 
     step(6, "Follow chain: oidc/authorize -> oauth2/auth -> consent -> code")
     r, code, final_url = follow_chain(s, loc)
+
+    # Hydra minta login ulang (login_challenge) walau session Kratos ada:
+    # chain mendarat di /login?flow=<id> -> re-login dengan flow itu,
+    # lalu ikuti redirect_browser_to ke consent.
+    m = re.search(r"/login\?flow=([a-f0-9-]{36})$", final_url)
+    if m and not code and not guest:
+        step("6a", "Hydra minta login_challenge -> re-login dengan flow tsb")
+        _, r2 = kratos_login(s, flow=m.group(1))
+        nxt = r2.headers.get("location", "")
+        if not nxt:
+            try:
+                nxt = r2.json().get("redirect_browser_to", "")
+            except Exception:
+                nxt = ""
+        if not nxt:
+            sys.exit("re-login OK tapi tidak ada redirect_browser_to")
+        print("redirect_browser_to:", nxt[:120])
+        r, code, final_url = follow_chain(s, nxt)
 
     # kalau berhenti di halaman consent, accept via /api/consent
     if "/consent" in final_url and final_url.startswith("http"):
@@ -290,13 +362,26 @@ def oauth_get_code(s: requests.Session, guest=False):
             if nxt:
                 r, code, final_url = follow_chain(s, nxt)
 
+    # web SSO dulu: authorizeEnd redirect ke devicelogin dengan #access_token.
+    # Setelah sesi SSO terbentuk, ULANGI authorize -> VCS memberi pastro://code
+    # (pola yang sama dengan guest).
+    m = re.search(r"[#&]access_token=([^&]+)", final_url)
+    if m:
+        at = m.group(1)
+        claims = decode_jwt(at) or {}
+        print("WEB SSO fragment token claims:", json.dumps(
+            {k: claims.get(k) for k in ("sub", "aud", "scope", "client_id",
+                                        "session_data", "deviceFullType")}, indent=1)[:600])
+        print(f"WEB SSO: access_token langsung dari fragment ({len(at)} chars)")
+        return at, verifier, True
+
     if not code:
         # fallback: scan URL terakhir
         code = (parse_qs(urlparse(final_url).query).get("code") or [None])[0]
     if not code:
         sys.exit(f"code tidak ketemu. final: {final_url[:200]}")
     print(f"CODE: {code[:60]}... ({len(code)} chars)")
-    return code, verifier
+    return code, verifier, False
 
 
 def exchange_token(s: requests.Session, code: str, verifier: str) -> dict:
@@ -326,21 +411,34 @@ def exchange_token(s: requests.Session, code: str, verifier: str) -> dict:
 
 
 # ------------------------------------------------------------- playback ----
-def playsession(s: requests.Session, access_token: str, channel_id: str) -> dict:
-    step(8, f"POST /ctap/r1.6.0/devices/me/playsessions?channelId={channel_id}")
+def playsession(s: requests.Session, access_token: str, channel_id: str,
+                web: bool = False) -> dict:
+    """web=True: gaya klien web (fragment token + Origin/Referer + cookie
+    WsbSession, tanpa FLOW_CONTEXT). web=False: gaya APK (FLOW_CONTEXT)."""
+    label = "web (r1.6.0, Origin/Referer)" if web else "APK (FLOW_CONTEXT)"
+    step(8, f"POST /ctap/devices/me/playsessions?channelId={channel_id} [{label}]")
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json",
+        "Accept-Language": "en",
+        "Accept": "application/json, text/plain, */*",
+        "Cache-Control": "no-cache, no-store",
+    }
+    if web:
+        headers["Origin"] = "https://astrogo.astro.com.my"
+        headers["Referer"] = "https://astrogo.astro.com.my/"
+    else:
+        headers["FLOW_CONTEXT"] = flow_context()
     r = s.post(
         f"{CONFIG['api']}/ctap/r1.6.0/devices/me/playsessions",
         params={"channelId": channel_id},
-        headers={
-            "Authorization": f"Bearer {access_token}",
-            "FLOW_CONTEXT": flow_context(),
-            "Content-Type": "application/json",
-            "Accept-Language": "en",
-        },
+        headers=headers,
         data=b"",
         timeout=30,
     )
     show(r, body_limit=1200)
+    wsb = s.cookies.get("WsbSession")
+    print(f"WsbSession cookie: {'ada (' + str(len(wsb)) + ' chars)' if wsb else 'TIDAK ada'}")
     if r.status_code != 200:
         if "ANONYMOUS_IP" in r.text or "PROXY_OR_VPN" in r.text:
             sys.exit(
@@ -466,9 +564,14 @@ def main():
     if "--device" in args:
         device = args[args.index("--device") + 1]
 
-    s = requests.Session(impersonate=IMP)
-    s.headers["User-Agent"] = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                               "(KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36")
+    s = requests.Session(impersonate=IMP, proxy=CONFIG["proxy"] or None)
+    if CONFIG["ua"] == "android":
+        s.headers["User-Agent"] = ("Mozilla/5.0 (Linux; Android 13; Pixel 7) "
+                                   "AppleWebKit/537.36 (KHTML, like Gecko) "
+                                   "Chrome/124.0.0.0 Mobile Safari/537.36")
+    else:
+        s.headers["User-Agent"] = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                                   "(KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36")
 
     step(0, "Warm-up Cloudflare (GET auth.astro.com.my -> _cfuvid)")
     if CONFIG["cf_clearance"]:
@@ -478,13 +581,24 @@ def main():
     show(r, body_limit=100)
 
     if not guest:
-        kratos_login(s)
+        kratos_login(s)  # login awal; re-login challenge ditangani di oauth_get_code
 
-    code, verifier = oauth_get_code(s, guest=guest)
-    tok = exchange_token(s, code, verifier)
-    at = tok["access_token"]
+    code, verifier, is_access_token = oauth_get_code(s, guest=guest)
+    if is_access_token:
+        at = code  # web SSO: sudah access_token jadi
+        # endpoint magic web app (preFlight.js): validasi fragment token ->
+        # server set cookie WsbSession yang dibutuhkan API web
+        step("7b", "GET astrogo/bb2f53f1-... (validasi fragment, set WsbSession)")
+        r = s.get("https://astrogo.astro.com.my/bb2f53f1-6103-4381-843c-9f938f784e77",
+                  headers={"Authorization": f"Bearer {at}"}, timeout=30)
+        show(r, body_limit=300)
+        wsb = s.cookies.get("WsbSession")
+        print("WsbSession:", f"ada ({len(wsb)} chars)" if wsb else "TIDAK ada")
+    else:
+        tok = exchange_token(s, code, verifier)
+        at = tok["access_token"]
 
-    ps = playsession(s, at, CONFIG["channel_id"])
+    ps = playsession(s, at, CONFIG["channel_id"], web=is_access_token)
     play_url = ps.get("playUrl") or (ps.get("playbacks") or [{}])[0].get("url", "")
     blob = (ps.get("drmProperties") or {}).get("blob", "")
     session_id = ps.get("id", "")
