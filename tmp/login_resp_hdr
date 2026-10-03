@@ -1,0 +1,13 @@
+HTTP/2 200 
+date: Sat, 03 Oct 2026 13:19:24 GMT
+content-type: application/json
+content-security-policy: default-src 'none'; script-src 'self' 'unsafe-inline' 'nonce-ODczMDI2ZjAtYzBiOS00ODQ2LWE2YzktZDVmNmU3NTNkOTY3' 'strict-dynamic' https:; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com https://www.google.com https://www.google.com.my; font-src 'self'; connect-src 'self' https://www.google.com/recaptcha/ https://*.google-analytics.com https://*.analytics.google.com https://analytics.google.com https://*.googletagmanager.com https://stats.g.doubleclick.net; frame-src https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/; object-src 'none'; base-uri 'self'; frame-ancestors 'none';
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+set-cookie: csrf_token_d0571293b600cbe3c2731fc10ff995540b595db83519156ca9a16b5be7ae8689=K63sa6zdADBVgw4j/XSarz7njT5lywd7x763XCKiJ0M=; Path=/; Max-Age=31536000; HttpOnly; Secure; SameSite=Lax
+set-cookie: ory_kratos_session=MTc5MTAzMzU2NHxGcjhJZG55WXhpbUxfMVQ0V0FGR1dpaGJLZlNOOE1udkdLaG8xM1FzdTdxc2lWSE84R2hvblFOa0JxRzQ1cVVYNUt2X2hBcFdvQzBTNUtDWW9EYl80WDMzdTJaZmp1bHMyLVNvR2Juc25fRTBKVkpHb29FWlNDN1ppd1VPTlFzSTRhbktTQzdENU40Zk4wandqS3Z1V3A4MlB0d0RCNHdXemZFZ3JlbG1zSlhLdm4zUERVYVRCaEtjVkFqSkpVVHNuUUtGdzV0S0pCc0FyOEFXWGREVTlhQ0t1VUd0UE9STnp1UDUtSjhOckpPWllQS0Mta29OUTh4MTFXanNMSEdKZWp4WUxDRXBIY0RXYXRmYkg4YW584Kt1aRM7KtdD_6wWqAyHTXa1mUjTpaRbSX-aCBpWqAQ=; Path=/; Expires=Mon, 02 Nov 2026 13:19:23 GMT; Max-Age=2591999; HttpOnly; Secure; SameSite=Lax
+x-envoy-upstream-service-time: 429
+server: cloudflare
+cf-cache-status: DYNAMIC
+strict-transport-security: max-age=7776000; includeSubDomains; preload
+cf-ray: a44c3cf9b816d937-CMH
+
