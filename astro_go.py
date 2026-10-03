@@ -23,12 +23,15 @@ Usage:
 """
 
 import base64
+import getpass
 import hashlib
 import json
 import os
 import re
 import sys
+import threading
 import time
+import atexit
 import uuid
 from urllib.parse import urlparse, parse_qs, quote, urljoin
 
@@ -82,22 +85,73 @@ CONFIG["channel_id"] = os.environ.get("ASTRO_CHANNEL_ID", CONFIG["channel_id"])
 # ---------------------------------------------------------------- helper ----
 VERBOSE = os.environ.get("ASTRO_VERBOSE", "")  # set 1 untuk log detail
 
-# hook event untuk UI (astro_ui.py): kalau di-set, tiap progres dikirim
-# ke sana sebagai dict - terminal tetap berjalan normal
-EVENT_HOOK = None
+# ---- animasi terminal (spinner + status) ----
+CY, GR, RD, DM, RS = "\033[36m", "\033[32m", "\033[31m", "\033[2m", "\033[0m"
+FRAMES = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+_spin = None  # spinner aktif
 
 
-def emit(ev: dict) -> None:
-    if EVENT_HOOK:
-        try:
-            EVENT_HOOK(ev)
-        except Exception:
-            pass
+class Spin:
+    """spinner di satu baris: ⠋ Memuat... -> ✔ Memuat... (detail)"""
+
+    def __init__(self, msg: str):
+        self.msg = msg
+        self._stop = threading.Event()
+        self._t = threading.Thread(target=self._run, daemon=True)
+        self._t.start()
+
+    def _run(self):
+        i = 0
+        while not self._stop.wait(0.08):
+            i = (i + 1) % len(FRAMES)
+            sys.stdout.write(f"\r{CY}{FRAMES[i]}{RS} {self.msg}   ")
+            sys.stdout.flush()
+
+    def _end(self, mark: str, color: str, extra: str = ""):
+        global _spin
+        self._stop.set()
+        self._t.join()
+        line = f"{color}{mark}{RS} {self.msg}"
+        if extra:
+            line += f"  {DM}{extra}{RS}"
+        sys.stdout.write("\r\033[2K" + line + "\n")
+        sys.stdout.flush()
+        if _spin is self:
+            _spin = None
+
+    def ok(self, extra: str = ""):
+        self._end("✔", GR, extra)
+
+    def fail(self, extra: str = ""):
+        self._end("✖", RD, extra)
+
+
+atexit.register(lambda: sys.stdout.write("\r\033[2K") or sys.stdout.flush())
 
 
 def step(n, title):
-    print(f"[STEP {n}] {title}")
-    emit({"type": "step", "n": str(n), "title": title})
+    """tutup spinner sebelumnya (OK) lalu mulai spinner baru untuk step ini"""
+    global _spin
+    if _spin:
+        _spin.ok()
+    _spin = Spin(f"[{n}] {title}")
+
+
+def spin_ok(extra: str = ""):
+    """tutup spinner aktif dengan status sukses + info singkat"""
+    if _spin:
+        _spin.ok(extra)
+
+
+def spin_fail(extra: str = ""):
+    if _spin:
+        _spin.fail(extra)
+
+
+def vprint(*a):
+    """print hanya kalau ASTRO_VERBOSE=1"""
+    if VERBOSE:
+        print(*a)
 
 
 def show(r, body_limit=700, label=""):
@@ -176,7 +230,7 @@ def follow_chain(s: requests.Session, url: str, max_hops=12):
             return r, code, url
         if not loc.startswith(("http://", "https://")):
             # deep link non-http (pastro://) -> berhenti
-            print(f"  >> non-http redirect (deep link): {loc[:160]}")
+            vprint(f"  >> non-http redirect (deep link): {loc[:160]}")
             return r, code, loc
         url = urljoin(url, loc)
     return r, code, url
@@ -197,8 +251,7 @@ def solve_recaptcha(api_key: str, sitekey: str, pageurl: str) -> str:
         },
         timeout=30,
     )
-    print(f"[createTask HTTP {r.status_code}] {r.text[:200]}")
-    emit({"type": "captcha", "status": "processing"})
+    vprint(f"[createTask HTTP {r.status_code}] {r.text[:200]}")
     task_id = r.json().get("taskId")
     if not task_id:
         sys.exit(f"createTask gagal: {r.text}")
@@ -211,17 +264,15 @@ def solve_recaptcha(api_key: str, sitekey: str, pageurl: str) -> str:
             timeout=30,
         )
         d = r.json()
-        print(f"  poll {i}: {d.get('status')}")
-        emit({"type": "captcha", "poll": i, "status": d.get("status")})
+        vprint(f"  poll {i}: {d.get('status')}")
         if d.get("status") == "ready":
             token = d["solution"]["token"]
-            print(f"  token: {token[:60]}... ({len(token)} chars)")
-            emit({"type": "captcha", "status": "ready"})
+            vprint(f"  token: {token[:60]}... ({len(token)} chars)")
             return token
         if d.get("errorId"):
             # task kadang hilang di sisi solver -> recreate sekali
             if d.get("errorCode") == "ERROR_NO_SUCH_CAPCHA_ID" and i < 3:
-                print("  task hilang -> recreate")
+                vprint("  task hilang -> recreate")
                 r = requests.post(
                     "https://api.muaraicaptcha.com/v1/createTask",
                     json={
@@ -256,9 +307,9 @@ def kratos_login(s: requests.Session, flow: str = None):
         if not m:
             sys.exit("flow id tidak ketemu")
         flow = m.group(1)
-        print(f"flow: {flow}")
+        vprint(f"flow: {flow}")
     else:
-        print(f"re-login dengan flow eksisting (login_challenge): {flow}")
+        vprint(f"re-login dengan flow eksisting (login_challenge): {flow}")
 
     step(2, "Ambil csrf_token dari halaman login")
     r = s.get(f"{cfg['auth']}/login?flow={flow}", timeout=30)
@@ -267,7 +318,7 @@ def kratos_login(s: requests.Session, flow: str = None):
     if not m:
         sys.exit("csrf_token tidak ketemu")
     csrf = m.group(1)
-    print(f"csrf_token: {csrf[:24]}... ({len(csrf)} chars)")
+    vprint(f"csrf_token: {csrf[:24]}... ({len(csrf)} chars)")
 
     step(3, "Solve reCAPTCHA v2 (MuaraiCaptcha)")
     token = solve_recaptcha(cfg["muarai_key"], cfg["recaptcha_sitekey"],
@@ -302,9 +353,8 @@ def kratos_login(s: requests.Session, flow: str = None):
     if r.status_code not in (200, 302, 303):
         sys.exit(f"login gagal: HTTP {r.status_code}")
     who = decode_jwt(s.cookies.get("ory_kratos_session") or "")
-    print("login OK - session:", bool(s.cookies.get("ory_kratos_session")),
-          "| email:", (who.get("identity") or {}).get("traits", {}).get("email"))
-    emit({"type": "info", "msg": "Login berhasil"})
+    email = (who.get("identity") or {}).get("traits", {}).get("email") or CONFIG["email"]
+    spin_ok(f"sesi aktif - {email}")
     return flow, r
 
 
@@ -346,7 +396,7 @@ def oauth_get_code(s: requests.Session, guest=False):
         q = parse_qs(urlparse(loc).query)
         code = (q.get("code") or [None])[0]
         if code:
-            print(f"CODE (deep link langsung): {code[:60]}... ({len(code)} chars)")
+            spin_ok(f"code didapat ({len(code)} chars)")
             return code, verifier, False
         sys.exit(f"deep link tanpa code: {loc[:150]}")
 
@@ -368,7 +418,7 @@ def oauth_get_code(s: requests.Session, guest=False):
                 nxt = ""
         if not nxt:
             sys.exit("re-login OK tapi tidak ada redirect_browser_to")
-        print("redirect_browser_to:", nxt[:120])
+        vprint("redirect_browser_to:", nxt[:120])
         r, code, final_url = follow_chain(s, nxt)
 
     # kalau berhenti di halaman consent, accept via /api/consent
@@ -419,11 +469,11 @@ def oauth_get_code(s: requests.Session, guest=False):
             dq = {}
         min_del = dq.get("minNumToBeDeleted", 0)
         devs = dq.get("devices") or []
-        print(f"minNumToBeDeleted: {min_del} | terdaftar: {len(devs)} device")
         if min_del and min_del > 0:
+            spin_ok(f"kuota penuh - {len(devs)} device terdaftar")
             for d in devs:
-                print(f"  - {d.get('displayDeviceType')} / {d.get('friendlyName')} "
-                      f"({d.get('deviceId')}) removable={d.get('isQuotaOccupier')}")
+                vprint(f"  - {d.get('displayDeviceType')} / {d.get('friendlyName')} "
+                       f"({d.get('deviceId')}) removable={d.get('isQuotaOccupier')}")
             # kosongkan slot: hapus device Browser terlama yang masih removable
             # (slot browser daftar ulang otomatis saat login web berikutnya)
             cands = [
@@ -444,7 +494,7 @@ def oauth_get_code(s: requests.Session, guest=False):
             show(rd, body_limit=300)
             if rd.status_code not in (200, 404):
                 sys.exit(f"hapus device gagal: HTTP {rd.status_code}")
-            print("slot Browser terlama dihapus -> lanjut")
+            spin_ok("slot Browser terlama dihapus")
         step("6d", "GET /oauth2/deviceManagementEnd (SPA redirect balik ke VCS)")
         # redirect dalam sg-sg-sg lewat s_sg (tanpa proxy); begitu keluar
         # host itu, lanjutkan chain dengan session ber-proxy + cookies
@@ -475,10 +525,10 @@ def oauth_get_code(s: requests.Session, guest=False):
     if m:
         at = m.group(1)
         claims = decode_jwt(at) or {}
-        print("WEB SSO fragment token claims:", json.dumps(
+        vprint("WEB SSO fragment token claims:", json.dumps(
             {k: claims.get(k) for k in ("sub", "aud", "scope", "client_id",
                                         "session_data", "deviceFullType")}, indent=1)[:600])
-        print(f"WEB SSO: access_token langsung dari fragment ({len(at)} chars)")
+        spin_ok(f"access_token dari fragment ({len(at)} chars)")
         return at, verifier, True
 
     # deep link pastro:// dari follow_chain: code VCS (JWT eyJ...) ada di
@@ -488,7 +538,7 @@ def oauth_get_code(s: requests.Session, guest=False):
         q = parse_qs(urlparse(final_url).query)
         c = (q.get("code") or [None])[0]
         if c:
-            print(f"CODE (pastro deep link): {c[:60]}... ({len(c)} chars)")
+            spin_ok(f"code didapat ({len(c)} chars)")
             return c, verifier, False
 
     if not code:
@@ -496,7 +546,7 @@ def oauth_get_code(s: requests.Session, guest=False):
         code = (parse_qs(urlparse(final_url).query).get("code") or [None])[0]
     if not code:
         sys.exit(f"code tidak ketemu. final: {final_url[:200]}")
-    print(f"CODE: {code[:60]}... ({len(code)} chars)")
+    spin_ok(f"code didapat ({len(code)} chars)")
     return code, verifier, False
 
 
@@ -520,9 +570,10 @@ def exchange_token(s: requests.Session, code: str, verifier: str) -> dict:
     if r.status_code != 200:
         sys.exit(f"token exchange gagal: HTTP {r.status_code}\n{r.text[:300]}")
     tok = r.json()
-    print("--- respon asli STEP 7 (POST /oauth2/token) ---")
+    spin_ok()
+    print(f"\n{DM}── respon asli POST /oauth2/token " + "─" * 28 + RS)
     print(json.dumps(tok, indent=2))
-    emit({"type": "raw", "step": 7, "data": tok})
+    print(DM + "─" * 60 + RS + "\n")
     return tok
 
 
@@ -562,7 +613,7 @@ def mdrm_token(s: requests.Session, access_token: str,
         except Exception as e:
             # port 9443 bisa diblokir jaringan/proxy (SSL reset dll) -
             # lewati varian ini, jangan crash
-            print(f"  device_assertion [{name}]: dilewati ({type(e).__name__})")
+            vprint(f"  device_assertion [{name}]: dilewati ({type(e).__name__})")
             continue
         show(r, body_limit=200, label=f"device_assertion [{name}]")
         if r.status_code == 200:
@@ -575,7 +626,7 @@ def mdrm_token(s: requests.Session, access_token: str,
             break
     if not jwt_dev:
         sys.exit("device_assertion gagal (401 di semua varian)")
-    print(f"device JWT: {jwt_dev[:60]}... ({len(jwt_dev)} chars)")
+    vprint(f"device JWT: {jwt_dev[:60]}... ({len(jwt_dev)} chars)")
 
     step("8c", "POST /oauth2/token (token-exchange vg-drm -> token mDRM)")
     r = s.post(
@@ -592,7 +643,7 @@ def mdrm_token(s: requests.Session, access_token: str,
     if r.status_code != 200:
         sys.exit(f"token exchange mDRM gagal: HTTP {r.status_code}")
     mt = r.json()["access_token"]
-    print(f"mDRM token: {mt[:60]}... ({len(mt)} chars)")
+    vprint(f"mDRM token: {mt[:60]}... ({len(mt)} chars)")
     return mt
 
 
@@ -631,9 +682,10 @@ def playsession(s: requests.Session, access_token: str, channel_id: str,
             )
         sys.exit(f"playsession gagal: HTTP {r.status_code}\n{r.text[:300]}")
     ps = r.json()
-    print("--- respon asli STEP 8 (POST playsessions) ---")
+    spin_ok(f"sesi {ps.get('id', '')[:40]}")
+    print(f"\n{DM}── respon asli POST playsessions " + "─" * 26 + RS)
     print(json.dumps(ps, indent=2))
-    emit({"type": "raw", "step": 8, "data": ps})
+    print(DM + "─" * 60 + RS + "\n")
     return ps
 
 
@@ -648,16 +700,18 @@ def check_mpd(s: requests.Session, play_url: str):
         },
         timeout=30,
     )
-    print(f"[HTTP {r.status_code}] {len(r.content)} bytes, CT: {r.headers.get('content-type')}")
+    vprint(f"[HTTP {r.status_code}] {len(r.content)} bytes, CT: {r.headers.get('content-type')}")
     if r.status_code == 200:
         pssh = re.search(r"<cenc:pssh>([^<]+)</cenc:pssh>", r.text)
         kids = re.findall(r'cenc:default_KID="([^"]+)"', r.text)
-        print(f"  KID(s): {kids[:3]}")
+        vprint(f"  KID(s): {kids[:3]}")
         if pssh:
-            print(f"  PSSH: {pssh.group(1)[:80]}...")
+            vprint(f"  PSSH: {pssh.group(1)[:80]}...")
+            spin_ok(f"MPD {len(r.content)} bytes, PSSH dapat")
             return pssh.group(1)
+        spin_ok(f"MPD {len(r.content)} bytes (PSSH tidak ada)")
     else:
-        print("  (geo-block MY / butuh IP Malaysia)")
+        spin_ok(f"MPD HTTP {r.status_code} (geo-block MY / butuh IP Malaysia)")
     return None
 
 
@@ -703,7 +757,9 @@ def keepalive(s: requests.Session, access_token: str, href: str) -> None:
     )
     show(r, body_limit=200)
     if r.status_code == 200:
-        emit({"type": "info", "msg": "KeepAlive OK - sesi streaming aktif"})
+        spin_ok("sesi streaming aktif")
+    else:
+        spin_ok(f"HTTP {r.status_code}")
 
 
 # ------------------------------------------------------- real license (opt) ----
@@ -721,7 +777,7 @@ def real_license(device_path: str, pssh_b64: str, access_token: str,
     session_id = cdm.open()
     cdm.set_service_certificate(session_id, None)
     challenge = b64url(cdm.get_license_challenge(session_id, PSSH(pssh_b64)))
-    print(f"challenge: {challenge[:60]}... ({len(challenge)} chars)")
+    vprint(f"challenge: {challenge[:60]}... ({len(challenge)} chars)")
 
     r = s.post(
         f"{CONFIG['api']}/vgemultidrm/v1/widevine/license",
@@ -747,12 +803,48 @@ def real_license(device_path: str, pssh_b64: str, access_token: str,
 
 
 # ----------------------------------------------------------------- main ----
+BANNER = f"""{CY}
+   █████╗ ███████╗████████╗██████╗  ██████╗
+  ██╔══██╗██╔════╝╚══██╔══╝██╔══██╗██╔═══██╗
+  ███████║███████╗   ██║   ██████╔╝██║   ██║
+  ██╔══██║╚════██║   ██║   ██╔══██╗██║   ██║
+  ██║  ██║███████║   ██║   ██║  ██║╚██████╔╝
+  ╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝{RS}
+  {DM}Astro GO Malaysia - linear streaming flow{RS}
+"""
+
+
+def ask_credentials():
+    """mode manual: input email, password, dan ID channel"""
+    print(f"\n{CY}Mode Manual{RS} - isi kredensial & channel\n")
+    email = input(f"  Email      : {CY}").strip() or CONFIG["email"]
+    print(RS, end="")
+    pw = getpass.getpass(f"  Password   : ")
+    ch = input(f"{RS}  ID Channel {DM}[enter={CONFIG['channel_id']}]{RS}: {CY}").strip()
+    print(RS, end="")
+    CONFIG["email"] = email
+    if pw:
+        CONFIG["password"] = pw
+    if ch:
+        CONFIG["channel_id"] = ch
+
+
 def main():
     args = sys.argv[1:]
     guest = "--guest" in args
     device = None
     if "--device" in args:
         device = args[args.index("--device") + 1]
+
+    print(BANNER)
+    if not guest:
+        print(f"  Pilih mode login:")
+        print(f"    {CY}1{RS} = Otomatis  {DM}(email & password tersimpan di script){RS}")
+        print(f"    {CY}2{RS} = Manual    {DM}(isi email, password, ID channel){RS}")
+        mode = input(f"\n  Pilih {DM}[1/2]{RS}: ").strip()
+        if mode == "2":
+            ask_credentials()
+        print()
 
     s = requests.Session(impersonate=IMP, proxy=CONFIG["proxy"] or None)
     if CONFIG["ua"] == "android":
@@ -767,10 +859,10 @@ def main():
         s.headers["User-Agent"] = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
                                    "(KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36")
 
-    step(0, "Warm-up Cloudflare (GET auth.astro.com.my -> _cfuvid)")
+    step(0, "Warm-up Cloudflare")
     if CONFIG["cf_clearance"]:
         s.cookies.set("cf_clearance", CONFIG["cf_clearance"], domain=".astro.com.my")
-        print("cf_clearance dipakai dari CONFIG")
+        vprint("cf_clearance dipakai dari CONFIG")
     r = s.get(f"{CONFIG['auth']}/", allow_redirects=True, timeout=30)
     show(r, body_limit=100)
 
@@ -778,20 +870,20 @@ def main():
         kratos_login(s)  # login awal; re-login challenge ditangani di oauth_get_code
 
     code, verifier, is_access_token = oauth_get_code(s, guest=guest)
+    tok = {}
     if is_access_token:
         at = code  # web SSO: sudah access_token jadi
         # endpoint magic web app (preFlight.js): validasi fragment token ->
         # server set cookie WsbSession yang dibutuhkan API web
-        step("7b", "GET astrogo/bb2f53f1-... (validasi fragment, set WsbSession)")
+        step("7b", "Validasi fragment (set WsbSession)")
         r = s.get("https://astrogo.astro.com.my/bb2f53f1-6103-4381-843c-9f938f784e77",
                   headers={"Authorization": f"Bearer {at}"}, timeout=30)
         show(r, body_limit=300)
         wsb = s.cookies.get("WsbSession")
-        print("WsbSession:", f"ada ({len(wsb)} chars)" if wsb else "TIDAK ada")
+        spin_ok(f"WsbSession {'ada' if wsb else 'TIDAK ada'}")
     else:
         tok = exchange_token(s, code, verifier)
         at = tok["access_token"]
-        print("token keys:", sorted(tok.keys()))
 
     ps = playsession(s, at, CONFIG["channel_id"], web=is_access_token)
     play_url = ps.get("playUrl") or \
@@ -801,19 +893,15 @@ def main():
     session_id = ps.get("id", "")
     ka_href = ((ps.get("_links") or {}).get("keepAlive") or {}).get("href") or \
         f"/ctap/r1.6.0/devices/me/playsessions/{session_id}/keepAlive"
-    print(f"\nplayUrl : {play_url}")
-    print(f"drmBlob : {blob[:60]}... ({len(blob)} chars)")
-    print(f"sessionId: {session_id}")
 
     pssh = check_mpd(s, play_url) if play_url else None
-    emit({"type": "info", "msg": f"MPD {'OK' if pssh else 'tidak terbaca'}"})
 
     # token mDRM: Authorization license server (butuh sesi user berlangganan)
     mdrm = None
     try:
         mdrm = mdrm_token(s, at, tok.get("id_token", "") if not is_access_token else "")
     except SystemExit:
-        print("(token mDRM gagal -> license pakai token sesi)")
+        spin_fail("token mDRM gagal -> license pakai token sesi")
 
     if device and pssh:
         real_license(device, pssh, mdrm or at, CONFIG["channel_id"], blob, s)
@@ -824,9 +912,15 @@ def main():
     if session_id:
         keepalive(s, at, ka_href)
 
-    print("\nSELESAI.")
-    emit({"type": "done", "playUrl": play_url, "sessionId": session_id,
-          "drmBlob": blob, "channelId": CONFIG["channel_id"]})
+    if _spin:
+        _spin.ok()
+    print(f"""
+{CY}───────────────────── HASIL ─────────────────────{RS}
+  {DM}playUrl  {RS}: {play_url}
+  {DM}sessionId{RS}: {session_id}
+  {DM}drmBlob  {RS}: {blob[:50]}{'...' if len(blob) > 50 else ''}
+  {DM}channel  {RS}: {CONFIG['channel_id']}
+{CY}─────────────────────────────────────────────────{RS}""")
 
 
 if __name__ == "__main__":
