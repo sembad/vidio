@@ -96,11 +96,16 @@ class Spin:
 
     def __init__(self, msg: str):
         self.msg = msg
+        self.t0 = time.time()
         self._stop = threading.Event()
         self._t = threading.Thread(target=self._run, daemon=True)
         self._t.start()
 
     def _run(self):
+        if not sys.stdout.isatty():
+            # output di-pipe/log: tanpa animasi, langsung baris final saja
+            self._stop.wait()
+            return
         i = 0
         while not self._stop.wait(0.08):
             i = (i + 1) % len(FRAMES)
@@ -111,7 +116,8 @@ class Spin:
         global _spin
         self._stop.set()
         self._t.join()
-        line = f"{color}{mark}{RS} {self.msg}"
+        el = f"{time.time() - self.t0:.1f}s"
+        line = f"{color}{mark}{RS} {self.msg}  {DM}· {el}{RS}"
         if extra:
             line += f"  {DM}{extra}{RS}"
         sys.stdout.write("\r\033[2K" + line + "\n")
@@ -237,33 +243,45 @@ def follow_chain(s: requests.Session, url: str, max_hops=12):
 
 
 # --------------------------------------------------------- muaraicaptcha ----
+def _solver_post(path: str, payload: dict, tries: int = 3) -> dict:
+    """POST ke API solver dengan retry. Error jaringan/SSL (sering terjadi
+    di Termux) diganti pesan bersih, bukan traceback."""
+    last = None
+    for _ in range(tries):
+        try:
+            r = requests.post(f"https://api.muaraicaptcha.com/v1/{path}",
+                              json=payload, timeout=30)
+            vprint(f"[solver {path} HTTP {r.status_code}] {r.text[:200]}")
+            return r.json()
+        except Exception as e:
+            last = e
+            time.sleep(2)
+    spin_fail("solver tidak terjangkau")
+    print(f"\n{RD}  ✖ Koneksi ke api.muaraicaptcha.com gagal{RS}")
+    print(f"  {DM}{type(last).__name__}: {last}{RS}")
+    print(f"  {DM}cek koneksi internet / API key, lalu coba lagi{RS}\n")
+    sys.exit(1)
+
+
 def solve_recaptcha(api_key: str, sitekey: str, pageurl: str) -> str:
     step("CAPTCHA", "reCAPTCHA v2 via MuaraiCaptcha")
-    r = requests.post(
-        "https://api.muaraicaptcha.com/v1/createTask",
-        json={
-            "clientKey": api_key,
-            "task": {
-                "type": "RecaptchaV2TaskProxyless",
-                "websiteURL": pageurl,
-                "websiteKey": sitekey,
-            },
+    d = _solver_post("createTask", {
+        "clientKey": api_key,
+        "task": {
+            "type": "RecaptchaV2TaskProxyless",
+            "websiteURL": pageurl,
+            "websiteKey": sitekey,
         },
-        timeout=30,
-    )
-    vprint(f"[createTask HTTP {r.status_code}] {r.text[:200]}")
-    task_id = r.json().get("taskId")
+    })
+    task_id = d.get("taskId")
     if not task_id:
-        sys.exit(f"createTask gagal: {r.text}")
+        spin_fail("createTask ditolak")
+        sys.exit(f"createTask gagal: {d}")
 
     for i in range(1, 25):
         time.sleep(5)
-        r = requests.post(
-            "https://api.muaraicaptcha.com/v1/getTaskResult",
-            json={"clientKey": api_key, "taskId": task_id},
-            timeout=30,
-        )
-        d = r.json()
+        d = _solver_post("getTaskResult",
+                         {"clientKey": api_key, "taskId": task_id})
         vprint(f"  poll {i}: {d.get('status')}")
         if d.get("status") == "ready":
             token = d["solution"]["token"]
@@ -273,23 +291,22 @@ def solve_recaptcha(api_key: str, sitekey: str, pageurl: str) -> str:
             # task kadang hilang di sisi solver -> recreate sekali
             if d.get("errorCode") == "ERROR_NO_SUCH_CAPCHA_ID" and i < 3:
                 vprint("  task hilang -> recreate")
-                r = requests.post(
-                    "https://api.muaraicaptcha.com/v1/createTask",
-                    json={
-                        "clientKey": api_key,
-                        "task": {
-                            "type": "RecaptchaV2TaskProxyless",
-                            "websiteURL": pageurl,
-                            "websiteKey": sitekey,
-                        },
+                d = _solver_post("createTask", {
+                    "clientKey": api_key,
+                    "task": {
+                        "type": "RecaptchaV2TaskProxyless",
+                        "websiteURL": pageurl,
+                        "websiteKey": sitekey,
                     },
-                    timeout=30,
-                )
-                task_id = r.json().get("taskId")
+                })
+                task_id = d.get("taskId")
                 if not task_id:
-                    sys.exit(f"createTask gagal: {r.text}")
+                    spin_fail("createTask ditolak")
+                    sys.exit(f"createTask gagal: {d}")
                 continue
+            spin_fail("solver error")
             sys.exit(f"error: {d}")
+    spin_fail("captcha timeout")
     sys.exit("captcha timeout")
 
 
@@ -838,10 +855,11 @@ def main():
 
     print(BANNER)
     if not guest:
-        print(f"  Pilih mode login:")
-        print(f"    {CY}1{RS} = Otomatis  {DM}(email & password tersimpan di script){RS}")
-        print(f"    {CY}2{RS} = Manual    {DM}(isi email, password, ID channel){RS}")
-        mode = input(f"\n  Pilih {DM}[1/2]{RS}: ").strip()
+        print(f"""  {DM}┌─ MODE LOGIN ────────────────────────────────────┐{RS}
+  {DM}│{RS}  {CY}1{RS}  Otomatis   {DM}email & password tersimpan di script{RS}  {DM}│{RS}
+  {DM}│{RS}  {CY}2{RS}  Manual     {DM}isi email, password, ID channel{RS}       {DM}│{RS}
+  {DM}└─────────────────────────────────────────────────┘{RS}""")
+        mode = input(f"  Pilih {DM}[1/2]{RS}: ").strip()
         if mode == "2":
             ask_credentials()
         print()
@@ -924,4 +942,24 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        spin_fail("dibatalkan")
+        print(f"\n{DM}dibatalkan oleh user{RS}\n")
+        sys.exit(130)
+    except SystemExit:
+        raise
+    except Exception as e:
+        # traceback mentah bikin terminal berantakan - tampilkan kotak error
+        # bersih; traceback lengkap hanya dengan ASTRO_VERBOSE=1
+        spin_fail("gagal")
+        msg = f"{type(e).__name__}: {e}".replace("\n", " ")
+        print(f"\n{RD}  ✖ ERROR{RS}")
+        for i in range(0, len(msg), 64):
+            print(f"  {RD}{msg[i:i + 64]}{RS}")
+        print(f"  {DM}jalankan 'ASTRO_VERBOSE=1 python astro.py' "
+              f"untuk detail lengkap{RS}\n")
+        if VERBOSE:
+            raise
+        sys.exit(1)
