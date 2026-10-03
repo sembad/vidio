@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.Toolbar xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/toolbar"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:minHeight="?android:attr/actionBarSize"
+    app:buttonGravity="center_vertical"
+    app:theme="@style/ThemeOverlay.AppCompat.Dark">
+
+    <ImageView
+        android:id="@+id/toolbar_title_logo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:scaleType="fitCenter"
+        android:src="@drawable/hamburger_logo" />
+
+    <TextView
+        android:id="@+id/toolbar_title_text"
+        android:layout_width="wrap_content"
+        android:layout_height="30dp"
+        android:layout_gravity="center"
+        android:textColor="#fff"
+        android:visibility="gone"
+        android:textSize="20sp" />
+
+    <LinearLayout
+        android:id="@+id/toobar_panel"
+        android:layout_gravity="end"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="0px"
+        android:layout_margin="0px">
+
+        <include layout="@layout/main_menu_layout"/>
+
+        <LinearLayout
+            android:gravity="right"
+            android:id="@+id/toolbar_icon_panel"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="right">
+
+            <com.cisco.veop.sf_ui.ui_configuration.UiConfigTextView
+                android:id="@id/searchIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:layout_gravity="center_vertical|center"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:padding="0dp"/>
+
+            <com.cisco.veop.sf_ui.ui_configuration.UiConfigTextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center_vertical"
+                android:id="@+id/registerIcon"
+                android:singleLine="true"
+                android:visibility="gone"
+                android:padding="0dp"/>
+
+            <com.cisco.veop.sf_ui.ui_configuration.UiConfigTextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:id="@id/settingsIcon"
+                android:visibility="gone"
+                android:padding="0dp"/>
+            <com.cisco.veop.client.userprofile.screens.CircularImageView
+                android:id="@+id/profileIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_vertical|center"
+                android:gravity="center"
+                android:visibility="gone"
+                android:padding="3pt"
+                android:src="@drawable/defaultprofileicon" />
+
+        </LinearLayout>
+    </LinearLayout>
+</androidx.appcompat.widget.Toolbar>
+

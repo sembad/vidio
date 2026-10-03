@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout android:background="@drawable/bg_radius_6_black_white" android:paddingTop="@dimen/medium_padding" android:paddingBottom="@dimen/medium_padding" android:layout_width="fill_parent" android:layout_height="fill_parent" android:paddingStart="@dimen/large_20_padding" android:paddingEnd="@dimen/large_20_padding"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <ImageView android:id="@id/checkoutIconInfo" android:layout_width="16.0dip" android:layout_height="16.0dip" android:layout_marginTop="@dimen/tiny_margin" android:src="@drawable/ic_information_white" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
+    <TextView android:textSize="@dimen/normal_text" android:textColor="@color/white" android:id="@id/checkoutInfo" android:layout_width="0.0dip" android:layout_height="wrap_content" android:text="@string/checkout_description" android:fontFamily="sans-serif" android:layout_marginStart="@dimen/medium_10dp_margin" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toEndOf="@id/checkoutIconInfo" app:layout_constraintTop_toTopOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

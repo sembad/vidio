@@ -1,0 +1,23 @@
+{
+  "sign_in_clicked" : "deeplink",
+  "sign_in_success" : "deeplink",
+  "sign_in_failure" : "deeplink",
+  "sign_out_clicked" : "always",
+  "screen_view" : "deeplink",
+  "action_watchlist_add" : "deeplink",
+  "action_watchlist_remove" : "deeplink",
+  "action_add_series" : "deeplink",
+  "action_remove_series" : "deeplink",
+  "action_play" : "deeplink",
+  "action_resume" : "deeplink",
+  "action_play_from_start" : "deeplink",
+  "action_play_trailer" : "deeplink",
+  "initiate_purchase" : "deeplink",
+  "purchase_success" : "deeplink",
+  "purchase_failure" : "deeplink",
+  "view_offers" : "deeplink",
+  "contact_support" : "deeplink",
+  "content_action_record" : "never",
+  "content_action_download" : "never",
+  "deeplink_process_error" : "never"
+}

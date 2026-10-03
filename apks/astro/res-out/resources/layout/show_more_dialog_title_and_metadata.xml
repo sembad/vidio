@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    tools:background="#0e1019">
+
+    <TextView
+        android:id="@+id/titleInfoValue"
+        style="@style/ShowMoreDialogTitleValueTextStyle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@+id/eventMetadataTopBarrier"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Bruce Willis, Haley Joel Osment, Toni Collette, Olivia Williams, Trevor Morgan Test Test Test test Test test Test Bruce Willis, Haley Joel Osment, Toni Collette, Olivia Williams, Trevor Morgan Test Test Test test Test test Test Bruce Willis, Haley Joel Osment, Toni Collette, Olivia Williams, Trevor Morgan Test Test Test test Test test Test " />
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/eventMetadataTopBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="top"
+        app:constraint_referenced_ids="eventMetadata, eventParentalRatingIcon, eventResolutionIcon" />
+
+
+    <TextView
+        android:id="@+id/eventMetadata"
+        style="@style/RobotoRegularWithShadow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:layout_marginEnd="6dp"
+        android:lineSpacingMultiplier="1.35"
+        android:textColor="#b2adaf"
+        android:textSize="14sp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/eventParentalRatingIcon"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/titleInfoValue"
+        tools:text="S1 EP1 | 59 min" />
+
+    <TextView
+        android:id="@+id/eventParentalRatingIcon"
+        style="@style/RobotoBoldWithShadow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="6dp"
+        android:includeFontPadding="false"
+        android:lineSpacingMultiplier="1.35"
+        android:textColor="#b2adaf"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="@+id/eventMetadata"
+        app:layout_constraintEnd_toStartOf="@+id/eventResolutionIcon"
+        app:layout_constraintStart_toEndOf="@+id/eventMetadata"
+        app:layout_constraintTop_toTopOf="@+id/eventMetadata"
+        app:layout_goneMarginTop="3dp"
+        tools:text="18" />
+
+    <TextView
+        android:id="@+id/eventResolutionIcon"
+        style="@style/RobotoBoldWithShadow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:includeFontPadding="false"
+        android:lineSpacingMultiplier="1.35"
+        android:textColor="#b2adaf"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="@+id/eventMetadata"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/eventParentalRatingIcon"
+        app:layout_constraintTop_toTopOf="@+id/eventMetadata"
+        app:layout_goneMarginTop="3dp"
+        tools:text="HD" />
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/eventMetadataBottomBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:constraint_referenced_ids="eventMetadata, eventParentalRatingIcon, eventResolutionIcon" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

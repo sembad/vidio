@@ -1,0 +1,85 @@
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <RelativeLayout
+            android:id="@+id/mobile_grid_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true" >
+
+
+            <com.cisco.veop.client.widgets.guide.composites.common.VerticalSyncableScrollView
+                android:id="@+id/channel_grid"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_below="@+id/grid_headers"
+                android:layout_alignParentStart="true"
+                android:overScrollMode="never"
+                android:scrollbars="none"/>
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginStart="@dimen/vertical_guide_channel_cell_width">
+
+                <FrameLayout
+                    android:id="@+id/grid_data_not_available"
+                    android:layout_width="wrap_content"
+                    android:layout_gravity="center"
+                    android:alpha="0"
+                    android:layout_height="wrap_content">
+                    <TextView
+                        android:layout_margin="@dimen/grid_showcell_margin"
+                        android:id="@+id/grid_data_not_available_txt"
+                        android:background="@android:color/black"
+                        android:padding="20dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="@dimen/grid_showcell_title"
+                        android:textStyle="bold"
+                        android:visibility="gone"
+                        android:text="@string/no_epg_grid"/>
+                </FrameLayout>
+            </FrameLayout>
+
+            <RelativeLayout
+                android:id="@+id/grid_headers"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/grid_timeslot_row_height"
+                android:layout_marginStart="@dimen/guide_time_slot_cell_gap">
+
+                <com.cisco.veop.client.widgets.guide.composites.common.HorizontalSyncableScrollView
+                    android:id="@+id/timeslots"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_alignParentStart="true"
+                    android:overScrollMode="never"
+                    android:scrollbars="none"
+                    />
+            </RelativeLayout>
+
+            <FrameLayout
+                android:id="@+id/timeslots_shadow"
+                android:layout_width="match_parent"
+                android:layout_height="5dp"
+                android:layout_below="@id/grid_headers"/>
+
+            <com.cisco.veop.client.widgets.guide.composites.common.ComponentGuideProgressIndicator
+                android:id="@+id/grid_timeslot_progress_bar"
+                android:layout_width="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentBottom="true"
+                android:layout_alignParentStart="true"
+                android:layout_height="100dp"/>
+        </RelativeLayout>
+    </RelativeLayout>
+</FrameLayout>

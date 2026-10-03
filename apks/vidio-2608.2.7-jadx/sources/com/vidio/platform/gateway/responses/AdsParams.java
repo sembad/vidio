@@ -1,0 +1,75 @@
+package com.vidio.platform.gateway.responses;
+
+import android.support.v4.media.a;
+import com.facebook.appevents.iap.InAppPurchaseConstants;
+import com.facebook.appevents.internal.ViewHierarchyConstants;
+import kotlin.Metadata;
+import kotlin.jvm.internal.DefaultConstructorMarker;
+import kotlin.jvm.internal.Intrinsics;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+@Metadata(d1 = {"\u0000\"\n\u0002\u0018\u0002\n\u0002\u0010\u0000\n\u0000\n\u0002\u0010\u000e\n\u0002\b\u0007\n\u0002\u0010\u000b\n\u0002\b\u0002\n\u0002\u0010\b\n\u0002\b\u0002\b\u0087\b\u0018\u00002\u00020\u0001B\u0013\u0012\n\b\u0002\u0010\u0002\u001a\u0004\u0018\u00010\u0003¢\u0006\u0004\b\u0004\u0010\u0005J\u000b\u0010\b\u001a\u0004\u0018\u00010\u0003HÆ\u0003J\u0015\u0010\t\u001a\u00020\u00002\n\b\u0002\u0010\u0002\u001a\u0004\u0018\u00010\u0003HÆ\u0001J\u0014\u0010\n\u001a\u00020\u000b2\b\u0010\f\u001a\u0004\u0018\u00010\u0001HÖ\u0083\u0004J\n\u0010\r\u001a\u00020\u000eHÖ\u0081\u0004J\n\u0010\u000f\u001a\u00020\u0003HÖ\u0081\u0004R\u0013\u0010\u0002\u001a\u0004\u0018\u00010\u0003¢\u0006\b\n\u0000\u001a\u0004\b\u0006\u0010\u0007¨\u0006\u0010"}, d2 = {"Lcom/vidio/platform/gateway/responses/AdsParams;", "", ViewHierarchyConstants.TAG_KEY, "", "<init>", "(Ljava/lang/String;)V", "getTag", "()Ljava/lang/String;", "component1", "copy", "equals", "", "other", "hashCode", "", InAppPurchaseConstants.METHOD_TO_STRING, "shared"}, k = 1, mv = {2, 3, 0}, xi = 48)
+/* loaded from: classes6.dex */
+public final /* data */ class AdsParams {
+    public static final int $stable = 0;
+
+    @Nullable
+    private final String tag;
+
+    public /* synthetic */ AdsParams(String str, int i11, DefaultConstructorMarker defaultConstructorMarker) {
+        this((i11 & 1) != 0 ? null : str);
+    }
+
+    public static /* synthetic */ AdsParams copy$default(AdsParams adsParams, String str, int i11, Object obj) {
+        if ((i11 & 1) != 0) {
+            str = adsParams.tag;
+        }
+        return adsParams.copy(str);
+    }
+
+    @Nullable
+    /* renamed from: component1, reason: from getter */
+    public final String getTag() {
+        return this.tag;
+    }
+
+    @NotNull
+    public final AdsParams copy(@Nullable String tag) {
+        return new AdsParams(tag);
+    }
+
+    public boolean equals(@Nullable Object other) {
+        if (this == other) {
+            return true;
+        }
+        return (other instanceof AdsParams) && Intrinsics.a(this.tag, ((AdsParams) other).tag);
+    }
+
+    @Nullable
+    public final String getTag() {
+        return this.tag;
+    }
+
+    public int hashCode() {
+        String str = this.tag;
+        if (str == null) {
+            return 0;
+        }
+        return str.hashCode();
+    }
+
+    @NotNull
+    public String toString() {
+        return a.a("AdsParams(tag=", this.tag, ")");
+    }
+
+    public AdsParams(@Nullable String str) {
+        this.tag = str;
+    }
+
+    /* JADX WARN: Multi-variable type inference failed */
+    public AdsParams() {
+        this(null, 1, 0 == true ? 1 : 0);
+    }
+}

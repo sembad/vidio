@@ -1,0 +1,41 @@
+package bu;
+
+import androidx.compose.runtime.l2;
+import androidx.compose.runtime.u4;
+import androidx.compose.runtime.w4;
+import com.kmklabs.vidioplayer.api.Event;
+import kotlin.jvm.internal.r0;
+import org.jetbrains.annotations.NotNull;
+
+/* loaded from: classes.dex */
+public final class o extends l {
+
+    /* renamed from: c, reason: collision with root package name */
+    @NotNull
+    private final yt.d f16737c;
+
+    /* renamed from: d, reason: collision with root package name */
+    @NotNull
+    private final l2 f16738d;
+
+    /* JADX WARN: 'super' call moved to the top of the method (can break code semantics) */
+    public o(@NotNull yt.d dVar) {
+        super(dVar, r0.b(Event.class));
+        dVar.getClass();
+        this.f16737c = dVar;
+        this.f16738d = w4.g(Boolean.valueOf(dVar.isPlayingAd()));
+    }
+
+    @Override // bu.l
+    public final void c(@NotNull Event event) {
+        event.getClass();
+        if (event instanceof Event.Video.Progress) {
+            return;
+        }
+        ((u4) this.f16738d).setValue(Boolean.valueOf(this.f16737c.isPlayingAd()));
+    }
+
+    public final boolean d() {
+        return ((Boolean) ((u4) this.f16738d).getValue()).booleanValue();
+    }
+}

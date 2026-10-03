@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:duplicateParentState="true">
+
+
+    <ImageView
+        android:id="@+id/channelLogo"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="@dimen/horizontal_guide_channel_cell_logo_margin_start"
+        android:layout_centerVertical="true"
+        android:layout_height="@dimen/horizontal_guide_channel_logo_height"
+        android:layout_width="@dimen/horizontal_guide_channel_logo_height"
+        android:layout_marginEnd="@dimen/horizontal_guide_channel_cell_logo_margin_end"
+        android:layout_toStartOf="@+id/channelCellSideBar"
+        android:adjustViewBounds="true"/>
+
+    <TextView
+        android:id="@+id/channelName"
+        android:maxLines="2"
+        android:gravity="center"
+        android:layout_alignParentStart="true"
+        android:ellipsize="end"
+        android:layout_marginStart="@dimen/horizontal_guide_channel_cell_logo_margin_start"
+        android:layout_centerVertical="true"
+        android:layout_height="wrap_content"
+        android:layout_width="@dimen/horizontal_guide_channel_logo_height"
+        android:layout_marginEnd="@dimen/horizontal_guide_channel_cell_logo_margin_end"
+        android:layout_toStartOf="@+id/channelCellSideBar"
+        android:visibility="gone"/>
+
+
+    <RelativeLayout
+        android:id="@+id/channelCellSideBar"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="@dimen/horizontal_guide_channel_cell_side_bar_end_margin">
+
+
+        <TextView
+            android:id="@+id/channelNumber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginTop="12dp"
+            android:textAlignment="center"
+            android:gravity="center"
+            android:text="1"
+            android:singleLine="true"
+            android:textSize="@dimen/grid_channelcell_channel_number_text_size"
+            android:includeFontPadding="false"/>
+
+        <com.cisco.veop.client.widgets.guide.icons.GuideGenericIcon
+            android:id="@+id/channelFavIcon"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="12dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+
+    </RelativeLayout>
+
+    <FrameLayout
+        android:id="@+id/channel_cell_seperator"
+        android:layout_width="match_parent"
+        android:background="@android:color/black"
+        android:layout_height="@dimen/grid_showcell_margin"
+        android:layout_alignParentTop="true"/>
+    <FrameLayout
+        android:id="@+id/channel_cell_seperator_start"
+        android:layout_width="@dimen/grid_showcell_margin"
+        android:layout_alignParentStart="true"
+        android:background="@android:color/black"
+        android:layout_height="match_parent"
+        android:layout_alignParentTop="true"/>
+
+</RelativeLayout>

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/brandLogoAndTitleContainer"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="@dimen/branded_page_toolbar_height"
+    android:paddingBottom="24dp">
+
+    <ImageView
+        android:id="@+id/brandLogo"
+        android:layout_width="@dimen/brand_logo_width"
+        android:layout_height="@dimen/brand_logo_height"
+        android:layout_marginStart="@dimen/brand_title_or_logo_start_margin"
+        android:layout_marginTop="@dimen/brand_title_or_logo_top_margin"
+        android:adjustViewBounds="true"
+        android:scaleType="fitStart"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/brandTitle"
+        style="@style/BrandTitleStyle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/brand_title_or_logo_start_margin"
+        android:layout_marginTop="@dimen/brand_title_or_logo_top_margin"
+        android:layout_marginEnd="@dimen/brand_title_or_logo_end_margin"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Sports Branded Too Longgggg Titleeeeee Title Title title title titleeeeeeeeeeeeeeeeeeeeee Titleeeeeeee"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/brandDimen"
+        style="@style/BrandTitleStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/brand_title_or_logo_start_margin"
+        android:layout_marginTop="@dimen/brand_title_or_logo_top_margin"
+        android:layout_marginEnd="@dimen/brand_title_or_logo_end_margin"
+        android:visibility="gone"
+        android:background="#000000"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:text="Size"
+        tools:visibility="gone" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

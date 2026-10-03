@@ -1,0 +1,25 @@
+package com.google.android.gms.internal.ads;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+
+/* loaded from: classes5.dex */
+public final class zzgcz {
+    public static zzgcs zza(ExecutorService executorService) {
+        return executorService instanceof zzgcs ? (zzgcs) executorService : executorService instanceof ScheduledExecutorService ? new zzgcy((ScheduledExecutorService) executorService) : new zzgcv(executorService);
+    }
+
+    public static zzgct zzb(ScheduledExecutorService scheduledExecutorService) {
+        return new zzgcy(scheduledExecutorService);
+    }
+
+    public static Executor zzc() {
+        return zzgbv.INSTANCE;
+    }
+
+    static Executor zzd(Executor executor, zzgax zzgaxVar) {
+        executor.getClass();
+        return executor == zzgbv.INSTANCE ? executor : new zzgcu(executor, zzgaxVar);
+    }
+}

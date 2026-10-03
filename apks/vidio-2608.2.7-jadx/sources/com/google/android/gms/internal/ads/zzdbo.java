@@ -1,0 +1,17 @@
+package com.google.android.gms.internal.ads;
+
+import java.util.Collections;
+import java.util.Set;
+
+/* loaded from: classes5.dex */
+public final class zzdbo implements zzher {
+    public zzdbo(zzdbm zzdbmVar) {
+    }
+
+    @Override // com.google.android.gms.internal.ads.zzhfj, com.google.android.gms.internal.ads.zzhfi
+    public final /* synthetic */ Object zzb() {
+        Set set = Collections.EMPTY_SET;
+        zzhez.zzb(set);
+        return set;
+    }
+}

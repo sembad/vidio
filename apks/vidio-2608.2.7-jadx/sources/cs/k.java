@@ -1,0 +1,14 @@
+package cs;
+
+import cs.o;
+import kotlin.jvm.functions.Function1;
+
+/* loaded from: classes6.dex */
+public final /* synthetic */ class k implements Function1 {
+    @Override // kotlin.jvm.functions.Function1
+    public final Object invoke(Object obj) {
+        o.b bVar = (o.b) obj;
+        bVar.getClass();
+        return Boolean.valueOf(bVar.c());
+    }
+}

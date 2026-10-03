@@ -1,0 +1,11 @@
+<shape
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:innerRadiusRatio="2.5"
+    android:shape="ring"
+    android:thickness="0dp"
+    android:useLevel="false">
+
+    <stroke android:width="2dp"  android:height="2dp" android:color="@color/action_button_download_failed_color"
+        android:dashWidth="6dp"
+        android:dashGap="6dp"/>
+</shape>

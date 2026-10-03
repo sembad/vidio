@@ -1,0 +1,12 @@
+package com.google.ads.interactivemedia.v3.internal;
+
+import android.os.Bundle;
+import android.os.IInterface;
+import android.os.RemoteException;
+
+/* loaded from: classes3.dex */
+public interface zzmm extends IInterface {
+    void zze(Bundle bundle, zzmj zzmjVar) throws RemoteException;
+
+    void zzf(zzmn zzmnVar, zzmh zzmhVar) throws RemoteException;
+}

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/itemParentLayout"
+    android:layout_width="196dp"
+    android:layout_height="110dp"
+    android:layout_centerHorizontal="true"
+    android:layout_marginEnd="@dimen/horizontal_swimlane_item_end_margin"
+    android:theme="@style/Theme.MaterialComponents.DayNight"
+    app:cardCornerRadius="@dimen/tile_collection_swimlane_item_corner_radius"
+    app:cardElevation="@dimen/tile_collection_swimlane_item_card_elevation">
+
+    <ImageView
+        android:id="@+id/itemPoster"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:adjustViewBounds="true"
+        android:scaleType="fitXY"
+        android:src="@drawable/default_event_bitmap_linear_landscape"
+        tools:ignore="ContentDescription" />
+
+    <View
+        android:id="@+id/poster_gradient"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/tile_genre_poster_gradient" />
+
+    <TextView
+        android:id="@+id/itemTitle"
+        style="@style/RobotoBold"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:lineSpacingMultiplier="1.4"
+        android:textAlignment="center"
+        android:textColor="#ebebeb"
+        android:textSize="16sp"
+        android:maxLines="2"
+        android:ellipsize="end"
+        tools:text="Bahasa Malaysiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"/>
+
+
+</com.google.android.material.card.MaterialCardView>

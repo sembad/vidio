@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/home"
+        android:enabled="true"
+        android:title="Home" />
+    <item
+        android:id="@+id/catchup"
+        android:enabled="true"
+        android:title="CatchUp"
+        />
+    <item
+        android:id="@+id/boxsets"
+        android:enabled="true"
+        android:title="BoxSets" />
+    <item
+        android:id="@+id/store"
+        android:enabled="true"
+        android:title="Store" />
+    <item
+        android:id="@+id/library"
+        android:enabled="true"
+        android:title="My Library" />
+    <item
+        android:id="@+id/setting"
+        android:enabled="true"
+        android:title="Settings" />
+</menu>

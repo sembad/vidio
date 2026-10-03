@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/coordinatorLayout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/some_random_height_for_scrolling_animation_in_negative"
+    android:background="@color/app_background_color"
+    android:fitsSystemWindows="false"
+    android:visibility="invisible"
+    tools:visibility="visible">
+
+    <androidx.viewpager2.widget.ViewPager2
+        android:id="@+id/viewPager"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/some_random_height_for_scrolling_animation_in_negative"
+        android:background="@color/app_background_color"
+        app:layout_anchor="@+id/appBarLayout"
+        app:layout_anchorGravity="bottom"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        tools:contentDescription="Since View pager has negative top margin of -200dp, it's child views should have same amount of positive top padding i.e +200dp " />
+
+    <ImageView
+        android:id="@+id/takeMeToTheTopButton"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:layout_gravity="bottom|right"
+        android:layout_marginEnd="41dp"
+        android:layout_marginBottom="150dp"
+        android:background="@drawable/scroll_to_top_background"
+        android:padding="4dp"
+        android:src="@drawable/ic_scroll_to_top_new"
+        android:visibility="gone"
+        app:layout_anchorGravity="bottom|right|end" />
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent"
+        android:fitsSystemWindows="false"
+        app:layout_behavior="com.cisco.veop.client.newSeriesPage.utils.AppBarLayoutBehavior">
+
+        <com.google.android.material.appbar.CollapsingToolbarLayout
+            android:id="@+id/collapsingToolbarLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:fitsSystemWindows="true"
+            app:layout_scrollFlags="scroll|enterAlways|enterAlwaysCollapsed"
+            app:statusBarScrim="@android:color/transparent">
+
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/topScrollView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fillViewport="true"
+                android:fitsSystemWindows="true"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@android:color/transparent"
+                    android:fitsSystemWindows="true"
+                    android:paddingBottom="32dp">
+
+
+                    <androidx.constraintlayout.widget.ConstraintLayout
+                        android:id="@+id/mainPosterContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="0dp"
+                        android:layout_marginTop="84dp"
+                        android:layout_marginEnd="24dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@+id/astroSeriesPageTopPartUntilEventMetadata"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/mainPosterCardView"
+                            android:layout_width="316dp"
+                            android:layout_height="180dp"
+                            android:theme="@style/Theme.MaterialComponents.DayNight"
+                            app:cardBackgroundColor="@android:color/transparent"
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="1dp"
+                            app:layout_constraintBottom_toBottomOf="parent"
+                            app:layout_constraintEnd_toEndOf="parent"
+                            app:layout_constraintStart_toStartOf="parent"
+                            app:layout_constraintTop_toTopOf="parent">
+
+                            <ImageView
+                                android:id="@+id/mainPoster"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:adjustViewBounds="true"
+                                android:scaleType="centerCrop"
+                                tools:src="@drawable/default_event_bitmap_linear_landscape" />
+
+                        </com.google.android.material.card.MaterialCardView>
+
+
+                    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+                    <include
+                        android:id="@+id/astroSeriesPageTopPartUntilEventMetadata"
+                        layout="@layout/astro_series_page_top_part_until_event_metadata"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="24dp"
+                        android:layout_marginTop="84dp"
+                        android:layout_marginEnd="90dp"
+                        android:visibility="visible"
+                        app:layout_constraintBottom_toTopOf="@+id/astroSeriesPageTopPartFromSynopsisTillEnd"
+                        app:layout_constraintEnd_toStartOf="@+id/mainPosterContainer"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <include
+                        android:id="@+id/astroSeriesPageTopPartFromSynopsisTillEnd"
+                        layout="@layout/astro_series_page_top_part_from_synopsis_till_end"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        app:layout_constraintBottom_toTopOf="@+id/continueWatchingSeekBarView"
+                        app:layout_constraintEnd_toEndOf="@+id/astroSeriesPageTopPartUntilEventMetadata"
+                        app:layout_constraintStart_toStartOf="@+id/astroSeriesPageTopPartUntilEventMetadata"
+                        app:layout_constraintTop_toBottomOf="@+id/astroSeriesPageTopPartUntilEventMetadata" />
+
+                    <ProgressBar
+                        android:id="@+id/continueWatchingSeekBarView"
+                        style="@style/ProgressBar"
+                        android:layout_width="0dp"
+                        android:layout_height="4dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="16dp"
+                        android:indeterminate="false"
+                        android:progressBackgroundTint="#B3D8D8D8"
+                        android:progressDrawable="@drawable/custom_progress_bar"
+                        android:progressTint="#e6007d"
+                        android:visibility="visible"
+                        app:layout_constraintBottom_toTopOf="@+id/astroSeriesPageButtonsLayout"
+                        app:layout_constraintStart_toStartOf="@+id/astroSeriesPageTopPartUntilEventMetadata"
+                        app:layout_constraintTop_toBottomOf="@+id/astroSeriesPageTopPartFromSynopsisTillEnd"
+                        app:layout_constraintWidth_percent="0.32" />
+
+
+                    <include
+                        android:id="@+id/astroSeriesPageButtonsLayout"
+                        layout="@layout/astro_series_page_buttons"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="24dp"
+                        android:visibility="visible"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="@+id/astroSeriesPageTopPartUntilEventMetadata"
+                        app:layout_constraintStart_toStartOf="@+id/astroSeriesPageTopPartUntilEventMetadata"
+                        app:layout_constraintTop_toBottomOf="@+id/continueWatchingSeekBarView" />
+
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </androidx.core.widget.NestedScrollView>
+
+            <androidx.appcompat.widget.Toolbar
+                android:id="@+id/movingToolbar"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:background="@color/toolbar_background_in_expanded_state"
+                android:fitsSystemWindows="true"
+                android:minHeight="?attr/actionBarSize"
+                android:visibility="visible"
+                app:layout_collapseMode="pin">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp">
+
+                    <View
+                        android:id="@+id/clickableAreaOfBackIconOfMovingToolbar"
+                        android:layout_width="64dp"
+                        android:layout_height="match_parent"
+                        app:layout_constraintStart_toStartOf="parent" />
+
+                    <TextView
+                        android:id="@+id/backIconOfMovingToolbar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:layout_marginBottom="16dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:textColor="#ebebeb"
+                        android:textSize="24sp"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        tools:text="Back Icon" />
+
+
+                    <View
+                        android:id="@+id/clickableAreaOfSearchIconOfMovingToolbar"
+                        android:layout_width="64dp"
+                        android:layout_height="match_parent"
+                        app:layout_constraintEnd_toEndOf="parent" />
+
+
+                    <TextView
+                        android:id="@+id/searchIconOfMovingToolbar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:layout_marginEnd="16dp"
+                        android:layout_marginBottom="16dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:textColor="#ebebeb"
+                        android:textSize="24sp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        tools:text="Search Icon" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </androidx.appcompat.widget.Toolbar>
+
+
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
+
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/tabLayoutHolder"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:elevation="1dp"
+            android:tag="@string/has_transparent_background_file_as_background_currently"
+            app:layout_scrollFlags="exitUntilCollapsed">
+
+            <com.google.android.material.tabs.TabLayout
+                android:id="@+id/tabLayout"
+                android:layout_width="wrap_content"
+                android:layout_height="?attr/actionBarSize"
+                android:layout_marginStart="24dp"
+                android:background="@android:color/transparent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:tabBackground="@android:color/transparent"
+                app:tabGravity="start"
+                app:tabIndicatorColor="@android:color/transparent"
+                app:tabMode="fixed"
+                app:tabPaddingBottom="18dp"
+                app:tabPaddingTop="10dp"
+                app:tabSelectedTextColor="#ebebeb"
+                app:tabTextAppearance="@style/SeriesPageTabTextInTablets" />
+
+            <View
+                android:id="@+id/tabLayoutSeparator"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/tab_layout_separator_height"
+                android:layout_marginStart="24dp"
+                android:layout_marginEnd="24dp"
+                android:background="#474747"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tabLayout" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+
+

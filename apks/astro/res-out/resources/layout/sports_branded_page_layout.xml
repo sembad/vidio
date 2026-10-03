@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/brandingScreen"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="false">
+
+    <com.cisco.veop.client.sportsBrandedPage.recyclerViews.SmartScrollRecyclerView
+        android:id="@+id/verticalRecyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginTop="@dimen/branded_page_toolbar_height_in_negative"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:elevation="0dp"
+        android:background="@android:color/transparent"
+        android:fitsSystemWindows="false">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/branded_page_toolbar_height"
+            android:minHeight="?attr/actionBarSize"
+            android:visibility="visible"
+            app:layout_scrollFlags="scroll|enterAlways"
+            android:background="@drawable/branded_page_toolbar_background_expanded_state">
+
+            <TextView
+                android:id="@+id/toolbarBackIcon"
+                style="@style/BrandedPageToolbarBackIconStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="16dp"
+                android:gravity="center"
+                tools:text="Back Icon" />
+
+
+            <TextView
+                android:id="@+id/toolbarSearchIcon"
+                style="@style/BrandedPageToolbarSearchIconStyle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginEnd="16dp"
+                android:gravity="center"
+                tools:text="Search Icon" />
+
+        </androidx.appcompat.widget.Toolbar>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <ProgressBar
+        android:id="@+id/progressLoader"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:indeterminateTint="@android:color/white"
+        android:visibility="gone"
+        android:layout_gravity="center" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <layer-list>
+            <item android:left="10dp" android:right="10dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/fastScrollThumbColor" />
+                    <size android:width="6dp" android:height="40dp" />
+                    <stroke android:width="2dp" android:color="@color/fastScrollThumbColor" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+    <item>
+        <layer-list>
+            <item android:left="10dp" android:right="10dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/fastScrollThumbColor" />
+                    <size android:width="6dp" android:height="40dp" />
+                    <stroke android:width="2dp" android:color="@android:color/transparent" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+</selector>

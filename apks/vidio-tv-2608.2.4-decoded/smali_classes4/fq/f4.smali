@@ -1,0 +1,139 @@
+.class final Lfq/f4;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+# interfaces
+.implements Lkotlin/jvm/functions/Function0;
+
+
+# annotations
+.annotation system Ldalvik/annotation/Signature;
+    value = {
+        "Ljava/lang/Object;",
+        "Lkotlin/jvm/functions/Function0<",
+        "Lkotlin/Unit;",
+        ">;"
+    }
+.end annotation
+
+
+# instance fields
+.field final synthetic d:Lkotlin/jvm/functions/Function1;
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "Lkotlin/jvm/functions/Function1<",
+            "Ljava/lang/Integer;",
+            "Lkotlin/Unit;",
+            ">;"
+        }
+    .end annotation
+.end field
+
+.field final synthetic e:I
+
+.field final synthetic i:Lkotlin/jvm/functions/Function1;
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "Lkotlin/jvm/functions/Function1<",
+            "Ltv/o0;",
+            "Lkotlin/Unit;",
+            ">;"
+        }
+    .end annotation
+.end field
+
+.field final synthetic v:Ltv/o0;
+
+
+# direct methods
+.method constructor <init>(Lkotlin/jvm/functions/Function1;ILkotlin/jvm/functions/Function1;Ltv/o0;)V
+    .locals 0
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Lkotlin/jvm/functions/Function1<",
+            "-",
+            "Ljava/lang/Integer;",
+            "Lkotlin/Unit;",
+            ">;I",
+            "Lkotlin/jvm/functions/Function1<",
+            "-",
+            "Ltv/o0;",
+            "Lkotlin/Unit;",
+            ">;",
+            "Ltv/o0;",
+            ")V"
+        }
+    .end annotation
+
+    .line 1
+    invoke-direct {p0}, Ljava/lang/Object;-><init>()V
+
+    .line 2
+    .line 3
+    .line 4
+    iput-object p1, p0, Lfq/f4;->d:Lkotlin/jvm/functions/Function1;
+
+    .line 5
+    .line 6
+    iput p2, p0, Lfq/f4;->e:I
+
+    .line 7
+    .line 8
+    iput-object p3, p0, Lfq/f4;->i:Lkotlin/jvm/functions/Function1;
+
+    .line 9
+    .line 10
+    iput-object p4, p0, Lfq/f4;->v:Ltv/o0;
+
+    .line 11
+    .line 12
+    return-void
+.end method
+
+
+# virtual methods
+.method public final invoke()Ljava/lang/Object;
+    .locals 2
+
+    .line 1
+    iget v0, p0, Lfq/f4;->e:I
+
+    .line 2
+    .line 3
+    invoke-static {v0}, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;
+
+    .line 4
+    .line 5
+    .line 6
+    move-result-object v0
+
+    .line 7
+    iget-object v1, p0, Lfq/f4;->d:Lkotlin/jvm/functions/Function1;
+
+    .line 8
+    .line 9
+    invoke-interface {v1, v0}, Lkotlin/jvm/functions/Function1;->invoke(Ljava/lang/Object;)Ljava/lang/Object;
+
+    .line 10
+    .line 11
+    .line 12
+    iget-object v0, p0, Lfq/f4;->i:Lkotlin/jvm/functions/Function1;
+
+    .line 13
+    .line 14
+    iget-object v1, p0, Lfq/f4;->v:Ltv/o0;
+
+    .line 15
+    .line 16
+    invoke-interface {v0, v1}, Lkotlin/jvm/functions/Function1;->invoke(Ljava/lang/Object;)Ljava/lang/Object;
+
+    .line 17
+    .line 18
+    .line 19
+    sget-object v0, Lkotlin/Unit;->a:Lkotlin/Unit;
+
+    .line 20
+    .line 21
+    return-object v0
+.end method

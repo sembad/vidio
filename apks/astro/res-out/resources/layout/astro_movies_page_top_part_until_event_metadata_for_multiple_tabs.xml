@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:animateLayoutChanges="false"
+    tools:background="#0e1019">
+
+
+    <View
+        android:id="@+id/topPartGradient"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@drawable/movies_page_title_and_metadata_gradient"
+        app:layout_constraintBottom_toTopOf="@+id/moviesEventMetadataBottomBarrier"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/moviesEventTitle"
+        style="@style/MoviesPageEventTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="8dp"
+        android:textSize="24sp"
+        android:visibility="visible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/topPartGradient"
+        app:layout_constraintBottom_toTopOf="@+id/moviesEventMetadataTopBarrier"
+        tools:contentDescription="@string/visibility_warning"
+        tools:text="Game of Thrones Test Test Test Test Test Test Test Test Test Test Test" />
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/moviesEventMetadataTopBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="top"
+        app:constraint_referenced_ids="moviesEventMetadata,moviesEventParentalRatingIcon" />
+
+    <TextView
+        android:id="@+id/moviesEventMetadata"
+        style="@style/MoviesEventMetadata"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="4dp"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/moviesEventParentalRatingIcon"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/moviesEventTitle"
+        tools:text="8 Seasons | 2018 | Action, Drama | Test Test Test" />
+
+    <TextView
+        android:id="@+id/moviesEventParentalRatingIcon"
+        style="@style/RobotoBold"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:gravity="center_vertical"
+        android:includeFontPadding="false"
+        android:lineSpacingMultiplier="1.5"
+        android:textColor="#b2adaf"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/moviesEventMetadata"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/moviesEventMetadata"
+        app:layout_constraintTop_toTopOf="@+id/moviesEventMetadata"
+        app:layout_goneMarginStart="16dp"
+        app:layout_goneMarginTop="8dp"
+        tools:text="18" />
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/moviesEventMetadataBottomBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:constraint_referenced_ids="moviesEventMetadata,moviesEventParentalRatingIcon" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

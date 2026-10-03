@@ -1,0 +1,47 @@
+.class final Lm50/a$n;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+# interfaces
+.implements Lk50/o;
+
+
+# annotations
+.annotation system Ldalvik/annotation/EnclosingClass;
+    value = Lm50/a;
+.end annotation
+
+.annotation system Ldalvik/annotation/InnerClass;
+    accessFlags = 0x18
+    name = "n"
+.end annotation
+
+.annotation system Ldalvik/annotation/Signature;
+    value = {
+        "Ljava/lang/Object;",
+        "Lk50/o<",
+        "Ljava/lang/Object;",
+        "Ljava/lang/Object;",
+        ">;"
+    }
+.end annotation
+
+
+# virtual methods
+.method public final apply(Ljava/lang/Object;)Ljava/lang/Object;
+    .locals 0
+
+    .line 1
+    return-object p1
+.end method
+
+.method public final toString()Ljava/lang/String;
+    .locals 1
+
+    .line 1
+    const-string v0, "IdentityFunction"
+
+    .line 2
+    .line 3
+    return-object v0
+.end method

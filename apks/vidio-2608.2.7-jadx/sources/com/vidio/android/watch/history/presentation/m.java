@@ -1,0 +1,64 @@
+package com.vidio.android.watch.history.presentation;
+
+import androidx.compose.runtime.q;
+import java.util.List;
+import kotlin.Unit;
+import kotlin.jvm.functions.Function0;
+import kotlin.jvm.functions.Function1;
+import r1.m0;
+import v00.a3;
+import wy.m2;
+import z1.h3;
+
+/* loaded from: classes6.dex */
+public final class m implements dc0.o<b2.f, Integer, q, Integer, Unit> {
+
+    /* renamed from: c, reason: collision with root package name */
+    final /* synthetic */ List f31452c;
+
+    /* renamed from: d, reason: collision with root package name */
+    final /* synthetic */ Function1 f31453d;
+
+    public m(List list, Function1 function1) {
+        this.f31452c = list;
+        this.f31453d = function1;
+    }
+
+    @Override // dc0.o
+    public final Unit invoke(b2.f fVar, Integer num, q qVar, Integer num2) {
+        int i11;
+        b2.f fVar2 = fVar;
+        int intValue = num.intValue();
+        q qVar2 = qVar;
+        int intValue2 = num2.intValue();
+        if ((intValue2 & 6) == 0) {
+            i11 = (qVar2.J(fVar2) ? 4 : 2) | intValue2;
+        } else {
+            i11 = intValue2;
+        }
+        if ((intValue2 & 48) == 0) {
+            i11 |= qVar2.d(intValue) ? 32 : 16;
+        }
+        if (qVar2.p(i11 & 1, (i11 & 147) != 146)) {
+            a3 a3Var = (a3) this.f31452c.get(intValue);
+            qVar2.K(851286211);
+            String c11 = a3Var.c();
+            String e11 = a3Var.e();
+            String d11 = a3Var.d();
+            String a11 = a3Var.a();
+            y3.k a12 = m2.a(h3.d(y3.k.D, 1.0f), "watch_history_" + a3Var.b());
+            Function1 function1 = this.f31453d;
+            boolean J = qVar2.J(function1) | qVar2.x(a3Var);
+            Object w11 = qVar2.w();
+            if (J || w11 == q.a.a()) {
+                w11 = new k(function1, a3Var);
+                qVar2.q(w11);
+            }
+            po.o.c(c11, m0.d(a12, false, null, null, (Function0) w11, 15), e11, d11, null, a11, 0, 0, false, false, false, qVar2, 0, 65456);
+            qVar2.E();
+        } else {
+            qVar2.C();
+        }
+        return Unit.f50784a;
+    }
+}

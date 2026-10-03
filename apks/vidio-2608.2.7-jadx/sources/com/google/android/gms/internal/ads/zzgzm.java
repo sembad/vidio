@@ -1,0 +1,31 @@
+package com.google.android.gms.internal.ads;
+
+import j$.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+/* loaded from: classes5.dex */
+final class zzgzm {
+    public static final /* synthetic */ int zza = 0;
+    private static final zzgzm zzb = new zzgzm();
+    private final ConcurrentMap zzd = new ConcurrentHashMap();
+    private final zzgzw zzc = new zzgyu();
+
+    private zzgzm() {
+    }
+
+    public static zzgzm zza() {
+        return zzb;
+    }
+
+    public final zzgzv zzb(Class cls) {
+        zzgye.zzc(cls, "messageType");
+        zzgzv zzgzvVar = (zzgzv) this.zzd.get(cls);
+        if (zzgzvVar != null) {
+            return zzgzvVar;
+        }
+        zzgzv zza2 = this.zzc.zza(cls);
+        zzgye.zzc(cls, "messageType");
+        zzgzv zzgzvVar2 = (zzgzv) this.zzd.putIfAbsent(cls, zza2);
+        return zzgzvVar2 == null ? zza2 : zzgzvVar2;
+    }
+}

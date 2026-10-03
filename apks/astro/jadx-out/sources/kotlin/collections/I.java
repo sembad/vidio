@@ -1,0 +1,73 @@
+package kotlin.collections;
+
+import java.util.ListIterator;
+import java.util.NoSuchElementException;
+import w3.InterfaceC4075a;
+
+/* loaded from: classes2.dex */
+public final class I implements ListIterator, InterfaceC4075a {
+
+    /* renamed from: c, reason: collision with root package name */
+    @t4.d
+    public static final I f75418c = new I();
+
+    private I() {
+    }
+
+    public void a(Void r22) {
+        throw new UnsupportedOperationException("Operation is not supported for read-only collection");
+    }
+
+    @Override // java.util.ListIterator
+    public /* bridge */ /* synthetic */ void add(Object obj) {
+        throw new UnsupportedOperationException("Operation is not supported for read-only collection");
+    }
+
+    @Override // java.util.ListIterator, java.util.Iterator
+    @t4.d
+    /* renamed from: b, reason: merged with bridge method [inline-methods] */
+    public Void next() {
+        throw new NoSuchElementException();
+    }
+
+    @Override // java.util.ListIterator
+    @t4.d
+    /* renamed from: c, reason: merged with bridge method [inline-methods] */
+    public Void previous() {
+        throw new NoSuchElementException();
+    }
+
+    public void d(Void r22) {
+        throw new UnsupportedOperationException("Operation is not supported for read-only collection");
+    }
+
+    @Override // java.util.ListIterator, java.util.Iterator
+    public boolean hasNext() {
+        return false;
+    }
+
+    @Override // java.util.ListIterator
+    public boolean hasPrevious() {
+        return false;
+    }
+
+    @Override // java.util.ListIterator
+    public int nextIndex() {
+        return 0;
+    }
+
+    @Override // java.util.ListIterator
+    public int previousIndex() {
+        return -1;
+    }
+
+    @Override // java.util.ListIterator, java.util.Iterator
+    public void remove() {
+        throw new UnsupportedOperationException("Operation is not supported for read-only collection");
+    }
+
+    @Override // java.util.ListIterator
+    public /* bridge */ /* synthetic */ void set(Object obj) {
+        throw new UnsupportedOperationException("Operation is not supported for read-only collection");
+    }
+}

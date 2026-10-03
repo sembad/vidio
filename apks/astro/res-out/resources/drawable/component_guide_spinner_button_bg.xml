@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/guide_spinner_button_state_selected_bg_color"/>
+            <stroke android:width="@dimen/guide_spinner_border_width" android:color="@color/guide_spinner_button_border_color"/>
+        </shape>
+    </item>
+
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/guide_spinner_button_state_pressed_bg_color"/>
+            <stroke android:width="@dimen/guide_spinner_border_width" android:color="@color/guide_spinner_button_border_color"/>
+        </shape>
+    </item>
+
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/guide_spinner_button_bg_color"/>
+            <stroke android:width="@dimen/guide_spinner_border_width" android:color="@color/guide_spinner_button_border_color"/>
+        </shape>
+    </item>
+
+</selector>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:focusable="true">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:gravity="center_vertical">
+
+        <RelativeLayout
+            android:id="@+id/guide_dummy_cell_holder"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="start"
+            android:paddingStart="@dimen/guide_cell_start_padding"
+            android:paddingEnd="@dimen/guide_cell_end_padding">
+
+            <TextView
+                android:id="@+id/dummyCellTitle"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_alignParentStart="true"
+                android:layout_marginTop="@dimen/guide_cell_title_top_margin"
+                android:ellipsize="none"
+                android:fadingEdgeLength="@dimen/guide_fading_edge"
+                android:gravity="start"
+                android:includeFontPadding="false"
+                android:lineSpacingExtra="0dp"
+                android:minLines="1"
+                android:requiresFadingEdge="horizontal"
+                android:singleLine="true"
+                android:textSize="@dimen/grid_showcell_title"
+                android:visibility="visible" />
+        </RelativeLayout>
+    </FrameLayout>
+
+</RelativeLayout>

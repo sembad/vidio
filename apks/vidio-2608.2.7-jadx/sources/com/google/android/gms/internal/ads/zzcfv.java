@@ -1,0 +1,15 @@
+package com.google.android.gms.internal.ads;
+
+/* loaded from: classes5.dex */
+final class zzcfv implements Runnable {
+    final /* synthetic */ zzcfw zza;
+
+    zzcfv(zzcfw zzcfwVar) {
+        this.zza = zzcfwVar;
+    }
+
+    @Override // java.lang.Runnable
+    public final void run() {
+        super/*android.webkit.WebView*/.destroy();
+    }
+}

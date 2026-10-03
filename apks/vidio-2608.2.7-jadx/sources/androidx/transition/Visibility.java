@@ -1,0 +1,477 @@
+package androidx.transition;
+
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.content.Context;
+import android.content.res.TypedArray;
+import android.content.res.XmlResourceParser;
+import android.util.AttributeSet;
+import android.view.View;
+import android.view.ViewGroup;
+import androidx.core.view.p0;
+import androidx.transition.Transition;
+import com.vidio.android.C2367R;
+import java.util.HashMap;
+
+/* loaded from: classes.dex */
+public abstract class Visibility extends Transition {
+
+    /* renamed from: h0, reason: collision with root package name */
+    private static final String[] f12201h0 = {"android:visibility:visibility", "android:visibility:parent"};
+
+    /* renamed from: g0, reason: collision with root package name */
+    private int f12202g0;
+
+    /* loaded from: classes4.dex */
+    private static class c {
+
+        /* renamed from: a, reason: collision with root package name */
+        boolean f12214a;
+
+        /* renamed from: b, reason: collision with root package name */
+        boolean f12215b;
+
+        /* renamed from: c, reason: collision with root package name */
+        int f12216c;
+
+        /* renamed from: d, reason: collision with root package name */
+        int f12217d;
+
+        /* renamed from: e, reason: collision with root package name */
+        ViewGroup f12218e;
+
+        /* renamed from: f, reason: collision with root package name */
+        ViewGroup f12219f;
+
+        c() {
+        }
+    }
+
+    public Visibility(Context context, AttributeSet attributeSet) {
+        super(context, attributeSet);
+        this.f12202g0 = 3;
+        TypedArray obtainStyledAttributes = context.obtainStyledAttributes(attributeSet, r.f12302c);
+        int d11 = z6.i.d(obtainStyledAttributes, (XmlResourceParser) attributeSet, "transitionVisibilityMode", 0, 0);
+        obtainStyledAttributes.recycle();
+        if (d11 != 0) {
+            b0(d11);
+        }
+    }
+
+    private static void W(d0 d0Var) {
+        View view = d0Var.f12239b;
+        int visibility = view.getVisibility();
+        HashMap hashMap = d0Var.f12238a;
+        hashMap.put("android:visibility:visibility", Integer.valueOf(visibility));
+        hashMap.put("android:visibility:parent", view.getParent());
+        int[] iArr = new int[2];
+        view.getLocationOnScreen(iArr);
+        hashMap.put("android:visibility:screenLocation", iArr);
+    }
+
+    /* JADX WARN: Removed duplicated region for block: B:12:0x0059 A[ADDED_TO_REGION] */
+    /* JADX WARN: Removed duplicated region for block: B:35:0x008c  */
+    /* JADX WARN: Removed duplicated region for block: B:40:0x0097  */
+    /* JADX WARN: Removed duplicated region for block: B:7:0x0035  */
+    /*
+        Code decompiled incorrectly, please refer to instructions dump.
+        To view partially-correct add '--show-bad-code' argument
+    */
+    private static androidx.transition.Visibility.c Y(androidx.transition.d0 r8, androidx.transition.d0 r9) {
+        /*
+            androidx.transition.Visibility$c r0 = new androidx.transition.Visibility$c
+            r0.<init>()
+            r1 = 0
+            r0.f12214a = r1
+            r0.f12215b = r1
+            r2 = 0
+            r3 = -1
+            java.lang.String r4 = "android:visibility:parent"
+            java.lang.String r5 = "android:visibility:visibility"
+            if (r8 == 0) goto L2f
+            java.util.HashMap r6 = r8.f12238a
+            boolean r7 = r6.containsKey(r5)
+            if (r7 == 0) goto L2f
+            java.lang.Object r7 = r6.get(r5)
+            java.lang.Integer r7 = (java.lang.Integer) r7
+            int r7 = r7.intValue()
+            r0.f12216c = r7
+            java.lang.Object r6 = r6.get(r4)
+            android.view.ViewGroup r6 = (android.view.ViewGroup) r6
+            r0.f12218e = r6
+            goto L33
+        L2f:
+            r0.f12216c = r3
+            r0.f12218e = r2
+        L33:
+            if (r9 == 0) goto L52
+            java.util.HashMap r6 = r9.f12238a
+            boolean r7 = r6.containsKey(r5)
+            if (r7 == 0) goto L52
+            java.lang.Object r2 = r6.get(r5)
+            java.lang.Integer r2 = (java.lang.Integer) r2
+            int r2 = r2.intValue()
+            r0.f12217d = r2
+            java.lang.Object r2 = r6.get(r4)
+            android.view.ViewGroup r2 = (android.view.ViewGroup) r2
+            r0.f12219f = r2
+            goto L56
+        L52:
+            r0.f12217d = r3
+            r0.f12219f = r2
+        L56:
+            r2 = 1
+            if (r8 == 0) goto L8a
+            if (r9 == 0) goto L8a
+            int r8 = r0.f12216c
+            int r9 = r0.f12217d
+            if (r8 != r9) goto L68
+            android.view.ViewGroup r3 = r0.f12218e
+            android.view.ViewGroup r4 = r0.f12219f
+            if (r3 != r4) goto L68
+            goto L9f
+        L68:
+            if (r8 == r9) goto L78
+            if (r8 != 0) goto L71
+            r0.f12215b = r1
+            r0.f12214a = r2
+            return r0
+        L71:
+            if (r9 != 0) goto L9f
+            r0.f12215b = r2
+            r0.f12214a = r2
+            return r0
+        L78:
+            android.view.ViewGroup r8 = r0.f12219f
+            if (r8 != 0) goto L81
+            r0.f12215b = r1
+            r0.f12214a = r2
+            return r0
+        L81:
+            android.view.ViewGroup r8 = r0.f12218e
+            if (r8 != 0) goto L9f
+            r0.f12215b = r2
+            r0.f12214a = r2
+            return r0
+        L8a:
+            if (r8 != 0) goto L95
+            int r8 = r0.f12217d
+            if (r8 != 0) goto L95
+            r0.f12215b = r2
+            r0.f12214a = r2
+            return r0
+        L95:
+            if (r9 != 0) goto L9f
+            int r8 = r0.f12216c
+            if (r8 != 0) goto L9f
+            r0.f12215b = r1
+            r0.f12214a = r2
+        L9f:
+            return r0
+        */
+        throw new UnsupportedOperationException("Method not decompiled: androidx.transition.Visibility.Y(androidx.transition.d0, androidx.transition.d0):androidx.transition.Visibility$c");
+    }
+
+    @Override // androidx.transition.Transition
+    public final boolean C(d0 d0Var, d0 d0Var2) {
+        if (d0Var == null && d0Var2 == null) {
+            return false;
+        }
+        if (d0Var != null && d0Var2 != null && d0Var2.f12238a.containsKey("android:visibility:visibility") != d0Var.f12238a.containsKey("android:visibility:visibility")) {
+            return false;
+        }
+        c Y = Y(d0Var, d0Var2);
+        if (Y.f12214a) {
+            return Y.f12216c == 0 || Y.f12217d == 0;
+        }
+        return false;
+    }
+
+    public final int X() {
+        return this.f12202g0;
+    }
+
+    public Animator Z(ViewGroup viewGroup, View view, d0 d0Var, d0 d0Var2) {
+        return null;
+    }
+
+    public Animator a0(ViewGroup viewGroup, View view, d0 d0Var, d0 d0Var2) {
+        return null;
+    }
+
+    public final void b0(int i11) {
+        if ((i11 & (-4)) == 0) {
+            this.f12202g0 = i11;
+        } else {
+            f4.v.a("Only MODE_IN and MODE_OUT flags are allowed");
+        }
+    }
+
+    @Override // androidx.transition.Transition
+    public void g(d0 d0Var) {
+        W(d0Var);
+    }
+
+    @Override // androidx.transition.Transition
+    public void j(d0 d0Var) {
+        W(d0Var);
+    }
+
+    /* JADX WARN: Code restructure failed: missing block: B:15:0x0038, code lost:
+    
+        if (Y(t(r1, false), z(r1, false)).f12214a != false) goto L77;
+     */
+    /* JADX WARN: Removed duplicated region for block: B:53:0x0083  */
+    @Override // androidx.transition.Transition
+    /*
+        Code decompiled incorrectly, please refer to instructions dump.
+        To view partially-correct add '--show-bad-code' argument
+    */
+    public final android.animation.Animator n(android.view.ViewGroup r13, androidx.transition.d0 r14, androidx.transition.d0 r15) {
+        /*
+            Method dump skipped, instructions count: 319
+            To view this dump add '--comments-level debug' option
+        */
+        throw new UnsupportedOperationException("Method not decompiled: androidx.transition.Visibility.n(android.view.ViewGroup, androidx.transition.d0, androidx.transition.d0):android.animation.Animator");
+    }
+
+    @Override // androidx.transition.Transition
+    public final String[] y() {
+        return f12201h0;
+    }
+
+    /* loaded from: classes4.dex */
+    private class b extends AnimatorListenerAdapter implements Transition.f {
+
+        /* renamed from: a, reason: collision with root package name */
+        private final ViewGroup f12209a;
+
+        /* renamed from: b, reason: collision with root package name */
+        private final View f12210b;
+
+        /* renamed from: c, reason: collision with root package name */
+        private final View f12211c;
+
+        /* renamed from: d, reason: collision with root package name */
+        private boolean f12212d = true;
+
+        b(ViewGroup viewGroup, View view, View view2) {
+            this.f12209a = viewGroup;
+            this.f12210b = view;
+            this.f12211c = view2;
+        }
+
+        private void a() {
+            this.f12211c.setTag(C2367R.id.save_overlay_view, null);
+            this.f12209a.getOverlay().remove(this.f12210b);
+            this.f12212d = false;
+        }
+
+        @Override // androidx.transition.Transition.f
+        public final void c(Transition transition) {
+        }
+
+        @Override // androidx.transition.Transition.f
+        public final void e(Transition transition) {
+            transition.J(this);
+        }
+
+        @Override // androidx.transition.Transition.f
+        public final void g(Transition transition) {
+            throw null;
+        }
+
+        @Override // androidx.transition.Transition.f
+        public final void i(Transition transition) {
+            transition.J(this);
+        }
+
+        @Override // androidx.transition.Transition.f
+        public final void k(Transition transition) {
+            if (this.f12212d) {
+                a();
+            }
+        }
+
+        @Override // android.animation.Animator.AnimatorListener
+        public final void onAnimationEnd(Animator animator, boolean z11) {
+            if (z11) {
+                return;
+            }
+            a();
+        }
+
+        @Override // android.animation.AnimatorListenerAdapter, android.animation.Animator.AnimatorPauseListener
+        public final void onAnimationPause(Animator animator) {
+            this.f12209a.getOverlay().remove(this.f12210b);
+        }
+
+        @Override // android.animation.AnimatorListenerAdapter, android.animation.Animator.AnimatorPauseListener
+        public final void onAnimationResume(Animator animator) {
+            View view = this.f12210b;
+            if (view.getParent() == null) {
+                p0.b(view, this.f12209a);
+            } else {
+                Visibility.this.cancel();
+            }
+        }
+
+        @Override // android.animation.Animator.AnimatorListener
+        public final void onAnimationStart(Animator animator, boolean z11) {
+            if (z11) {
+                View view = this.f12211c;
+                View view2 = this.f12210b;
+                view.setTag(C2367R.id.save_overlay_view, view2);
+                p0.b(view2, this.f12209a);
+                this.f12212d = true;
+            }
+        }
+
+        @Override // android.animation.AnimatorListenerAdapter, android.animation.Animator.AnimatorListener
+        public final void onAnimationEnd(Animator animator) {
+            a();
+        }
+
+        @Override // androidx.transition.Transition.f
+        public final void b() {
+        }
+
+        @Override // androidx.transition.Transition.f
+        public final void f() {
+        }
+    }
+
+    /* loaded from: classes4.dex */
+    private static class a extends AnimatorListenerAdapter implements Transition.f {
+
+        /* renamed from: a, reason: collision with root package name */
+        private final View f12203a;
+
+        /* renamed from: b, reason: collision with root package name */
+        private final int f12204b;
+
+        /* renamed from: c, reason: collision with root package name */
+        private final ViewGroup f12205c;
+
+        /* renamed from: e, reason: collision with root package name */
+        private boolean f12207e;
+
+        /* renamed from: f, reason: collision with root package name */
+        boolean f12208f = false;
+
+        /* renamed from: d, reason: collision with root package name */
+        private final boolean f12206d = true;
+
+        a(View view, int i11) {
+            this.f12203a = view;
+            this.f12204b = i11;
+            this.f12205c = (ViewGroup) view.getParent();
+            a(true);
+        }
+
+        private void a(boolean z11) {
+            ViewGroup viewGroup;
+            if (!this.f12206d || this.f12207e == z11 || (viewGroup = this.f12205c) == null) {
+                return;
+            }
+            this.f12207e = z11;
+            h0.b(viewGroup, z11);
+        }
+
+        @Override // androidx.transition.Transition.f
+        public final void b() {
+            a(false);
+            if (this.f12208f) {
+                return;
+            }
+            i0.g(this.f12203a, this.f12204b);
+        }
+
+        @Override // androidx.transition.Transition.f
+        public final void c(Transition transition) {
+        }
+
+        @Override // androidx.transition.Transition.f
+        public final void e(Transition transition) {
+            transition.J(this);
+        }
+
+        @Override // androidx.transition.Transition.f
+        public final void f() {
+            a(true);
+            if (this.f12208f) {
+                return;
+            }
+            i0.g(this.f12203a, 0);
+        }
+
+        @Override // androidx.transition.Transition.f
+        public final void g(Transition transition) {
+            throw null;
+        }
+
+        @Override // androidx.transition.Transition.f
+        public final void i(Transition transition) {
+            transition.J(this);
+        }
+
+        @Override // androidx.transition.Transition.f
+        public final void k(Transition transition) {
+        }
+
+        @Override // android.animation.AnimatorListenerAdapter, android.animation.Animator.AnimatorListener
+        public final void onAnimationCancel(Animator animator) {
+            this.f12208f = true;
+        }
+
+        @Override // android.animation.Animator.AnimatorListener
+        public final void onAnimationEnd(Animator animator, boolean z11) {
+            if (z11) {
+                return;
+            }
+            if (!this.f12208f) {
+                i0.g(this.f12203a, this.f12204b);
+                ViewGroup viewGroup = this.f12205c;
+                if (viewGroup != null) {
+                    viewGroup.invalidate();
+                }
+            }
+            a(false);
+        }
+
+        @Override // android.animation.AnimatorListenerAdapter, android.animation.Animator.AnimatorListener
+        public final void onAnimationRepeat(Animator animator) {
+        }
+
+        @Override // android.animation.Animator.AnimatorListener
+        public final void onAnimationStart(Animator animator, boolean z11) {
+            if (z11) {
+                i0.g(this.f12203a, 0);
+                ViewGroup viewGroup = this.f12205c;
+                if (viewGroup != null) {
+                    viewGroup.invalidate();
+                }
+            }
+        }
+
+        @Override // android.animation.AnimatorListenerAdapter, android.animation.Animator.AnimatorListener
+        public final void onAnimationStart(Animator animator) {
+        }
+
+        @Override // android.animation.AnimatorListenerAdapter, android.animation.Animator.AnimatorListener
+        public final void onAnimationEnd(Animator animator) {
+            if (!this.f12208f) {
+                i0.g(this.f12203a, this.f12204b);
+                ViewGroup viewGroup = this.f12205c;
+                if (viewGroup != null) {
+                    viewGroup.invalidate();
+                }
+            }
+            a(false);
+        }
+    }
+
+    public Visibility() {
+        this.f12202g0 = 3;
+    }
+}

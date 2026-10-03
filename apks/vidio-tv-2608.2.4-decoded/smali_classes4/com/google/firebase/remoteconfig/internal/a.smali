@@ -1,0 +1,62 @@
+.class public final synthetic Lcom/google/firebase/remoteconfig/internal/a;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+# interfaces
+.implements Lvh/c;
+
+
+# instance fields
+.field public final synthetic d:Lcom/google/firebase/remoteconfig/internal/b;
+
+.field public final synthetic e:Lcom/google/android/gms/tasks/Task;
+
+.field public final synthetic i:Lcom/google/android/gms/tasks/Task;
+
+.field public final synthetic v:J
+
+.field public final synthetic w:I
+
+
+# direct methods
+.method public synthetic constructor <init>(Lcom/google/firebase/remoteconfig/internal/b;Lcom/google/android/gms/tasks/Task;Lcom/google/android/gms/tasks/Task;JI)V
+    .locals 0
+
+    .line 1
+    invoke-direct {p0}, Ljava/lang/Object;-><init>()V
+
+    iput-object p1, p0, Lcom/google/firebase/remoteconfig/internal/a;->d:Lcom/google/firebase/remoteconfig/internal/b;
+
+    iput-object p2, p0, Lcom/google/firebase/remoteconfig/internal/a;->e:Lcom/google/android/gms/tasks/Task;
+
+    iput-object p3, p0, Lcom/google/firebase/remoteconfig/internal/a;->i:Lcom/google/android/gms/tasks/Task;
+
+    iput-wide p4, p0, Lcom/google/firebase/remoteconfig/internal/a;->v:J
+
+    iput p6, p0, Lcom/google/firebase/remoteconfig/internal/a;->w:I
+
+    return-void
+.end method
+
+
+# virtual methods
+.method public final then(Lcom/google/android/gms/tasks/Task;)Ljava/lang/Object;
+    .locals 6
+
+    .line 1
+    iget-wide v3, p0, Lcom/google/firebase/remoteconfig/internal/a;->v:J
+
+    iget v5, p0, Lcom/google/firebase/remoteconfig/internal/a;->w:I
+
+    iget-object v0, p0, Lcom/google/firebase/remoteconfig/internal/a;->d:Lcom/google/firebase/remoteconfig/internal/b;
+
+    iget-object v1, p0, Lcom/google/firebase/remoteconfig/internal/a;->e:Lcom/google/android/gms/tasks/Task;
+
+    iget-object v2, p0, Lcom/google/firebase/remoteconfig/internal/a;->i:Lcom/google/android/gms/tasks/Task;
+
+    invoke-static/range {v0 .. v5}, Lcom/google/firebase/remoteconfig/internal/b;->a(Lcom/google/firebase/remoteconfig/internal/b;Lcom/google/android/gms/tasks/Task;Lcom/google/android/gms/tasks/Task;JI)Lcom/google/android/gms/tasks/Task;
+
+    move-result-object p1
+
+    return-object p1
+.end method

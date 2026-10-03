@@ -1,0 +1,26 @@
+package com.google.android.gms.internal.measurement;
+
+/* loaded from: classes3.dex */
+public final class H6 implements InterfaceC2508v3 {
+
+    /* renamed from: A, reason: collision with root package name */
+    private static final H6 f60398A = new H6();
+
+    /* renamed from: c, reason: collision with root package name */
+    private final InterfaceC2508v3 f60399c = A3.a(A3.b(new J6()));
+
+    public static boolean b() {
+        f60398A.zza().zza();
+        return true;
+    }
+
+    public static boolean c() {
+        return f60398A.zza().b();
+    }
+
+    @Override // com.google.android.gms.internal.measurement.InterfaceC2508v3
+    /* renamed from: a, reason: merged with bridge method [inline-methods] */
+    public final I6 zza() {
+        return (I6) this.f60399c.zza();
+    }
+}

@@ -1,0 +1,58 @@
+package yq;
+
+import androidx.compose.runtime.q;
+import g0.e;
+import java.util.List;
+import kotlin.Unit;
+import kotlin.jvm.functions.Function1;
+
+/* loaded from: classes4.dex */
+public final class m0 implements v60.o<i0.e, Integer, androidx.compose.runtime.q, Integer, Unit> {
+
+    /* renamed from: d, reason: collision with root package name */
+    final /* synthetic */ List f70575d;
+
+    /* renamed from: e, reason: collision with root package name */
+    final /* synthetic */ Function1 f70576e;
+
+    public m0(List list, Function1 function1) {
+        this.f70575d = list;
+        this.f70576e = function1;
+    }
+
+    @Override // v60.o
+    public final Unit i(i0.e eVar, Integer num, androidx.compose.runtime.q qVar, Integer num2) {
+        int i11;
+        i0.e eVar2 = eVar;
+        int intValue = num.intValue();
+        androidx.compose.runtime.q qVar2 = qVar;
+        int intValue2 = num2.intValue();
+        if ((intValue2 & 6) == 0) {
+            i11 = (qVar2.J(eVar2) ? 4 : 2) | intValue2;
+        } else {
+            i11 = intValue2;
+        }
+        if ((intValue2 & 48) == 0) {
+            i11 |= qVar2.d(intValue) ? 32 : 16;
+        }
+        if (qVar2.o(i11 & 1, (i11 & 147) != 146)) {
+            List list = (List) this.f70575d.get(intValue);
+            qVar2.K(2057589709);
+            a2.k d11 = g0.f3.d(a2.k.f467a, 1.0f);
+            e.g e11 = g0.e.e();
+            boolean x11 = qVar2.x(list);
+            Function1 function1 = this.f70576e;
+            boolean J = x11 | qVar2.J(function1);
+            Object w11 = qVar2.w();
+            if (J || w11 == q.a.a()) {
+                w11 = new k0(list, function1);
+                qVar2.p(w11);
+            }
+            i0.d.b(d11, null, null, e11, null, null, false, null, (Function1) w11, qVar2, 24582, 494);
+            qVar2.E();
+        } else {
+            qVar2.C();
+        }
+        return Unit.f44610a;
+    }
+}

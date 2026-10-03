@@ -1,0 +1,14 @@
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<EditText xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="1dp"
+    android:layout_height="1dp"
+    android:cursorVisible="true"
+    android:inputType="text"
+    android:text=""
+    android:textCursorDrawable="@drawable/edit_text_cursor" >
+
+</EditText>

@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider android:description="@string/cta_schedule" android:minWidth="250.0dip" android:minHeight="150.0dip" android:updatePeriodMillis="0" android:initialLayout="@layout/glance_default_loading_layout" android:previewImage="@drawable/sport_event_widget_preview" android:resizeMode="horizontal|vertical" android:widgetCategory="home_screen"
+  xmlns:android="http://schemas.android.com/apk/res/android" />

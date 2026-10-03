@@ -1,0 +1,101 @@
+package com.amazonaws.services.kms.model.transform;
+
+import androidx.constraintlayout.widget.c;
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.DefaultRequest;
+import com.amazonaws.Request;
+import com.amazonaws.http.HttpMethodName;
+import com.amazonaws.services.kms.model.CreateGrantRequest;
+import com.amazonaws.services.kms.model.GrantConstraints;
+import com.amazonaws.transform.Marshaller;
+import com.amazonaws.util.StringInputStream;
+import com.amazonaws.util.StringUtils;
+import com.amazonaws.util.json.AwsJsonWriter;
+import com.amazonaws.util.json.JsonUtils;
+import com.clevertap.android.sdk.E;
+import java.io.StringWriter;
+import java.util.List;
+
+/* loaded from: classes.dex */
+public class CreateGrantRequestMarshaller implements Marshaller<Request<CreateGrantRequest>, CreateGrantRequest> {
+    @Override // com.amazonaws.transform.Marshaller
+    /* renamed from: b, reason: merged with bridge method [inline-methods] */
+    public Request<CreateGrantRequest> a(CreateGrantRequest createGrantRequest) {
+        if (createGrantRequest != null) {
+            DefaultRequest defaultRequest = new DefaultRequest(createGrantRequest, "AWSKMS");
+            defaultRequest.j("X-Amz-Target", "TrentService.CreateGrant");
+            defaultRequest.u(HttpMethodName.POST);
+            defaultRequest.c("/");
+            try {
+                StringWriter stringWriter = new StringWriter();
+                AwsJsonWriter b5 = JsonUtils.b(stringWriter);
+                b5.a();
+                if (createGrantRequest.A() != null) {
+                    String A4 = createGrantRequest.A();
+                    b5.j("KeyId");
+                    b5.value(A4);
+                }
+                if (createGrantRequest.z() != null) {
+                    String z5 = createGrantRequest.z();
+                    b5.j("GranteePrincipal");
+                    b5.value(z5);
+                }
+                if (createGrantRequest.D() != null) {
+                    String D4 = createGrantRequest.D();
+                    b5.j("RetiringPrincipal");
+                    b5.value(D4);
+                }
+                if (createGrantRequest.C() != null) {
+                    List<String> C4 = createGrantRequest.C();
+                    b5.j("Operations");
+                    b5.c();
+                    for (String str : C4) {
+                        if (str != null) {
+                            b5.value(str);
+                        }
+                    }
+                    b5.b();
+                }
+                if (createGrantRequest.w() != null) {
+                    GrantConstraints w5 = createGrantRequest.w();
+                    b5.j(c.f11536A);
+                    GrantConstraintsJsonMarshaller.a().b(w5, b5);
+                }
+                if (createGrantRequest.y() != null) {
+                    List<String> y5 = createGrantRequest.y();
+                    b5.j("GrantTokens");
+                    b5.c();
+                    for (String str2 : y5) {
+                        if (str2 != null) {
+                            b5.value(str2);
+                        }
+                    }
+                    b5.b();
+                }
+                if (createGrantRequest.B() != null) {
+                    String B4 = createGrantRequest.B();
+                    b5.j(E.L4);
+                    b5.value(B4);
+                }
+                if (createGrantRequest.x() != null) {
+                    Boolean x5 = createGrantRequest.x();
+                    b5.j("DryRun");
+                    b5.i(x5.booleanValue());
+                }
+                b5.d();
+                b5.close();
+                String stringWriter2 = stringWriter.toString();
+                byte[] bytes = stringWriter2.getBytes(StringUtils.f24575b);
+                defaultRequest.a(new StringInputStream(stringWriter2));
+                defaultRequest.j("Content-Length", Integer.toString(bytes.length));
+                if (!defaultRequest.getHeaders().containsKey("Content-Type")) {
+                    defaultRequest.j("Content-Type", "application/x-amz-json-1.1");
+                }
+                return defaultRequest;
+            } catch (Throwable th) {
+                throw new AmazonClientException("Unable to marshall request to JSON: " + th.getMessage(), th);
+            }
+        }
+        throw new AmazonClientException("Invalid argument passed to marshall(CreateGrantRequest)");
+    }
+}

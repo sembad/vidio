@@ -1,0 +1,9 @@
+package ck;
+
+/* loaded from: classes.dex */
+public abstract class a {
+    protected a() {
+    }
+
+    protected abstract Throwable a();
+}

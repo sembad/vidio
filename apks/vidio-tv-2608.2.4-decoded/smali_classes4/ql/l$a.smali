@@ -1,0 +1,73 @@
+.class final Lql/l$a;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+# interfaces
+.implements Lql/w;
+
+
+# annotations
+.annotation system Ldalvik/annotation/EnclosingMethod;
+    value = Lql/l;->b(Lvl/a;)Lql/w;
+.end annotation
+
+.annotation system Ldalvik/annotation/InnerClass;
+    accessFlags = 0x0
+    name = null
+.end annotation
+
+.annotation system Ldalvik/annotation/Signature;
+    value = {
+        "Ljava/lang/Object;",
+        "Lql/w<",
+        "TT;>;"
+    }
+.end annotation
+
+
+# instance fields
+.field final synthetic a:Lol/j;
+
+
+# direct methods
+.method constructor <init>(Lol/j;Ljava/lang/reflect/Type;)V
+    .locals 0
+
+    .line 1
+    invoke-direct {p0}, Ljava/lang/Object;-><init>()V
+
+    .line 2
+    .line 3
+    .line 4
+    iput-object p1, p0, Lql/l$a;->a:Lol/j;
+
+    .line 5
+    .line 6
+    return-void
+.end method
+
+
+# virtual methods
+.method public final a()Ljava/lang/Object;
+    .locals 1
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "()TT;"
+        }
+    .end annotation
+
+    .line 1
+    iget-object v0, p0, Lql/l$a;->a:Lol/j;
+
+    .line 2
+    .line 3
+    invoke-interface {v0}, Lol/j;->a()Ljava/lang/Object;
+
+    .line 4
+    .line 5
+    .line 6
+    move-result-object v0
+
+    .line 7
+    return-object v0
+.end method

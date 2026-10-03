@@ -1,0 +1,82 @@
+.class public final synthetic Lgy/l;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+# interfaces
+.implements Lkotlin/jvm/functions/Function2;
+
+
+# virtual methods
+.method public final invoke(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+    .locals 2
+
+    .line 1
+    check-cast p1, Lcc0/a;
+
+    .line 2
+    .line 3
+    check-cast p2, Lzb0/a;
+
+    .line 4
+    .line 5
+    invoke-virtual {p1}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 6
+    .line 7
+    .line 8
+    invoke-virtual {p2}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 9
+    .line 10
+    .line 11
+    new-instance p2, Lfy/v;
+
+    .line 12
+    .line 13
+    const-class v0, Lcz/g;
+
+    .line 14
+    .line 15
+    invoke-static {v0}, Lkotlin/jvm/internal/q0;->b(Ljava/lang/Class;)Lkotlin/reflect/d;
+
+    .line 16
+    .line 17
+    .line 18
+    move-result-object v0
+
+    .line 19
+    const/4 v1, 0x0
+
+    .line 20
+    invoke-virtual {p1, v0, v1, v1}, Lcc0/a;->a(Lkotlin/reflect/d;Lac0/a;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+
+    .line 21
+    .line 22
+    .line 23
+    move-result-object p1
+
+    .line 24
+    check-cast p1, Lcz/g;
+
+    .line 25
+    .line 26
+    new-instance v0, Lcz/c;
+
+    .line 27
+    .line 28
+    const-string v1, "MESSAGING_CAMPAIGN_SHOWN"
+
+    .line 29
+    .line 30
+    invoke-direct {v0, v1}, Lcz/c;-><init>(Ljava/lang/String;)V
+
+    .line 31
+    .line 32
+    .line 33
+    invoke-direct {p2, p1, v0}, Lfy/v;-><init>(Lcz/g;Lcz/c;)V
+
+    .line 34
+    .line 35
+    .line 36
+    return-object p2
+.end method

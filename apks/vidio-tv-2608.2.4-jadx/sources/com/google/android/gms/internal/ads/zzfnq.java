@@ -1,0 +1,10 @@
+package com.google.android.gms.internal.ads;
+
+import android.content.Context;
+
+/* loaded from: classes3.dex */
+public final class zzfnq {
+    public static zzasy zza(Context context, String str, String str2) {
+        return new zzfnp(context, str, str2).zzb(5000);
+    }
+}

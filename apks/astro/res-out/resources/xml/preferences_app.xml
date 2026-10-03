@@ -1,0 +1,161 @@
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <PreferenceCategory android:title="App Settings" >
+        <CheckBoxPreference
+            android:defaultValue="@bool/pref_app_enable_emergency_alert_system"
+            android:key="@string/pref_name_app_enable_emergency_alert_system"
+            android:summary="Enable EmergencyAlertSystem (EAS)"
+            android:title="Enable EmergencyAlertSystem (EAS)" />
+
+        <CheckBoxPreference
+            android:defaultValue="@bool/pref_app_use_version_check"
+            android:key="@string/pref_name_app_use_version_check"
+            android:summary="use version check"
+            android:title="use version check" />
+        <CheckBoxPreference
+			android:defaultValue="@bool/pref_app_logging_use_file_logger"
+            android:key="@string/pref_name_app_logging_use_file_logger"
+            android:summary="save logs to file"
+            android:title="save logs to file" />
+
+        <EditTextPreference
+            android:defaultValue="@string/pref_app_default_language"
+            android:dialogTitle="Default Language"
+            android:key="@string/pref_name_app_default_language"
+            android:summary="Default Language"
+            android:title="Default Language" />
+
+        <ListPreference
+            android:defaultValue="@string/pref_app_subtitle_type"
+            android:entries="@array/subtitle_type"
+            android:entryValues="@array/subtitle_type"
+            android:key="@string/pref_name_app_subtitle_type"
+            android:summary="Subtitle Type"
+            android:title="Subtitle Type" />
+
+        <ListPreference
+            android:defaultValue="@string/pref_app_service_discovery_type"
+            android:entries="@array/service_discovery_type"
+            android:entryValues="@array/service_discovery_type"
+            android:key="@string/pref_name_app_service_discovery_type"
+            android:summary="Create Service Discovery type"
+            android:title="Create Service Discovery type" />
+
+        <EditTextPreference
+            android:defaultValue="@string/pref_app_service_discovery_params"
+            android:dialogTitle="Service Discovery params"
+            android:key="@string/pref_name_app_service_discovery_params"
+            android:summary="Service Discovery params"
+            android:title="Service Discovery params" />
+
+        <ListPreference
+            android:defaultValue="@string/pref_app_user_sign_in_type"
+            android:entries="@array/user_sign_in_type"
+            android:entryValues="@array/user_sign_in_type"
+            android:key="@string/pref_name_app_user_sign_in_type"
+            android:summary="Select User Sign-In type"
+            android:title="Select User Sign-In type" />
+
+        <EditTextPreference
+            android:defaultValue="@string/pref_app_user_sign_in_params"
+            android:dialogTitle="User Sign-In params"
+            android:key="@string/pref_name_app_user_sign_in_params"
+            android:summary="User Sign-In params"
+            android:title="User Sign-In params" />
+
+        <ListPreference
+            android:defaultValue="@string/pref_app_client_authentication_type"
+            android:entries="@array/client_authentication_type"
+            android:entryValues="@array/client_authentication_type"
+            android:key="@string/pref_name_app_client_authentication_type"
+            android:summary="Select Client Authentication type"
+            android:title="Select Client Authentication type" />
+
+        <EditTextPreference
+            android:defaultValue="@string/pref_app_client_authentication_params"
+            android:dialogTitle="Client Authentication params"
+            android:key="@string/pref_name_app_client_authentication_params"
+            android:summary="Client Authentication params"
+            android:title="Client Authentication params" />
+        <EditTextPreference
+            android:defaultValue="@string/pref_app_server_version"
+            android:dialogTitle="AppServer version"
+            android:key="@string/pref_name_app_server_version"
+            android:summary="AppServer version"
+            android:title="AppServer version" />
+        <EditTextPreference
+            android:defaultValue="@string/pref_app_server_base_url"
+            android:dialogTitle="AppServer base URL"
+            android:key="@string/pref_name_app_server_base_url"
+            android:summary="AppServer base URL"
+            android:title="AppServer base URL" />
+        <EditTextPreference
+            android:defaultValue="@string/pref_app_server_xmpp_jid"
+            android:dialogTitle="AppServer XMPP JID"
+            android:key="@string/pref_name_app_server_xmpp_jid"
+            android:summary="AppServer XMPP JID"
+            android:title="AppServer XMPP JID" />
+        <EditTextPreference
+            android:defaultValue="@string/pref_version_check_server_base_url"
+            android:dialogTitle="Server"
+            android:key="@string/pref_name_version_check_server_base_url"
+            android:summary="Version Check Server"
+            android:title="Version Check Server" />
+        <EditTextPreference
+            android:defaultValue="@string/pref_app_network_avalability_check_host"
+            android:dialogTitle="Network Availability Check Host"
+            android:key="@string/pref_name_app_network_avalability_check_host"
+            android:summary="Network Availability Check Host"
+            android:title="Network Availability Check Host" />
+
+        <EditTextPreference
+            android:defaultValue="@string/pref_token_generator_host"
+            android:dialogTitle="TokenGenerator host"
+            android:key="@string/pref_name_token_generator_host"
+            android:summary="TokenGenerator host"
+            android:title="TokenGenerator host" />
+
+        <EditTextPreference
+            android:defaultValue="@string/pref_token_generator_port"
+            android:dialogTitle="TokenGenerator port"
+            android:key="@string/pref_name_token_generator_port"
+            android:summary="TokenGenerator port"
+            android:title="TokenGenerator port" />
+        <EditTextPreference
+            android:defaultValue="@string/pref_token_generator_path"
+            android:dialogTitle="TokenGenerator Path (for Activation)"
+            android:key="@string/pref_name_token_generator_path"
+            android:summary="TokenGenerator Path (for Activation)"
+            android:title="TokenGenerator Path (for Activation)" />
+        <CheckBoxPreference
+            android:defaultValue="@bool/pref_app_quirks_disable_remote_ui_config"
+            android:key="@string/pref_name_app_disable_remote_ui"
+            android:summary="If checked disable loading UI from remote"
+            android:title="Disable Remote UI" />
+        <CheckBoxPreference
+            android:defaultValue="@bool/pref_name_app_enable_OMD_Server"
+            android:key="@string/pref_name_app_enable_OMD_Server"
+            android:summary="If checked enable OMD Server"
+            android:title="Display Image and play the video from OMD server" />
+        <EditTextPreference
+            android:dialogTitle="Base url to display Playback and image"
+            android:key="@string/pref_name_app_base_url_display_playback_images"
+            android:summary="Base url to display Playback and image"
+            android:title="Base url to display Playback and image" />
+        <EditTextPreference
+            android:dialogTitle="OMD Server url to display Playback and image"
+            android:key="@string/pref_name_app_OMD_Server_url"
+            android:summary="OMD Server url to display Playback and image"
+            android:title="OMD Server url to display Playback and image" />
+        <EditTextPreference
+            android:dialogTitle="Clear Content Playback url"
+            android:key="@string/pref_name_app_clear_content_playback_url"
+            android:summary="Clear Content Playback url"
+            android:title="Clear Content Playback url" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

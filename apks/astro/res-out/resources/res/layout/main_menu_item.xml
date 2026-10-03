@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:gravity="center_vertical"
+    android:orientation="vertical"
+    android:id="@+id/mainMenuItem"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent">
+    <com.cisco.veop.sf_ui.ui_configuration.UiConfigTextView
+        android:gravity="center_vertical"
+        android:id="@+id/mainMenuItemTitle"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:includeFontPadding="true"
+        android:lineSpacingExtra="0dp"
+        android:lineSpacingMultiplier="0"
+        android:layout_marginStart="0dp"/>
+    <ImageView
+        android:id="@+id/mainMenuItemImage"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+</LinearLayout>

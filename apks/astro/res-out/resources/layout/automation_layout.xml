@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/automation_hidden_layout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/automation_version"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#00000000" />
+
+    <TextView
+        android:id="@+id/screen_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#00000000" />
+
+    <TextView
+        android:id="@+id/guest_mode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#00000000" />
+
+    <TextView
+        android:id="@+id/spinner_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#00000000" />
+
+    <TextView
+        android:id="@+id/ui_configuration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#00000000" />
+
+    <TextView
+        android:id="@+id/ia_configuration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#00000000" />
+
+    <TextView
+        android:id="@+id/ui_language"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#00000000" />
+
+    <TextView
+        android:id="@+id/player_content_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#00000000" />
+
+    <TextView
+        android:id="@+id/player_source"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#00000000" />
+
+    <TextView
+        android:id="@+id/player_audio_language"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#00000000" />
+
+    <TextView
+        android:id="@+id/player_subtitle_language"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#00000000" />
+
+    <TextView
+        android:id="@+id/player_state"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#00000000" />
+
+    <TextView
+        android:id="@+id/player_state_history"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#00000000" />
+
+    <TextView
+        android:id="@+id/overlay_screen_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#00000000" />
+</LinearLayout>

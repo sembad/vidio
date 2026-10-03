@@ -1,0 +1,16 @@
+package com.facebook.ads.redexgen.X;
+
+/* renamed from: com.facebook.ads.redexgen.X.72, reason: invalid class name */
+/* loaded from: assets/audience_network.dex */
+public final class AnonymousClass72 extends PP {
+    public int A00;
+
+    public AnonymousClass72(int i11, int i12) {
+        super(i11);
+        this.A00 = i12;
+    }
+
+    public final int A01() {
+        return this.A00;
+    }
+}

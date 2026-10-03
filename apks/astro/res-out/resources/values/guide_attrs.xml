@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<resources>
+    <!--Color values for Guide-->
+    <color name="tv_guide_filter_widget_bg_black_codgrey_color">#1d1d1d</color>
+    <color name="tv_guide_filter_button_focused_color">#80ffffff</color>
+    <color name="tv_guide_filter_button_selected_color">#80ffffff</color>
+    <color name="tv_guide_filter_button_bg_default_color">#02ffffff</color>
+    <color name="tv_guide_filter_button_bg_black_mineshaft_color">#343434</color>
+    <color name="tv_guide_filter_button_stroke_color">#80ffffff</color>
+    <color name="tv_guide_filter_button_focused_text_color">#000000</color>
+    <color name="tv_guide_filter_button_default_text_color">#80ffffff</color>
+    <color name="tv_guide_filter_button_white_text_color">#ffffff</color>
+    <color name="component_horizontal_quick_action_menu_content_background">#2d2d2d</color>
+
+    <!--Dimen values for Guide-->
+    <dimen name="guide_cell_icon_margin">7dp</dimen>
+    <dimen name="vertical_guide_channel_cell_width">105dp</dimen>
+    <dimen name="vertical_guide_channel_cell_height">70dp</dimen>
+    <dimen name="horizontal_guide_channel_cell_width">148dp</dimen>
+    <dimen name="grid_timeslot_row_height_tv">30dp</dimen>
+    <dimen name="tv_guide_channel_cell_height">70dp</dimen>
+    <dimen name="grid_showcell_margin">1dp</dimen>
+    <dimen name="grid_showcell_title">14sp</dimen>
+    <dimen name="grid_channelcell_channel_number_text_size">12sp</dimen>
+    <dimen name="grid_showcell_subtext_size">11sp</dimen>
+    <dimen name="guide_cell_padding">6dp</dimen>
+    <dimen name="grid_timeslot_textsize">14dp</dimen>
+    <dimen name="grid_progress_box_radi">5dp</dimen>
+    <dimen name="grid_timeslot_row_height">30dp</dimen>
+    <dimen name="guide_component_status_icon_text_size">12sp</dimen>
+    <dimen name="vertical_grid_day_of_week_textsize">14dp</dimen>
+    <dimen name="vertical_guide_channel_logo_height" format="float" type="dimen">26dp</dimen>
+    <dimen name="vertical_guide_channel_logo_width" format="float" type="dimen">69dp</dimen>
+    <dimen name="guide_cell_start_padding" format="float" type="dimen">11dp</dimen>
+    <dimen name="guide_cell_end_padding" format="float" type="dimen">0dp</dimen>
+    <dimen name="vertical_component_guide_grid_width" format="float" type="dimen">107dp</dimen>
+    <dimen name="vertical_guide_channel_cell_image_container_width">70dp</dimen>
+    <dimen name="vertical_guide_channel_cell_icons_container_width">25dp</dimen>
+    <dimen name="horizontal_guide_channel_logo_height">27dp</dimen>
+    <dimen name="horizontal_guide_channel_logo_width">80dp</dimen>
+    <dimen name="vertical_guide_timeslot_start_margin">10dp</dimen>
+    <dimen name="guide_cell_title_top_margin">18dp</dimen>
+    <dimen name="guide_cell_primary_info_top_margin">7dp</dimen>
+    <dimen name="grid_start_margin_from_nav_bar">54dp</dimen>
+    <dimen name="vertical_guide_channel_options_margin">10dp</dimen>
+    <dimen name="vertical_guide_channel_options_text_size">20sp</dimen>
+    <dimen name="catchup_grid_header_text_margin_right">8dp</dimen>
+    <dimen name="future_grid_header_text_margin_left">6dp</dimen>
+
+    <dimen name="component_custom_drop_down_default_width">180dp</dimen>
+    <dimen name="component_custom_drop_down_default_height">265dp</dimen>
+    <dimen name="component_custom_drop_down_default_padding_top">15dp</dimen>
+    <dimen name="component_custom_drop_down_default_padding_bottom">15dp</dimen>
+    <dimen name="component_custom_drop_down_item_width">165dp</dimen>
+    <dimen name="component_custom_drop_down_item_height">26dp</dimen>
+    <dimen name="component_custom_drop_down_item_margin_left">8dp</dimen>
+    <dimen name="component_custom_drop_down_item_margin_right">8dp</dimen>
+    <dimen name="component_custom_drop_down_item_margin_top">15dp</dimen>
+    <dimen name="component_custom_drop_down_item_margin_bottom">15dp</dimen>
+    <dimen name="component_horizontal_quick_action_menu_container_width">391dp</dimen>
+    <dimen name="component_horizontal_quick_action_menu_content_start_margin">20dp</dimen>
+    <dimen name="component_horizontal_quick_action_menu_channel_logo_width">102dp</dimen>
+    <dimen name="component_horizontal_quick_action_menu_channel_logo_height">34dp</dimen>
+    <dimen name="component_horizontal_quick_action_menu_content_top_margin">10dp</dimen>
+    <dimen name="component_horizontal_quick_action_menu_title_height">33dp</dimen>
+    <dimen name="component_horizontal_quick_action_menu_top_small_margin">5dp</dimen>
+    <dimen name="component_horizontal_quick_action_menu_default_start_margin">10dp</dimen>
+    <dimen name="component_horizontal_quick_action_menu_primary_info_height">16dp</dimen>
+    <dimen name="component_horizontal_quick_action_menu_large_margin">10dp</dimen>
+    <dimen name="component_horizontal_quick_action_menu_event_synopsis_width">304dp</dimen>
+    <dimen name="component_horizontal_quick_action_menu_event_synopsis_max_height">90dp</dimen>
+    <dimen name="component_horizontal_quick_action_menu_action_row_top_margin">20dp</dimen>
+    <dimen name="horizontal_guide_channel_cell_side_bar_end_margin">10dp</dimen>
+    <dimen name="horizontal_guide_channel_cell_logo_margin_start">10dp</dimen>
+    <dimen name="vertical_guide_channel_cell_logo_margin_start">7dp</dimen>
+    <dimen name="vertical_guide_channel_cell_logo_margin_end">7dp</dimen>
+    <dimen name="horizontal_guide_channel_cell_logo_margin_end">6dp</dimen>
+    <dimen name="component_horizontal_quick_action_menu_progress_bar_height">3dp</dimen>
+    <dimen name="component_horizontal_future_grid_start_margin">48dp</dimen>
+    <dimen name="guide_fading_edge">20dp</dimen>
+
+    <integer name="guide_channel_name_font_size">14</integer>
+    <integer name="guide_channel_number_margin_top">11</integer>
+    <dimen name="guide_channel_number_height">24dp</dimen>
+    <dimen name="guide_channel_fav_icon_margin_top">3dp</dimen>
+    <dimen name="guide_time_slot_cell_gap">2dp</dimen>
+    <integer name="horizontal_guide_channel_cell_number_margin_top">16</integer>
+
+    <!--CustomView attributes-->
+    <declare-styleable name="ComponentVerticalGuideFilterButton">
+        <attr name="kfont" format="string" />
+        <attr name="ktext" format="string" />
+        <attr name="kbuttonType" format="enum">
+            <enum name="normal" value="0" />
+            <enum name="ghost" value="1" />
+        </attr>
+        <attr name="kstroke" format="boolean" />
+        <attr name="ktopLeftRadius" format="dimension" />
+        <attr name="ktopRightRadius" format="dimension" />
+        <attr name="kbottomLeftRadius" format="dimension" />
+        <attr name="kbottomRightRadius" format="dimension" />
+    </declare-styleable>
+</resources>

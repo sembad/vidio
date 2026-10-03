@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- dummy network security file to avoid crash on non ssl pinning tenants -->
+    <base-config cleartextTrafficPermitted="true"/>
+</network-security-config>

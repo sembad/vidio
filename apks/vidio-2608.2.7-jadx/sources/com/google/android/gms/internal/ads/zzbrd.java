@@ -1,0 +1,41 @@
+package com.google.android.gms.internal.ads;
+
+import android.os.Bundle;
+import android.os.IInterface;
+import android.os.RemoteException;
+import com.google.android.gms.ads.internal.client.s2;
+
+/* loaded from: classes5.dex */
+public interface zzbrd extends IInterface {
+    s2 zze() throws RemoteException;
+
+    zzbrs zzf() throws RemoteException;
+
+    zzbrs zzg() throws RemoteException;
+
+    void zzh(com.google.android.gms.dynamic.a aVar, String str, Bundle bundle, Bundle bundle2, com.google.android.gms.ads.internal.client.zzs zzsVar, zzbrg zzbrgVar) throws RemoteException;
+
+    void zzi(String str, String str2, com.google.android.gms.ads.internal.client.zzm zzmVar, com.google.android.gms.dynamic.a aVar, zzbqo zzbqoVar, zzbpk zzbpkVar) throws RemoteException;
+
+    void zzj(String str, String str2, com.google.android.gms.ads.internal.client.zzm zzmVar, com.google.android.gms.dynamic.a aVar, zzbqr zzbqrVar, zzbpk zzbpkVar, com.google.android.gms.ads.internal.client.zzs zzsVar) throws RemoteException;
+
+    void zzk(String str, String str2, com.google.android.gms.ads.internal.client.zzm zzmVar, com.google.android.gms.dynamic.a aVar, zzbqr zzbqrVar, zzbpk zzbpkVar, com.google.android.gms.ads.internal.client.zzs zzsVar) throws RemoteException;
+
+    void zzl(String str, String str2, com.google.android.gms.ads.internal.client.zzm zzmVar, com.google.android.gms.dynamic.a aVar, zzbqu zzbquVar, zzbpk zzbpkVar) throws RemoteException;
+
+    void zzm(String str, String str2, com.google.android.gms.ads.internal.client.zzm zzmVar, com.google.android.gms.dynamic.a aVar, zzbqx zzbqxVar, zzbpk zzbpkVar) throws RemoteException;
+
+    void zzn(String str, String str2, com.google.android.gms.ads.internal.client.zzm zzmVar, com.google.android.gms.dynamic.a aVar, zzbqx zzbqxVar, zzbpk zzbpkVar, zzbfl zzbflVar) throws RemoteException;
+
+    void zzo(String str, String str2, com.google.android.gms.ads.internal.client.zzm zzmVar, com.google.android.gms.dynamic.a aVar, zzbra zzbraVar, zzbpk zzbpkVar) throws RemoteException;
+
+    void zzp(String str, String str2, com.google.android.gms.ads.internal.client.zzm zzmVar, com.google.android.gms.dynamic.a aVar, zzbra zzbraVar, zzbpk zzbpkVar) throws RemoteException;
+
+    void zzq(String str) throws RemoteException;
+
+    boolean zzr(com.google.android.gms.dynamic.a aVar) throws RemoteException;
+
+    boolean zzs(com.google.android.gms.dynamic.a aVar) throws RemoteException;
+
+    boolean zzt(com.google.android.gms.dynamic.a aVar) throws RemoteException;
+}

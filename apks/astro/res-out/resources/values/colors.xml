@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<resources>
+    <color name="fastScrollThumbColor">#FFFFFFFF</color>
+    <color name="switch_activated_color">#4CD964</color>
+    <color name="switch_foreground_color">#FFFFFF</color>
+    <color name="pin_pop_up_input_background_color_tab">#90EBEBEB</color>
+    <color name="pin_pop_up_input_background_color">#FFFFFFFF</color>
+
+    <color name="action_button_download_failed_color">#f7b500</color>
+    <color name="icon_button_download_failed_color">#80EBEBEB</color>
+    <color name="action_button_download_progress_spinner_fg_color">#ffffff</color>
+    <color name="action_button_download_progress_spinner_bg_color">#19ffffff</color>
+    <color name="action_button_download_queued_color">#ebebeb</color>
+
+    <color name="on_selected_bottom_sheet_item_color">#ebebeb</color>
+    <color name="bottom_sheet_item_color">#80ebebeb</color>
+    <!--Guide-->
+    <color name="guide_dropdown_bg_color">#161927</color>
+    <color name="guide_spinner_button_bg_color">#1A0e1019</color>
+    <color name="guide_spinner_button_border_color">#4debebeb</color>
+    <color name="guide_spinner_button_state_selected_bg_color">#80161927</color>
+    <color name="guide_spinner_button_state_pressed_bg_color">#80161927</color>
+    <color name="guide_arrow_down_icon_color">#ebebeb</color>
+    <color name="guide_dropdown_tooltip_triangle_color">#161927</color>
+    <color name="guide_dropdown_item_text_color">#ebebeb</color>
+    <!-- Hamburger -->
+    <color name="hamburger_text">#B3EBEBEB</color>
+    <color name="hamburger_text_state_selected">#FFFFFF</color>
+    <color name="hamburger_text_state_focused">#FFFFFF</color>
+    <color name="hamburger_text_state_pressed">#FFFFFF</color>
+    <color name="hamburger_header_background">#282828</color>
+    
+    <!--Labels-->
+    <color name="live_label_backgroud">#FF0000</color>
+    <color name="live_label_text_color">#ebebeb</color>
+    <color name="expiring_soon_background_color">#e6ebebeb</color>
+    <color name="expiring_soon_text_color">#010414</color>
+    <color name="free_label_background_color">#e6ebebeb</color>
+    <color name="free_label_text_color">#010414</color>
+    <color name="rent_background_color">#e6ebebeb</color>
+    <color name="rent_text_color">#010414</color>
+    <color name="subscribe_background_color">#e6ebebeb</color>
+    <color name="subscribe_text_color">#010414</color>
+    <color name="last_chance_background_color">#e6ebebeb</color>
+    <color name="last_chance_text_color">#010414</color>
+    <color name="new_label_start_gradient">#ffe6007d</color>
+    <color name="new_label_end_gradient">#ffa02b90</color>
+    <color name="new_label_text_color">#ebebeb</color>
+    <color name="new_series_label_text_color">#EBEBEB</color>
+
+    <!-- Tile_Type1 -->
+    <color name="tile_progress_bar_background">#6f6e6e</color>
+    <color name="tile_progress_bar_foreground">#ebebeb</color>
+    <color name="profile_selected_color">#FFFFFF</color>
+    <color name="hero_banner_shadow_color">#80000000</color>
+
+    <color name="progress_bg_color">#d8d8d8</color>
+    <color name="progress_fill_start_color">#e84e0f</color>
+    <color name="progress_end_start_color">#e6007d</color>
+    <color name="grid_poster_mask_color">#0000001A</color>
+    <color name="tile_grid_meta_data_title_color">#ebebeb</color>
+    <color name="tile_third_line_metadata_color">#d8d8d8</color>
+
+    <!--    Collection Swimlane-->
+    <color name="tile_item_first_line_metadata_text_color">#ebebeb</color>
+    <color name="tile_item_second_line_metadata_text_color">#b2adaf</color>
+    <color name="collection_swimlane_title_color">#ebebeb</color>
+    <color name="coll_swim_see_all_text_color">#ebebeb</color>
+    <color name="collection_swimlane_title_shadow_color">#000000</color>
+    <color name="collection_swimlane_item_title_shadow_color">#000000</color>
+
+    <color name="show_more_text_reddish_color">#e6007d</color>
+    <color name="show_more_text_yellowish_color">#e84e0f</color>
+    <color name="shimmer_placeholder_color">#803e4551</color>
+    <color name="new_series_page_bg_color">#0e1019</color>
+    <color name="toolbar_background_in_expanded_state">@color/app_background_color</color>
+    <color name="toolbar_background_in_non_expanded_state">#E6000000</color>
+    <color name="toolbar_background_in_non_expanded_state_two_shades_lighter">#73000000</color>
+    <color name="toolbar_background_in_non_expanded_state_one_shade_lighter">#8f000000</color>
+
+    <color name="new_movies_page_bg_color">#0e1019</color>
+    <color name="new_movies_page_translucent_overlay">#cc0e1019</color>
+    <color name="new_movies_page_translucent_overlay_darker_shade">#e60e1019</color>
+
+    <color name="show_more_text_color_for_episode">#ffe84e0f</color>
+    <color name="show_more_show_less_color">#ffe84e0f</color>
+
+    <!--Color for Cercular Progress bar-->
+    <color name="progress_bar_circular_color">#d8d8d8</color>
+
+    <!--Search Result Screen-->
+    <color name="search_tab_selected_bg">#5e5e6a</color>
+    
+    <array name="show_more_text_multi_color_left_to_right_gradient">
+        <item>@color/show_more_text_reddish_color</item>
+        <item>@color/show_more_text_yellowish_color</item>
+    </array>
+
+    <color name="app_background_color">#000000</color>
+    <color name="dialog_background_color">#E6000000</color>
+
+    <color name="branded_swimlane_item_background_color">#423A3E</color>
+
+</resources>

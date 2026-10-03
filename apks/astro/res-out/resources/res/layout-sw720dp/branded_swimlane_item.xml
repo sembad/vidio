@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/itemParentView"
+    android:layout_width="300dp"
+    android:layout_height="200dp"
+    android:foreground="@drawable/ripple_animation"
+    android:layout_marginEnd="8dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="10dp">
+    <ImageView
+        android:id="@+id/itemPoster"
+        android:background="@color/branded_swimlane_item_background_color"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY"/>
+    <TextView
+        android:gravity="center"
+        android:layout_gravity="center_vertical"
+        android:id="@+id/itemTitle"
+        android:background="@color/branded_swimlane_item_background_color"
+        android:visibility="gone"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        style="@style/BrandedSwimLaneItemTitleStyle"/>
+    <TextView
+        android:textColor="#ffffff"
+        android:gravity="bottom"
+        android:layout_gravity="bottom"
+        android:id="@+id/itemImageSize"
+        android:background="@color/branded_swimlane_item_background_color"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        style="@style/BrandedSwimLaneItemTitleStyle"/>
+</androidx.cardview.widget.CardView>

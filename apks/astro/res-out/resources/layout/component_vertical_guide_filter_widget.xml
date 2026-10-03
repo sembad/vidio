@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="#E6000000"
+    android:focusableInTouchMode="true"
+    android:focusable="true"
+    android:clickable="true"
+    android:id="@+id/tv_guide_filter_widget"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="444dp"
+        android:layout_alignParentBottom="true">
+
+        <ImageView
+            android:id="@+id/tv_guide_filter_widget_close_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:focusable="true"
+            android:clickable="true"
+            android:focusableInTouchMode="true"
+            android:background="@drawable/tv_guide_filter_widget_close_icon"
+            android:layout_alignParentEnd="true"
+            android:layout_margin="5dp"
+            tools:ignore="ContentDescription" />
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@+id/tv_guide_filter_widget_close_icon"
+            android:background="@drawable/tv_guide_filter_widget_background">
+        </FrameLayout>
+
+        <RelativeLayout
+            android:id="@+id/tv_guide_filter_widget_tab_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:padding="1dp"
+            android:layout_marginTop="13dp"
+            android:layout_marginLeft="8dp"
+            android:layout_marginRight="8dp"
+            android:background="@drawable/tv_guide_filter_widget_tabs_selector"
+            android:layout_below="@+id/tv_guide_filter_widget_close_icon">
+
+            <com.cisco.veop.client.widgets.guide.composites.vertical.ComponentVerticalGuideFilterButton
+                android:id="@+id/tv_guide_filter_tab_channels"
+                android:layout_width="119dp"
+                android:layout_height="42dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:textSize="17sp"
+                app:kbuttonType="ghost"
+                app:ktopLeftRadius="25dp"
+                app:kbottomLeftRadius="25dp"
+                app:kstroke="false"
+                app:ktext="@string/DIC_GUIDE_CHANNELS"/>
+
+            <View
+                android:id="@+id/tv_guide_filter_tab_line_separator_one"
+                android:layout_width="1dp"
+                android:layout_height="42dp"
+                android:layout_toEndOf="@id/tv_guide_filter_tab_channels"
+                android:background="@color/tv_guide_filter_button_stroke_color"
+                android:clickable="false"
+                android:focusable="false"
+                android:focusableInTouchMode="false"/>
+
+            <com.cisco.veop.client.widgets.guide.composites.vertical.ComponentVerticalGuideFilterButton
+                android:id="@+id/tv_guide_filter_tab_date"
+                android:layout_width="119dp"
+                android:layout_height="42dp"
+                android:layout_toEndOf="@+id/tv_guide_filter_tab_line_separator_one"
+                android:clickable="true"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:textSize="17sp"
+                app:kbuttonType="ghost"
+                app:kstroke="false"
+                app:ktext="@string/DIC_GUIDE_FILTER_DATE"/>
+
+            <View
+                android:id="@+id/tv_guide_filter_tab_line_separator_two"
+                android:layout_width="1dp"
+                android:layout_height="42dp"
+                android:layout_toEndOf="@id/tv_guide_filter_tab_date"
+                android:background="@color/tv_guide_filter_button_stroke_color"
+                android:clickable="false"
+                android:focusable="false"
+                android:focusableInTouchMode="false"/>
+
+            <com.cisco.veop.client.widgets.guide.composites.vertical.ComponentVerticalGuideFilterButton
+                android:id="@+id/tv_guide_filter_tab_time"
+                android:layout_width="119dp"
+                android:layout_height="42dp"
+                android:layout_toEndOf="@+id/tv_guide_filter_tab_line_separator_two"
+                android:clickable="true"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:textSize="17sp"
+                app:kbuttonType="ghost"
+                app:ktopRightRadius="25dp"
+                app:kbottomRightRadius="25dp"
+                app:kstroke="false"
+                app:ktext="@string/DIC_GUIDE_FILTER_TIME"/>
+
+        </RelativeLayout>
+
+        <ViewFlipper
+            android:id="@+id/tv_guide_filter_view_flipper"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tv_guide_filter_widget_tab_container"
+            android:layout_above="@+id/tv_guide_filter_widget_bottom_container"
+            android:layout_centerVertical="true"
+            android:layout_centerHorizontal="true">
+
+            <GridView
+                android:id="@+id/tv_guide_filter_channels_grid"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:layout_marginRight="5dp"
+                android:layout_marginBottom="5dp"
+                android:layout_marginLeft="5dp"
+                android:numColumns="3"
+                android:horizontalSpacing="6dp"
+                android:verticalSpacing="6dp"
+                android:descendantFocusability="beforeDescendants"
+                android:clickable="true"
+                android:focusable="true"
+                android:focusableInTouchMode="true">
+            </GridView>
+
+            <DatePicker
+                android:id="@+id/tv_guide_filter_date_picker"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:layout_marginRight="5dp"
+                android:layout_marginBottom="5dp"
+                android:layout_marginLeft="5dp"
+                android:endYear="2100"
+                android:startYear="1900"
+                android:calendarViewShown="false"/>
+
+            <com.cisco.veop.client.widgets.guide.composites.tv.TVGuideFilterTimePicker
+                android:id="@+id/tv_guide_filter_time_picker"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:layout_marginRight="5dp"
+                android:layout_marginBottom="5dp"
+                android:layout_marginLeft="5dp"
+                android:timePickerMode="spinner"/>
+        </ViewFlipper>
+
+        <RelativeLayout
+            android:id="@+id/tv_guide_filter_widget_bottom_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_alignParentBottom="true"
+            android:layout_margin="1dp">
+
+            <com.cisco.veop.client.widgets.guide.composites.vertical.ComponentVerticalGuideFilterButton
+                android:id="@+id/tv_guide_filter_button_apply"
+                android:layout_width="186dp"
+                android:layout_height="50dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:layout_margin="2dp"
+                android:textSize="17sp"
+                app:kbuttonType="normal"
+                app:ktext="@string/DIC_GUIDE_FILTER_APPLY"/>
+
+            <com.cisco.veop.client.widgets.guide.composites.vertical.ComponentVerticalGuideFilterButton
+                android:id="@+id/tv_guide_filter_button_cancel"
+                android:layout_width="186dp"
+                android:layout_height="50dp"
+                android:layout_toEndOf="@+id/tv_guide_filter_button_apply"
+                android:clickable="true"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:layout_margin="2dp"
+                android:textSize="17sp"
+                app:kbuttonType="normal"
+                app:ktext="@string/DIC_GUIDE_FILTER_RESET"/>
+
+         </RelativeLayout>
+
+    </RelativeLayout>
+
+</RelativeLayout>

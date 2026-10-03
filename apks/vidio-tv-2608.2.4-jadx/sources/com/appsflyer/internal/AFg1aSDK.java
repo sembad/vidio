@@ -1,0 +1,16 @@
+package com.appsflyer.internal;
+
+/* loaded from: classes3.dex */
+public interface AFg1aSDK {
+    void AFAdRevenueData();
+
+    void component2();
+
+    void getCurrencyIso4217Code();
+
+    void getMediationNetwork();
+
+    void getMonetizationNetwork();
+
+    void getRevenue();
+}

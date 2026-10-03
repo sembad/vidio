@@ -1,0 +1,20 @@
+package com.facebook.ads.redexgen.X;
+
+import android.view.View;
+import android.widget.RelativeLayout;
+
+/* renamed from: com.facebook.ads.redexgen.X.Lj, reason: case insensitive filesystem */
+/* loaded from: assets/audience_network.dex */
+public interface InterfaceC1902Lj {
+    void A3I(View view, int i11, RelativeLayout.LayoutParams layoutParams);
+
+    void A3J(View view, RelativeLayout.LayoutParams layoutParams);
+
+    void A3t(String str);
+
+    void A3u(String str, C8T c8t);
+
+    void A8y(String str, C1V c1v);
+
+    void AAR(int i11);
+}

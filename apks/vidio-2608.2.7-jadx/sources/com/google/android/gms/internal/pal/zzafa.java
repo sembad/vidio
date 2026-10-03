@@ -1,0 +1,72 @@
+package com.google.android.gms.internal.pal;
+
+import f4.s;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+/* loaded from: classes5.dex */
+final class zzafa implements Iterator {
+    final /* synthetic */ zzafe zza;
+    private int zzb = -1;
+    private boolean zzc;
+    private Iterator zzd;
+
+    private final Iterator zza() {
+        Map map;
+        if (this.zzd == null) {
+            map = this.zza.zzc;
+            this.zzd = map.entrySet().iterator();
+        }
+        return this.zzd;
+    }
+
+    @Override // java.util.Iterator
+    public final boolean hasNext() {
+        List list;
+        Map map;
+        int i11 = this.zzb + 1;
+        list = this.zza.zzb;
+        if (i11 < list.size()) {
+            return true;
+        }
+        map = this.zza.zzc;
+        return !map.isEmpty() && zza().hasNext();
+    }
+
+    @Override // java.util.Iterator
+    public final /* bridge */ /* synthetic */ Object next() {
+        List list;
+        List list2;
+        this.zzc = true;
+        int i11 = this.zzb + 1;
+        this.zzb = i11;
+        list = this.zza.zzb;
+        if (i11 >= list.size()) {
+            return (Map.Entry) zza().next();
+        }
+        list2 = this.zza.zzb;
+        return (Map.Entry) list2.get(this.zzb);
+    }
+
+    @Override // java.util.Iterator
+    public final void remove() {
+        List list;
+        if (!this.zzc) {
+            s.a("remove() was called before next()");
+            return;
+        }
+        this.zzc = false;
+        this.zza.zzn();
+        int i11 = this.zzb;
+        list = this.zza.zzb;
+        if (i11 >= list.size()) {
+            zza().remove();
+            return;
+        }
+        zzafe zzafeVar = this.zza;
+        int i12 = this.zzb;
+        this.zzb = i12 - 1;
+        zzafeVar.zzl(i12);
+    }
+}

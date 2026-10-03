@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="#B3000000"
+    android:clickable="true"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
+
+    <ListView
+        android:id="@+id/verticalGuideChannelOptionsList"
+        android:layout_width="match_parent"
+        android:divider="@android:color/black"
+        android:dividerHeight="1dp"
+        android:background="@drawable/vertical_guide_channel_options_list_bg"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/vertical_guide_channel_options_margin"
+        android:layout_marginEnd="@dimen/vertical_guide_channel_options_margin"
+        android:layout_marginBottom="@dimen/vertical_guide_channel_options_margin"
+        android:drawSelectorOnTop="false"
+        android:listSelector="@android:color/transparent"
+        android:layout_above="@+id/verticalGuideChannelOptionsCancelButton" />
+
+    <Button
+        android:id="@+id/verticalGuideChannelOptionsCancelButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/vertical_guide_channel_options_list_bg"
+        android:layout_marginStart="@dimen/vertical_guide_channel_options_margin"
+        android:layout_marginEnd="@dimen/vertical_guide_channel_options_margin"
+        android:layout_marginBottom="@dimen/vertical_guide_channel_options_margin"
+        android:layout_alignParentBottom="true"
+        android:textAlignment="center"/>
+
+</RelativeLayout>

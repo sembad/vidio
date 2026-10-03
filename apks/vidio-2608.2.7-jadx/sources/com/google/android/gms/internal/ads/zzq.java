@@ -1,0 +1,27 @@
+package com.google.android.gms.internal.ads;
+
+/* loaded from: classes5.dex */
+public final class zzq {
+    public final int zza = 0;
+    public final int zzb = 0;
+    public final int zzc = 0;
+    public final String zzd = null;
+
+    static {
+        Integer.toString(0, 36);
+        Integer.toString(1, 36);
+        Integer.toString(2, 36);
+        Integer.toString(3, 36);
+    }
+
+    /* synthetic */ zzq(zzo zzoVar, zzp zzpVar) {
+    }
+
+    public final boolean equals(Object obj) {
+        return this == obj || (obj instanceof zzq);
+    }
+
+    public final int hashCode() {
+        return 15699857;
+    }
+}

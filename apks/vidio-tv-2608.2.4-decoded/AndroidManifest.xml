@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:compileSdkVersion="36" android:compileSdkVersionCodename="16" android:requiredSplitTypes="base__abi,base__density" android:splitTypes="" package="com.vidio.android.tv" platformBuildVersionCode="36" platformBuildVersionName="16">
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
+    <uses-feature android:name="android.software.leanback" android:required="true"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+    <uses-permission android:name="com.android.providers.tv.permission.READ_EPG_DATA"/>
+    <uses-permission android:name="com.android.providers.tv.permission.WRITE_EPG_DATA"/>
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE"/>
+    <uses-permission android:name="com.myrepid.tv.permission.ACCESS_MAC"/>
+    <uses-feature android:name="android.hardware.microphone" android:required="false"/>
+    <queries>
+        <package android:name="com.nomaden.id"/>
+        <package android:name="com.nomaden.h"/>
+        <package android:name="com.giga.tv"/>
+        <package android:name="com.nomaden.smarttv.DeviceInfoService"/>
+        <package android:name="com.sai.iptv"/>
+        <package android:name="tv.settings.aidl"/>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="http"/>
+        </intent>
+        <package android:name="com.google.android.gms.policy_cast_dynamite"/>
+        <package android:name="com.android.vending"/>
+        <package android:name="com.google.android.engage.verifyapp"/>
+        <intent>
+            <action android:name="com.android.vending.billing.InAppBillingService.BIND"/>
+        </intent>
+        <intent>
+            <action android:name="com.google.android.apps.play.billingtestcompanion.BillingOverrideService.BIND"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="https"/>
+        </intent>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.INSERT"/>
+            <data android:mimeType="vnd.android.cursor.dir/event"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="sms"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL"/>
+            <data android:path="tel:"/>
+        </intent>
+        <intent>
+            <action android:name="com.appsflyer.referrer.INSTALL_PROVIDER"/>
+        </intent>
+        <package android:name="com.facebook.katana"/>
+        <package android:name="com.instagram.android"/>
+        <package android:name="com.facebook.lite"/>
+        <package android:name="com.samsung.android.mapsagent"/>
+    </queries>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION"/>
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID"/>
+    <uses-permission android:name="android.permission.AD_SERVICES_CONFIG"/>
+    <uses-permission android:name="com.android.vending.BILLING"/>
+    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE"/>
+    <uses-permission android:name="android.permission.ACCESS_ADSERVICES_TOPICS"/>
+    <uses-permission android:name="com.samsung.android.mapsagent.permission.READ_APP_INFO"/>
+    <uses-permission android:name="com.huawei.appmarket.service.commondata.permission.GET_COMMON_DATA"/>
+    <uses-permission android:name="com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE"/>
+    <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <uses-permission android:name="android.permission.USE_FINGERPRINT"/>
+    <permission android:name="com.vidio.android.tv.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" android:protectionLevel="signature"/>
+    <uses-permission android:name="com.vidio.android.tv.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"/>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <application android:allowBackup="false" android:appComponentFactory="androidx.core.app.CoreComponentFactory" android:banner="@mipmap/ic_tv_banner" android:dataExtractionRules="@xml/appsflyer_data_extraction_rules" android:extractNativeLibs="false" android:fullBackupContent="@xml/appsflyer_backup_rules" android:icon="@mipmap/ic_tv_launcher" android:label="@string/app_name" android:largeHeap="true" android:name="com.vidio.android.tv.TvApplication" android:networkSecurityConfig="@xml/network_security_config" android:roundIcon="@mipmap/ic_tv_launcher_rounded" android:supportsRtl="false" android:theme="@style/AppTheme">
+        <meta-data android:name="com.google.android.engage.service.ENV" android:value="PRODUCTION"/>
+        <meta-data android:name="io.fabric.ApiKey" android:value="5424c164e3b1750792b684079f83d68906ea788b"/>
+        <activity android:exported="false" android:name="com.vidio.android.tv.hiddenfeature.DeviceInformationActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:exported="false" android:name="com.vidio.android.tv.debug.BlockerTestingActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:exported="false" android:name="com.vidio.android.tv.login.SuggestSSOActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:exported="false" android:name="com.vidio.android.tv.webview.TvReactWebViewActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:exported="false" android:name="com.vidio.android.tv.section.SectionDetailActivity" android:theme="@style/NoTitle"/>
+        <activity android:exported="false" android:name="com.vidio.android.tv.payment.gpb_launcher.GpbLauncherActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:exported="true" android:name="com.vidio.android.tv.splashscreen.SplashScreenActivity" android:theme="@style/SplashTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"/>
+                <data android:scheme="http"/>
+                <data android:host="vidio.com"/>
+                <data android:host="www.vidio.com"/>
+                <data android:host="m.vidio.com"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="vidio"/>
+            </intent-filter>
+        </activity>
+        <activity android:exported="true" android:name="com.vidio.android.tv.payment.SelectProductDurationActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:exported="true" android:name="com.vidio.android.tv.payment.TermsAndConditionActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:exported="true" android:name="com.vidio.android.tv.payment.FirstMediaStopSubscriptionBannerActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:exported="true" android:name="com.vidio.android.tv.main.MainActivity" android:theme="@style/NoTitle"/>
+        <activity android:exported="false" android:name="com.vidio.android.tv.webview.InAppCampaignWebViewActivity" android:theme="@style/Theme.OverlayTransparent"/>
+        <activity android:name="com.vidio.android.tv.common.VidioUrlHandlerActivity" android:theme="@style/Theme.Transparent"/>
+        <activity android:name="com.vidio.android.tv.error.ErrorNoConnectionActivity"/>
+        <activity android:name="com.vidio.android.tv.error.ErrorConnectToServerActivity"/>
+        <activity android:name="com.vidio.android.tv.error.ErrorLiveStreamingEndedActivity"/>
+        <activity android:name="com.vidio.android.tv.common.ContextMenuActivity" android:theme="@style/CustomPreferenceDialog"/>
+        <activity android:name="com.vidio.android.tv.watch.blocker.BlockerActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.reminderupdate.ReminderUpdateActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.login.LoginActivity"/>
+        <activity android:name="com.vidio.android.tv.cpp.CppActivity" android:theme="@style/NoTitle"/>
+        <activity android:name="com.vidio.android.tv.splashscreen.seamlesslogin.ConnectAccountBannerActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.splashscreen.seamlesslogin.ConnectAccountSuccessBannerActivity"/>
+        <activity android:name="com.vidio.android.tv.splashscreen.seamlesslogin.SuccessClaimAndConnectedBannerActivity"/>
+        <activity android:name="com.vidio.android.tv.splashscreen.seamlesslogin.SuccessClaimIndihomeBannerActivity"/>
+        <activity android:name="com.vidio.android.tv.indihome.ActivatePackageIndihomeBannerActivity"/>
+        <activity android:name="com.vidio.android.tv.home.PartnerPromotionalBannerActivity"/>
+        <activity android:name="com.vidio.android.tv.cpp.episode.CppPlaylistActivity" android:theme="@style/NoTitle"/>
+        <activity android:name="com.vidio.android.tv.category.CategoryActivity" android:theme="@style/NoTitle"/>
+        <activity android:name="com.vidio.android.tv.tag.TagActivity" android:theme="@style/NoTitle"/>
+        <activity android:name="com.vidio.android.tv.indihome.IndihomeOtpActivity" android:theme="@style/NoTitle" android:windowSoftInputMode="stateAlwaysHidden"/>
+        <activity android:name="com.vidio.android.tv.indihome.IndihomePhoneNumberNotFoundBannerActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.activepackage.cancelpackage.CancelPackageSuccessActivity" android:theme="@style/NoTitle"/>
+        <activity android:name="com.vidio.android.tv.features.subscription.playbilling_blocker.PaymentFailedBannerActivity" android:theme="@style/NoTitle"/>
+        <activity android:name="com.vidio.android.tv.features.subscription.payment_success.PaymentSuccessBannerActivity" android:theme="@style/NoTitle"/>
+        <activity android:name="com.vidio.android.tv.watch.issues.PlayerIssueActivity" android:theme="@style/CustomPreferenceDialog"/>
+        <activity android:name="com.vidio.android.tv.help.feedback.FeedbackCategoryActivity" android:theme="@style/CustomPreferenceDialog"/>
+        <activity android:name="com.vidio.android.tv.help.feedback.SendFeedbackActivity" android:theme="@style/CustomPreferenceDialog"/>
+        <activity android:name="com.vidio.android.tv.payment.consentcheck.ProductCatalogConsentRequestActivity" android:theme="@style/CustomPreferenceDialog"/>
+        <activity android:name="com.vidio.android.tv.error.ErrorWithCustomMessageActivity" android:theme="@style/NoTitle"/>
+        <activity android:launchMode="singleTop" android:name="com.vidio.android.tv.watch.WatchActivity"/>
+        <activity android:name="com.vidio.android.tv.partner.xlhome.XLHomeRedemptionCodeActivity"/>
+        <activity android:name="com.vidio.android.tv.payment.productcatalog.MoratelProductCatalogActivity" android:theme="@style/NoTitle"/>
+        <activity android:name="com.vidio.android.tv.error.notstarted.UpcomingActivity" android:theme="@style/NoTitle"/>
+        <activity android:name="com.vidio.android.tv.vnt.ActivatePackageVntActivity" android:theme="@style/NoTitle"/>
+        <activity android:name="com.vidio.android.tv.activepackage.ActivePackageActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.activepackage.cancelpackage.CancelPackageActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.deeplink.collection.CollectionDeeplinkActivity" android:theme="@style/NoTitle"/>
+        <activity android:name="com.vidio.android.tv.payment.PaywallActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.payment.ProductBenefitActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.payment.afterpayment.AfterPaymentActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:exported="false" android:name="com.vidio.android.tv.login.social.GoogleLoginActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.payment.firstmedia.FirstMediaPaymentActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.partner.PartnerSwitcherActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:exported="false" android:name="com.vidio.android.tv.features.multiprofile.ProfileManagementActivity" android:theme="@style/NoTitle"/>
+        <activity android:name="com.vidio.android.tv.error.ErrorActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.features.identity.ui.BindPhoneNumberActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.watch.views.logingating.OemMergeAccountActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.splashscreen.seamlesslogin.InvalidPayloadBlockerActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.viewmode.ViewModeActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:exported="false" android:name="com.vidio.android.tv.login.landing.LoginLandingActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.features.subscription.playbilling_blocker.PlayBillingBlockerActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.features.identity.onboarding.ui.pin.CreateAndVerifyPinActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.features.identity.userconsent.UserConsentActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.common.setting_leanback.SettingsLeanbackStyleActivity" android:theme="@style/CustomPreferenceDialog"/>
+        <activity android:name="com.vidio.android.tv.common.QrBannerActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.common.compose.GeneralErrorActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.common.compose.search_detail.SearchDetailActivity" android:theme="@style/Theme.AppCompat.NoActionBar"/>
+        <activity android:name="com.vidio.android.tv.engagement.gift.VirtualGiftDialogActivity" android:theme="@style/Theme.OverlayTransparent"/>
+        <provider android:authorities="com.vidio.android.tv.androidx-startup" android:exported="false" android:name="androidx.startup.InitializationProvider">
+            <meta-data android:name="androidx.lifecycle.ProcessLifecycleInitializer" android:value="androidx.startup"/>
+            <meta-data android:name="com.vidio.android.player.api.VidioPlayerInitializer" android:value="androidx.startup"/>
+            <meta-data android:name="com.vidio.kmm.store.AndroidStoreFactoryInitializer" android:value="androidx.startup"/>
+            <meta-data android:name="androidx.emoji2.text.EmojiCompatInitializer" android:value="androidx.startup"/>
+            <meta-data android:name="com.russhwolf.settings.SettingsInitializer" android:value="androidx.startup"/>
+            <meta-data android:name="androidx.profileinstaller.ProfileInstallerInitializer" android:value="androidx.startup"/>
+        </provider>
+        <service android:exported="false" android:name="com.appsflyer.FirebaseMessagingServiceListener">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
+        <receiver android:enabled="true" android:exported="true" android:name="com.vidio.android.playengage.PlayEngageContinueWatchingBroadcastReceiver">
+            <intent-filter>
+                <action android:name="com.google.android.engage.action.PUBLISH_CONTINUATION"/>
+            </intent-filter>
+        </receiver>
+        <meta-data android:name="google_analytics_automatic_screen_reporting_enabled" android:value="false"/>
+        <property android:name="android.adservices.AD_SERVICES_CONFIG" android:resource="@xml/gma_ad_services_config"/>
+        <service android:exported="true" android:name="androidx.media3.exoplayer.scheduler.PlatformScheduler$PlatformSchedulerService" android:permission="android.permission.BIND_JOB_SERVICE"/>
+        <service android:enabled="true" android:exported="false" android:name="androidx.credentials.playservices.CredentialProviderMetadataHolder">
+            <meta-data android:name="androidx.credentials.CREDENTIAL_PROVIDER_KEY" android:value="androidx.credentials.playservices.CredentialProviderPlayServicesImpl"/>
+        </service>
+        <activity android:configChanges="keyboardHidden|orientation|screenLayout|screenSize" android:enabled="true" android:exported="false" android:fitsSystemWindows="true" android:name="androidx.credentials.playservices.controllers.identityauth.HiddenActivity" android:theme="@style/Theme.Hidden"/>
+        <activity android:configChanges="keyboardHidden|orientation|screenLayout|screenSize" android:enabled="true" android:exported="false" android:fitsSystemWindows="true" android:name="androidx.credentials.playservices.controllers.identitycredentials.IdentityCredentialApiHiddenActivity" android:theme="@style/Theme.Hidden"/>
+        <activity android:excludeFromRecents="true" android:exported="false" android:name="com.google.android.gms.auth.api.signin.internal.SignInHubActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+        <service android:exported="true" android:name="com.google.android.gms.auth.api.signin.RevocationBoundService" android:permission="com.google.android.gms.auth.api.signin.permission.REVOCATION_NOTIFICATION" android:visibleToInstantApps="true"/>
+        <meta-data android:name="com.google.android.gms.ads.AD_MANAGER_APP" android:value="true"/>
+        <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version"/>
+        <meta-data android:name="com.bumptech.glide.integration.okhttp3.OkHttpGlideModule" android:value="GlideModule"/>
+        <receiver android:exported="false" android:name="com.google.android.gms.cast.framework.media.MediaIntentReceiver"/>
+        <service android:exported="false" android:name="com.google.android.gms.cast.framework.ReconnectionService"/>
+        <meta-data android:name="com.google.android.play.billingclient.version" android:value="8.3.0"/>
+        <activity android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize" android:exported="false" android:name="com.android.billingclient.api.ProxyBillingActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+        <activity android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize" android:exported="false" android:name="com.android.billingclient.api.ProxyBillingActivityV2" android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+        <receiver android:exported="true" android:name="com.google.firebase.iid.FirebaseInstanceIdReceiver" android:permission="com.google.android.c2dm.permission.SEND">
+            <intent-filter>
+                <action android:name="com.google.android.c2dm.intent.RECEIVE"/>
+            </intent-filter>
+            <meta-data android:name="com.google.android.gms.cloudmessaging.FINISHED_AFTER_HANDLED" android:value="true"/>
+        </receiver>
+        <service android:directBootAware="true" android:exported="false" android:name="com.google.firebase.messaging.FirebaseMessagingService">
+            <intent-filter android:priority="-500">
+                <action android:name="com.google.firebase.MESSAGING_EVENT"/>
+            </intent-filter>
+        </service>
+        <service android:directBootAware="true" android:exported="false" android:name="com.google.firebase.components.ComponentDiscoveryService">
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingKtxRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.analytics.ktx.FirebaseAnalyticsLegacyRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.crashlytics.FirebaseCrashlyticsKtxRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.crashlytics.CrashlyticsRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.perf.ktx.FirebasePerfLegacyRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.perf.FirebasePerfKtxRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.perf.FirebasePerfRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.remoteconfig.ktx.FirebaseConfigLegacyRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.remoteconfig.FirebaseRemoteConfigKtxRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.remoteconfig.RemoteConfigRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.sessions.FirebaseSessionsRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.analytics.connector.internal.AnalyticsConnectorRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsKtxRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.ktx.FirebaseCommonLegacyRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.abt.component.AbtRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+            <meta-data android:name="com.google.firebase.components:com.google.firebase.datatransport.TransportRegistrar" android:value="com.google.firebase.components.ComponentRegistrar"/>
+        </service>
+        <activity android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode" android:exported="false" android:name="com.google.android.gms.ads.AdActivity" android:theme="@android:style/Theme.Translucent"/>
+        <service android:enabled="true" android:exported="false" android:name="com.google.android.gms.ads.AdService"/>
+        <activity android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode" android:exported="false" android:name="com.google.android.gms.ads.OutOfContextTestingActivity"/>
+        <activity android:excludeFromRecents="true" android:exported="false" android:launchMode="singleTask" android:name="com.google.android.gms.ads.NotificationHandlerActivity" android:taskAffinity="" android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+        <receiver android:enabled="true" android:exported="false" android:name="com.google.android.gms.measurement.AppMeasurementReceiver"/>
+        <service android:enabled="true" android:exported="false" android:name="com.google.android.gms.measurement.AppMeasurementService"/>
+        <service android:enabled="true" android:exported="false" android:name="com.google.android.gms.measurement.AppMeasurementJobService" android:permission="android.permission.BIND_JOB_SERVICE"/>
+        <activity android:exported="false" android:name="com.google.android.gms.common.api.GoogleApiActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+        <service android:enabled="true" android:exported="false" android:name="com.google.firebase.sessions.SessionLifecycleService"/>
+        <provider android:authorities="com.vidio.android.tv.firebaseinitprovider" android:directBootAware="true" android:exported="false" android:initOrder="100" android:name="com.google.firebase.provider.FirebaseInitProvider"/>
+        <activity android:enabled="true" android:excludeFromRecents="true" android:exported="false" android:name="androidx.glance.appwidget.action.ActionTrampolineActivity" android:theme="@android:style/Theme.NoDisplay"/>
+        <activity android:enabled="true" android:exported="false" android:launchMode="singleInstance" android:name="androidx.glance.appwidget.action.InvisibleActionTrampolineActivity" android:noHistory="true" android:taskAffinity="androidx.glance.appwidget.ListAdapterCallbackTrampoline" android:theme="@style/Widget.Glance.AppWidget.CallbackTrampoline"/>
+        <receiver android:enabled="true" android:exported="false" android:name="androidx.glance.appwidget.action.ActionCallbackBroadcastReceiver"/>
+        <receiver android:enabled="true" android:exported="false" android:name="androidx.glance.appwidget.UnmanagedSessionReceiver"/>
+        <receiver android:enabled="true" android:exported="false" android:name="androidx.glance.appwidget.MyPackageReplacedReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+            </intent-filter>
+        </receiver>
+        <service android:exported="true" android:name="androidx.glance.appwidget.GlanceRemoteViewsService" android:permission="android.permission.BIND_REMOTEVIEWS"/>
+        <service android:directBootAware="false" android:enabled="@bool/enable_system_alarm_service_default" android:exported="false" android:name="androidx.work.impl.background.systemalarm.SystemAlarmService"/>
+        <service android:directBootAware="false" android:enabled="@bool/enable_system_job_service_default" android:exported="true" android:name="androidx.work.impl.background.systemjob.SystemJobService" android:permission="android.permission.BIND_JOB_SERVICE"/>
+        <service android:directBootAware="false" android:enabled="@bool/enable_system_foreground_service_default" android:exported="false" android:name="androidx.work.impl.foreground.SystemForegroundService"/>
+        <receiver android:directBootAware="false" android:enabled="true" android:exported="false" android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"/>
+        <receiver android:directBootAware="false" android:enabled="false" android:exported="false" android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy">
+            <intent-filter>
+                <action android:name="android.intent.action.ACTION_POWER_CONNECTED"/>
+                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED"/>
+            </intent-filter>
+        </receiver>
+        <receiver android:directBootAware="false" android:enabled="false" android:exported="false" android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy">
+            <intent-filter>
+                <action android:name="android.intent.action.BATTERY_OKAY"/>
+                <action android:name="android.intent.action.BATTERY_LOW"/>
+            </intent-filter>
+        </receiver>
+        <receiver android:directBootAware="false" android:enabled="false" android:exported="false" android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy">
+            <intent-filter>
+                <action android:name="android.intent.action.DEVICE_STORAGE_LOW"/>
+                <action android:name="android.intent.action.DEVICE_STORAGE_OK"/>
+            </intent-filter>
+        </receiver>
+        <receiver android:directBootAware="false" android:enabled="false" android:exported="false" android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy">
+            <intent-filter>
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
+            </intent-filter>
+        </receiver>
+        <receiver android:directBootAware="false" android:enabled="false" android:exported="false" android:name="androidx.work.impl.background.systemalarm.RescheduleReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.TIME_SET"/>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED"/>
+            </intent-filter>
+        </receiver>
+        <receiver android:directBootAware="false" android:enabled="@bool/enable_system_alarm_service_default" android:exported="false" android:name="androidx.work.impl.background.systemalarm.ConstraintProxyUpdateReceiver">
+            <intent-filter>
+                <action android:name="androidx.work.impl.background.systemalarm.UpdateProxies"/>
+            </intent-filter>
+        </receiver>
+        <receiver android:directBootAware="false" android:enabled="true" android:exported="true" android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver" android:permission="android.permission.DUMP">
+            <intent-filter>
+                <action android:name="androidx.work.diagnostics.REQUEST_DIAGNOSTICS"/>
+            </intent-filter>
+        </receiver>
+        <service android:directBootAware="true" android:exported="false" android:name="androidx.room.MultiInstanceInvalidationService"/>
+        <uses-library android:name="android.ext.adservices" android:required="false"/>
+        <service android:name="androidx.core.widget.RemoteViewsCompatService" android:permission="android.permission.BIND_REMOTEVIEWS"/>
+        <uses-library android:name="androidx.window.extensions" android:required="false"/>
+        <uses-library android:name="androidx.window.sidecar" android:required="false"/>
+        <activity android:exported="true" android:name="androidx.compose.ui.tooling.PreviewActivity"/>
+        <service android:exported="false" android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery">
+            <meta-data android:name="backend:com.google.android.datatransport.cct.CctBackendFactory" android:value="cct"/>
+        </service>
+        <receiver android:directBootAware="false" android:enabled="true" android:exported="true" android:name="androidx.profileinstaller.ProfileInstallReceiver" android:permission="android.permission.DUMP">
+            <intent-filter>
+                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="androidx.profileinstaller.action.SKIP_FILE"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION"/>
+            </intent-filter>
+        </receiver>
+        <service android:exported="false" android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService" android:permission="android.permission.BIND_JOB_SERVICE"/>
+        <receiver android:exported="false" android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"/>
+        <activity android:exported="false" android:name="com.google.android.play.core.common.PlayCoreDialogWrapperActivity" android:stateNotNeeded="true" android:theme="@style/Theme.PlayCore.Transparent"/>
+        <meta-data android:name="com.android.vending.splits.required" android:value="true"/>
+        <meta-data android:name="com.android.stamp.source" android:value="https://play.google.com/store"/>
+        <meta-data android:name="com.android.stamp.type" android:value="STAMP_TYPE_DISTRIBUTION_APK"/>
+        <meta-data android:name="com.android.vending.splits" android:resource="@xml/splits0"/>
+        <meta-data android:name="com.android.vending.derived.apk.id" android:value="2"/>
+    </application>
+</manifest>

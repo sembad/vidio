@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <View
+        android:id="@+id/primaryButton"
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:background="@drawable/action_menu_button_background"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="@drawable/primary_button_ripple_animation"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/primaryButtonText"
+        app:layout_constraintStart_toStartOf="@+id/primaryButtonIcon"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/primaryButtonIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:paddingStart="24dp"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white"
+        android:textSize="24dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/primaryButtonText"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="D" />
+
+    <TextView
+        android:id="@+id/primaryButtonText"
+        style="@style/PrimaryButtonTextStyleInTablets"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_marginStart="8dp"
+        android:paddingEnd="24dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/primaryButtonIcon"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Watch" />
+
+    <View
+        android:id="@+id/dummyTopView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintStart_toStartOf="@+id/primaryButton"
+        app:layout_constraintTop_toTopOf="@+id/primaryButton" />
+
+    <ImageView
+        android:id="@+id/topGlint"
+        android:layout_width="52dp"
+        android:layout_height="15dp"
+        android:background="@drawable/cta_top_glint_nux"
+        android:rotation="180"
+        app:layout_constraintBottom_toBottomOf="@+id/dummyTopView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/dummyTopView" />
+
+    <View
+        android:id="@+id/dummyBottomView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="@+id/primaryButton"
+        app:layout_constraintEnd_toEndOf="@+id/primaryButton" />
+
+    <ImageView
+        android:id="@+id/bottomGlint"
+        android:layout_width="52dp"
+        android:layout_height="15dp"
+        android:background="@drawable/cta_bottom_glint_nux"
+        app:layout_constraintBottom_toBottomOf="@+id/dummyBottomView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/dummyBottomView" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

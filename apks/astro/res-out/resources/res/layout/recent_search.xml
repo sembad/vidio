@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <TextView
+        android:textSize="16sp"
+        android:textColor="#767676"
+        android:ellipsize="end"
+        android:gravity="start|bottom"
+        android:id="@+id/recent_search"
+        android:paddingBottom="8dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Recent"
+        android:maxLines="1"
+        app:layout_constraintStart_toStartOf="parent"/>
+    <TextView
+        android:textSize="8sp"
+        android:textColor="#fff"
+        android:gravity="center_vertical"
+        android:id="@+id/swimlane_see_all"
+        android:visibility="visible"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="See all"
+        android:layout_marginEnd="5dp"
+        app:layout_constraintBottom_toBottomOf="@+id/recent_search"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/recent_search"/>
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/search_content_recyclerview"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/recent_search"/>
+</androidx.constraintlayout.widget.ConstraintLayout>

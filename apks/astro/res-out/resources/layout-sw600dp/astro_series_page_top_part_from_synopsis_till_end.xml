@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:animateLayoutChanges="false"
+    tools:background="@color/new_series_page_bg_color">
+
+    <TextView
+        android:id="@+id/seriesEventSynopsis"
+        style="@style/SeriesSynopsisTextStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@+id/castInfo"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_goneMarginBottom="16dp"
+        tools:contentDescription="@string/visibility_warning"
+        tools:text="A frightened, withdrawn Philadelphia boy who communicates with spirits seeks the help of a disheartened child psychologist. A frightened, withdrawn Philadelphia boy who communicates with spirits seeks the help of a disheartened child psychologist." />
+
+    <TextView
+        android:id="@+id/castInfo"
+        style="@style/CastInfoValueTextStyle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:textSize="16sp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@id/directorInfo"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/seriesEventSynopsis"
+        app:layout_goneMarginTop="0dp"
+        tools:text="Cast: Cast Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test " />
+
+
+    <TextView
+        android:id="@+id/directorInfo"
+        style="@style/DirectorInfoValueTextStyle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="1dp"
+        android:textSize="16sp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@+id/watchInfoKey"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/castInfo"
+        app:layout_goneMarginTop="0dp"
+        tools:text="Director: Director Test Test Test Test Test Test Test Test Test  Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test Test" />
+
+    <TextView
+        android:id="@+id/watchInfoKey"
+        style="@style/WatchInfoKeyTextStyleInTablets"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
+        android:paddingTop="8dp"
+        app:layout_constraintBottom_toTopOf="@+id/watchInfoTopBarrier"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/directorInfo"
+        app:layout_goneMarginTop="16dp"
+        tools:contentDescription="@string/visibility_warning"
+        tools:text="Start Watching" />
+
+    <!--    There is a top padding of 8dp in Zeplin for @+id/watchInfoKey .-->
+    <!--    Refer to :  https://app.zeplin.io/project/6290a8197ef8ec11327b012c/screen/6358e5b0a1744e7fed20a08a-->
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/watchInfoTopBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="top"
+        app:constraint_referenced_ids="watchInfoValue, watchInfoParentalRatingIcon, watchInfoResolutionIcon" />
+
+    <TextView
+        android:id="@+id/watchInfoValue"
+        style="@style/WatchInfoValueTextStyleInTablets"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="6dp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/watchInfoParentalRatingIcon"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/watchInfoKey"
+        tools:text="Winter is Coming | S1 EP1 | 59 min " />
+
+    <TextView
+        android:id="@+id/watchInfoParentalRatingIcon"
+        style="@style/RobotoBold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="6dp"
+        android:gravity="center_vertical"
+        android:includeFontPadding="false"
+        android:lineSpacingMultiplier="1.5"
+        android:textColor="#b2adaf"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/watchInfoValue"
+        app:layout_constraintEnd_toStartOf="@+id/watchInfoResolutionIcon"
+        app:layout_constraintStart_toEndOf="@+id/watchInfoValue"
+        app:layout_constraintTop_toTopOf="@+id/watchInfoValue"
+        app:layout_goneMarginTop="8dp"
+        tools:text="18" />
+
+    <TextView
+        android:id="@+id/watchInfoResolutionIcon"
+        style="@style/RobotoBold"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:includeFontPadding="false"
+        android:lineSpacingMultiplier="1.5"
+        android:textColor="#b2adaf"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/watchInfoValue"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/watchInfoParentalRatingIcon"
+        app:layout_constraintTop_toTopOf="@+id/watchInfoValue"
+        app:layout_goneMarginTop="8dp"
+        tools:text="HD" />
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/watchInfoValueBottomBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:constraint_referenced_ids="watchInfoValue,watchInfoParentalRatingIcon, watchInfoResolutionIcon" />
+
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/watchInfoGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="visible"
+        app:constraint_referenced_ids="watchInfoKey,watchInfoValue,watchInfoParentalRatingIcon,watchInfoResolutionIcon" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

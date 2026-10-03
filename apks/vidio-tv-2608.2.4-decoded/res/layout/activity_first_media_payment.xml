@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout android:orientation="vertical" android:background="@color/gray80" android:layout_width="fill_parent" android:layout_height="fill_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <include android:id="@id/paymentConfirmation" android:visibility="visible" layout="@layout/first_media_payment_confirmation" />
+    <com.vidio.common.ui.customview.VidioAnimationLoader android:id="@id/progress_bar" android:visibility="gone" android:layout_width="60.0dip" android:layout_height="60.0dip" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" app:lottie_autoPlay="true" app:lottie_loop="true" app:lottie_rawRes="@raw/vidio_icon_animation_red" />
+    <include android:id="@id/paymentSucceed" android:visibility="gone" layout="@layout/first_media_payment_succeed" />
+    <include android:id="@id/paymentFailed" android:visibility="gone" layout="@layout/first_media_payment_failed" />
+</androidx.constraintlayout.widget.ConstraintLayout>

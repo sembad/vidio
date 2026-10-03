@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="100dp"
+    android:viewportWidth="200"
+    android:viewportHeight="100">
+
+    <path
+        android:fillColor="@color/guide_dropdown_tooltip_triangle_color"
+        android:strokeWidth="1"
+        android:pathData="M150 50L200 100L100 100L0 100L49.99 50L100 0L150 50Z" />
+</vector>

@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/coordinatorLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0e1019"
+    android:fitsSystemWindows="false"
+    android:visibility="invisible"
+    tools:visibility="visible">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/transparent">
+
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/movingToolbar"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:background="@color/toolbar_background_in_expanded_state"
+            android:minHeight="?attr/actionBarSize"
+            android:visibility="visible"
+            app:layout_scrollFlags="scroll">
+            <!-- Note : for Astro's scrolling animation when Movies screen will have just one tab,
+                       below given layout_scrollFlags (i.e app:layout_scrollFlags="scroll|enterAlways" ) are more appropriate
+                       but below given layout_scrollFlags will not let content of movies scroll under it
+                       which is required as per Scrolling animation video.
+                        Therefore, we have added android:id="@+id/stickyToolbar" for getting desired animation -->
+            <!--       app:layout_scrollFlags="scroll|enterAlways"-->
+
+
+            <TextView
+                android:id="@+id/backIconOfMovingToolbar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start"
+                android:layout_marginStart="16dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:gravity="center"
+                android:textColor="#ebebeb"
+                android:textSize="24sp"
+                tools:text="Back Icon" />
+
+
+            <TextView
+                android:id="@+id/searchIconOfMovingToolbar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginEnd="16dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:gravity="center"
+                android:textColor="#ebebeb"
+                android:textSize="24sp"
+                tools:text="Search Icon" />
+
+        </androidx.appcompat.widget.Toolbar>
+
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        tools:layout_marginTop="60dp">
+
+        <ImageView
+            android:id="@+id/mainPoster"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:adjustViewBounds="true"
+            android:scaleType="centerCrop"
+            app:layout_constraintDimensionRatio="H,2:3"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:src="@drawable/default_event_bitmap_linear_landscape" />
+
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/topScrollView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <View
+                    android:id="@+id/mainPosterDummyPlaceholder"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:background="@android:color/transparent"
+                    app:layout_constraintDimensionRatio="H,2:3"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:src="@drawable/default_event_bitmap_linear_landscape" />
+
+                <View
+                    android:id="@+id/topPartGradientTopAnchor"
+                    android:layout_width="1dp"
+                    android:layout_height="1dp"
+                    android:layout_marginBottom="200dp"
+                    android:background="@android:color/transparent"
+                    app:layout_constraintBottom_toBottomOf="@id/mainPosterDummyPlaceholder"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent" />
+
+                <include
+                    android:id="@+id/astroMoviesPageTopPartUntilEventMetadata"
+                    layout="@layout/astro_movies_page_top_part_until_event_metadata"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="visible"
+                    app:layout_constraintBottom_toTopOf="@+id/continueWatchingSeekBarView"
+                    app:layout_constraintTop_toBottomOf="@+id/topPartGradientTopAnchor" />
+
+                <View
+                    android:id="@+id/bottomPartGradient"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:background="@color/new_movies_page_translucent_overlay"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintTop_toBottomOf="@+id/astroMoviesPageTopPartUntilEventMetadata" />
+
+                <ProgressBar
+                    android:id="@+id/continueWatchingSeekBarView"
+                    style="@style/ProgressBar"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginBottom="12dp"
+                    android:indeterminate="false"
+                    android:progressBackgroundTint="#B3D8D8D8"
+                    android:progressDrawable="@drawable/custom_progress_bar"
+                    android:progressTint="#e6007d"
+                    android:visibility="visible"
+                    app:layout_constraintBottom_toTopOf="@+id/astroMoviesPageButtonsLayout"
+                    app:layout_constraintTop_toBottomOf="@+id/astroMoviesPageTopPartUntilEventMetadata" />
+
+
+                <include
+                    android:id="@+id/astroMoviesPageButtonsLayout"
+                    layout="@layout/astro_movies_page_buttons"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    app:layout_constraintBottom_toTopOf="@+id/astroMoviesPageTopPartFromSynopsisTillEnd"
+                    app:layout_constraintTop_toBottomOf="@+id/continueWatchingSeekBarView"
+                    app:layout_goneMarginTop="8dp" />
+
+                <include
+                    android:id="@+id/astroMoviesPageTopPartFromSynopsisTillEnd"
+                    layout="@layout/astro_movies_page_top_part_from_synopsis_till_end"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    app:layout_constraintBottom_toTopOf="@+id/tabLayoutHolder"
+                    app:layout_constraintTop_toBottomOf="@+id/astroMoviesPageButtonsLayout" />
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:id="@+id/tabLayoutHolder"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@android:color/transparent"
+                    android:elevation="1dp"
+                    android:tag="@string/has_transparent_background_file_as_background_currently"
+                    app:layout_constraintBottom_toTopOf="@+id/viewPager"
+                    app:layout_constraintTop_toBottomOf="@+id/astroMoviesPageTopPartFromSynopsisTillEnd">
+
+                    <com.google.android.material.tabs.TabLayout
+                        android:id="@+id/tabLayout"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:background="@android:color/transparent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:tabBackground="@android:color/transparent"
+                        app:tabGravity="start"
+                        app:tabIndicatorColor="@android:color/transparent"
+                        app:tabMode="fixed"
+                        app:tabSelectedTextColor="#ebebeb"
+                        app:tabTextAppearance="@style/SeriesPageTabText" />
+
+                    <View
+                        android:id="@+id/tabLayoutSeparator"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/tab_layout_separator_height"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginEnd="16dp"
+                        android:background="@drawable/ic_astro_tab_layout_separator"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/tabLayout" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/viewPager"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@android:color/transparent"
+                    app:layout_constraintTop_toBottomOf="@+id/tabLayoutHolder" />
+
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </androidx.core.widget.NestedScrollView>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/stickyToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:background="@color/toolbar_background_in_non_expanded_state"
+        android:minHeight="?attr/actionBarSize"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+
+        <TextView
+            android:id="@+id/backIconOfStickyToolbar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:layout_marginStart="16dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:gravity="center"
+            android:textColor="#ebebeb"
+            android:textSize="24sp"
+            tools:text="Back Icon" />
+
+
+        <TextView
+            android:id="@+id/searchIconOfStickyToolbar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginEnd="16dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:gravity="center"
+            android:textColor="#ebebeb"
+            android:textSize="24sp"
+            tools:text="Search Icon" />
+
+    </androidx.appcompat.widget.Toolbar>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+
+

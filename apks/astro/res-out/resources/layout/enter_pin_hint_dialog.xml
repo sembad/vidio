@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <TextView
+        android:id="@+id/enterPinTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:textColor="#FFFFFF"
+        android:textSize="8sp"
+        app:layout_constraintBottom_toTopOf="@+id/lockIcon"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed"
+        tools:text="Enter PIN" />
+
+    <TextView
+        android:id="@+id/lockIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:gravity="center"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/enterPinFirstSuggestion"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/enterPinTitle"
+        tools:text="Lock Icon From Font File" />
+
+    <TextView
+        android:id="@+id/enterPinFirstSuggestion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:textColor="#FFFFFF"
+        android:textSize="8sp"
+        app:layout_constraintBottom_toTopOf="@+id/enterPinSecondSuggestion"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/lockIcon"
+        tools:text="Restricted Content" />
+
+
+    <TextView
+        android:id="@+id/enterPinSecondSuggestion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:gravity="center"
+        android:textColor="#FFFFFF"
+        android:textSize="8sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/enterPinFirstSuggestion"
+        app:layout_constraintStart_toStartOf="@+id/enterPinFirstSuggestion"
+        app:layout_constraintTop_toBottomOf="@+id/enterPinFirstSuggestion"
+        tools:text="Enter PIN to continue" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

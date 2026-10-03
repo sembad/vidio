@@ -1,0 +1,42 @@
+package wp;
+
+import com.vidio.domain.entity.Section;
+import kotlin.Unit;
+import kotlin.jvm.functions.Function1;
+
+@kotlin.coroutines.jvm.internal.e(c = "com.vidio.android.tv.common.compose.fluid.FluidSectionComposableKt$CircleHorizontalView$4$1", f = "FluidSectionComposable.kt", l = {}, m = "invokeSuspend", v = 2)
+/* loaded from: classes4.dex */
+final class u3 extends kotlin.coroutines.jvm.internal.i implements Function1<l60.b<? super Unit>, Object> {
+
+    /* renamed from: d, reason: collision with root package name */
+    final /* synthetic */ Function1<Section, Unit> f66804d;
+
+    /* renamed from: e, reason: collision with root package name */
+    final /* synthetic */ Section f66805e;
+
+    /* JADX WARN: 'super' call moved to the top of the method (can break code semantics) */
+    /* JADX WARN: Multi-variable type inference failed */
+    u3(Function1<? super Section, Unit> function1, Section section, l60.b<? super u3> bVar) {
+        super(1, bVar);
+        this.f66804d = function1;
+        this.f66805e = section;
+    }
+
+    @Override // kotlin.coroutines.jvm.internal.a
+    public final l60.b<Unit> create(l60.b<?> bVar) {
+        return new u3(this.f66804d, this.f66805e, bVar);
+    }
+
+    @Override // kotlin.jvm.functions.Function1
+    public final Object invoke(l60.b<? super Unit> bVar) {
+        return ((u3) create(bVar)).invokeSuspend(Unit.f44610a);
+    }
+
+    @Override // kotlin.coroutines.jvm.internal.a
+    public final Object invokeSuspend(Object obj) {
+        m60.a aVar = m60.a.f47215d;
+        h60.s.b(obj);
+        this.f66804d.invoke(this.f66805e);
+        return Unit.f44610a;
+    }
+}

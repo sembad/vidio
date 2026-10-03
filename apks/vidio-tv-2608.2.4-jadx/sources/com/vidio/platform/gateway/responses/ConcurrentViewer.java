@@ -1,0 +1,77 @@
+package com.vidio.platform.gateway.responses;
+
+import com.squareup.moshi.r;
+import com.squareup.moshi.t;
+import kotlin.Metadata;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+@Metadata(d1 = {"\u0000&\n\u0002\u0018\u0002\n\u0002\u0010\u0000\n\u0000\n\u0002\u0010\t\n\u0000\n\u0002\u0010\b\n\u0002\b\n\n\u0002\u0010\u000b\n\u0002\b\u0003\n\u0002\u0010\u000e\n\u0000\b\u0087\b\u0018\u00002\u00020\u0001B\u0017\u0012\u0006\u0010\u0002\u001a\u00020\u0003\u0012\u0006\u0010\u0004\u001a\u00020\u0005¢\u0006\u0004\b\u0006\u0010\u0007J\t\u0010\f\u001a\u00020\u0003HÆ\u0003J\t\u0010\r\u001a\u00020\u0005HÆ\u0003J\u001d\u0010\u000e\u001a\u00020\u00002\b\b\u0002\u0010\u0002\u001a\u00020\u00032\b\b\u0002\u0010\u0004\u001a\u00020\u0005HÆ\u0001J\u0014\u0010\u000f\u001a\u00020\u00102\b\u0010\u0011\u001a\u0004\u0018\u00010\u0001HÖ\u0083\u0004J\n\u0010\u0012\u001a\u00020\u0005HÖ\u0081\u0004J\n\u0010\u0013\u001a\u00020\u0014HÖ\u0081\u0004R\u0011\u0010\u0002\u001a\u00020\u0003¢\u0006\b\n\u0000\u001a\u0004\b\b\u0010\tR\u0016\u0010\u0004\u001a\u00020\u00058\u0006X\u0087\u0004¢\u0006\b\n\u0000\u001a\u0004\b\n\u0010\u000b¨\u0006\u0015"}, d2 = {"Lcom/vidio/platform/gateway/responses/ConcurrentViewer;", "", "id", "", "totalUser", "", "<init>", "(JI)V", "getId", "()J", "getTotalUser", "()I", "component1", "component2", "copy", "equals", "", "other", "hashCode", "toString", "", "shared"}, k = 1, mv = {2, 3, 0}, xi = 48)
+@t(generateAdapter = true)
+/* loaded from: classes5.dex */
+public final /* data */ class ConcurrentViewer {
+    public static final int $stable = 0;
+    private final long id;
+
+    @r(name = "total_concurrent_user")
+    private final int totalUser;
+
+    public ConcurrentViewer(long j11, int i11) {
+        this.id = j11;
+        this.totalUser = i11;
+    }
+
+    public static /* synthetic */ ConcurrentViewer copy$default(ConcurrentViewer concurrentViewer, long j11, int i11, int i12, Object obj) {
+        if ((i12 & 1) != 0) {
+            j11 = concurrentViewer.id;
+        }
+        if ((i12 & 2) != 0) {
+            i11 = concurrentViewer.totalUser;
+        }
+        return concurrentViewer.copy(j11, i11);
+    }
+
+    /* renamed from: component1, reason: from getter */
+    public final long getId() {
+        return this.id;
+    }
+
+    /* renamed from: component2, reason: from getter */
+    public final int getTotalUser() {
+        return this.totalUser;
+    }
+
+    @NotNull
+    public final ConcurrentViewer copy(long id2, int totalUser) {
+        return new ConcurrentViewer(id2, totalUser);
+    }
+
+    public boolean equals(@Nullable Object other) {
+        if (this == other) {
+            return true;
+        }
+        if (!(other instanceof ConcurrentViewer)) {
+            return false;
+        }
+        ConcurrentViewer concurrentViewer = (ConcurrentViewer) other;
+        return this.id == concurrentViewer.id && this.totalUser == concurrentViewer.totalUser;
+    }
+
+    public final long getId() {
+        return this.id;
+    }
+
+    public final int getTotalUser() {
+        return this.totalUser;
+    }
+
+    public int hashCode() {
+        long j11 = this.id;
+        return (((int) (j11 ^ (j11 >>> 32))) * 31) + this.totalUser;
+    }
+
+    @NotNull
+    public String toString() {
+        return "ConcurrentViewer(id=" + this.id + ", totalUser=" + this.totalUser + ")";
+    }
+}

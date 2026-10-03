@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge android:layout_width="wrap_content" android:layout_height="53.0dip"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <TextView android:textSize="9.0sp" android:textStyle="bold" android:textColor="#ff333333" android:gravity="center_horizontal" android:layout_gravity="center" android:id="@id/primaryTextView" android:background="@drawable/button_white_round_radius2_selector" android:paddingLeft="6.0dip" android:paddingTop="1.5dip" android:paddingRight="6.0dip" android:paddingBottom="1.5dip" android:focusable="true" android:focusableInTouchMode="true" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="7.5dip" android:layout_marginTop="17.0dip" android:layout_marginRight="8.5dip" android:layout_marginBottom="4.0dip" android:lineSpacingExtra="3.0sp" android:textAllCaps="true" android:fontFamily="sans-serif" android:letterSpacing="0.04" />
+    <TextView android:textSize="12.0sp" android:textStyle="bold" android:textColor="@android:color/white" android:layout_gravity="center" android:id="@id/secondaryTextView" android:visibility="invisible" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="20.0dip" />
+</merge>

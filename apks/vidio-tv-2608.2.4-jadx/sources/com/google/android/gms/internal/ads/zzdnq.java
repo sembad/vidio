@@ -1,0 +1,50 @@
+package com.google.android.gms.internal.ads;
+
+import com.google.android.gms.ads.internal.client.y;
+import j$.util.Objects;
+
+/* loaded from: classes3.dex */
+public final class zzdnq {
+    private final zzcvr zza;
+    private final zzcxa zzb;
+    private final zzcxn zzc;
+    private final zzcxz zzd;
+    private final zzdap zze;
+    private final zzddq zzf;
+    private final zzdrw zzg;
+    private final zzfja zzh;
+    private final zzebk zzi;
+    private final zzcmk zzj;
+
+    zzdnq(zzcvr zzcvrVar, zzcxa zzcxaVar, zzcxn zzcxnVar, zzcxz zzcxzVar, zzdap zzdapVar, zzddq zzddqVar, zzdrw zzdrwVar, zzfja zzfjaVar, zzebk zzebkVar, zzcmk zzcmkVar) {
+        this.zza = zzcvrVar;
+        this.zzb = zzcxaVar;
+        this.zzc = zzcxnVar;
+        this.zzd = zzcxzVar;
+        this.zze = zzdapVar;
+        this.zzf = zzddqVar;
+        this.zzg = zzdrwVar;
+        this.zzh = zzfjaVar;
+        this.zzi = zzebkVar;
+        this.zzj = zzcmkVar;
+    }
+
+    public final void zza(zzdnr zzdnrVar, zzcex zzcexVar) {
+        zzdno zzdnoVar;
+        zzdnoVar = zzdnrVar.zza;
+        final zzcxa zzcxaVar = this.zzb;
+        Objects.requireNonNull(zzcxaVar);
+        zzdnoVar.zzi(this.zza, this.zzc, this.zzd, this.zze, new tf.d() { // from class: com.google.android.gms.internal.ads.zzdnp
+            @Override // tf.d
+            public final void zzg() {
+                zzcxa.this.zzb();
+            }
+        }, this.zzf);
+        if (!((Boolean) y.c().zza(zzbcl.zzjZ)).booleanValue() || zzcexVar == null || zzcexVar.zzN() == null) {
+            return;
+        }
+        zzcgp zzN = zzcexVar.zzN();
+        zzN.zzK(this.zzj, this.zzi, this.zzh);
+        zzN.zzM(this.zzj, this.zzi, this.zzg);
+    }
+}

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/componentGuideProgressBarContainer"
+    android:layout_width="wrap_content"
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:layout_gravity="end"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:id="@+id/tv_component_guide_progress_bar_circle"
+        android:layout_width="wrap_content"
+        android:layout_marginTop="21dp"
+        android:padding="3dp"
+        android:layout_height="wrap_content" />
+
+    <FrameLayout
+        android:id="@+id/tvComponentGuideProgressBarLine"
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+        android:background="#4a90e2"/>
+
+</LinearLayout>

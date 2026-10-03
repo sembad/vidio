@@ -1,0 +1,37 @@
+package g0;
+
+import com.bumptech.glide.request.target.Target;
+import com.google.ads.mediation.facebook.FacebookMediationAdapter;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+@kotlin.coroutines.jvm.internal.e(c = "androidx.camera.camera2.pipe.internal.GraphSessionLock", f = "GraphSessionLock.kt", l = {FacebookMediationAdapter.ERROR_REQUIRES_UNIFIED_NATIVE_ADS}, m = "acquireToken$camera_camera2_pipe", v = 1)
+/* loaded from: classes3.dex */
+final class p extends kotlin.coroutines.jvm.internal.c {
+
+    /* renamed from: c, reason: collision with root package name */
+    dd0.e f40096c;
+
+    /* renamed from: d, reason: collision with root package name */
+    /* synthetic */ Object f40097d;
+
+    /* renamed from: e, reason: collision with root package name */
+    final /* synthetic */ s f40098e;
+
+    /* renamed from: i, reason: collision with root package name */
+    int f40099i;
+
+    /* JADX WARN: 'super' call moved to the top of the method (can break code semantics) */
+    p(s sVar, kotlin.coroutines.jvm.internal.c cVar) {
+        super(cVar);
+        this.f40098e = sVar;
+    }
+
+    @Override // kotlin.coroutines.jvm.internal.a
+    @Nullable
+    public final Object invokeSuspend(@NotNull Object obj) {
+        this.f40097d = obj;
+        this.f40099i |= Target.SIZE_ORIGINAL;
+        return this.f40098e.c(this);
+    }
+}

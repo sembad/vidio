@@ -1,0 +1,190 @@
+.class final Lo40/g;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+# interfaces
+.implements Lo40/m;
+
+
+# static fields
+.field public static final c:Lo40/g;
+    .annotation build Lorg/jetbrains/annotations/NotNull;
+    .end annotation
+.end field
+
+
+# direct methods
+.method static constructor <clinit>()V
+    .locals 1
+
+    .line 1
+    new-instance v0, Lo40/g;
+
+    .line 2
+    .line 3
+    invoke-direct {v0}, Ljava/lang/Object;-><init>()V
+
+    .line 4
+    .line 5
+    .line 6
+    sput-object v0, Lo40/g;->c:Lo40/g;
+
+    .line 7
+    .line 8
+    return-void
+.end method
+
+
+# virtual methods
+.method public final a()Ljava/util/Set;
+    .locals 1
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "()",
+            "Ljava/util/Set<",
+            "Ljava/util/Map$Entry<",
+            "Ljava/lang/String;",
+            "Ljava/util/List<",
+            "Ljava/lang/String;",
+            ">;>;>;"
+        }
+    .end annotation
+
+    .annotation build Lorg/jetbrains/annotations/NotNull;
+    .end annotation
+
+    .line 1
+    sget-object v0, Lkotlin/collections/k0;->d:Lkotlin/collections/k0;
+
+    .line 2
+    .line 3
+    return-object v0
+.end method
+
+.method public final b()Z
+    .locals 1
+
+    .line 1
+    const/4 v0, 0x1
+
+    .line 2
+    return v0
+.end method
+
+.method public final c(Ljava/lang/String;)Ljava/util/List;
+    .locals 0
+    .param p1    # Ljava/lang/String;
+        .annotation build Lorg/jetbrains/annotations/NotNull;
+        .end annotation
+    .end param
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Ljava/lang/String;",
+            ")",
+            "Ljava/util/List<",
+            "Ljava/lang/String;",
+            ">;"
+        }
+    .end annotation
+
+    .annotation build Lorg/jetbrains/annotations/Nullable;
+    .end annotation
+
+    .line 1
+    invoke-virtual {p1}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    const/4 p1, 0x0
+
+    return-object p1
+.end method
+
+.method public final d(Lkotlin/jvm/functions/Function2;)V
+    .locals 0
+    .param p1    # Lkotlin/jvm/functions/Function2;
+        .annotation build Lorg/jetbrains/annotations/NotNull;
+        .end annotation
+    .end param
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Lkotlin/jvm/functions/Function2<",
+            "-",
+            "Ljava/lang/String;",
+            "-",
+            "Ljava/util/List<",
+            "Ljava/lang/String;",
+            ">;",
+            "Lkotlin/Unit;",
+            ">;)V"
+        }
+    .end annotation
+
+    .line 1
+    invoke-static {p0, p1}, Lv40/j0$a;->a(Lv40/j0;Lkotlin/jvm/functions/Function2;)V
+
+    .line 2
+    .line 3
+    .line 4
+    return-void
+.end method
+
+.method public final get(Ljava/lang/String;)Ljava/lang/String;
+    .locals 0
+    .param p1    # Ljava/lang/String;
+        .annotation build Lorg/jetbrains/annotations/NotNull;
+        .end annotation
+    .end param
+    .annotation build Lorg/jetbrains/annotations/Nullable;
+    .end annotation
+
+    .line 1
+    invoke-virtual {p1}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 2
+    .line 3
+    .line 4
+    const/4 p1, 0x0
+
+    .line 5
+    return-object p1
+.end method
+
+.method public final toString()Ljava/lang/String;
+    .locals 2
+    .annotation build Lorg/jetbrains/annotations/NotNull;
+    .end annotation
+
+    .line 1
+    new-instance v0, Ljava/lang/StringBuilder;
+
+    .line 2
+    .line 3
+    const-string v1, "Headers "
+
+    .line 4
+    .line 5
+    invoke-direct {v0, v1}, Ljava/lang/StringBuilder;-><init>(Ljava/lang/String;)V
+
+    .line 6
+    .line 7
+    .line 8
+    sget-object v1, Lkotlin/collections/k0;->d:Lkotlin/collections/k0;
+
+    .line 9
+    .line 10
+    invoke-virtual {v0, v1}, Ljava/lang/StringBuilder;->append(Ljava/lang/Object;)Ljava/lang/StringBuilder;
+
+    .line 11
+    .line 12
+    .line 13
+    invoke-virtual {v0}, Ljava/lang/StringBuilder;->toString()Ljava/lang/String;
+
+    .line 14
+    .line 15
+    .line 16
+    move-result-object v0
+
+    .line 17
+    return-object v0
+.end method

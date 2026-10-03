@@ -1,0 +1,283 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <dimen name="filter_layout_cornerRadius">2dp</dimen>
+    <dimen name="tap_target_menu_max_width">350dp</dimen>
+    <dimen name="NavigationDrawer">16sp</dimen>
+    <!-- Hamburger -->
+    <dimen name="hamburger_header_height">56dp</dimen>
+    <dimen name="hamburger_logo_layout_marginLeft">32dp</dimen>
+    <dimen name="hamburger_item_text_layout_marginLeft">32dp</dimen>
+    <dimen name="hamburger_menu_item_height">60dp</dimen>
+    <dimen name="hamburger_divider_height">1dp</dimen>
+    <dimen name="hamburger_divider_layout_marginLeft">16dp</dimen>
+
+    <!-- Tile_Type1 -->
+    <dimen name="tile_type1_width">160dp</dimen>
+    <dimen name="tile_indent_margin">16dp</dimen>
+    <dimen name="tile_poster_height">90dp</dimen>
+    <dimen name="tile_poster_hero_banner_height">203dp</dimen>
+    <dimen name="tile_poster_gradient_height">33dp</dimen>
+    <dimen name="tile_poster_center_icon_height">40dp</dimen>
+    <dimen name="tile_poster_center_icon_width">40dp</dimen>
+    <dimen name="tile_poster_download_icon_height">18dp</dimen>
+    <dimen name="tile_poster_download_icon_textsize">18dp</dimen>
+    <dimen name="tile_poster_channel_logo_height">20dp</dimen>
+    <dimen name="tile_poster_download_icon_width">18dp</dimen>
+    <dimen name="tile_poster_download_icon_start">8dp</dimen>
+    <dimen name="tile_poster_download_icon_top">8dp</dimen>
+    <dimen name="tile_poster_download_icon_end">4dp</dimen>
+    <dimen name="tile_poster_download_icon_bottom">8dp</dimen>
+    <dimen name="tile_poster_center_icon_layout_marginTop">15dp</dimen>
+    <dimen name="tile_provider_image_width">90dp</dimen>
+    <dimen name="tile_provider_image_height">30dp</dimen>
+    <dimen name="tile_provider_image_layout_marginStart">8dp</dimen>
+    <dimen name="tile_progress_bar_height">2dp</dimen>
+    <dimen name="tile_poster_default_text_size">53sp</dimen>
+    <dimen name="tile_poster_default_text_size_hero_banner">70sp</dimen>
+    <dimen name="two_line_metadata_padding_from_start">8dp</dimen>
+    <dimen name="tile_channel_logo_margin_bottom">6dp</dimen>
+    <dimen name="tile_channel_logo_margin_end">8dp</dimen>
+
+    <!--    enhanced search-->
+    <dimen name="enhanced_search_download_icon_width">32dp</dimen>
+    <dimen name="enhanced_search_download_icon_height">32dp</dimen>
+    <dimen name="enhanced_search_poster_height">20dp</dimen>
+    <dimen name="enhanced_search_poster_width">60dp</dimen>
+
+
+    <!-- Nav-BAR header padding, from material specs -->
+    <dimen name="design_navigation_separator_vertical_padding" tools:override="true">0dp</dimen>
+
+    <!-- Tile_Hero_Banner -->
+    <dimen name="tile_hero_banner_metadata1_l2_top_margin">2dp</dimen>
+    <dimen name="tile_hero_banner_metadata1_l3_top_margin">0dp</dimen>
+    <dimen name="tile_hero_banner_metadata1_l2_top_margin_horiz">0dp</dimen>
+    <dimen name="tile_hero_banner_metadata1_l3_top_margin_horiz">0dp</dimen>
+    <dimen name="tile_hero_banner_metadata1_2_3_padding">3dp</dimen>
+
+    <!-- guide border width -->
+    <dimen name="guide_spinner_border_width">1dp</dimen>
+
+    <!--Sticky Gradient height-->
+    <dimen name="sticky_gradient_height">69dp</dimen>
+
+    <!--As per Zeplin, text size is mentioned in px but design team confirmed that they have considered mdpi as reference
+    which makes 1px=1sp -->
+
+
+    <!--Phone: channel page text sizes-->
+    <dimen name="channel_page_title_text_size">25dp</dimen>
+
+    <!--Phone: Action menu page font sizes-->
+    <dimen name="action_menu_title_text_size">20dp</dimen>
+    <dimen name="action_menu_description_text_size">14dp</dimen>
+
+    <!--Tablet: Action menu page font sizes-->
+    <dimen name="action_menu_title_text_size_table">24dp</dimen>
+
+    <dimen name="assetLabel_text_size">10dp</dimen>
+
+    <!--Tablet: Swimlane font sizes-->
+    <dimen name="swimlane_see_all_text_size_tab">14dp</dimen>
+
+    <!--Phone: Swimlane font sizes-->
+    <dimen name="swimlane_see_all_text_size">16dp</dimen>
+    <dimen name="swimlane_title_text_size">18dp</dimen>
+    <dimen name="swimlane_channel_title_text_size">20dp</dimen>
+    <dimen name="swimlane_channel_icon_text_size">14dp</dimen>
+
+    <!--Phone: Swimlane metadata font sizes-->
+    <dimen name="swimlane_metadata_title_text_size">14dp</dimen>
+    <dimen name="swimlane_metadata_second_line_text_size">12dp</dimen>
+    <dimen name="swimlane_metadata_third_line_text_size">12dp</dimen>
+    <dimen name="swimlane_metadata_icons_text_size">12dp</dimen>
+
+    <!--Tablet: Swimlane metadata font sizes-->
+    <dimen name="swimlane_metadata_title_text_size_tablet">14dp</dimen>
+    <dimen name="swimlane_metadata_second_line_text_size_tablet">14dp</dimen>
+    <dimen name="swimlane_metadata_third_line_text_size_tablet">12dp</dimen>
+    <dimen name="swimlane_metadata_icons_text_size_tablet">12dp</dimen>
+
+
+    <!--Channel details page font sizes-->
+    <dimen name="channel_page_channel_number_text_size">15dp</dimen>
+    <dimen name="channel_page_channel_title_text_size">15dp</dimen>
+    <dimen name="channel_page_channel_description_text_size">14dp</dimen>
+
+    <!--Phone: Hero banner metadata text sizes-->
+    <dimen name="hero_banner_title_text_size">20dp</dimen>
+    <dimen name="hero_banner_second_line_text_size">15dp</dimen>
+    <dimen name="hero_banner_third_line_text_size">15dp</dimen>
+    <dimen name="hero_banner_icons_text_size">15dp</dimen>
+
+    <!--Tablet: Hero banner metadata text sizes-->
+    <dimen name="hero_banner_title_text_size_tablet">26dp</dimen>
+    <dimen name="hero_banner_second_line_text_size_tablet">15dp</dimen>
+    <dimen name="hero_banner_third_line_text_size_tablet">15dp</dimen>
+    <dimen name="hero_banner_icons_text_size_tablet">17dp</dimen>
+
+    <!-- Swimlane Quick Action Font -->
+    <dimen name="swimlane_quick_action_title_font_size">17dp</dimen>
+    <dimen name="swimlane_quick_action_submenu_title_font_size">15dp</dimen>
+    <dimen name="swimlane_quick_action_submenu_icon_font_size">18dp</dimen>
+
+    <!--Tablet: Action menu page action buttons text size-->
+    <dimen name="action_menu_button_text_size_tablet">14dp</dimen>
+    <dimen name="action_menu_button_icon_size_tablet">24dp</dimen>
+
+    <!--Phone: Action menu page action buttons text size-->
+    <dimen name="action_menu_button_text_size">12dp</dimen>
+    <dimen name="action_menu_button_icon_size">24dp</dimen>
+
+    <!--Default placeholder text sizes-->
+    <dimen name="landscape_event_swimlane_default_poster_text_size">42dp</dimen>
+    <dimen name="event_swimlane_2_3_default_poster_text_siz">42dp</dimen>
+    <dimen name="hero_banner_16_9_default_poster_text_size">66dp</dimen>
+    <dimen name="hero_banner_2_3_default_poster_text_size">56dp</dimen>
+
+    <!--Metadata info container layout height-->
+    <dimen name="phone_hub_section_swimlane_card_info_layout_height">43dp</dimen>
+    <dimen name="tab_hub_section_swimlane_card_info_layout_height">48dp</dimen>
+    <dimen name="tab_see_all_grid_card_info_layout_height">48dp</dimen>
+    <dimen name="phone_see_all_grid_card_info_layout_height">43dp</dimen>
+
+    <!--Multiuser Profile-->
+    <dimen name="multi_user_profile_status_bar_text_font_size">17dp</dimen>
+
+
+    <!--Grid Poster-->
+    <dimen name="tile_grid_poster_width">120dp</dimen>
+    <dimen name="tile_grid_poster_height">68dp</dimen>
+    <dimen name="tile_grid_corner_radius">8dp</dimen>
+    <dimen name="tile_grid_meta_data_top_margin">4dp</dimen>
+    <dimen name="tile_grid_margin">16dp</dimen>
+    <dimen name="tile_grid_top_margin">13dp</dimen>
+    <dimen name="tile_channel_logo_height">20dp</dimen>
+    <dimen name="tile_grid_meta_data_left_margin">12dp</dimen>
+    <dimen name="tile_grid_meta_data_title_text_size">14sp</dimen>
+    <dimen name="tile_grid_meta_data_title_width">188dp</dimen>
+    <dimen name="tile_hero_banner_text_size">20sp</dimen>
+    <dimen name="tile_hero_banner_swim_lane_overlay_height">120dp</dimen>
+    <dimen name="tile_hero_banner_stroke_height">1dp</dimen>
+    <dimen name="tile_hero_banner_indicator_corner_radius">2dp</dimen>
+    <dimen name="indicator_bottom_margin">50dp</dimen>
+    <dimen name="full_content_view_tab_text_size_vertical">16dp</dimen>
+    <dimen name="full_content_view_title_text_size_vertical">20dp</dimen>
+
+
+
+    <!-- Mobile Only -->  <!--    Collection Swimlane [Dimensions for Items Of RecyclerView]-->
+    <dimen name="tile_collection_swimlane_item_width_mobile">160dp</dimen>
+    <dimen name="tile_collection_swimlane_item_height_mobile">90dp</dimen>
+    <dimen name="tile_collection_swimlane_item_end_margin_mobile">4dp</dimen>
+    <dimen name="tile_item_first_line_metadata_text_size_mobile">14sp</dimen>
+
+<!--    Note : Zeplin says that tile_collection_swimlane_item_end_margin_mobile should be 8dp
+        but other swimlane items have end margin of 4dp, therefore for colletion swimlane items
+        to look alike other swimlane items, we'll keep the end margin same -->
+
+    <!-- Common for Mobile And Tablet -->  <!--    Collection Swimlane [Dimensions for Items Of RecyclerView]-->
+    <dimen name="tile_collection_swimlane_item_corner_radius">8dp</dimen>
+    <dimen name="tile_collection_swimlane_item_card_elevation">10dp</dimen>
+    <dimen name="tile_item_two_line_metadata_margin_start">8dp</dimen>
+    <dimen name="tile_item_two_line_metadata_margin_end">8dp</dimen>
+    <dimen name="tile_item_two_line_metadata_margin_bottom">8dp</dimen>
+    <dimen name="tile_item_first_line_metadata_margin_bottom">4dp</dimen>
+    <dimen name="tile_item_first_line_metadata_fading_edge_length">30dp</dimen>
+    <dimen name="tile_item_second_line_metadata_text_size">12sp</dimen>
+    <dimen name="tile_item_margin_between_text_and_icons_in_second_line_metadata">4dp</dimen>
+
+    <!-- Tablet Only -->  <!--    Collection Swimlane [Dimensions for Items Of RecyclerView]-->
+    <dimen name="tile_collection_swimlane_item_width_tablet">273dp</dimen>
+    <dimen name="tile_collection_swimlane_item_height_tablet">155dp</dimen>
+    <dimen name="tile_collection_swimlane_item_end_margin_tablet">8dp</dimen>
+    <dimen name="tile_item_first_line_metadata_text_size_tablet">16sp</dimen>
+
+
+    <!-- Mobile Only -->  <!--    Collection Swimlane Layout Dimensions-->
+    <dimen name="collection_swimlane_layout_height_mobile">290dp</dimen>
+    <dimen name="collection_swimlane_layout_bottom_margin_mobile">32dp</dimen>
+    <dimen name="collection_swimlane_title_width_mobile">216dp</dimen>
+    <dimen name="collection_swimlane_title_start_margin_mobile">16dp</dimen>
+    <dimen name="collection_swimlane_title_text_size_mobile">24sp</dimen>
+    <dimen name="coll_swim_scroll_view_start_padding">16dp</dimen>
+    <dimen name="coll_swim_scroll_view_end_padding">16dp</dimen>
+    <dimen name="coll_swim_see_all_icon_width_mobile">24dp</dimen>
+    <dimen name="coll_swim_see_all_icon_height_mobile">24dp</dimen>
+    <dimen name="coll_swim_see_all_icon_start_margin">16dp</dimen>
+    <dimen name="coll_swim_see_all_icon_end_margin">16dp</dimen>
+    <dimen name="coll_swim_see_all_text_size_mobile">12sp</dimen>
+    <dimen name="coll_swim_see_all_text_top_margin_mobile">2dp</dimen>
+
+    <!-- Tablet Only -->  <!--    Collection Swimlane Layout Dimensions-->
+    <dimen name="collection_swimlane_layout_height_tablet">261dp</dimen>
+    <dimen name="collection_swimlane_layout_bottom_margin_tablet">32dp</dimen>
+    <dimen name="coll_swim_see_all_text_size_tablet">16sp</dimen>
+    <dimen name="coll_swim_see_all_text_start_padding_tablet">20dp</dimen>
+    <dimen name="coll_swim_see_all_text_top_padding_tablet">10dp</dimen>
+    <dimen name="coll_swim_see_all_text_end_padding_tablet">20dp</dimen>
+    <dimen name="coll_swim_see_all_text_bottom_padding_tablet">10dp</dimen>
+    <dimen name="coll_swim_see_all_text_end_margin_tablet">24dp</dimen>
+    <dimen name="collection_swimlane_list_end_padding_tablet">16dp</dimen>
+    <dimen name="collection_swimlane_title_text_size_tablet">28sp</dimen>
+
+
+    <dimen name="bottom_bar_height">52dp</dimen>
+    <dimen name="mobile_bottom_icon_text_size">10dp</dimen>
+    <dimen name="tablet_bottom_icon_text_size">16dp</dimen>
+    <dimen name="tablet_bottom_icon_margin_left">48dp</dimen>
+    <dimen name="tablet_bottom_text_margin_left">4dp</dimen>
+
+    <dimen name="some_random_height_for_scrolling_animation">200dp</dimen>
+    <dimen name="some_random_height_for_scrolling_animation_in_negative">-200dp</dimen>
+
+    <!-- Note : seasonItemsRecyclerView inside series_tab_layout (for Tablets) will not have scrolling animation, therefore, we do not need topPadding on it
+    Instead, we need top margin on it and top margin should be equal to sum of some_random_height_for_scrolling_animation plus top margin of seasonItemsRecyclerView as per Zeplin which is 24dp -->
+    <dimen name="total_sum_of_random_height_for_scrolling_animation_plus_season_items_recycler_view_top_margin">224dp</dimen>
+
+
+    <dimen name="new_series_page_primary_toolbar_height">60dp</dimen>
+
+    <dimen name="season_list_spinner_top_margin">16dp</dimen>
+    <dimen name="series_items_recycler_view_top_margin">24dp</dimen>
+<!--    following dimension is the combined top margin of seasonListSpinner and seriesItemsRecyclerView inside series_page_fragment-->
+    <dimen name="season_list_spinner_top_margin_plus_series_items_recycler_view_top_margin">40dp</dimen>
+
+    <dimen name="docked_toolbar_height">60dp</dimen>
+    <dimen name="tab_layout_separator_height">1dp</dimen>
+
+    <dimen name="height_of_sticky_gradient_at_top_minus_height_of_season_list_spinner">20dp</dimen>
+
+    <dimen name="playback_quality_icon_text_size_mobile">10dp</dimen>
+    <dimen name="playback_quality_icon_text_size_tablet">12dp</dimen>
+
+    <dimen name="first_non_hero_banner_swimlane_top_margin_when_hero_banner_is_missing">100dp</dimen>
+    <dimen name="branded_page_toolbar_height">60dp</dimen>
+    <dimen name="branded_page_toolbar_height_in_negative">-60dp</dimen>
+
+    <dimen name="brand_title_or_logo_start_margin">16dp</dimen>
+    <dimen name="brand_title_or_logo_end_margin">16dp</dimen>
+    <dimen name="brand_logo_width">183dp</dimen>
+    <dimen name="brand_logo_height">40dp</dimen>
+    <dimen name="brand_title_or_logo_top_margin">16dp</dimen>
+    <dimen name="app_bar_layout_min_height">76dp</dimen>
+
+    <!--Swimlane See All font sizes-->
+    <dimen name="hub_screen_swimlane_see_all_text_size">16sp</dimen>
+    <dimen name="hub_screen_item_record_icon_size">25sp</dimen>
+    <dimen name="hub_screen_swimlane_title_text_size">18sp</dimen>
+    <dimen name="hub_screen_swimlane_gap_from_start_or_end">13dp</dimen>
+    <dimen name="metadata_top_margin">0dp</dimen>
+
+    <dimen name="horizontal_swimlane_item_end_margin">6dp</dimen>
+
+    <!--    text size for branded_swimlane_title_text_size and branded_swimlane_item_title_text_size  is in DP because
+        this is used on Home screen which is not honoring device font size currently-->
+    <dimen name="branded_swimlane_title_text_size">18dp</dimen>
+    <dimen name="branded_swimlane_item_title_text_size">14dp</dimen>
+    <dimen name="branded_page_toolbar_back_icon_size">24sp</dimen>
+    <dimen name="branded_page_toolbar_search_icon_size">24sp</dimen>
+
+    <dimen name="gap_between_title_and_see_all_text">8dp</dimen>
+</resources>
+

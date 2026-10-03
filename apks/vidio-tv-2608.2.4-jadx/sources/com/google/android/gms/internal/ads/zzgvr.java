@@ -1,0 +1,257 @@
+package com.google.android.gms.internal.ads;
+
+import a00.a;
+import androidx.collection.t0;
+import com.google.android.gms.internal.ads.zzgvr;
+import com.google.android.gms.internal.ads.zzgvs;
+import com.squareup.moshi.g0;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.RandomAccess;
+import n2.l;
+
+/* loaded from: classes3.dex */
+public abstract class zzgvr<MessageType extends zzgvs<MessageType, BuilderType>, BuilderType extends zzgvr<MessageType, BuilderType>> implements zzgzb {
+    private String zza(String str) {
+        return l.b("Reading ", getClass().getName(), " from a ", str, " threw an IOException (should never happen).");
+    }
+
+    private static <T> void zzb(Iterable<T> iterable, List<? super T> list) {
+        if (iterable instanceof Collection) {
+            int size = ((Collection) iterable).size();
+            if (list instanceof ArrayList) {
+                ((ArrayList) list).ensureCapacity(list.size() + size);
+            } else if (list instanceof zzgzn) {
+                ((zzgzn) list).zze(list.size() + size);
+            }
+        }
+        int size2 = list.size();
+        if (!(iterable instanceof List) || !(iterable instanceof RandomAccess)) {
+            for (Object obj : iterable) {
+                if (obj == null) {
+                    zzc(list, size2);
+                }
+                list.add(obj);
+            }
+            return;
+        }
+        List list2 = (List) iterable;
+        int size3 = list2.size();
+        for (int i11 = 0; i11 < size3; i11++) {
+            a.c cVar = (Object) list2.get(i11);
+            if (cVar == null) {
+                zzc(list, size2);
+            }
+            list.add(cVar);
+        }
+    }
+
+    protected static zzhag zzbb(zzgzc zzgzcVar) {
+        return new zzhag(zzgzcVar);
+    }
+
+    @Deprecated
+    protected static <T> void zzbc(Iterable<T> iterable, Collection<? super T> collection) {
+        zzbd(iterable, (List) collection);
+    }
+
+    protected static <T> void zzbd(Iterable<T> iterable, List<? super T> list) {
+        byte[] bArr = zzgye.zzb;
+        iterable.getClass();
+        if (!(iterable instanceof zzgyo)) {
+            if (iterable instanceof zzgzl) {
+                list.addAll((Collection) iterable);
+                return;
+            } else {
+                zzb(iterable, list);
+                return;
+            }
+        }
+        List zza = ((zzgyo) iterable).zza();
+        zzgyo zzgyoVar = (zzgyo) list;
+        int size = list.size();
+        for (Object obj : zza) {
+            if (obj == null) {
+                String a11 = t0.a(zzgyoVar.size() - size, "Element at index ", " is null.");
+                int size2 = zzgyoVar.size();
+                while (true) {
+                    size2--;
+                    if (size2 < size) {
+                        g0.a(a11);
+                        return;
+                    }
+                    zzgyoVar.remove(size2);
+                }
+            } else if (obj instanceof zzgwj) {
+                zzgyoVar.zzb();
+            } else if (obj instanceof byte[]) {
+                byte[] bArr2 = (byte[]) obj;
+                zzgwj.zzv(bArr2, 0, bArr2.length);
+                zzgyoVar.zzb();
+            } else {
+                zzgyoVar.add((String) obj);
+            }
+        }
+    }
+
+    private static void zzc(List<?> list, int i11) {
+        String a11 = t0.a(list.size() - i11, "Element at index ", " is null.");
+        int size = list.size();
+        while (true) {
+            size--;
+            if (size < i11) {
+                throw new NullPointerException(a11);
+            }
+            list.remove(size);
+        }
+    }
+
+    @Override // 
+    /* renamed from: zzaC, reason: merged with bridge method [inline-methods] and merged with bridge method [inline-methods] */
+    public abstract BuilderType zzaP();
+
+    protected abstract BuilderType zzaD(MessageType messagetype);
+
+    public BuilderType zzaE(zzgwj zzgwjVar) throws zzgyg {
+        try {
+            zzgwp zzl = zzgwjVar.zzl();
+            zzaR(zzl);
+            zzl.zzy(0);
+            return this;
+        } catch (zzgyg e11) {
+            throw e11;
+        } catch (IOException e12) {
+            bb.a.b(zza("ByteString"), e12);
+            return null;
+        }
+    }
+
+    /* renamed from: zzaF, reason: merged with bridge method [inline-methods] */
+    public BuilderType zzaR(zzgwp zzgwpVar) throws IOException {
+        int i11 = zzgxb.zzb;
+        int i12 = zzgzm.zza;
+        return zzaW(zzgwpVar, zzgxb.zza);
+    }
+
+    /* JADX WARN: Multi-variable type inference failed */
+    /* renamed from: zzaG, reason: merged with bridge method [inline-methods] */
+    public BuilderType zzaS(zzgzc zzgzcVar) {
+        if (zzbt().getClass().isInstance(zzgzcVar)) {
+            return (BuilderType) zzaD((zzgvs) zzgzcVar);
+        }
+        gb.g.c("mergeFrom(MessageLite) can only merge messages of the same type.");
+        return null;
+    }
+
+    public BuilderType zzaH(InputStream inputStream) throws IOException {
+        zzgwp zzG = zzgwp.zzG(inputStream, 4096);
+        zzaR(zzG);
+        zzG.zzy(0);
+        return this;
+    }
+
+    /* renamed from: zzaI, reason: merged with bridge method [inline-methods] */
+    public BuilderType zzaU(byte[] bArr) throws zzgyg {
+        return zzaZ(bArr, 0, bArr.length);
+    }
+
+    public BuilderType zzaJ(zzgwj zzgwjVar, zzgxb zzgxbVar) throws zzgyg {
+        try {
+            zzgwp zzl = zzgwjVar.zzl();
+            zzaW(zzl, zzgxbVar);
+            zzl.zzy(0);
+            return this;
+        } catch (zzgyg e11) {
+            throw e11;
+        } catch (IOException e12) {
+            bb.a.b(zza("ByteString"), e12);
+            return null;
+        }
+    }
+
+    @Override // 
+    /* renamed from: zzaK, reason: merged with bridge method [inline-methods] */
+    public abstract BuilderType zzaW(zzgwp zzgwpVar, zzgxb zzgxbVar) throws IOException;
+
+    public BuilderType zzaL(InputStream inputStream, zzgxb zzgxbVar) throws IOException {
+        zzgwp zzG = zzgwp.zzG(inputStream, 4096);
+        zzaW(zzG, zzgxbVar);
+        zzG.zzy(0);
+        return this;
+    }
+
+    /* renamed from: zzaM, reason: merged with bridge method [inline-methods] */
+    public BuilderType zzaY(byte[] bArr, zzgxb zzgxbVar) throws zzgyg {
+        return zzba(bArr, 0, bArr.length, zzgxbVar);
+    }
+
+    @Override // 
+    /* renamed from: zzaN, reason: merged with bridge method [inline-methods] */
+    public BuilderType zzaZ(byte[] bArr, int i11, int i12) throws zzgyg {
+        try {
+            zzgwp zzH = zzgwp.zzH(bArr, i11, i12, false);
+            zzaR(zzH);
+            zzH.zzy(0);
+            return this;
+        } catch (zzgyg e11) {
+            throw e11;
+        } catch (IOException e12) {
+            bb.a.b(zza("byte array"), e12);
+            return null;
+        }
+    }
+
+    @Override // 
+    /* renamed from: zzaO, reason: merged with bridge method [inline-methods] */
+    public BuilderType zzba(byte[] bArr, int i11, int i12, zzgxb zzgxbVar) throws zzgyg {
+        try {
+            zzgwp zzH = zzgwp.zzH(bArr, i11, i12, false);
+            zzaW(zzH, zzgxbVar);
+            zzH.zzy(0);
+            return this;
+        } catch (zzgyg e11) {
+            throw e11;
+        } catch (IOException e12) {
+            bb.a.b(zza("byte array"), e12);
+            return null;
+        }
+    }
+
+    public /* bridge */ /* synthetic */ zzgzb zzaQ(zzgwj zzgwjVar) throws zzgyg {
+        zzaE(zzgwjVar);
+        return this;
+    }
+
+    public /* bridge */ /* synthetic */ zzgzb zzaT(InputStream inputStream) throws IOException {
+        zzaH(inputStream);
+        return this;
+    }
+
+    public /* bridge */ /* synthetic */ zzgzb zzaV(zzgwj zzgwjVar, zzgxb zzgxbVar) throws zzgyg {
+        zzaJ(zzgwjVar, zzgxbVar);
+        return this;
+    }
+
+    public /* bridge */ /* synthetic */ zzgzb zzaX(InputStream inputStream, zzgxb zzgxbVar) throws IOException {
+        zzaL(inputStream, zzgxbVar);
+        return this;
+    }
+
+    public boolean zzbe(InputStream inputStream) throws IOException {
+        int i11 = zzgxb.zzb;
+        int i12 = zzgzm.zza;
+        return zzbf(inputStream, zzgxb.zza);
+    }
+
+    public boolean zzbf(InputStream inputStream, zzgxb zzgxbVar) throws IOException {
+        int read = inputStream.read();
+        if (read == -1) {
+            return false;
+        }
+        zzaL(new zzgvq(inputStream, zzgwp.zzE(read, inputStream)), zzgxbVar);
+        return true;
+    }
+}

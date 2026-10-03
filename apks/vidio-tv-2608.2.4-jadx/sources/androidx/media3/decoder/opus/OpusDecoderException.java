@@ -1,0 +1,7 @@
+package androidx.media3.decoder.opus;
+
+import androidx.media3.decoder.DecoderException;
+
+/* loaded from: classes.dex */
+public final class OpusDecoderException extends DecoderException {
+}

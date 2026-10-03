@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <style name="Theme.Client" parent="android:Theme.Holo">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:textColor">#FFFFFFFF</item>
+    </style>
+
+    <style name="Theme.NUXClient" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:textColor">#FFFFFFFF</item>
+        <item name="bottomSheetDialogTheme">@style/AppBottomSheetDialogTheme</item>
+    </style>
+
+
+    <style name="AppBottomSheetDialogTheme"
+        parent="Theme.Design.Light.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/AppModalStyle</item>
+    </style>
+
+    <style name="AppModalStyle"
+        parent="Widget.Design.BottomSheet.Modal">
+        <item name="android:background">@drawable/bottom_sheet_background</item>
+    </style>
+
+    <style name="FastScrollChannelsListStyle" parent="Theme.Client">
+        <item name="android:fastScrollThumbDrawable">@drawable/fast_scroller_thumb</item>
+
+        <!-- TBD & can be also overridden by lab settings per project -->
+
+        <!--<item name="android:fastScrollTrackDrawable">@drawable/fast_scroller_track</item>-->
+        <!--<item name="android:fastScrollTextColor">#FFFFFFFF</item>-->
+        <!--<item name="android:fastScrollPreviewBackgroundRight">@drawable/fast_scroller_preview</item>-->
+        <!--<item name="android:fastScrollOverlayPosition">aboveThumb</item>-->
+    </style>
+
+    <style name="AlertDialogTheme" parent="Theme.AppCompat">
+        <item name="colorAccent">#FFFFFFFF</item>
+    </style>
+
+    <style name="AlertDialogThemeTab" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="colorAccent">#FFFFFFFF</item>
+    </style>
+
+    <style name="EditTextStyle" parent="Widget.AppCompat.EditText">
+        <item name="colorControlActivated">#FFFFFFFF</item>
+    </style>
+
+    <style name="SwitchON" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorControlActivated">@color/switch_activated_color</item>
+        <item name="colorSwitchThumbNormal">#BDBDBD</item>
+        <item name="android:colorForeground">@color/switch_foreground_color</item>
+
+    </style>
+    <style name="AppCompatAlertDialogStyle" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="android:textColorPrimary">#FFFFFF</item>
+    </style>
+
+    <style name="AppTheme" parent="Theme.AppCompat.Light">
+        <!-- your style -->
+        <item name="alertDialogTheme">@style/AppCompatAlertDialogStyle</item>
+    </style>
+
+    <style name="AppTheme.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="colorPrimaryDark">#000</item>
+    </style>
+
+    <style name="ProgressBar" parent="@style/Widget.AppCompat.ProgressBar.Horizontal">
+        <item name="android:progressBackgroundTint">#69f0ae</item>
+        <item name="android:progressTint">#b71c1c</item>
+        <item name="android:minWidth">2dp</item>
+    </style>
+</resources>

@@ -1,0 +1,48 @@
+package com.google.android.gms.internal.common;
+
+import com.google.android.gms.common.api.a;
+import f4.v;
+import java.util.Arrays;
+
+/* loaded from: classes.dex */
+class zzaa extends zzab {
+    Object[] zza = new Object[4];
+    int zzb = 0;
+    boolean zzc;
+
+    zzaa(int i11) {
+    }
+
+    public final zzaa zza(Object obj) {
+        int i11;
+        obj.getClass();
+        int length = this.zza.length;
+        int i12 = this.zzb;
+        int i13 = i12 + 1;
+        if (i13 < 0) {
+            v.a("cannot store more than Integer.MAX_VALUE elements");
+            return null;
+        }
+        if (i13 <= length) {
+            i11 = length;
+        } else {
+            i11 = (length >> 1) + length + 1;
+            if (i11 < i13) {
+                int highestOneBit = Integer.highestOneBit(i12);
+                i11 = highestOneBit + highestOneBit;
+            }
+            if (i11 < 0) {
+                i11 = a.e.API_PRIORITY_OTHER;
+            }
+        }
+        if (i11 > length || this.zzc) {
+            this.zza = Arrays.copyOf(this.zza, i11);
+            this.zzc = false;
+        }
+        Object[] objArr = this.zza;
+        int i14 = this.zzb;
+        this.zzb = i14 + 1;
+        objArr[i14] = obj;
+        return this;
+    }
+}

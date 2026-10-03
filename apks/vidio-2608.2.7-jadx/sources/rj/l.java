@@ -1,0 +1,5 @@
+package rj;
+
+/* loaded from: classes.dex */
+public abstract class l {
+}

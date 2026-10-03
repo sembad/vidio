@@ -1,0 +1,13 @@
+package zy;
+
+import kotlin.jvm.functions.Function0;
+import wa0.f;
+import wa0.r2;
+
+/* loaded from: classes5.dex */
+public final /* synthetic */ class c implements Function0 {
+    @Override // kotlin.jvm.functions.Function0
+    public final Object invoke() {
+        return new f(r2.f65850a);
+    }
+}

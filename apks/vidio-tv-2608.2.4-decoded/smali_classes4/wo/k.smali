@@ -1,0 +1,167 @@
+.class public final Lwo/k;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+# interfaces
+.implements Lca0/y1;
+
+
+# annotations
+.annotation system Ldalvik/annotation/Signature;
+    value = {
+        "Ljava/lang/Object;",
+        "Lca0/y1<",
+        "Ljava/lang/Boolean;",
+        ">;"
+    }
+.end annotation
+
+
+# instance fields
+.field private final d:Lca0/j1;
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "Lca0/j1<",
+            "Ljava/lang/Boolean;",
+            ">;"
+        }
+    .end annotation
+
+    .annotation build Lorg/jetbrains/annotations/NotNull;
+    .end annotation
+.end field
+
+
+# direct methods
+.method public constructor <init>()V
+    .locals 0
+
+    const/4 p0, 0x0
+
+    throw p0
+.end method
+
+.method public constructor <init>(Landroidx/media3/exoplayer/ExoPlayer;)V
+    .locals 1
+
+    .line 1
+    sget-object v0, Ljava/lang/Boolean;->FALSE:Ljava/lang/Boolean;
+
+    .line 2
+    .line 3
+    invoke-static {v0}, Lca0/a2;->a(Ljava/lang/Object;)Lca0/j1;
+
+    .line 4
+    .line 5
+    .line 6
+    move-result-object v0
+
+    .line 7
+    invoke-virtual {p1}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 8
+    .line 9
+    .line 10
+    invoke-direct {p0}, Ljava/lang/Object;-><init>()V
+
+    .line 11
+    .line 12
+    .line 13
+    iput-object v0, p0, Lwo/k;->d:Lca0/j1;
+
+    .line 14
+    .line 15
+    new-instance v0, Lwo/j;
+
+    .line 16
+    .line 17
+    invoke-direct {v0, p0}, Lwo/j;-><init>(Lwo/k;)V
+
+    .line 18
+    .line 19
+    .line 20
+    invoke-interface {p1, v0}, Ls7/a0;->addListener(Ls7/a0$c;)V
+
+    .line 21
+    .line 22
+    .line 23
+    return-void
+.end method
+
+.method public static final synthetic d(Lwo/k;)Lca0/j1;
+    .locals 0
+
+    .line 1
+    iget-object p0, p0, Lwo/k;->d:Lca0/j1;
+
+    .line 2
+    .line 3
+    return-object p0
+.end method
+
+
+# virtual methods
+.method public final collect(Lca0/h;Ll60/b;)Ljava/lang/Object;
+    .locals 1
+    .param p1    # Lca0/h;
+        .annotation build Lorg/jetbrains/annotations/NotNull;
+        .end annotation
+    .end param
+    .param p2    # Ll60/b;
+        .annotation build Lorg/jetbrains/annotations/NotNull;
+        .end annotation
+    .end param
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Lca0/h<",
+            "-",
+            "Ljava/lang/Boolean;",
+            ">;",
+            "Ll60/b<",
+            "*>;)",
+            "Ljava/lang/Object;"
+        }
+    .end annotation
+
+    .annotation build Lorg/jetbrains/annotations/Nullable;
+    .end annotation
+
+    .line 1
+    iget-object v0, p0, Lwo/k;->d:Lca0/j1;
+
+    .line 2
+    .line 3
+    invoke-interface {v0, p1, p2}, Lca0/g;->collect(Lca0/h;Ll60/b;)Ljava/lang/Object;
+
+    .line 4
+    .line 5
+    .line 6
+    move-result-object p1
+
+    .line 7
+    return-object p1
+.end method
+
+.method public final getValue()Ljava/lang/Object;
+    .locals 1
+
+    .line 1
+    iget-object v0, p0, Lwo/k;->d:Lca0/j1;
+
+    .line 2
+    .line 3
+    invoke-interface {v0}, Lca0/j1;->getValue()Ljava/lang/Object;
+
+    .line 4
+    .line 5
+    .line 6
+    move-result-object v0
+
+    .line 7
+    check-cast v0, Ljava/lang/Boolean;
+
+    .line 8
+    .line 9
+    return-object v0
+.end method

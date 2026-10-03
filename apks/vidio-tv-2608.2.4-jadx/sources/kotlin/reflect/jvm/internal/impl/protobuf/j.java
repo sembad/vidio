@@ -1,0 +1,97 @@
+package kotlin.reflect.jvm.internal.impl.protobuf;
+
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Map;
+
+/* loaded from: classes5.dex */
+public final class j extends k {
+
+    static class a<K> implements Map.Entry<K, Object> {
+
+        /* renamed from: d, reason: collision with root package name */
+        private Map.Entry<K, j> f44800d;
+
+        a(Map.Entry entry) {
+            this.f44800d = entry;
+        }
+
+        @Override // java.util.Map.Entry
+        public final K getKey() {
+            return this.f44800d.getKey();
+        }
+
+        @Override // java.util.Map.Entry
+        public final Object getValue() {
+            j value = this.f44800d.getValue();
+            if (value == null) {
+                return null;
+            }
+            return value.a();
+        }
+
+        @Override // java.util.Map.Entry
+        public final Object setValue(Object obj) {
+            if (!(obj instanceof n)) {
+                gb.g.c("LazyField now only used for MessageSet, and the value of MessageSet must be an instance of MessageLite");
+                return null;
+            }
+            j value = this.f44800d.getValue();
+            n nVar = value.f44802a;
+            value.f44802a = (n) obj;
+            return nVar;
+        }
+    }
+
+    static class b<K> implements Iterator<Map.Entry<K, Object>> {
+
+        /* renamed from: d, reason: collision with root package name */
+        private Iterator<Map.Entry<K, Object>> f44801d;
+
+        public b(Iterator<Map.Entry<K, Object>> it) {
+            this.f44801d = it;
+        }
+
+        @Override // java.util.Iterator
+        public final boolean hasNext() {
+            return this.f44801d.hasNext();
+        }
+
+        @Override // java.util.Iterator
+        public final Object next() {
+            Map.Entry<K, Object> next = this.f44801d.next();
+            return next.getValue() instanceof j ? new a(next) : next;
+        }
+
+        @Override // java.util.Iterator
+        public final void remove() {
+            this.f44801d.remove();
+        }
+    }
+
+    public final n a() {
+        if (this.f44802a == null) {
+            synchronized (this) {
+                if (this.f44802a == null) {
+                    try {
+                        this.f44802a = null;
+                    } catch (IOException unused) {
+                    }
+                }
+            }
+        }
+        return this.f44802a;
+    }
+
+    public final boolean equals(Object obj) {
+        return a().equals(obj);
+    }
+
+    public final int hashCode() {
+        return a().hashCode();
+    }
+
+    public final String toString() {
+        return a().toString();
+    }
+}

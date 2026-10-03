@@ -1,0 +1,49 @@
+package com.google.android.gms.internal.ads;
+
+import android.os.RemoteException;
+import java.util.concurrent.ExecutorService;
+import og.o;
+
+/* loaded from: classes5.dex */
+public final class zzbbn {
+    final /* synthetic */ zzbbp zza;
+    private final byte[] zzb;
+    private int zzc;
+
+    /* synthetic */ zzbbn(zzbbp zzbbpVar, byte[] bArr, zzbbo zzbboVar) {
+        this.zza = zzbbpVar;
+        this.zzb = bArr;
+    }
+
+    /* JADX INFO: Access modifiers changed from: private */
+    public final synchronized void zzd() {
+        try {
+            zzbbp zzbbpVar = this.zza;
+            if (zzbbpVar.zzb) {
+                zzbbpVar.zza.zzj(this.zzb);
+                this.zza.zza.zzi(0);
+                this.zza.zza.zzg(this.zzc);
+                this.zza.zza.zzh(null);
+                this.zza.zza.zzf();
+            }
+        } catch (RemoteException e11) {
+            o.c("Clearcut log failed", e11);
+        }
+    }
+
+    public final zzbbn zza(int i11) {
+        this.zzc = i11;
+        return this;
+    }
+
+    public final synchronized void zzc() {
+        ExecutorService executorService;
+        executorService = this.zza.zzc;
+        executorService.execute(new Runnable() { // from class: com.google.android.gms.internal.ads.zzbbm
+            @Override // java.lang.Runnable
+            public final void run() {
+                zzbbn.this.zzd();
+            }
+        });
+    }
+}

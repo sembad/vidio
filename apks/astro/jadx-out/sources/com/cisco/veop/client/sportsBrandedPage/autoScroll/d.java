@@ -1,0 +1,9 @@
+package com.cisco.veop.client.sportsBrandedPage.autoScroll;
+
+/* loaded from: classes2.dex */
+public enum d {
+    AUTO_SCROLL_STARTED,
+    AUTO_SCROLL_ENDED_WHEN_USER_MANUALLY_SCROLLED_TO_NEXT_HERO_BANNER,
+    AUTO_SCROLL_ENDED_AFTER_NAVIGATING_AWAY_FROM_HERO_BANNER,
+    AUTO_SCROLL_ENDED_ON_PLAYBACK_START_OR_RESUME
+}

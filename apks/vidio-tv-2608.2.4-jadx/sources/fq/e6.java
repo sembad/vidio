@@ -1,0 +1,48 @@
+package fq;
+
+import com.kmklabs.vidioplayer.api.compose.ComposePlayerState;
+import kotlin.Unit;
+import kotlin.jvm.functions.Function0;
+import kotlin.jvm.functions.Function2;
+
+@kotlin.coroutines.jvm.internal.e(c = "com.vidio.android.tv.cpp.compose.CppTrailerKt$CppTrailer$4$1", f = "CppTrailer.kt", l = {}, m = "invokeSuspend", v = 2)
+/* loaded from: classes4.dex */
+final class e6 extends kotlin.coroutines.jvm.internal.i implements Function2<z90.i0, l60.b<? super Unit>, Object> {
+
+    /* renamed from: d, reason: collision with root package name */
+    final /* synthetic */ cq.s f35417d;
+
+    /* renamed from: e, reason: collision with root package name */
+    final /* synthetic */ ComposePlayerState f35418e;
+
+    /* JADX WARN: 'super' call moved to the top of the method (can break code semantics) */
+    e6(cq.s sVar, ComposePlayerState composePlayerState, l60.b<? super e6> bVar) {
+        super(2, bVar);
+        this.f35417d = sVar;
+        this.f35418e = composePlayerState;
+    }
+
+    @Override // kotlin.coroutines.jvm.internal.a
+    public final l60.b<Unit> create(Object obj, l60.b<?> bVar) {
+        return new e6(this.f35417d, this.f35418e, bVar);
+    }
+
+    @Override // kotlin.jvm.functions.Function2
+    public final Object invoke(z90.i0 i0Var, l60.b<? super Unit> bVar) {
+        return ((e6) create(i0Var, bVar)).invokeSuspend(Unit.f44610a);
+    }
+
+    @Override // kotlin.coroutines.jvm.internal.a
+    public final Object invokeSuspend(Object obj) {
+        m60.a aVar = m60.a.f47215d;
+        h60.s.b(obj);
+        final ComposePlayerState composePlayerState = this.f35418e;
+        this.f35417d.c(new Function0() { // from class: fq.d6
+            @Override // kotlin.jvm.functions.Function0
+            public final Object invoke() {
+                return Long.valueOf(ComposePlayerState.this.getPlayer().g());
+            }
+        });
+        return Unit.f44610a;
+    }
+}

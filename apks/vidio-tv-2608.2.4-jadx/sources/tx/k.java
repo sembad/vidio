@@ -1,0 +1,36 @@
+package tx;
+
+import org.jetbrains.annotations.NotNull;
+import ua0.e;
+import wa0.i2;
+
+/* loaded from: classes5.dex */
+public final class k implements sa0.c<m> {
+
+    /* renamed from: a, reason: collision with root package name */
+    @NotNull
+    public static final k f60960a = new k();
+
+    /* renamed from: b, reason: collision with root package name */
+    @NotNull
+    private static final i2 f60961b = ua0.n.a("com.vidio.kmm.domain.StrictURLSerializer", e.i.f61626a);
+
+    @Override // sa0.b
+    public final Object deserialize(va0.e eVar) {
+        return new m(eVar.w());
+    }
+
+    @Override // sa0.k, sa0.b
+    @NotNull
+    public final ua0.f getDescriptor() {
+        return f60961b;
+    }
+
+    @Override // sa0.k
+    public final void serialize(va0.f fVar, Object obj) {
+        m mVar = (m) obj;
+        fVar.getClass();
+        mVar.getClass();
+        fVar.F(mVar.toString());
+    }
+}

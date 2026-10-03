@@ -1,0 +1,223 @@
+package com.google.android.gms.internal.ads;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+import java.util.Arrays;
+
+/* loaded from: classes3.dex */
+public final class zzem implements zzax {
+    public static final Parcelable.Creator<zzem> CREATOR = new zzek();
+    public final String zza;
+    public final byte[] zzb;
+    public final int zzc;
+    public final int zzd;
+
+    /* synthetic */ zzem(Parcel parcel, zzel zzelVar) {
+        String readString = parcel.readString();
+        int i11 = zzei.zza;
+        this.zza = readString;
+        byte[] createByteArray = parcel.createByteArray();
+        this.zzb = createByteArray;
+        this.zzc = parcel.readInt();
+        int readInt = parcel.readInt();
+        this.zzd = readInt;
+        zzb(readString, createByteArray, readInt);
+    }
+
+    private static void zzb(String str, byte[] bArr, int i11) {
+        byte b11;
+        switch (str.hashCode()) {
+            case -1949883051:
+                if (str.equals("com.android.capture.fps")) {
+                    zzcw.zzd(i11 == 23 && bArr.length == 4);
+                    return;
+                }
+                return;
+            case -1555642602:
+                if (str.equals("editable.tracks.samples.location")) {
+                    if (i11 != 75 || bArr.length != 1 || ((b11 = bArr[0]) != 0 && b11 != 1)) {
+                        r1 = false;
+                    }
+                    zzcw.zzd(r1);
+                    return;
+                }
+                return;
+            case 101820674:
+                if (!str.equals("editable.tracks.length")) {
+                    return;
+                }
+                break;
+            case 188404399:
+                if (!str.equals("editable.tracks.offset")) {
+                    return;
+                }
+                break;
+            case 1805012160:
+                if (str.equals("editable.tracks.map")) {
+                    zzcw.zzd(i11 == 0);
+                    return;
+                }
+                return;
+            default:
+                return;
+        }
+        zzcw.zzd(i11 == 78 && bArr.length == 8);
+    }
+
+    @Override // android.os.Parcelable
+    public final int describeContents() {
+        return 0;
+    }
+
+    public final boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj != null && zzem.class == obj.getClass()) {
+            zzem zzemVar = (zzem) obj;
+            if (this.zza.equals(zzemVar.zza) && Arrays.equals(this.zzb, zzemVar.zzb) && this.zzc == zzemVar.zzc && this.zzd == zzemVar.zzd) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public final int hashCode() {
+        int hashCode = this.zza.hashCode() + 527;
+        return ((((Arrays.hashCode(this.zzb) + (hashCode * 31)) * 31) + this.zzc) * 31) + this.zzd;
+    }
+
+    /* JADX WARN: Removed duplicated region for block: B:19:0x00aa A[LOOP:0: B:17:0x00a7->B:19:0x00aa, LOOP_END] */
+    /*
+        Code decompiled incorrectly, please refer to instructions dump.
+        To view partially-correct add '--show-bad-code' argument
+    */
+    public final java.lang.String toString() {
+        /*
+            r5 = this;
+            int r0 = r5.zzd
+            r1 = 0
+            r2 = 1
+            if (r0 == 0) goto L5a
+            if (r0 == r2) goto L53
+            r2 = 23
+            if (r0 == r2) goto L43
+            r2 = 67
+            if (r0 == r2) goto L37
+            r2 = 75
+            if (r0 == r2) goto L2b
+            r2 = 78
+            if (r0 == r2) goto L1a
+            goto L9e
+        L1a:
+            byte[] r0 = r5.zzb
+            com.google.android.gms.internal.ads.zzdy r1 = new com.google.android.gms.internal.ads.zzdy
+            r1.<init>(r0)
+            long r0 = r1.zzw()
+            java.lang.String r0 = java.lang.String.valueOf(r0)
+            goto Lcb
+        L2b:
+            byte[] r0 = r5.zzb
+            r0 = r0[r1]
+            r0 = r0 & 255(0xff, float:3.57E-43)
+            java.lang.String r0 = java.lang.String.valueOf(r0)
+            goto Lcb
+        L37:
+            byte[] r0 = r5.zzb
+            int r0 = com.google.android.gms.internal.ads.zzgaq.zzd(r0)
+            java.lang.String r0 = java.lang.String.valueOf(r0)
+            goto Lcb
+        L43:
+            byte[] r0 = r5.zzb
+            int r0 = com.google.android.gms.internal.ads.zzgaq.zzd(r0)
+            float r0 = java.lang.Float.intBitsToFloat(r0)
+            java.lang.String r0 = java.lang.String.valueOf(r0)
+            goto Lcb
+        L53:
+            byte[] r0 = r5.zzb
+            java.lang.String r0 = com.google.android.gms.internal.ads.zzei.zzB(r0)
+            goto Lcb
+        L5a:
+            java.lang.String r0 = r5.zza
+            java.lang.String r3 = "editable.tracks.map"
+            boolean r0 = r0.equals(r3)
+            if (r0 == 0) goto L9e
+            java.lang.String r0 = r5.zza
+            boolean r0 = r0.equals(r3)
+            java.lang.String r3 = "Metadata is not an editable tracks map"
+            com.google.android.gms.internal.ads.zzcw.zzg(r0, r3)
+            byte[] r0 = r5.zzb
+            r0 = r0[r2]
+            java.util.ArrayList r2 = new java.util.ArrayList
+            r2.<init>()
+        L78:
+            if (r1 >= r0) goto L8a
+            byte[] r3 = r5.zzb
+            int r4 = r1 + 2
+            r3 = r3[r4]
+            java.lang.Integer r3 = java.lang.Integer.valueOf(r3)
+            r2.add(r3)
+            int r1 = r1 + 1
+            goto L78
+        L8a:
+            java.lang.StringBuilder r0 = new java.lang.StringBuilder
+            r0.<init>()
+            java.lang.String r1 = "track types = "
+            r0.append(r1)
+            java.lang.String r1 = ","
+            com.google.android.gms.internal.ads.zzfuf.zzb(r0, r2, r1)
+            java.lang.String r0 = r0.toString()
+            goto Lcb
+        L9e:
+            byte[] r0 = r5.zzb
+            java.lang.StringBuilder r2 = new java.lang.StringBuilder
+            int r3 = r0.length
+            int r3 = r3 + r3
+            r2.<init>(r3)
+        La7:
+            int r3 = r0.length
+            if (r1 >= r3) goto Lc7
+            r3 = r0[r1]
+            int r3 = r3 >> 4
+            r3 = r3 & 15
+            r4 = 16
+            char r3 = java.lang.Character.forDigit(r3, r4)
+            r2.append(r3)
+            r3 = r0[r1]
+            r3 = r3 & 15
+            char r3 = java.lang.Character.forDigit(r3, r4)
+            r2.append(r3)
+            int r1 = r1 + 1
+            goto La7
+        Lc7:
+            java.lang.String r0 = r2.toString()
+        Lcb:
+            java.lang.String r1 = r5.zza
+            java.lang.String r2 = "mdta: key="
+            java.lang.String r3 = ", value="
+            java.lang.String r0 = androidx.core.view.k1.b(r2, r1, r3, r0)
+            return r0
+        */
+        throw new UnsupportedOperationException("Method not decompiled: com.google.android.gms.internal.ads.zzem.toString():java.lang.String");
+    }
+
+    @Override // android.os.Parcelable
+    public final void writeToParcel(Parcel parcel, int i11) {
+        parcel.writeString(this.zza);
+        parcel.writeByteArray(this.zzb);
+        parcel.writeInt(this.zzc);
+        parcel.writeInt(this.zzd);
+    }
+
+    @Override // com.google.android.gms.internal.ads.zzax
+    public final /* synthetic */ void zza(zzat zzatVar) {
+    }
+
+    public zzem(String str, byte[] bArr, int i11, int i12) {
+        zzb(str, bArr, i12);
+        this.zza = str;
+        this.zzb = bArr;
+        this.zzc = i11;
+        this.zzd = i12;
+    }
+}

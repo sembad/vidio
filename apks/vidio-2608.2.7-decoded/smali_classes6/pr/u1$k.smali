@@ -1,0 +1,62 @@
+.class final synthetic Lpr/u1$k;
+.super Lkotlin/jvm/internal/p;
+.source "SourceFile"
+
+# interfaces
+.implements Lkotlin/jvm/functions/Function1;
+
+
+# annotations
+.annotation system Ldalvik/annotation/EnclosingMethod;
+    value = Lpr/u1;->B(Lpr/s4;Lpr/h4;Landroidx/navigation/f0;Lvc0/i2;Lr4/b;Lzs/a;Lsr/a;ZLy3/k;Landroidx/compose/runtime/q;II)V
+.end annotation
+
+.annotation system Ldalvik/annotation/InnerClass;
+    accessFlags = 0x1018
+    name = null
+.end annotation
+
+.annotation system Ldalvik/annotation/Signature;
+    value = {
+        "Lkotlin/jvm/internal/p;",
+        "Lkotlin/jvm/functions/Function1<",
+        "Lcom/vidio/android/fluid/watchpage/presentation/component/chat/updategroup/GroupUpdateData;",
+        "Lkotlin/Unit;",
+        ">;"
+    }
+.end annotation
+
+
+# virtual methods
+.method public final invoke(Ljava/lang/Object;)Ljava/lang/Object;
+    .locals 1
+
+    .line 1
+    check-cast p1, Lcom/vidio/android/fluid/watchpage/presentation/component/chat/updategroup/GroupUpdateData;
+
+    .line 2
+    .line 3
+    invoke-virtual {p1}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 4
+    .line 5
+    .line 6
+    iget-object v0, p0, Lkotlin/jvm/internal/f;->receiver:Ljava/lang/Object;
+
+    .line 7
+    .line 8
+    check-cast v0, Lzs/a;
+
+    .line 9
+    .line 10
+    invoke-interface {v0, p1}, Lzs/a;->w(Lcom/vidio/android/fluid/watchpage/presentation/component/chat/updategroup/GroupUpdateData;)V
+
+    .line 11
+    .line 12
+    .line 13
+    sget-object p1, Lkotlin/Unit;->a:Lkotlin/Unit;
+
+    .line 14
+    .line 15
+    return-object p1
+.end method

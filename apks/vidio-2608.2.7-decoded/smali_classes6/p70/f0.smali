@@ -1,0 +1,38 @@
+.class public final Lp70/f0;
+.super Lh4/g;
+.source "SourceFile"
+
+
+# static fields
+.field public static final a:Lp70/f0;
+    .annotation build Lorg/jetbrains/annotations/NotNull;
+    .end annotation
+.end field
+
+
+# direct methods
+.method static constructor <clinit>()V
+    .locals 3
+
+    .line 1
+    new-instance v0, Lp70/f0;
+
+    .line 2
+    .line 3
+    const/4 v1, 0x0
+
+    .line 4
+    const/4 v2, 0x2
+
+    .line 5
+    invoke-direct {v0, v1, v2}, Lh4/g;-><init>(II)V
+
+    .line 6
+    .line 7
+    .line 8
+    sput-object v0, Lp70/f0;->a:Lp70/f0;
+
+    .line 9
+    .line 10
+    return-void
+.end method

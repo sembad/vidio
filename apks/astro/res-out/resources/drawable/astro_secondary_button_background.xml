@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners android:radius="8dp" />
+    <solid android:color="#33d8d8d8" />
+
+<!-- 33 indicates opacity of 20 percent , please refer to :
+ https://www.folkstalk.com/2022/09/how-to-set-opacity-in-a-shape-xml-in-android-with-code-examples.html -->
+
+</shape>

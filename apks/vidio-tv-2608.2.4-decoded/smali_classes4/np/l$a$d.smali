@@ -1,0 +1,35 @@
+.class final Lnp/l$a$d;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+# interfaces
+.implements Lcom/kmklabs/vidioplayer/internal/tracks/AudioTrackProviderImpl$Factory;
+
+
+# annotations
+.annotation system Ldalvik/annotation/EnclosingMethod;
+    value = Lnp/l$a;->b()Ljava/lang/Object;
+.end annotation
+
+.annotation system Ldalvik/annotation/InnerClass;
+    accessFlags = 0x0
+    name = null
+.end annotation
+
+
+# virtual methods
+.method public final create(Lcom/kmklabs/vidioplayer/internal/tracks/TrackFormatExtractor;)Lcom/kmklabs/vidioplayer/internal/tracks/AudioTrackProviderImpl;
+    .locals 1
+
+    .line 1
+    new-instance v0, Lcom/kmklabs/vidioplayer/internal/tracks/AudioTrackProviderImpl;
+
+    .line 2
+    .line 3
+    invoke-direct {v0, p1}, Lcom/kmklabs/vidioplayer/internal/tracks/AudioTrackProviderImpl;-><init>(Lcom/kmklabs/vidioplayer/internal/tracks/TrackFormatExtractor;)V
+
+    .line 4
+    .line 5
+    .line 6
+    return-object v0
+.end method

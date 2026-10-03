@@ -1,0 +1,54 @@
+package com.google.android.gms.internal.ads;
+
+import android.os.IBinder;
+import android.os.IInterface;
+import android.os.Parcel;
+import android.os.RemoteException;
+
+/* loaded from: classes3.dex */
+public abstract class zzbpd extends zzayb implements zzbpe {
+    public zzbpd() {
+        super("com.google.android.gms.ads.internal.mediation.client.IAdapterCreator");
+    }
+
+    public static zzbpe zzf(IBinder iBinder) {
+        if (iBinder == null) {
+            return null;
+        }
+        IInterface queryLocalInterface = iBinder.queryLocalInterface("com.google.android.gms.ads.internal.mediation.client.IAdapterCreator");
+        return queryLocalInterface instanceof zzbpe ? (zzbpe) queryLocalInterface : new zzbpc(iBinder);
+    }
+
+    @Override // com.google.android.gms.internal.ads.zzayb
+    protected final boolean zzdD(int i11, Parcel parcel, Parcel parcel2, int i12) throws RemoteException {
+        if (i11 == 1) {
+            String readString = parcel.readString();
+            zzayc.zzc(parcel);
+            zzbph zzb = zzb(readString);
+            parcel2.writeNoException();
+            zzayc.zzf(parcel2, zzb);
+        } else if (i11 == 2) {
+            String readString2 = parcel.readString();
+            zzayc.zzc(parcel);
+            boolean zze = zze(readString2);
+            parcel2.writeNoException();
+            parcel2.writeInt(zze ? 1 : 0);
+        } else if (i11 == 3) {
+            String readString3 = parcel.readString();
+            zzayc.zzc(parcel);
+            zzbrd zzc = zzc(readString3);
+            parcel2.writeNoException();
+            zzayc.zzf(parcel2, zzc);
+        } else {
+            if (i11 != 4) {
+                return false;
+            }
+            String readString4 = parcel.readString();
+            zzayc.zzc(parcel);
+            boolean zzd = zzd(readString4);
+            parcel2.writeNoException();
+            parcel2.writeInt(zzd ? 1 : 0);
+        }
+        return true;
+    }
+}

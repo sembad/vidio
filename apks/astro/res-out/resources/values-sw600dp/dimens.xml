@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <dimen name="brand_title_or_logo_start_margin">24dp</dimen>
+    <dimen name="first_non_hero_banner_swimlane_top_margin_when_hero_banner_is_missing">76dp</dimen>
+    <dimen name="branded_page_toolbar_height">44dp</dimen>
+    <dimen name="branded_page_toolbar_height_in_negative">-44dp</dimen>
+    <dimen name="brand_title_or_logo_top_margin">52dp</dimen>
+    <dimen name="app_bar_layout_min_height">52dp</dimen>
+    <dimen name="tile_poster_download_icon_textsize">18dp</dimen>
+
+    <!--Swimlane See All font sizes-->
+    <dimen name="hub_screen_swimlane_see_all_text_size">14sp</dimen>
+    <dimen name="hub_screen_item_record_icon_size">25sp</dimen>
+    <dimen name="hub_screen_swimlane_title_text_size">18sp</dimen>
+    <dimen name="hub_screen_swimlane_gap_from_start_or_end">22dp</dimen>
+    <dimen name="metadata_top_margin">0dp</dimen>
+
+    <dimen name="horizontal_swimlane_item_end_margin">8dp</dimen>
+
+    <!--    text size for branded_swimlane_title_text_size and branded_swimlane_item_title_text_size  is in DP because
+        this is used on Home screen which is not honoring device font size currently-->
+    <dimen name="branded_swimlane_title_text_size">18dp</dimen>
+    <dimen name="branded_swimlane_item_title_text_size">14dp</dimen>
+    <dimen name="branded_page_toolbar_back_icon_size">24sp</dimen>
+    <dimen name="branded_page_toolbar_search_icon_size">24sp</dimen>
+
+    <dimen name="brand_logo_width">136.88dp</dimen>
+    <dimen name="brand_logo_height">30.43dp</dimen>
+
+    <dimen name="gap_between_title_and_see_all_text">16dp</dimen>
+
+</resources>
+

@@ -1,0 +1,37 @@
+package com.google.android.gms.internal.measurement;
+
+import f4.v;
+import java.util.List;
+
+/* loaded from: classes5.dex */
+public final class zzw extends zzal {
+    private zzaa zzk;
+
+    public zzw(zzaa zzaaVar) {
+        super("internal.registerCallback");
+        this.zzk = zzaaVar;
+    }
+
+    @Override // com.google.android.gms.internal.measurement.zzal
+    public final zzaq zza(zzh zzhVar, List<zzaq> list) {
+        zzg.zza(this.zza, 3, list);
+        String zzf = zzhVar.zza(list.get(0)).zzf();
+        zzaq zza = zzhVar.zza(list.get(1));
+        if (!(zza instanceof zzar)) {
+            v.a("Invalid callback type");
+            return null;
+        }
+        zzaq zza2 = zzhVar.zza(list.get(2));
+        if (!(zza2 instanceof zzap)) {
+            v.a("Invalid callback params");
+            return null;
+        }
+        zzap zzapVar = (zzap) zza2;
+        if (!zzapVar.zzc("type")) {
+            v.a("Undefined rule type");
+            return null;
+        }
+        this.zzk.zza(zzf, zzapVar.zzc("priority") ? zzg.zzb(zzapVar.zza("priority").zze().doubleValue()) : 1000, (zzar) zza, zzapVar.zza("type").zzf());
+        return zzaq.zzc;
+    }
+}

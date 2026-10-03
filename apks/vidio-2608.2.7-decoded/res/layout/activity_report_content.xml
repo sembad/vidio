@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout android:layout_width="fill_parent" android:layout_height="fill_parent"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <com.google.android.material.appbar.AppBarLayout android:id="@id/app_bar" android:layout_width="fill_parent" android:layout_height="wrap_content" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent">
+        <androidx.appcompat.widget.Toolbar android:id="@id/toolbar" android:background="@color/backgroundElement" android:layout_width="fill_parent" android:layout_height="?android:actionBarSize" app:title="@string/cta_report" app:titleTextColor="@color/textPrimary" />
+    </com.google.android.material.appbar.AppBarLayout>
+    <ScrollView android:id="@id/vScrollContainer" android:layout_width="0.0dip" android:layout_height="0.0dip" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toBottomOf="@id/app_bar">
+        <LinearLayout android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="wrap_content">
+            <RadioGroup android:id="@id/vIssueContainer" android:layout_width="fill_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/huge_padding" android:paddingEnd="@dimen/huge_padding" />
+            <LinearLayout android:orientation="horizontal" android:id="@id/vButtonContainer" android:visibility="gone" android:layout_width="fill_parent" android:layout_height="wrap_content">
+                <com.vidio.vidikit.VidioButton android:id="@id/vBtnCancel" android:layout_width="0.0dip" android:layout_height="wrap_content" android:layout_marginTop="@dimen/large_margin" android:layout_marginBottom="@dimen/double_xl_24_margin" android:text="@string/cta_cancel" android:layout_weight="1.0" android:layout_marginStart="@dimen/double_xl_24_margin" android:layout_marginEnd="@dimen/medium_margin" app:componentSize="large" app:componentStyle="flexible" app:componentVariant="outline" />
+                <com.vidio.vidikit.VidioButton android:enabled="false" android:id="@id/vBtnSend" android:layout_width="0.0dip" android:layout_height="wrap_content" android:layout_marginTop="@dimen/large_margin" android:layout_marginBottom="@dimen/double_xl_24_margin" android:text="@string/cta_send" android:layout_weight="1.0" android:layout_marginStart="@dimen/medium_margin" android:layout_marginEnd="@dimen/double_xl_24_margin" app:componentSize="large" app:componentStyle="flexible" app:componentVariant="primary" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+    <com.vidio.common.ui.customview.GeneralLoadFailed android:id="@id/load_failed" android:visibility="gone" android:layout_width="fill_parent" android:layout_height="fill_parent" app:image="@null" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintLeft_toLeftOf="parent" app:layout_constraintRight_toRightOf="parent" app:layout_constraintTop_toTopOf="parent" app:primaryActionText="@string/cta_try_again" app:title="@string/error_message_failed_to_load_playlist" />
+</androidx.constraintlayout.widget.ConstraintLayout>

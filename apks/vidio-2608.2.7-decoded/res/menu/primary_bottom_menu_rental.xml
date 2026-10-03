@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:icon="@drawable/primary_menu_home_selector" android:id="@id/action_home" android:checked="true" android:title="@string/navigation_home" />
+    <item android:icon="@drawable/primary_menu_live_selector" android:id="@id/action_live" android:checked="true" android:title="@string/navigation_live" />
+    <item android:icon="@drawable/primary_menu_mini_drama_selector" android:id="@id/action_mini_drama" android:checked="false" android:title="@string/navigation_short_drama" />
+    <item android:icon="@drawable/primary_menu_rental_selector" android:id="@id/action_rental" android:checked="false" android:title="@string/navigation_rental" />
+    <item android:icon="@drawable/primary_menu_watchlist_selector" android:id="@id/action_watchlist" android:checked="false" android:title="@string/navigation_watchlist" />
+</menu>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector android:drawable="@drawable/$vidio_splashscreen__0"
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt">
+    <target android:name="_R_G_L_1_G_L_8_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__1" />
+    <target android:name="_R_G_L_1_G_L_8_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__4" />
+    <target android:name="_R_G_L_1_G_L_8_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__7" />
+    <target android:name="_R_G_L_1_G_L_8_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__8" />
+    <target android:name="_R_G_L_1_G_L_7_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__9" />
+    <target android:name="_R_G_L_1_G_L_7_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__12" />
+    <target android:name="_R_G_L_1_G_L_7_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__13" />
+    <target android:name="_R_G_L_1_G_L_6_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__14" />
+    <target android:name="_R_G_L_1_G_L_6_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__17" />
+    <target android:name="_R_G_L_1_G_L_6_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__18" />
+    <target android:name="_R_G_L_1_G_L_5_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__19" />
+    <target android:name="_R_G_L_1_G_L_5_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__22" />
+    <target android:name="_R_G_L_1_G_L_5_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__23" />
+    <target android:name="_R_G_L_1_G_L_4_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__24" />
+    <target android:name="_R_G_L_1_G_L_4_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__27" />
+    <target android:name="_R_G_L_1_G_L_4_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__28" />
+    <target android:name="_R_G_L_1_G_L_3_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__29" />
+    <target android:name="_R_G_L_1_G_L_3_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__32" />
+    <target android:name="_R_G_L_1_G_L_3_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__35" />
+    <target android:name="_R_G_L_1_G_L_3_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__36" />
+    <target android:name="_R_G_L_1_G_L_2_G_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__37" />
+    <target android:name="_R_G_L_1_G_L_2_G_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__40" />
+    <target android:name="_R_G_L_1_G_L_2_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__43" />
+    <target android:name="_R_G_L_1_G_L_1_G" android:animation="@drawable/$vidio_splashscreen__44" />
+    <target android:name="_R_G_L_1_G_L_1_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__49" />
+    <target android:name="_R_G_L_1_G_L_1_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__50" />
+    <target android:name="_R_G_L_1_G_L_0_G" android:animation="@drawable/$vidio_splashscreen__51" />
+    <target android:name="_R_G_L_1_G_L_0_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__56" />
+    <target android:name="_R_G_L_1_G_L_0_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__57" />
+    <target android:name="_R_G_L_1_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__58" />
+    <target android:name="_R_G_L_0_G_L_8_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__59" />
+    <target android:name="_R_G_L_0_G_L_8_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__62" />
+    <target android:name="_R_G_L_0_G_L_8_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__65" />
+    <target android:name="_R_G_L_0_G_L_7_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__66" />
+    <target android:name="_R_G_L_0_G_L_7_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__69" />
+    <target android:name="_R_G_L_0_G_L_6_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__70" />
+    <target android:name="_R_G_L_0_G_L_6_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__73" />
+    <target android:name="_R_G_L_0_G_L_5_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__74" />
+    <target android:name="_R_G_L_0_G_L_5_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__77" />
+    <target android:name="_R_G_L_0_G_L_4_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__78" />
+    <target android:name="_R_G_L_0_G_L_4_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__81" />
+    <target android:name="_R_G_L_0_G_L_3_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__82" />
+    <target android:name="_R_G_L_0_G_L_3_G_G_0_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__85" />
+    <target android:name="_R_G_L_0_G_L_3_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__88" />
+    <target android:name="_R_G_L_0_G_L_2_G_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__89" />
+    <target android:name="_R_G_L_0_G_L_2_G_D_0_P_0" android:animation="@drawable/$vidio_splashscreen__92" />
+    <target android:name="_R_G_L_0_G_L_2_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__95" />
+    <target android:name="_R_G_L_0_G_L_1_G" android:animation="@drawable/$vidio_splashscreen__96" />
+    <target android:name="_R_G_L_0_G_L_1_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__101" />
+    <target android:name="_R_G_L_0_G_L_0_G" android:animation="@drawable/$vidio_splashscreen__102" />
+    <target android:name="_R_G_L_0_G_L_0_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__107" />
+    <target android:name="_R_G_L_0_G_N_1_T_0" android:animation="@drawable/$vidio_splashscreen__108" />
+    <target android:name="time_group" android:animation="@drawable/$vidio_splashscreen__109" />
+</animated-vector>

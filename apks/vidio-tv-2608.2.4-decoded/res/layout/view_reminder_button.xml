@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge
+  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <androidx.appcompat.widget.AppCompatButton android:textSize="@dimen/normal_text" android:textStyle="normal" android:textColor="@color/pillshapedbutton_gray_text" android:gravity="center" android:layout_gravity="center" android:id="@id/btn_reminder" android:paddingLeft="@dimen/large_padding" android:paddingTop="@dimen/middle_margin" android:paddingRight="@dimen/large_padding" android:paddingBottom="@dimen/middle_margin" android:visibility="visible" android:duplicateParentState="true" android:layout_width="wrap_content" android:layout_height="48.0dip" android:text="@string/cta_remind_me" android:drawablePadding="@dimen/medium_6_padding" android:textAllCaps="false" android:fontFamily="sans-serif-medium" android:paddingHorizontal="@dimen/large_padding" android:paddingVertical="@dimen/middle_margin" app:chainUseRtl="true" app:drawableStartCompat="@drawable/ic_reminder_selector" />
+    <ProgressBar android:layout_gravity="center" android:id="@id/progress_bar" android:visibility="gone" android:duplicateParentState="true" android:layout_width="30.0dip" android:layout_height="30.0dip" android:indeterminateTint="@color/pillshapedbutton_gray_text" />
+</merge>

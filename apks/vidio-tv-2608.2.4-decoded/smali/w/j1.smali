@@ -1,0 +1,277 @@
+.class final Lw/j1;
+.super Lkotlin/coroutines/jvm/internal/i;
+.source "SourceFile"
+
+# interfaces
+.implements Lkotlin/jvm/functions/Function1;
+
+
+# annotations
+.annotation system Ldalvik/annotation/Signature;
+    value = {
+        "Lkotlin/coroutines/jvm/internal/i;",
+        "Lkotlin/jvm/functions/Function1<",
+        "Ll60/b<",
+        "-",
+        "Lkotlin/Unit;",
+        ">;",
+        "Ljava/lang/Object;",
+        ">;"
+    }
+.end annotation
+
+.annotation runtime Lkotlin/coroutines/jvm/internal/e;
+    c = "androidx.compose.animation.core.SeekableTransitionState$animateTo$2"
+    f = "Transition.kt"
+    l = {
+        0x25f
+    }
+    m = "invokeSuspend"
+    v = 0x1
+.end annotation
+
+
+# instance fields
+.field d:I
+
+.field final synthetic e:Lw/b2;
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "Lw/b2<",
+            "Ljava/lang/Object;",
+            ">;"
+        }
+    .end annotation
+.end field
+
+.field final synthetic i:Lw/i1;
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "Lw/i1<",
+            "Ljava/lang/Object;",
+            ">;"
+        }
+    .end annotation
+.end field
+
+.field final synthetic v:Ljava/lang/Object;
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "Ljava/lang/Object;"
+        }
+    .end annotation
+.end field
+
+
+# direct methods
+.method constructor <init>(Ljava/lang/Object;Ll60/b;Lw/i1;Lw/b2;)V
+    .locals 0
+
+    .line 1
+    iput-object p4, p0, Lw/j1;->e:Lw/b2;
+
+    .line 2
+    .line 3
+    iput-object p3, p0, Lw/j1;->i:Lw/i1;
+
+    .line 4
+    .line 5
+    iput-object p1, p0, Lw/j1;->v:Ljava/lang/Object;
+
+    .line 6
+    .line 7
+    const/4 p1, 0x1
+
+    .line 8
+    invoke-direct {p0, p1, p2}, Lkotlin/coroutines/jvm/internal/i;-><init>(ILl60/b;)V
+
+    .line 9
+    .line 10
+    .line 11
+    return-void
+.end method
+
+
+# virtual methods
+.method public final create(Ll60/b;)Ll60/b;
+    .locals 4
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Ll60/b<",
+            "*>;)",
+            "Ll60/b<",
+            "Lkotlin/Unit;",
+            ">;"
+        }
+    .end annotation
+
+    .line 1
+    new-instance v0, Lw/j1;
+
+    .line 2
+    .line 3
+    iget-object v1, p0, Lw/j1;->i:Lw/i1;
+
+    .line 4
+    .line 5
+    iget-object v2, p0, Lw/j1;->v:Ljava/lang/Object;
+
+    .line 6
+    .line 7
+    iget-object v3, p0, Lw/j1;->e:Lw/b2;
+
+    .line 8
+    .line 9
+    invoke-direct {v0, v2, p1, v1, v3}, Lw/j1;-><init>(Ljava/lang/Object;Ll60/b;Lw/i1;Lw/b2;)V
+
+    .line 10
+    .line 11
+    .line 12
+    return-object v0
+.end method
+
+.method public final invoke(Ljava/lang/Object;)Ljava/lang/Object;
+    .locals 1
+
+    .line 1
+    check-cast p1, Ll60/b;
+
+    .line 2
+    .line 3
+    invoke-virtual {p0, p1}, Lw/j1;->create(Ll60/b;)Ll60/b;
+
+    .line 4
+    .line 5
+    .line 6
+    move-result-object p1
+
+    .line 7
+    check-cast p1, Lw/j1;
+
+    .line 8
+    .line 9
+    sget-object v0, Lkotlin/Unit;->a:Lkotlin/Unit;
+
+    .line 10
+    .line 11
+    invoke-virtual {p1, v0}, Lw/j1;->invokeSuspend(Ljava/lang/Object;)Ljava/lang/Object;
+
+    .line 12
+    .line 13
+    .line 14
+    move-result-object p1
+
+    .line 15
+    return-object p1
+.end method
+
+.method public final invokeSuspend(Ljava/lang/Object;)Ljava/lang/Object;
+    .locals 6
+
+    .line 1
+    sget-object v0, Lm60/a;->d:Lm60/a;
+
+    .line 2
+    .line 3
+    iget v1, p0, Lw/j1;->d:I
+
+    .line 4
+    .line 5
+    iget-object v2, p0, Lw/j1;->e:Lw/b2;
+
+    .line 6
+    .line 7
+    const/4 v3, 0x1
+
+    .line 8
+    if-eqz v1, :cond_1
+
+    .line 9
+    .line 10
+    if-ne v1, v3, :cond_0
+
+    .line 11
+    .line 12
+    invoke-static {p1}, Lh60/s;->b(Ljava/lang/Object;)V
+
+    .line 13
+    .line 14
+    .line 15
+    goto :goto_0
+
+    .line 16
+    :cond_0
+    const-string p1, "call to \'resume\' before \'invoke\' with coroutine"
+
+    .line 17
+    .line 18
+    invoke-static {p1}, Landroidx/collection/s0;->b(Ljava/lang/String;)V
+
+    .line 19
+    .line 20
+    .line 21
+    const/4 p1, 0x0
+
+    .line 22
+    return-object p1
+
+    .line 23
+    :cond_1
+    invoke-static {p1}, Lh60/s;->b(Ljava/lang/Object;)V
+
+    .line 24
+    .line 25
+    .line 26
+    new-instance p1, Lw/j1$a;
+
+    .line 27
+    .line 28
+    iget-object v1, p0, Lw/j1;->v:Ljava/lang/Object;
+
+    .line 29
+    .line 30
+    const/4 v4, 0x0
+
+    .line 31
+    iget-object v5, p0, Lw/j1;->i:Lw/i1;
+
+    .line 32
+    .line 33
+    invoke-direct {p1, v1, v4, v5, v2}, Lw/j1$a;-><init>(Ljava/lang/Object;Ll60/b;Lw/i1;Lw/b2;)V
+
+    .line 34
+    .line 35
+    .line 36
+    iput v3, p0, Lw/j1;->d:I
+
+    .line 37
+    .line 38
+    invoke-static {p1, p0}, Lz90/j0;->d(Lkotlin/jvm/functions/Function2;Ll60/b;)Ljava/lang/Object;
+
+    .line 39
+    .line 40
+    .line 41
+    move-result-object p1
+
+    .line 42
+    if-ne p1, v0, :cond_2
+
+    .line 43
+    .line 44
+    return-object v0
+
+    .line 45
+    :cond_2
+    :goto_0
+    invoke-virtual {v2}, Lw/b2;->w()V
+
+    .line 46
+    .line 47
+    .line 48
+    sget-object p1, Lkotlin/Unit;->a:Lkotlin/Unit;
+
+    .line 49
+    .line 50
+    return-object p1
+.end method

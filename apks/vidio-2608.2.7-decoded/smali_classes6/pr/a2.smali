@@ -1,0 +1,66 @@
+.class public final Lpr/a2;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+# interfaces
+.implements Lkotlin/jvm/functions/Function0;
+
+
+# annotations
+.annotation system Ldalvik/annotation/Signature;
+    value = {
+        "Ljava/lang/Object;",
+        "Lkotlin/jvm/functions/Function0<",
+        "Lkotlin/Unit;",
+        ">;"
+    }
+.end annotation
+
+
+# instance fields
+.field final synthetic c:Landroidx/navigation/f0;
+
+
+# direct methods
+.method public constructor <init>(Landroidx/navigation/f0;)V
+    .locals 0
+
+    .line 1
+    invoke-direct {p0}, Ljava/lang/Object;-><init>()V
+
+    .line 2
+    .line 3
+    .line 4
+    iput-object p1, p0, Lpr/a2;->c:Landroidx/navigation/f0;
+
+    .line 5
+    .line 6
+    return-void
+.end method
+
+
+# virtual methods
+.method public final invoke()Ljava/lang/Object;
+    .locals 1
+
+    .line 1
+    iget-object v0, p0, Lpr/a2;->c:Landroidx/navigation/f0;
+
+    .line 2
+    .line 3
+    if-eqz v0, :cond_0
+
+    .line 4
+    .line 5
+    invoke-virtual {v0}, Landroidx/navigation/c;->K()V
+
+    .line 6
+    .line 7
+    .line 8
+    :cond_0
+    sget-object v0, Lkotlin/Unit;->a:Lkotlin/Unit;
+
+    .line 9
+    .line 10
+    return-object v0
+.end method

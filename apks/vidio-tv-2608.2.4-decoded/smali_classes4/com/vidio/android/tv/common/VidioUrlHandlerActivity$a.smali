@@ -1,0 +1,83 @@
+.class public final Lcom/vidio/android/tv/common/VidioUrlHandlerActivity$a;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+
+# annotations
+.annotation system Ldalvik/annotation/EnclosingClass;
+    value = Lcom/vidio/android/tv/common/VidioUrlHandlerActivity;
+.end annotation
+
+.annotation system Ldalvik/annotation/InnerClass;
+    accessFlags = 0x19
+    name = "a"
+.end annotation
+
+
+# direct methods
+.method public static a(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;)Landroid/content/Intent;
+    .locals 2
+    .param p0    # Landroid/content/Context;
+        .annotation build Lorg/jetbrains/annotations/NotNull;
+        .end annotation
+    .end param
+    .param p1    # Ljava/lang/String;
+        .annotation build Lorg/jetbrains/annotations/NotNull;
+        .end annotation
+    .end param
+    .param p2    # Ljava/lang/String;
+        .annotation build Lorg/jetbrains/annotations/NotNull;
+        .end annotation
+    .end param
+    .annotation build Lorg/jetbrains/annotations/NotNull;
+    .end annotation
+
+    .line 1
+    invoke-virtual {p0}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 2
+    .line 3
+    .line 4
+    invoke-virtual {p1}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 5
+    .line 6
+    .line 7
+    invoke-virtual {p2}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 8
+    .line 9
+    .line 10
+    new-instance v0, Landroid/content/Intent;
+
+    .line 11
+    .line 12
+    const-class v1, Lcom/vidio/android/tv/common/VidioUrlHandlerActivity;
+
+    .line 13
+    .line 14
+    invoke-direct {v0, p0, v1}, Landroid/content/Intent;-><init>(Landroid/content/Context;Ljava/lang/Class;)V
+
+    .line 15
+    .line 16
+    .line 17
+    invoke-static {p1}, Landroid/net/Uri;->parse(Ljava/lang/String;)Landroid/net/Uri;
+
+    .line 18
+    .line 19
+    .line 20
+    move-result-object p0
+
+    .line 21
+    invoke-virtual {v0, p0}, Landroid/content/Intent;->setData(Landroid/net/Uri;)Landroid/content/Intent;
+
+    .line 22
+    .line 23
+    .line 24
+    invoke-static {v0, p2}, Lsu/a0;->d(Landroid/content/Intent;Ljava/lang/String;)V
+
+    .line 25
+    .line 26
+    .line 27
+    return-object v0
+.end method

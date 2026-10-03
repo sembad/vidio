@@ -1,0 +1,126 @@
+.class public final synthetic Lcom/vidio/android/tv/features/subscription/playbilling_blocker/e;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+# interfaces
+.implements Lkotlin/jvm/functions/Function0;
+
+
+# instance fields
+.field public final synthetic d:I
+
+.field public final synthetic e:Ljava/lang/Object;
+
+
+# direct methods
+.method public synthetic constructor <init>(Ljava/lang/Object;I)V
+    .locals 0
+
+    .line 1
+    iput p2, p0, Lcom/vidio/android/tv/features/subscription/playbilling_blocker/e;->d:I
+
+    iput-object p1, p0, Lcom/vidio/android/tv/features/subscription/playbilling_blocker/e;->e:Ljava/lang/Object;
+
+    invoke-direct {p0}, Ljava/lang/Object;-><init>()V
+
+    return-void
+.end method
+
+
+# virtual methods
+.method public final invoke()Ljava/lang/Object;
+    .locals 2
+
+    .line 1
+    iget v0, p0, Lcom/vidio/android/tv/features/subscription/playbilling_blocker/e;->d:I
+
+    .line 2
+    .line 3
+    packed-switch v0, :pswitch_data_0
+
+    .line 4
+    .line 5
+    .line 6
+    iget-object v0, p0, Lcom/vidio/android/tv/features/subscription/playbilling_blocker/e;->e:Ljava/lang/Object;
+
+    .line 7
+    .line 8
+    check-cast v0, Lwa0/c2;
+
+    .line 9
+    .line 10
+    invoke-virtual {v0}, Lwa0/c2;->o()[Lua0/f;
+
+    .line 11
+    .line 12
+    .line 13
+    move-result-object v1
+
+    .line 14
+    invoke-static {v0, v1}, Lwa0/d2;->a(Lua0/f;[Lua0/f;)I
+
+    .line 15
+    .line 16
+    .line 17
+    move-result v0
+
+    .line 18
+    invoke-static {v0}, Ljava/lang/Integer;->valueOf(I)Ljava/lang/Integer;
+
+    .line 19
+    .line 20
+    .line 21
+    move-result-object v0
+
+    .line 22
+    return-object v0
+
+    .line 23
+    :pswitch_0
+    iget-object v0, p0, Lcom/vidio/android/tv/features/subscription/playbilling_blocker/e;->e:Ljava/lang/Object;
+
+    .line 24
+    .line 25
+    check-cast v0, Lkotlin/jvm/functions/Function0;
+
+    .line 26
+    .line 27
+    invoke-interface {v0}, Lkotlin/jvm/functions/Function0;->invoke()Ljava/lang/Object;
+
+    .line 28
+    .line 29
+    .line 30
+    sget-object v0, Lkotlin/Unit;->a:Lkotlin/Unit;
+
+    .line 31
+    .line 32
+    return-object v0
+
+    .line 33
+    :pswitch_1
+    iget-object v0, p0, Lcom/vidio/android/tv/features/subscription/playbilling_blocker/e;->e:Ljava/lang/Object;
+
+    .line 34
+    .line 35
+    check-cast v0, Lkotlin/jvm/functions/Function0;
+
+    .line 36
+    .line 37
+    invoke-interface {v0}, Lkotlin/jvm/functions/Function0;->invoke()Ljava/lang/Object;
+
+    .line 38
+    .line 39
+    .line 40
+    sget-object v0, Lkotlin/Unit;->a:Lkotlin/Unit;
+
+    .line 41
+    .line 42
+    return-object v0
+
+    .line 43
+    :pswitch_data_0
+    .packed-switch 0x0
+        :pswitch_1
+        :pswitch_0
+    .end packed-switch
+.end method

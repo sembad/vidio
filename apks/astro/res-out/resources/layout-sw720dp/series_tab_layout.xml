@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/seriesTabFragmentParentLayout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@android:color/transparent">
+
+    <include
+        android:id="@+id/shimmerFrameLayoutContainer"
+        layout="@layout/shimmer_placeholder_for_series_page_fragment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="49dp"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/seasonItemsRecyclerView"
+        android:layout_width="189dp"
+        android:layout_height="match_parent"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="@dimen/total_sum_of_random_height_for_scrolling_animation_plus_season_items_recycler_view_top_margin"
+        android:layout_marginEnd="40dp"
+        android:clipToPadding="false"
+        android:minHeight="1000dp"
+        android:paddingBottom="@dimen/some_random_height_for_scrolling_animation"
+        app:layout_constraintEnd_toStartOf="@+id/seriesItemsRecyclerView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:contentDescription="Since it's parent container which is ViewPager, has top margin of -200dp, it should have same amount of positive top padding i.e +200dp " />
+
+    <!-- Note : seasonItemsRecyclerView inside series_tab_layout (for Tablets) will not have scrolling animation,
+     therefore, we do not need topPadding on it. Instead, we need top margin on it and top margin should be equal
+     to sum of some_random_height_for_scrolling_animation plus top margin of seasonItemsRecyclerView as per Zeplin which is 24dp  = 224dp  -->
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/seriesItemsRecyclerView"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="49dp"
+        android:clipToPadding="false"
+        android:minHeight="1000dp"
+        android:paddingTop="@dimen/some_random_height_for_scrolling_animation"
+        android:paddingBottom="@dimen/some_random_height_for_scrolling_animation"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/seasonItemsRecyclerView"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:contentDescription="Since it's parent container which is ViewPager, has top margin of -200dp, it should have same amount of positive top padding i.e +200dp " />
+
+
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/seasonItemsListAndSeriesItemsList"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:constraint_referenced_ids="seasonItemsRecyclerView,seriesItemsRecyclerView" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+

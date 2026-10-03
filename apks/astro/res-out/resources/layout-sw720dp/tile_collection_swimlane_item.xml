@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/tile_collection_swim_lane_layout"
+    android:layout_width="@dimen/tile_collection_swimlane_item_width_tablet"
+    android:layout_height="@dimen/tile_collection_swimlane_item_height_tablet"
+    android:layout_centerHorizontal="true"
+    android:layout_marginEnd="@dimen/tile_collection_swimlane_item_end_margin_tablet"
+    app:cardCornerRadius="@dimen/tile_collection_swimlane_item_corner_radius"
+    app:cardElevation="@dimen/tile_collection_swimlane_item_card_elevation">
+
+    <ImageView
+        android:id="@+id/collection_swimlane_item_poster"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:adjustViewBounds="true"
+        tools:ignore="ContentDescription" />
+
+    <View
+        android:id="@+id/poster_gradient"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/tile_poster_gradient" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop= "8dp"
+        android:layout_marginEnd="4dp"
+        android:gravity="end">
+
+        <com.cisco.veop.client.kiott.customviews.OrangeDownloadStatusIcon
+            android:id="@+id/download_status_icon_collection_swim_item"
+            android:layout_width="@dimen/tile_poster_download_icon_width"
+            android:layout_height="@dimen/tile_poster_download_icon_height"
+            android:layout_gravity="end"
+            tools:visibility="visible"
+            android:layout_marginTop="@dimen/tile_poster_download_icon_top"
+            android:layout_marginEnd="@dimen/tile_poster_download_icon_end" />
+
+        <TextView
+            android:id="@+id/collection_labels"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="New Series"
+            tools:visibility="visible"
+            android:textSize="10sp"
+            android:lineSpacingMultiplier="1.17"
+            android:layout_gravity="end"
+            android:layout_marginTop= "8dp"
+            android:layout_marginEnd="4dp"
+            style="@style/AssetLabelDisplay" />
+
+    </LinearLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/two_line_metadata_layout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/tile_poster"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="@dimen/tile_item_two_line_metadata_margin_start"
+        android:layout_marginEnd="@dimen/tile_item_two_line_metadata_margin_end"
+        android:layout_marginBottom="@dimen/tile_item_two_line_metadata_margin_bottom"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/first_line_metadata"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/tile_item_first_line_metadata_margin_bottom"
+            android:ellipsize="none"
+            android:fadingEdgeLength="@dimen/tile_item_first_line_metadata_fading_edge_length"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="start"
+            android:lineSpacingMultiplier="1.2"
+            android:requiresFadingEdge="horizontal"
+            android:shadowColor="@color/collection_swimlane_item_title_shadow_color"
+            android:shadowDx="0.0"
+            android:shadowDy="2.0"
+            android:shadowRadius="4.0"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/tile_item_first_line_metadata_text_color"
+            android:textSize="@dimen/tile_item_first_line_metadata_text_size_tablet"
+            app:layout_constraintBottom_toTopOf="@+id/second_line_metadata"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="This line will have title of the event" />
+
+        <TextView
+            android:id="@+id/second_line_metadata"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ellipsize="none"
+            android:fontFamily="sans-serif"
+            android:lineSpacingMultiplier="1.2"
+            android:singleLine="true"
+            android:textColor="@color/tile_item_second_line_metadata_text_color"
+            android:textSize="@dimen/tile_item_second_line_metadata_text_size"
+            android:includeFontPadding="false"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/first_line_metadata"
+            app:layout_constraintTop_toBottomOf="@+id/first_line_metadata"
+            tools:text="Genres Blah Blah" />
+
+        <TextView
+            android:id="@+id/second_line_metadata_icons"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/tile_item_margin_between_text_and_icons_in_second_line_metadata"
+            android:ellipsize="none"
+            android:fontFamily="sans-serif"
+            android:lineSpacingMultiplier="1.2"
+            android:singleLine="true"
+            android:textColor="@color/tile_item_second_line_metadata_text_color"
+            android:textSize="@dimen/tile_item_second_line_metadata_text_size"
+            android:includeFontPadding="false"
+            app:layout_constraintBottom_toBottomOf="@+id/second_line_metadata"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/second_line_metadata"
+            app:layout_constraintTop_toTopOf="@+id/second_line_metadata"
+            tools:text="Icons Blah Blah Blah" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.cardview.widget.CardView>

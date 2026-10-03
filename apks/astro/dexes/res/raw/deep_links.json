@@ -1,0 +1,14 @@
+{
+  "deep_links": [ {
+    "id": "DEEP_LINK_HELP_MANUAL",
+    "href": "https://www.astro.com.my/astrogo/faq",
+    "acceptLanguage": "en-US"
+  },
+    {
+      "id": "DEEP_LINK_MY_ACCOUNT",
+      "href": "file:///android_asset/index.html"
+    },{
+      "id": "DEEP_LINK_TERMS_AND_CONDITIONS",
+      "href": "file:///android_asset/index.html"
+    }]
+}

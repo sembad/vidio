@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+Main tile layout for content displayed on each swimlane, this main layout is used to support asset
+tiles as below:
+1. VOD asset
+2. Live asset
+3. cDVR asset
+4. Downloading / downloaded asset
+5. Channel asset
+
+This layout has two major parts (1) Image (asset poster) and (2) Metadata below poster.
+
+Metadata section is included as seperate layout as this is reused in many places.
+-->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/tile_channel_poster_swimlane"
+    android:layout_width="@dimen/tile_type1_width"
+    android:layout_height="wrap_content"
+    android:layout_centerHorizontal="true"
+    android:layout_marginEnd="6dp"
+    android:orientation="vertical">
+
+    <RelativeLayout
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent">
+
+        <TextView
+            android:id="@+id/tile_event_default_text"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/tile_poster_height"
+            android:textSize="@dimen/tile_poster_default_text_size"
+            android:gravity="center_vertical"
+            android:lineSpacingMultiplier="0.57"
+            android:visibility="gone"
+            android:textColor="@android:color/darker_gray"
+            />
+
+        <ImageView
+            android:id="@+id/tile_poster"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/tile_poster_height"
+            />
+
+        <View
+            android:id="@+id/tile_poster_gradient"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/tile_poster_gradient_height"
+            android:layout_alignBottom="@id/tile_poster"
+            android:background="@drawable/tile_poster_gradient"
+          />
+
+        <ImageView
+            android:id="@+id/tile_poster_center_icon"
+            android:layout_width="@dimen/tile_poster_center_icon_width"
+            android:layout_height="@dimen/tile_poster_center_icon_height"
+            android:layout_centerInParent="true" />
+
+        <com.cisco.veop.client.kiott.customviews.OrangeDownloadStatusIcon
+            android:id="@+id/txt_download_glyph_status"
+            android:visibility="gone"
+            android:layout_width="@dimen/tile_poster_download_icon_width"
+            android:layout_height="@dimen/tile_poster_download_icon_height"
+            android:layout_marginStart="@dimen/tile_poster_download_icon_start"
+            android:layout_marginBottom="@dimen/tile_poster_download_icon_bottom"
+            android:layout_alignBottom="@id/tile_poster" />
+
+        <ImageView
+            android:id="@+id/channel_logo_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/tile_poster_download_icon_height"
+            android:layout_alignBottom="@id/tile_poster"
+            tools:srcCompat="@drawable/icon_unsubscribed" />
+
+        <ProgressBar
+            android:id="@+id/tile_progress_bar"
+            style="@style/ProgressBar"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/tile_progress_bar_height"
+            android:indeterminate="false"
+            android:max="100"
+            android:progress="20"
+            android:visibility="gone" />
+
+        <include
+            android:id="@+id/tile_metadata_container"
+            layout="@layout/tile_metadata1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/tile_poster" />
+
+        <TextView
+            android:id="@+id/tile_asset_labels"
+            style="@style/AssetLabelDisplay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:lineSpacingMultiplier="1.17"
+            android:textSize="10sp"
+            tools:text="Subscribe"
+            tools:visibility="visible" />
+
+    </RelativeLayout>
+
+
+</LinearLayout>

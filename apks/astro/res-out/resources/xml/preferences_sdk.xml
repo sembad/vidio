@@ -1,0 +1,47 @@
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <PreferenceCategory android:title="App Settings" >
+        <CheckBoxPreference
+            android:defaultValue="@bool/pref_use_dummy_data"
+            android:key="@string/pref_name_use_dummy_data"
+            android:summary="use dummy data"
+            android:title="use dummy data" />
+        <CheckBoxPreference
+            android:defaultValue="@bool/pref_use_dummy_data_for_missing_api"
+            android:key="@string/pref_name_use_dummy_data_for_missing_api"
+            android:summary="use dummy data for missing api"
+            android:title="use dummy data for missing api" />
+        <CheckBoxPreference
+            android:defaultValue="@bool/pref_use_dummy_data_for_media"
+            android:key="@string/pref_name_use_dummy_data_for_media"
+            android:summary="use dummy data for media"
+            android:title="use dummy data for media" />
+        <CheckBoxPreference
+            android:defaultValue="@bool/pref_use_dummy_registration"
+            android:key="@string/pref_name_use_dummy_registration"
+            android:summary="use dummy registration"
+            android:title="use dummy registration" />
+        <CheckBoxPreference
+            android:defaultValue="@bool/pref_use_dummy_media_provider"
+            android:key="@string/pref_name_use_dummy_media_provider"
+            android:summary="use dummy media provider"
+            android:title="use dummy media provider" />
+        <CheckBoxPreference
+            android:defaultValue="@bool/pref_milestones_enabled"
+            android:key="@string/pref_name_milestones_enabled"
+            android:summary="Milestones enabled"
+            android:title="Milestones enabled" />
+
+        <EditTextPreference
+            android:defaultValue="@string/pref_milestones_port"
+            android:dialogTitle="Milestones Server port"
+            android:key="@string/pref_name_milestones_port"
+            android:summary="Milestones Server port"
+            android:title="Milestones Server port" />
+    </PreferenceCategory>
+
+</PreferenceScreen>

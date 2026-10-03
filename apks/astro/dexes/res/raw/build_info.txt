@@ -1,0 +1,5 @@
+build-date=Wed Jun 10 08:03:16 UTC 2026
+build-revision=39f0006c44
+build-lab-config=product_astro_Exo
+build-version-code=1324
+build-version-name=2.241.6/AC24.1.6/39f0006c44

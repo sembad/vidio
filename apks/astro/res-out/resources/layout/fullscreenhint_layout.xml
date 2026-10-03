@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/uiFullscreenHintMainLayout"
+    >
+    <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/uiFullscreenHintContainerId"
+        >
+        <ImageView
+            android:id="@+id/uiFullscreenHintImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:adjustViewBounds="true">
+        </ImageView>
+        <com.cisco.veop.sf_ui.ui_configuration.UiConfigTextView
+            android:id="@+id/uiFullscreenHintCloseIcon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            />
+
+     </RelativeLayout>
+</RelativeLayout>

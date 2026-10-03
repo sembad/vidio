@@ -1,0 +1,80 @@
+package com.facebook.ads.redexgen.X;
+
+import com.google.ads.mediation.facebook.FacebookMediationAdapter;
+import java.io.IOException;
+import java.util.Arrays;
+
+/* loaded from: assets/audience_network.dex */
+public final class CF {
+    public static byte[] A00;
+    public static String[] A01 = {"bdaFL9zMZ", "I63pCoSBBbO7fDlHhIa7BrZ6Ava1cIF3", "x5nJfB3W8HSDeHix", "yyLZDQNtNFC811gZWNvs8tiPSoT", "kE4kWLsRx96QKHczqOKboI9lp", "rJUZcTDeN", "z735Hr0viTdtcy9jRTmcNapxWooAX9zU", "rl5X7GmnpjWHRCYLou0FtooQfFV"};
+    public static final int[] A02;
+
+    public static String A00(int i11, int i12, int i13) {
+        byte[] copyOfRange = Arrays.copyOfRange(A00, i11, i11 + i12);
+        int i14 = 0;
+        while (true) {
+            int length = copyOfRange.length;
+            String[] strArr = A01;
+            if (strArr[0].length() != strArr[5].length()) {
+                throw new RuntimeException();
+            }
+            A01[3] = "MWn";
+            if (i14 >= length) {
+                return new String(copyOfRange);
+            }
+            copyOfRange[i14] = (byte) ((copyOfRange[i14] - i13) - 122);
+            if (A01[7].length() == 12) {
+                throw new RuntimeException();
+            }
+            A01[7] = "KMAr4";
+            i14++;
+        }
+    }
+
+    public static void A01() {
+        A00 = new byte[]{-44, 8, -45, 2, 25, 77, 24, 72, -8, 44, 42, -5, 22, 74, 74, 25, -49, 3, 12, -20, 32, 43, -17, 14, 66, 78, 17, -42, -67, -54, -87, 63, 38, 72, 18, 63, 38, 72, 66, -41, -35, -40, -32, 4, 25, 6, -44, 19, -31, 35, -51, 27, 24, 41, -28, 12, 26, 7, -43, 23, 33, 29, -32, 55, 65, 61, 1, 62, 72, 68, 9, -9, 1, -3, -61, 9, 19, 15, -42, 40, 50, 46, 44, 14, 7, 7, 12, 24, 27, -33, -36, 97, 100, 40, 38, -10, -7, -91, -91};
+    }
+
+    /* JADX WARN: Failed to parse debug info
+    java.lang.ArrayIndexOutOfBoundsException
+     */
+    /* JADX WARN: Removed duplicated region for block: B:29:0x00da  */
+    /* JADX WARN: Removed duplicated region for block: B:53:0x0107  */
+    /*
+        Code decompiled incorrectly, please refer to instructions dump.
+        To view partially-correct add '--show-bad-code' argument
+    */
+    public static boolean A05(com.facebook.ads.redexgen.X.BW r16, boolean r17) throws java.io.IOException, java.lang.InterruptedException {
+        /*
+            Method dump skipped, instructions count: 289
+            To view this dump add '--comments-level debug' option
+        */
+        throw new UnsupportedOperationException("Method not decompiled: com.facebook.ads.redexgen.X.CF.A05(com.facebook.ads.redexgen.X.BW, boolean):boolean");
+    }
+
+    static {
+        A01();
+        A02 = new int[]{C1814Hs.A08(A00(79, 4, 69)), C1814Hs.A08(A00(59, 4, 52)), C1814Hs.A08(A00(63, 4, 84)), C1814Hs.A08(A00(67, 4, 91)), C1814Hs.A08(A00(71, 4, 20)), C1814Hs.A08(A00(75, 4, 38)), C1814Hs.A08(A00(43, 4, 41)), C1814Hs.A08(A00(55, 4, 42)), C1814Hs.A08(A00(51, 4, 57)), C1814Hs.A08(A00(87, 4, 49)), C1814Hs.A08(A00(91, 4, 122)), C1814Hs.A08(A00(0, 4, 39)), C1814Hs.A08(A00(4, 4, FacebookMediationAdapter.ERROR_MAPPING_NATIVE_ASSETS)), C1814Hs.A08(A00(19, 4, 63)), C1814Hs.A08(A00(23, 4, 97)), C1814Hs.A08(A00(8, 4, 75)), C1814Hs.A08(A00(12, 4, FacebookMediationAdapter.ERROR_REQUIRES_UNIFIED_NATIVE_ADS)), C1814Hs.A08(A00(31, 4, 120)), C1814Hs.A08(A00(27, 4, 15)), C1814Hs.A08(A00(47, 4, 51)), C1814Hs.A08(A00(83, 4, 41)), C1814Hs.A08(A00(35, 4, 120)), C1814Hs.A08(A00(95, 4, 11)), C1814Hs.A08(A00(39, 4, 16))};
+    }
+
+    public static boolean A02(int i11) {
+        if ((i11 >>> 8) == C1814Hs.A08(A00(16, 3, 34))) {
+            return true;
+        }
+        for (int i12 : A02) {
+            if (i12 == i11) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean A03(BW bw2) throws IOException, InterruptedException {
+        return A05(bw2, true);
+    }
+
+    public static boolean A04(BW bw2) throws IOException, InterruptedException {
+        return A05(bw2, false);
+    }
+}

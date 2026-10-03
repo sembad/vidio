@@ -1,0 +1,12 @@
+package ka;
+
+import java.util.HashSet;
+import kotlin.jvm.functions.Function0;
+
+/* loaded from: classes.dex */
+public final /* synthetic */ class l implements Function0 {
+    @Override // kotlin.jvm.functions.Function0
+    public final Object invoke() {
+        return new HashSet();
+    }
+}

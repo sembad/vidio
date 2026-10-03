@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:animateLayoutChanges="false"
+    tools:background="#0e1019">
+
+
+    <View
+        android:id="@+id/mainPosterDummyPlaceholder"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="60dp"
+        android:background="@android:color/transparent"
+        android:visibility="visible"
+        app:layout_constraintBottom_toTopOf="@+id/seriesEventTitle"
+        app:layout_constraintDimensionRatio="H,16:9"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <View
+        android:id="@+id/topPartGradientTopAnchor"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:layout_marginBottom="70dp"
+        android:background="@android:color/transparent"
+        app:layout_constraintBottom_toBottomOf="@id/mainPosterDummyPlaceholder"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <View
+        android:id="@+id/topPartGradient"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@drawable/title_and_metadata_gradient"
+        app:layout_constraintBottom_toTopOf="@+id/watchInfoKey"
+        app:layout_constraintTop_toTopOf="@+id/topPartGradientTopAnchor" />
+
+    <TextView
+        android:id="@+id/seriesEventLabels"
+        style="@style/AssetLabelDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:lineSpacingMultiplier="1.17"
+        android:textSize="10sp"
+        android:layout_marginBottom="8dp"
+        app:layout_constrainedWidth="true"
+        app:layout_constraintBottom_toTopOf="@id/seriesEventTitle"
+        app:layout_constraintEnd_toEndOf="@id/verticalGuideline"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/mainPosterDummyPlaceholder"
+        tools:text="New Series"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/seriesEventTitle"
+        style="@style/SeriesPageEventTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="8dp"
+        android:textSize="24sp"
+        app:layout_constraintBottom_toTopOf="@+id/seriesEventMetadataTopBarrier"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/seriesEventLabels"
+        app:layout_goneMarginTop="16dp"
+        tools:contentDescription="@string/visibility_warning"
+        tools:text="Game of Thrones Test Test Test Test Test Test Test Test Test Test Test" />
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/seriesEventMetadataTopBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="top"
+        app:constraint_referenced_ids="seriesEventMetadata,seriesEventParentalRatingIcon" />
+
+    <TextView
+        android:id="@+id/seriesEventMetadata"
+        style="@style/SeriesEventMetadata"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="4dp"
+        android:textSize="14sp"
+        app:layout_constraintBottom_toTopOf="@+id/watchInfoKey"
+        app:layout_constraintEnd_toStartOf="@+id/seriesEventParentalRatingIcon"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/seriesEventTitle"
+        tools:text="8 Seasons | 2018 | Action, Drama | Test Test Test" />
+
+    <TextView
+        android:id="@+id/seriesEventParentalRatingIcon"
+        style="@style/RobotoBold"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:gravity="center_vertical"
+        android:includeFontPadding="false"
+        android:lineSpacingMultiplier="1.5"
+        android:textColor="#b2adaf"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/seriesEventMetadata"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/seriesEventMetadata"
+        app:layout_constraintTop_toTopOf="@+id/seriesEventMetadata"
+        app:layout_goneMarginStart="16dp"
+        app:layout_goneMarginTop="8dp"
+        tools:text="18" />
+
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/seriesEventMetadataBottomBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:constraint_referenced_ids="seriesEventMetadata,seriesEventParentalRatingIcon" />
+
+    <View
+        android:id="@+id/topPartGradient2"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@color/app_background_color"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/watchInfoKey" />
+
+    <TextView
+        android:id="@+id/watchInfoKey"
+        style="@style/WatchInfoKeyTextStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:text="Start Watching"
+        app:layout_constraintEnd_toStartOf="@+id/watchInfoKeyValueSeparator"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/seriesEventMetadataBottomBarrier" />
+
+    <TextView
+        android:id="@+id/watchInfoKeyValueSeparator"
+        style="@style/WatchInfoKeyTextStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text=":"
+        app:layout_constraintBottom_toBottomOf="@+id/watchInfoKey"
+        app:layout_constraintEnd_toStartOf="@+id/watchInfoValue"
+        app:layout_constraintStart_toEndOf="@+id/watchInfoKey"
+        app:layout_constraintTop_toTopOf="@+id/watchInfoKey" />
+
+    <TextView
+        android:id="@+id/watchInfoValue"
+        style="@style/WatchInfoValueTextStyle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/watchInfoKeyValueSeparator"
+        app:layout_constraintTop_toTopOf="@+id/watchInfoKey"
+        tools:text="S1 | EP1 Test Test Test Test | Test Test Test Test" />
+
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/watchInfoGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:constraint_referenced_ids="watchInfoKey,watchInfoKeyValueSeparator,watchInfoValue"
+        tools:visibility="visible" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/verticalGuideline"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.45" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

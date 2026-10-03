@@ -1,0 +1,23 @@
+package com.google.android.material.progressindicator;
+
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+
+/* loaded from: classes4.dex */
+final class i extends AnimatorListenerAdapter {
+
+    /* renamed from: a, reason: collision with root package name */
+    final /* synthetic */ j f21974a;
+
+    i(j jVar) {
+        this.f21974a = jVar;
+    }
+
+    @Override // android.animation.AnimatorListenerAdapter, android.animation.Animator.AnimatorListener
+    public final void onAnimationEnd(Animator animator) {
+        super.onAnimationEnd(animator);
+        j jVar = this.f21974a;
+        super/*android.graphics.drawable.Drawable*/.setVisible(false, false);
+        j.c(jVar);
+    }
+}

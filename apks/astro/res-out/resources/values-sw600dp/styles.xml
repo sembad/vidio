@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="BrandTitleStyle" parent="RobotoMedium">
+        <item name="android:textSize">20sp</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <style name="SwimLaneItemTitleStyle" parent="RobotoMedium">
+        <item name="android:textSize">@dimen/hub_screen_swimlane_title_text_size</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:requiresFadingEdge">horizontal</item>
+        <item name="android:fadingEdgeLength">40dp</item>
+        <item name="android:ellipsize">none</item>
+    </style>
+
+    <style name="SwimLaneItemSeeAllStyle" parent="RobotoMedium">
+        <item name="android:textSize">@dimen/hub_screen_swimlane_see_all_text_size</item>
+        <item name="android:visibility">gone</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
+    <style name="BrandedSwimLaneTitleStyle" parent="RobotoMedium">
+        <item name="android:textSize">@dimen/branded_swimlane_title_text_size</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:requiresFadingEdge">horizontal</item>
+        <item name="android:fadingEdgeLength">40dp</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+
+    <style name="BrandedSwimLaneItemTitleStyle" parent="RobotoMedium">
+        <item name="android:textSize">@dimen/branded_swimlane_item_title_text_size</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+
+    <style name="BrandedPageToolbarBackIconStyle" parent="RobotoBold">
+        <item name="android:textSize">@dimen/branded_page_toolbar_back_icon_size</item>
+        <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:clickable">true</item>
+        <item name="android:textColor">#ebebeb</item>
+    </style>
+
+    <style name="BrandedPageToolbarSearchIconStyle" parent="BrandedPageToolbarBackIconStyle" />
+
+</resources>

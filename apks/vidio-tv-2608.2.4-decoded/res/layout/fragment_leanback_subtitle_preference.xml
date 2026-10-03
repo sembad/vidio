@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:orientation="vertical" android:id="@id/main_frame" android:background="@color/subtitle_preference_background" android:layout_width="fill_parent" android:layout_height="fill_parent" android:transitionGroup="false"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+    <androidx.appcompat.widget.LinearLayoutCompat android:gravity="center_vertical" android:orientation="vertical" android:id="@id/decor_title_container" android:background="?defaultBrandColor" android:paddingTop="@dimen/preference_title_padding_top" android:paddingBottom="18.0dip" android:layout_width="fill_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/preference_title_padding_start" android:paddingEnd="@dimen/preference_title_padding_end" android:transitionGroup="false" android:elevation="@dimen/preference_elevation">
+        <TextView android:textSize="@dimen/preference_title_text_size" android:textStyle="bold" android:textColor="?android:textColorPrimary" android:gravity="center_vertical" android:id="@id/decor_title" android:layout_width="fill_parent" android:layout_height="wrap_content" android:singleLine="true" android:fontFamily="sans-serif" />
+    </androidx.appcompat.widget.LinearLayoutCompat>
+</LinearLayout>

@@ -1,0 +1,325 @@
+.class public abstract Lcom/google/android/gms/ads/mediation/rtb/RtbAdapter;
+.super Lwf/a;
+.source "SourceFile"
+
+
+# direct methods
+.method public constructor <init>()V
+    .locals 0
+
+    invoke-direct {p0}, Lwf/a;-><init>()V
+
+    return-void
+.end method
+
+
+# virtual methods
+.method public abstract collectSignals(Lyf/a;Lyf/b;)V
+    .param p1    # Lyf/a;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .param p2    # Lyf/b;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+.end method
+
+.method public loadRtbAppOpenAd(Lwf/g;Lwf/c;)V
+    .locals 0
+    .param p1    # Lwf/g;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .param p2    # Lwf/c;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Lwf/g;",
+            "Lwf/c<",
+            "Lwf/f;",
+            "Ljava/lang/Object;",
+            ">;)V"
+        }
+    .end annotation
+
+    .line 1
+    invoke-virtual {p0, p1, p2}, Lwf/a;->loadAppOpenAd(Lwf/g;Lwf/c;)V
+
+    .line 2
+    .line 3
+    .line 4
+    return-void
+.end method
+
+.method public loadRtbBannerAd(Lwf/i;Lwf/c;)V
+    .locals 0
+    .param p1    # Lwf/i;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .param p2    # Lwf/c;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Lwf/i;",
+            "Lwf/c<",
+            "Lwf/h;",
+            "Ljava/lang/Object;",
+            ">;)V"
+        }
+    .end annotation
+
+    .line 1
+    invoke-virtual {p0, p1, p2}, Lwf/a;->loadBannerAd(Lwf/i;Lwf/c;)V
+
+    .line 2
+    .line 3
+    .line 4
+    return-void
+.end method
+
+.method public loadRtbInterscrollerAd(Lwf/i;Lwf/c;)V
+    .locals 4
+    .param p1    # Lwf/i;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .param p2    # Lwf/c;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Lwf/i;",
+            "Lwf/c<",
+            "Lwf/k;",
+            "Ljava/lang/Object;",
+            ">;)V"
+        }
+    .end annotation
+
+    .annotation runtime Ljava/lang/Deprecated;
+    .end annotation
+
+    .line 1
+    invoke-virtual {p0}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+
+    .line 2
+    .line 3
+    .line 4
+    move-result-object p1
+
+    .line 5
+    new-instance v0, Lmf/b;
+
+    .line 6
+    .line 7
+    invoke-virtual {p1}, Ljava/lang/Class;->getSimpleName()Ljava/lang/String;
+
+    .line 8
+    .line 9
+    .line 10
+    move-result-object p1
+
+    .line 11
+    const-string v1, " does not support interscroller ads."
+
+    .line 12
+    .line 13
+    invoke-virtual {p1, v1}, Ljava/lang/String;->concat(Ljava/lang/String;)Ljava/lang/String;
+
+    .line 14
+    .line 15
+    .line 16
+    move-result-object p1
+
+    .line 17
+    const-string v1, "com.google.android.gms.ads"
+
+    .line 18
+    .line 19
+    const/4 v2, 0x0
+
+    .line 20
+    const/4 v3, 0x7
+
+    .line 21
+    invoke-direct {v0, v3, p1, v1, v2}, Lmf/b;-><init>(ILjava/lang/String;Ljava/lang/String;Lmf/b;)V
+
+    .line 22
+    .line 23
+    .line 24
+    invoke-interface {p2, v0}, Lwf/c;->onFailure(Lmf/b;)V
+
+    .line 25
+    .line 26
+    .line 27
+    return-void
+.end method
+
+.method public loadRtbInterstitialAd(Lwf/m;Lwf/c;)V
+    .locals 0
+    .param p1    # Lwf/m;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .param p2    # Lwf/c;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Lwf/m;",
+            "Lwf/c<",
+            "Lwf/l;",
+            "Ljava/lang/Object;",
+            ">;)V"
+        }
+    .end annotation
+
+    .line 1
+    invoke-virtual {p0, p1, p2}, Lwf/a;->loadInterstitialAd(Lwf/m;Lwf/c;)V
+
+    .line 2
+    .line 3
+    .line 4
+    return-void
+.end method
+
+.method public loadRtbNativeAd(Lwf/o;Lwf/c;)V
+    .locals 0
+    .param p1    # Lwf/o;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .param p2    # Lwf/c;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Lwf/o;",
+            "Lwf/c<",
+            "Lwf/w;",
+            "Ljava/lang/Object;",
+            ">;)V"
+        }
+    .end annotation
+
+    .annotation runtime Ljava/lang/Deprecated;
+    .end annotation
+
+    .line 1
+    invoke-virtual {p0, p1, p2}, Lwf/a;->loadNativeAd(Lwf/o;Lwf/c;)V
+
+    .line 2
+    .line 3
+    .line 4
+    return-void
+.end method
+
+.method public loadRtbNativeAdMapper(Lwf/o;Lwf/c;)V
+    .locals 0
+    .param p1    # Lwf/o;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .param p2    # Lwf/c;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Lwf/o;",
+            "Lwf/c<",
+            "Lwf/s;",
+            "Ljava/lang/Object;",
+            ">;)V"
+        }
+    .end annotation
+
+    .annotation system Ldalvik/annotation/Throws;
+        value = {
+            Landroid/os/RemoteException;
+        }
+    .end annotation
+
+    .line 1
+    invoke-virtual {p0, p1, p2}, Lwf/a;->loadNativeAdMapper(Lwf/o;Lwf/c;)V
+
+    .line 2
+    .line 3
+    .line 4
+    return-void
+.end method
+
+.method public loadRtbRewardedAd(Lwf/r;Lwf/c;)V
+    .locals 0
+    .param p1    # Lwf/r;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .param p2    # Lwf/c;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Lwf/r;",
+            "Lwf/c<",
+            "Lwf/q;",
+            "Ljava/lang/Object;",
+            ">;)V"
+        }
+    .end annotation
+
+    .line 1
+    invoke-virtual {p0, p1, p2}, Lwf/a;->loadRewardedAd(Lwf/r;Lwf/c;)V
+
+    .line 2
+    .line 3
+    .line 4
+    return-void
+.end method
+
+.method public loadRtbRewardedInterstitialAd(Lwf/r;Lwf/c;)V
+    .locals 0
+    .param p1    # Lwf/r;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .param p2    # Lwf/c;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+    .annotation system Ldalvik/annotation/Signature;
+        value = {
+            "(",
+            "Lwf/r;",
+            "Lwf/c<",
+            "Lwf/q;",
+            "Ljava/lang/Object;",
+            ">;)V"
+        }
+    .end annotation
+
+    .line 1
+    invoke-virtual {p0, p1, p2}, Lwf/a;->loadRewardedInterstitialAd(Lwf/r;Lwf/c;)V
+
+    .line 2
+    .line 3
+    .line 4
+    return-void
+.end method

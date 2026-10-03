@@ -1,0 +1,13 @@
+package com.google.ads.interactivemedia.v3.impl.data;
+
+import com.google.ads.interactivemedia.v3.internal.zzpa;
+
+@zzpa(zza = AutoValue_CuePointData.class)
+/* loaded from: classes3.dex */
+public abstract class CuePointData {
+    public abstract double end();
+
+    public abstract boolean played();
+
+    public abstract double start();
+}

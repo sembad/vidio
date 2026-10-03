@@ -1,0 +1,19 @@
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<preference-headers xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <header
+        android:fragment="com.cisco.veop.client.SettingsActivity$AppSettingsFragment"
+        android:icon="@drawable/settings_activity_icon"
+        android:summary="App Settings"
+        android:title="App Settings" />
+    <header
+        android:fragment="com.cisco.veop.client.SettingsActivity$SdkSettingsFragment"
+        android:icon="@drawable/settings_activity_icon"
+        android:summary="SDK Settings"
+        android:title="SDK Settings" />
+
+</preference-headers>
+

@@ -1,0 +1,15 @@
+package com.google.android.gms.location;
+
+import android.content.Context;
+import android.os.Looper;
+import com.google.android.gms.common.api.a;
+import com.google.android.gms.common.api.d;
+import com.google.android.gms.internal.location.zzaz;
+
+/* loaded from: classes4.dex */
+final class f extends a.AbstractC0214a<zzaz, a.d.c> {
+    @Override // com.google.android.gms.common.api.a.AbstractC0214a
+    public final zzaz buildClient(Context context, Looper looper, com.google.android.gms.common.internal.d dVar, a.d.c cVar, d.b bVar, d.c cVar2) {
+        return new zzaz(context, looper, bVar, cVar2, "activity_recognition", new d.a(context).a());
+    }
+}

@@ -1,0 +1,10 @@
+package com.appsflyer.internal;
+
+/* loaded from: classes3.dex */
+public final class AFi1wSDK {
+    public final double getMediationNetwork;
+
+    public AFi1wSDK(double d11) {
+        this.getMediationNetwork = d11;
+    }
+}

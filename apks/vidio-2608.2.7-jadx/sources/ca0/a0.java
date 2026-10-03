@@ -1,0 +1,16 @@
+package ca0;
+
+import kotlin.coroutines.CoroutineContext;
+import org.jetbrains.annotations.NotNull;
+
+/* loaded from: classes3.dex */
+public interface a0 {
+    @NotNull
+    io.ktor.utils.io.f a(@NotNull io.ktor.utils.io.f fVar, @NotNull CoroutineContext coroutineContext);
+
+    @NotNull
+    io.ktor.utils.io.f b(@NotNull io.ktor.utils.io.f fVar, @NotNull CoroutineContext coroutineContext);
+
+    @NotNull
+    io.ktor.utils.io.d0 c(@NotNull io.ktor.utils.io.d0 d0Var, @NotNull CoroutineContext coroutineContext);
+}

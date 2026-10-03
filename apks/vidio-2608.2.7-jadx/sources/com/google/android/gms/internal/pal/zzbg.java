@@ -1,0 +1,56 @@
+package com.google.android.gms.internal.pal;
+
+import android.os.Handler;
+import com.google.ads.interactivemedia.pal.NonceLoaderException;
+import com.google.android.gms.tasks.Task;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import ri.k;
+
+/* loaded from: classes5.dex */
+public abstract class zzbg {
+    private final ExecutorService zza;
+    private final zzagc zzb;
+    private final Handler zzc;
+    private Task zzd = k.f(zzil.zze());
+
+    zzbg(Handler handler, ExecutorService executorService, zzagc zzagcVar) {
+        this.zza = executorService;
+        this.zzc = handler;
+        this.zzb = zzagcVar;
+    }
+
+    /* JADX INFO: Access modifiers changed from: private */
+    public final void zzf() {
+        this.zzc.removeCallbacksAndMessages(null);
+        this.zzc.postDelayed(new Runnable() { // from class: com.google.android.gms.internal.pal.zzbe
+            @Override // java.lang.Runnable
+            public final void run() {
+                zzbg.this.zzf();
+            }
+        }, (this.zzb.zzd() / 1000) * 1000);
+        this.zzd = k.c(new Callable() { // from class: com.google.android.gms.internal.pal.zzbf
+            @Override // java.util.concurrent.Callable
+            public final Object call() {
+                return zzbg.this.zza();
+            }
+        }, this.zza);
+    }
+
+    abstract zzil zza() throws NonceLoaderException;
+
+    public final Task zzb() {
+        if (this.zzd.o() && !this.zzd.p()) {
+            zzf();
+        }
+        return this.zzd;
+    }
+
+    public final void zzd() {
+        zzf();
+    }
+
+    public final void zze() {
+        this.zzc.removeCallbacksAndMessages(null);
+    }
+}

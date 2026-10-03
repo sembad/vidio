@@ -1,0 +1,63 @@
+.class final Lcom/google/android/material/appbar/e;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+# interfaces
+.implements Lg5/l;
+
+
+# instance fields
+.field final synthetic d:Lcom/google/android/material/appbar/AppBarLayout;
+
+.field final synthetic e:Z
+
+
+# direct methods
+.method constructor <init>(Lcom/google/android/material/appbar/AppBarLayout;Z)V
+    .locals 0
+
+    .line 1
+    invoke-direct {p0}, Ljava/lang/Object;-><init>()V
+
+    .line 2
+    .line 3
+    .line 4
+    iput-object p1, p0, Lcom/google/android/material/appbar/e;->d:Lcom/google/android/material/appbar/AppBarLayout;
+
+    .line 5
+    .line 6
+    iput-boolean p2, p0, Lcom/google/android/material/appbar/e;->e:Z
+
+    .line 7
+    .line 8
+    return-void
+.end method
+
+
+# virtual methods
+.method public final a(Landroid/view/View;Lg5/l$a;)Z
+    .locals 0
+    .param p1    # Landroid/view/View;
+        .annotation build Landroidx/annotation/NonNull;
+        .end annotation
+    .end param
+
+    .line 1
+    iget-object p1, p0, Lcom/google/android/material/appbar/e;->d:Lcom/google/android/material/appbar/AppBarLayout;
+
+    .line 2
+    .line 3
+    iget-boolean p2, p0, Lcom/google/android/material/appbar/e;->e:Z
+
+    .line 4
+    .line 5
+    invoke-virtual {p1, p2}, Lcom/google/android/material/appbar/AppBarLayout;->s(Z)V
+
+    .line 6
+    .line 7
+    .line 8
+    const/4 p1, 0x1
+
+    .line 9
+    return p1
+.end method

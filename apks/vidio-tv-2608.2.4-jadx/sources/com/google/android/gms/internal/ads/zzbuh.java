@@ -1,0 +1,459 @@
+package com.google.android.gms.internal.ads;
+
+import android.app.ActivityManager;
+import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Looper;
+import android.text.TextUtils;
+import android.webkit.WebView;
+import com.appsflyer.AppsFlyerProperties;
+import com.google.ads.interactivemedia.v3.impl.data.NetworkResponseData;
+import com.google.android.gms.ads.internal.client.w;
+import com.google.android.gms.ads.internal.client.y;
+import com.google.android.gms.ads.internal.util.client.VersionInfoParcel;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.WeakHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
+import uf.o;
+import uf.s;
+
+/* loaded from: classes3.dex */
+public final class zzbuh implements zzbuj {
+    public static zzbuj zza;
+    static zzbuj zzb;
+    static zzbuj zzc;
+    static Boolean zzd;
+    private static final Object zze = new Object();
+    private final Object zzf;
+    private final Context zzg;
+    private final WeakHashMap zzh;
+    private final ExecutorService zzi;
+    private final VersionInfoParcel zzj;
+    private final PackageInfo zzk;
+    private final String zzl;
+    private final String zzm;
+    private final AtomicBoolean zzn;
+    private boolean zzo;
+
+    /* JADX WARN: Removed duplicated region for block: B:14:0x0077  */
+    /* JADX WARN: Removed duplicated region for block: B:17:0x0093  */
+    /* JADX WARN: Removed duplicated region for block: B:29:0x00b0  */
+    /* JADX WARN: Removed duplicated region for block: B:30:0x0080  */
+    /*
+        Code decompiled incorrectly, please refer to instructions dump.
+        To view partially-correct add '--show-bad-code' argument
+    */
+    protected zzbuh(android.content.Context r3, com.google.android.gms.ads.internal.util.client.VersionInfoParcel r4) {
+        /*
+            r2 = this;
+            r2.<init>()
+            java.lang.Object r0 = new java.lang.Object
+            r0.<init>()
+            r2.zzf = r0
+            java.util.WeakHashMap r0 = new java.util.WeakHashMap
+            r0.<init>()
+            r2.zzh = r0
+            com.google.android.gms.internal.ads.zzfqv.zza()
+            java.util.concurrent.ExecutorService r0 = java.util.concurrent.Executors.newCachedThreadPool()
+            java.util.concurrent.ExecutorService r0 = java.util.concurrent.Executors.unconfigurableExecutorService(r0)
+            r2.zzi = r0
+            java.util.concurrent.atomic.AtomicBoolean r0 = new java.util.concurrent.atomic.AtomicBoolean
+            r0.<init>()
+            r2.zzn = r0
+            android.content.Context r0 = r3.getApplicationContext()
+            if (r0 == 0) goto L2f
+            android.content.Context r3 = r3.getApplicationContext()
+        L2f:
+            r2.zzg = r3
+            r2.zzj = r4
+            com.google.android.gms.internal.ads.zzbcc r4 = com.google.android.gms.internal.ads.zzbcl.zzhG
+            com.google.android.gms.internal.ads.zzbcj r0 = com.google.android.gms.ads.internal.client.y.c()
+            java.lang.Object r4 = r0.zza(r4)
+            java.lang.Boolean r4 = (java.lang.Boolean) r4
+            boolean r4 = r4.booleanValue()
+            r0 = 0
+            if (r4 == 0) goto L50
+            com.google.android.gms.internal.ads.zzfqw r4 = uf.f.f61689b
+            if (r3 == 0) goto L50
+            android.content.pm.ApplicationInfo r4 = r3.getApplicationInfo()
+            if (r4 != 0) goto L52
+        L50:
+            r3 = r0
+            goto L61
+        L52:
+            fh.c r4 = fh.d.a(r3)     // Catch: android.content.pm.PackageManager.NameNotFoundException -> L50
+            android.content.pm.ApplicationInfo r3 = r3.getApplicationInfo()     // Catch: android.content.pm.PackageManager.NameNotFoundException -> L50
+            java.lang.String r3 = r3.packageName     // Catch: android.content.pm.PackageManager.NameNotFoundException -> L50
+            r1 = 0
+            android.content.pm.PackageInfo r3 = r4.f(r1, r3)     // Catch: android.content.pm.PackageManager.NameNotFoundException -> L50
+        L61:
+            r2.zzk = r3
+            com.google.android.gms.internal.ads.zzbcc r3 = com.google.android.gms.internal.ads.zzbcl.zzhE
+            com.google.android.gms.internal.ads.zzbcj r4 = com.google.android.gms.ads.internal.client.y.c()
+            java.lang.Object r4 = r4.zza(r3)
+            java.lang.Boolean r4 = (java.lang.Boolean) r4
+            boolean r4 = r4.booleanValue()
+            java.lang.String r1 = "unknown"
+            if (r4 == 0) goto L80
+            java.util.Locale r4 = java.util.Locale.getDefault()
+            java.lang.String r4 = r4.getCountry()
+            goto L81
+        L80:
+            r4 = r1
+        L81:
+            r2.zzl = r4
+            com.google.android.gms.internal.ads.zzbcj r4 = com.google.android.gms.ads.internal.client.y.c()
+            java.lang.Object r3 = r4.zza(r3)
+            java.lang.Boolean r3 = (java.lang.Boolean) r3
+            boolean r3 = r3.booleanValue()
+            if (r3 == 0) goto Lb0
+            android.content.Context r3 = r2.zzg
+            com.google.android.gms.internal.ads.zzfqw r4 = uf.f.f61689b
+            if (r3 != 0) goto L9a
+            goto Lb1
+        L9a:
+            fh.c r3 = fh.d.a(r3)     // Catch: android.content.pm.PackageManager.NameNotFoundException -> Lb1
+            java.lang.String r4 = "com.android.vending"
+            r1 = 128(0x80, float:1.8E-43)
+            android.content.pm.PackageInfo r3 = r3.f(r1, r4)     // Catch: android.content.pm.PackageManager.NameNotFoundException -> Lb1
+            if (r3 != 0) goto La9
+            goto Lb1
+        La9:
+            int r3 = r3.versionCode     // Catch: android.content.pm.PackageManager.NameNotFoundException -> Lb1
+            java.lang.String r0 = java.lang.Integer.toString(r3)     // Catch: android.content.pm.PackageManager.NameNotFoundException -> Lb1
+            goto Lb1
+        Lb0:
+            r0 = r1
+        Lb1:
+            r2.zzm = r0
+            return
+        */
+        throw new UnsupportedOperationException("Method not decompiled: com.google.android.gms.internal.ads.zzbuh.<init>(android.content.Context, com.google.android.gms.ads.internal.util.client.VersionInfoParcel):void");
+    }
+
+    public static zzbuj zza(Context context) {
+        synchronized (zze) {
+            try {
+                if (zza == null) {
+                    if (zzl(context)) {
+                        zza = new zzbuh(context, VersionInfoParcel.u0());
+                    } else {
+                        zza = new zzbui();
+                    }
+                }
+            } catch (Throwable th2) {
+                throw th2;
+            }
+        }
+        return zza;
+    }
+
+    public static zzbuj zzb(Context context, VersionInfoParcel versionInfoParcel) {
+        synchronized (zze) {
+            try {
+                if (zzc == null) {
+                    boolean z11 = false;
+                    if (((Boolean) zzbed.zzc.zze()).booleanValue()) {
+                        if (!((Boolean) y.c().zza(zzbcl.zzhz)).booleanValue() || ((Boolean) zzbed.zza.zze()).booleanValue()) {
+                            z11 = true;
+                        }
+                    }
+                    if (zzl(context)) {
+                        zzbuh zzbuhVar = new zzbuh(context, versionInfoParcel);
+                        zzbuhVar.zzk();
+                        zzbuhVar.zzj();
+                        zzc = zzbuhVar;
+                    } else if (!z11 || context == null) {
+                        zzc = new zzbui();
+                    } else {
+                        zzbuh zzbuhVar2 = new zzbuh(context, versionInfoParcel, true);
+                        zzbuhVar2.zzk();
+                        zzbuhVar2.zzj();
+                        zzc = zzbuhVar2;
+                    }
+                }
+            } catch (Throwable th2) {
+                throw th2;
+            }
+        }
+        return zzc;
+    }
+
+    public static zzbuj zzc(Context context) {
+        synchronized (zze) {
+            try {
+                if (zzb == null) {
+                    if (((Boolean) y.c().zza(zzbcl.zzhA)).booleanValue()) {
+                        if (!((Boolean) y.c().zza(zzbcl.zzhz)).booleanValue()) {
+                            zzb = new zzbuh(context, VersionInfoParcel.u0());
+                        }
+                    }
+                    zzb = new zzbui();
+                }
+            } catch (Throwable th2) {
+                throw th2;
+            }
+        }
+        return zzb;
+    }
+
+    public static zzbuj zzd(Context context, VersionInfoParcel versionInfoParcel) {
+        synchronized (zze) {
+            try {
+                if (zzb == null) {
+                    if (((Boolean) y.c().zza(zzbcl.zzhA)).booleanValue()) {
+                        if (!((Boolean) y.c().zza(zzbcl.zzhz)).booleanValue()) {
+                            zzb = new zzbuh(context, versionInfoParcel);
+                        }
+                    }
+                    zzb = new zzbui();
+                }
+            } catch (Throwable th2) {
+                throw th2;
+            }
+        }
+        return zzb;
+    }
+
+    public static String zze(Throwable th2) {
+        StringWriter stringWriter = new StringWriter();
+        th2.printStackTrace(new PrintWriter(stringWriter));
+        return stringWriter.toString();
+    }
+
+    public static String zzf(Throwable th2) {
+        return zzfve.zzc(uf.f.g(zze(th2)));
+    }
+
+    private final void zzj() {
+        Thread.setDefaultUncaughtExceptionHandler(new zzbuf(this, Thread.getDefaultUncaughtExceptionHandler()));
+    }
+
+    private final void zzk() {
+        Thread thread = Looper.getMainLooper().getThread();
+        if (thread == null) {
+            return;
+        }
+        synchronized (this.zzf) {
+            this.zzh.put(thread, Boolean.TRUE);
+        }
+        thread.setUncaughtExceptionHandler(new zzbug(this, thread.getUncaughtExceptionHandler()));
+    }
+
+    private static boolean zzl(Context context) {
+        if (context == null) {
+            return false;
+        }
+        if (!((Boolean) y.c().zza(zzbcl.zzmE)).booleanValue()) {
+            if (((Boolean) zzbeu.zze.zze()).booleanValue()) {
+                if (!((Boolean) y.c().zza(zzbcl.zzhz)).booleanValue()) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        synchronized (zze) {
+            try {
+                if (zzd == null) {
+                    zzd = Boolean.valueOf(w.e().nextInt(100) < ((Integer) y.c().zza(zzbcl.zzmB)).intValue());
+                }
+            } catch (Throwable th2) {
+                throw th2;
+            }
+        }
+        if (zzd.booleanValue()) {
+            if (!((Boolean) y.c().zza(zzbcl.zzhz)).booleanValue()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected final void zzg(Thread thread, Throwable th2) {
+        if (th2 != null) {
+            boolean z11 = false;
+            boolean z12 = false;
+            for (Throwable th3 = th2; th3 != null; th3 = th3.getCause()) {
+                for (StackTraceElement stackTraceElement : th3.getStackTrace()) {
+                    z11 |= uf.f.m(stackTraceElement.getClassName());
+                    z12 |= zzbuh.class.getName().equals(stackTraceElement.getClassName());
+                }
+            }
+            if (!z11 || z12) {
+                return;
+            }
+            if (!this.zzo) {
+                zzh(th2, "");
+            }
+            if (this.zzn.getAndSet(true) || !((Boolean) zzbed.zzc.zze()).booleanValue()) {
+                return;
+            }
+            zzbbv.zzc(this.zzg);
+        }
+    }
+
+    @Override // com.google.android.gms.internal.ads.zzbuj
+    public final void zzh(Throwable th2, String str) {
+        if (this.zzo) {
+            return;
+        }
+        zzi(th2, str, 1.0f);
+    }
+
+    @Override // com.google.android.gms.internal.ads.zzbuj
+    public final void zzi(Throwable th2, String str, float f11) {
+        Throwable th3;
+        String str2;
+        PackageInfo f12;
+        ActivityManager activityManager;
+        ActivityManager.MemoryInfo memoryInfo;
+        if (this.zzo) {
+            return;
+        }
+        zzfqw zzfqwVar = uf.f.f61689b;
+        boolean z11 = false;
+        if (((Boolean) zzbeu.zzf.zze()).booleanValue()) {
+            th3 = th2;
+        } else {
+            LinkedList linkedList = new LinkedList();
+            for (Throwable th4 = th2; th4 != null; th4 = th4.getCause()) {
+                linkedList.push(th4);
+            }
+            th3 = null;
+            while (!linkedList.isEmpty()) {
+                Throwable th5 = (Throwable) linkedList.pop();
+                StackTraceElement[] stackTrace = th5.getStackTrace();
+                boolean z12 = ((Boolean) y.c().zza(zzbcl.zzcs)).booleanValue() && stackTrace != null && stackTrace.length == 0 && uf.f.m(th5.getClass().getName());
+                ArrayList arrayList = new ArrayList();
+                arrayList.add(new StackTraceElement(th5.getClass().getName(), "<filtered>", "<filtered>", 1));
+                for (StackTraceElement stackTraceElement : stackTrace) {
+                    if (uf.f.m(stackTraceElement.getClassName())) {
+                        arrayList.add(stackTraceElement);
+                        z12 = true;
+                    } else {
+                        String className = stackTraceElement.getClassName();
+                        if (!TextUtils.isEmpty(className) && (className.startsWith("android.") || className.startsWith("java."))) {
+                            arrayList.add(stackTraceElement);
+                        } else {
+                            arrayList.add(new StackTraceElement("<filtered>", "<filtered>", "<filtered>", 1));
+                        }
+                    }
+                }
+                if (z12) {
+                    th3 = th3 == null ? new Throwable(th5.getMessage()) : new Throwable(th5.getMessage(), th3);
+                    th3.setStackTrace((StackTraceElement[]) arrayList.toArray(new StackTraceElement[0]));
+                }
+            }
+        }
+        if (th3 != null) {
+            String name = th2.getClass().getName();
+            String zze2 = zze(th2);
+            String zzf = ((Boolean) y.c().zza(zzbcl.zziI)).booleanValue() ? zzf(th2) : "";
+            double d11 = f11;
+            double random = Math.random();
+            int i11 = f11 > 0.0f ? (int) (1.0f / f11) : 1;
+            if (random < d11) {
+                ArrayList arrayList2 = new ArrayList();
+                try {
+                    z11 = fh.d.a(this.zzg).g();
+                } catch (Throwable th6) {
+                    o.e("Error fetching instant app info", th6);
+                }
+                try {
+                    str2 = this.zzg.getPackageName();
+                } catch (Throwable unused) {
+                    o.g("Cannot obtain package name, proceeding.");
+                    str2 = NetworkResponseData.UNKNOWN_CONTENT_TYPE;
+                }
+                Uri.Builder appendQueryParameter = new Uri.Builder().scheme("https").path("//pagead2.googlesyndication.com/pagead/gen_204").appendQueryParameter("is_aia", Boolean.toString(z11)).appendQueryParameter("id", "gmob-apps-report-exception").appendQueryParameter("os", Build.VERSION.RELEASE);
+                int i12 = Build.VERSION.SDK_INT;
+                Uri.Builder appendQueryParameter2 = appendQueryParameter.appendQueryParameter("api", String.valueOf(i12));
+                String str3 = Build.MANUFACTURER;
+                String str4 = Build.MODEL;
+                if (!str4.startsWith(str3)) {
+                    str4 = androidx.concurrent.futures.a.b(str3, " ", str4);
+                }
+                Uri.Builder appendQueryParameter3 = appendQueryParameter2.appendQueryParameter("device", str4).appendQueryParameter("js", this.zzj.f18408d).appendQueryParameter(AppsFlyerProperties.APP_ID, str2).appendQueryParameter("exceptiontype", name).appendQueryParameter("stacktrace", zze2).appendQueryParameter("eids", TextUtils.join(",", y.a().zza())).appendQueryParameter("exceptionkey", str).appendQueryParameter("cl", "697668803").appendQueryParameter("rc", "dev").appendQueryParameter("sampling_rate", Integer.toString(i11)).appendQueryParameter("pb_tm", String.valueOf(zzbeu.zzc.zze()));
+                Context context = this.zzg;
+                com.google.android.gms.common.d.c().getClass();
+                Uri.Builder appendQueryParameter4 = appendQueryParameter3.appendQueryParameter("gmscv", String.valueOf(com.google.android.gms.common.d.a(context))).appendQueryParameter("lite", true != this.zzj.f18412w ? "0" : "1");
+                if (!TextUtils.isEmpty(zzf)) {
+                    appendQueryParameter4.appendQueryParameter("hash", zzf);
+                }
+                if (((Boolean) y.c().zza(zzbcl.zzhF)).booleanValue()) {
+                    Context context2 = this.zzg;
+                    if (context2 == null || (activityManager = (ActivityManager) context2.getSystemService("activity")) == null) {
+                        memoryInfo = null;
+                    } else {
+                        memoryInfo = new ActivityManager.MemoryInfo();
+                        try {
+                            activityManager.getMemoryInfo(memoryInfo);
+                        } catch (NullPointerException unused2) {
+                            o.g("Error retrieving the memory information.");
+                        }
+                    }
+                    if (memoryInfo != null) {
+                        appendQueryParameter4.appendQueryParameter("available_memory", Long.toString(memoryInfo.availMem));
+                        appendQueryParameter4.appendQueryParameter("total_memory", Long.toString(memoryInfo.totalMem));
+                        appendQueryParameter4.appendQueryParameter("is_low_memory", true != memoryInfo.lowMemory ? "0" : "1");
+                    }
+                }
+                if (((Boolean) y.c().zza(zzbcl.zzhE)).booleanValue()) {
+                    if (!TextUtils.isEmpty(this.zzl)) {
+                        appendQueryParameter4.appendQueryParameter("countrycode", this.zzl);
+                    }
+                    if (!TextUtils.isEmpty(this.zzm)) {
+                        appendQueryParameter4.appendQueryParameter("psv", this.zzm);
+                    }
+                    Context context3 = this.zzg;
+                    if (i12 >= 26) {
+                        f12 = WebView.getCurrentWebViewPackage();
+                    } else {
+                        if (context3 != null) {
+                            try {
+                                f12 = fh.d.a(context3).f(128, "com.android.webview");
+                            } catch (PackageManager.NameNotFoundException unused3) {
+                            }
+                        }
+                        f12 = null;
+                    }
+                    if (f12 != null) {
+                        appendQueryParameter4.appendQueryParameter("wvvc", Integer.toString(f12.versionCode));
+                        appendQueryParameter4.appendQueryParameter("wvvn", f12.versionName);
+                        appendQueryParameter4.appendQueryParameter("wvpn", f12.packageName);
+                    }
+                }
+                PackageInfo packageInfo = this.zzk;
+                if (packageInfo != null) {
+                    appendQueryParameter4.appendQueryParameter("appvc", String.valueOf(packageInfo.versionCode));
+                    appendQueryParameter4.appendQueryParameter("appvn", this.zzk.versionName);
+                }
+                arrayList2.add(appendQueryParameter4.toString());
+                Iterator it = arrayList2.iterator();
+                while (it.hasNext()) {
+                    final String str5 = (String) it.next();
+                    final s sVar = new s(null);
+                    this.zzi.execute(new Runnable() { // from class: com.google.android.gms.internal.ads.zzbue
+                        @Override // java.lang.Runnable
+                        public final void run() {
+                            s.this.zza(str5);
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    protected zzbuh(Context context, VersionInfoParcel versionInfoParcel, boolean z11) {
+        this(context, versionInfoParcel);
+        this.zzo = true;
+    }
+}

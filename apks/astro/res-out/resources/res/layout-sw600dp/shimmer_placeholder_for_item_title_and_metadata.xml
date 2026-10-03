@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <TextView
+        android:textSize="24sp"
+        android:textColor="#ebebeb"
+        android:ellipsize="end"
+        android:id="@+id/ph_itemTitle"
+        android:background="@drawable/shimmer_effect_background_radius_4dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:lineSpacingMultiplier="1.2"
+        app:layout_constraintBottom_toTopOf="@+id/ph_itemMetadata"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed"
+        style="@style/RobotoMedium"/>
+    <TextView
+        android:textSize="14sp"
+        android:textColor="#b2adaf"
+        android:id="@+id/ph_itemMetadata"
+        android:background="@drawable/shimmer_effect_background_radius_4dp"
+        android:visibility="visible"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:lineSpacingMultiplier="1.2"
+        android:layout_marginEnd="60dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/ph_itemTitle"
+        style="@style/RobotoRegular"/>
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,24 @@
+package com.google.firebase.crashlytics.internal.concurrency;
+
+import com.google.firebase.crashlytics.internal.concurrency.CrashlyticsWorkers;
+import kotlin.Metadata;
+import kotlin.jvm.functions.Function0;
+import kotlin.jvm.internal.p;
+import org.jetbrains.annotations.NotNull;
+
+@Metadata(k = 3, mv = {1, 8, 0}, xi = 48)
+/* loaded from: classes.dex */
+/* synthetic */ class CrashlyticsWorkers$Companion$checkBackgroundThread$1 extends p implements Function0<Boolean> {
+    CrashlyticsWorkers$Companion$checkBackgroundThread$1(Object obj) {
+        super(0, obj, CrashlyticsWorkers.Companion.class, "isBackgroundThread", "isBackgroundThread()Z", 0);
+    }
+
+    /* JADX WARN: Can't rename method to resolve collision */
+    @Override // kotlin.jvm.functions.Function0
+    @NotNull
+    public final Boolean invoke() {
+        boolean isBackgroundThread;
+        isBackgroundThread = ((CrashlyticsWorkers.Companion) this.receiver).isBackgroundThread();
+        return Boolean.valueOf(isBackgroundThread);
+    }
+}

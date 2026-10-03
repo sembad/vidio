@@ -1,0 +1,67 @@
+package com.google.ads.interactivemedia.v3.internal;
+
+import com.google.common.util.concurrent.s;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/* loaded from: classes3.dex */
+final class zztw implements s {
+    static final s zza = new zztw(null);
+    private static final zzua zzb = new zzua(zztw.class);
+    private final Object zzc;
+
+    zztw(Object obj) {
+        this.zzc = obj;
+    }
+
+    @Override // com.google.common.util.concurrent.s
+    public final void addListener(Runnable runnable, Executor executor) {
+        zzpn.zzf(runnable, "Runnable was null.");
+        zzpn.zzf(executor, "Executor was null.");
+        try {
+            executor.execute(runnable);
+        } catch (Exception e11) {
+            Logger zza2 = zzb.zza();
+            Level level = Level.SEVERE;
+            String valueOf = String.valueOf(runnable);
+            String valueOf2 = String.valueOf(executor);
+            zza2.logp(level, "com.google.common.util.concurrent.ImmediateFuture", "addListener", i7.b.a(new StringBuilder(valueOf.length() + 57 + valueOf2.length()), "RuntimeException while executing runnable ", valueOf, " with executor ", valueOf2), (Throwable) e11);
+        }
+    }
+
+    @Override // java.util.concurrent.Future
+    public final boolean cancel(boolean z11) {
+        return false;
+    }
+
+    @Override // java.util.concurrent.Future
+    public final Object get(long j11, TimeUnit timeUnit) throws ExecutionException {
+        timeUnit.getClass();
+        return this.zzc;
+    }
+
+    @Override // java.util.concurrent.Future
+    public final boolean isCancelled() {
+        return false;
+    }
+
+    @Override // java.util.concurrent.Future
+    public final boolean isDone() {
+        return true;
+    }
+
+    public final String toString() {
+        Object obj = this.zzc;
+        String obj2 = super.toString();
+        String valueOf = String.valueOf(obj);
+        return i7.b.a(new StringBuilder(String.valueOf(obj2).length() + 25 + valueOf.length() + 2), obj2, "[status=SUCCESS, result=[", valueOf, "]]");
+    }
+
+    @Override // java.util.concurrent.Future
+    public final Object get() {
+        return this.zzc;
+    }
+}

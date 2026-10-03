@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~ Copyright (c) Synamedia, All rights reserved
+  -->
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ListView
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/tv_grid_dayselector_drawer_list"
+        android:scrollbars="none"
+        tools:listitem="@layout/tv_grid_day_of_week_selector_widget_item"
+        android:layout_width="@dimen/vertical_guide_channel_cell_width"
+        android:layout_height="match_parent"
+        android:layout_alignParentTop="true"
+        android:choiceMode="singleChoice"
+        android:visibility="visible"
+        android:divider="@null"/>
+</RelativeLayout>

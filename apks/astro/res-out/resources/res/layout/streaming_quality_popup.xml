@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/streaming_quality_popup"
+    android:background="@drawable/download_status_spinner_background"
+    android:paddingTop="16dp"
+    android:paddingBottom="16dp"
+    android:focusable="true"
+    android:clickable="true"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:minWidth="168dp"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp">
+    <TextView
+        android:textSize="14sp"
+        android:textColor="@color/on_selected_bottom_sheet_item_color"
+        android:id="@+id/streamingQualityTypeTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Video Quality"
+        app:layout_constrainedWidth="true"
+        app:layout_constraintBottom_toTopOf="@+id/streamingQualityListView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        style="@style/RobotoMedium"/>
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/streamingQualityListView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/streamingQualityTypeTitle"/>
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?><!--
+Hero banner tile layout. It uses metadata1 layout for displaying its metadata.
+-->
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:id="@+id/tile_hero_banner_layout">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/container_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/Theme.MaterialComponents.Light"
+        app:strokeWidth="1dp"
+        android:layout_marginTop="11dp"
+        android:layout_marginBottom="13dp"
+        app:strokeColor="#7Fffffff"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="14dp"
+        android:layout_centerHorizontal="true">
+
+        <RelativeLayout
+            android:id="@+id/container_view_info"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/tile_event_default_text"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/tile_poster_hero_banner_height"
+                android:textSize="@dimen/tile_poster_default_text_size_hero_banner"
+                android:gravity="center_vertical"
+                android:lineSpacingMultiplier="0.57"
+                android:visibility="gone"
+                android:textColor="@android:color/darker_gray"
+                android:layout_alignBottom= "@+id/toolbar"
+                tools:ignore="NotSibling" />
+
+            <ImageView
+                android:id="@+id/tile_poster"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/tile_poster_hero_banner_height"
+                android:scaleType="fitXY"/>
+
+            <View
+                android:id="@+id/tile_poster_gradient"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/tile_poster_hero_banner_height"
+                android:layout_alignBottom="@id/tile_poster"
+                android:background="@drawable/tile_poster_gradient_1" />
+
+            <ImageView
+                android:id="@+id/tile_poster_center_icon"
+                android:layout_width="47dp"
+                android:layout_height="47dp"
+                android:layout_centerInParent="true"/>
+
+            <ProgressBar
+                android:id="@+id/tile_progress_bar"
+                style="@style/ProgressBar"
+                android:layout_width="match_parent"
+                android:layout_alignLeft="@id/tile_poster"
+                android:layout_height="3dp"
+                android:indeterminate="false"
+                android:max="100"
+                android:progress="20"
+                android:layout_centerHorizontal="true"
+                android:layout_alignBottom="@id/tile_poster"/>
+
+            <ImageView
+                android:id="@+id/channel_logo_icon"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/tile_poster_download_icon_height"
+                android:layout_alignTop="@id/tile_metadata_container"
+                tools:srcCompat="@drawable/icon_unsubscribed" />
+
+            <include
+                android:id="@+id/tile_metadata_container"
+                layout="@layout/tile_metadata1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignBottom="@id/tile_poster"/>
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/heroBannerAssetLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_above="@id/tile_metadata_container">
+
+                <TextView
+                    android:id="@+id/hero_banner_labels"
+                    style="@style/AssetLabelDisplay"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:lineSpacingMultiplier="1.17"
+                    android:textSize="12sp"
+                    app:layout_constraintHorizontal_bias="0"
+                    app:layout_constrainedWidth="true"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintEnd_toEndOf="@id/verticalGuideline"
+                    tools:text="Asset Labels Long Text To Check Fading Effect"
+                    tools:visibility="visible"/>
+
+                <androidx.constraintlayout.widget.Guideline
+                    android:id="@+id/verticalGuideline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    app:layout_constraintGuide_percent="0.45" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </RelativeLayout>
+
+
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <ImageView
+        android:id="@+id/top_glint_effect_id"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/glint_effect"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="16dp"
+        android:translationZ="90dp"
+        />
+
+    <ImageView
+        android:id="@+id/bottom_glint_effect_id"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/glint_effect"
+        android:layout_gravity="bottom|right"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="16dp"
+        android:translationZ="90dp"
+       />
+
+</RelativeLayout>
+

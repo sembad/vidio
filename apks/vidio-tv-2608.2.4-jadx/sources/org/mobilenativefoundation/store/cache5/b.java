@@ -1,0 +1,105 @@
+package org.mobilenativefoundation.store.cache5;
+
+import androidx.collection.s0;
+import gb.g;
+import kotlin.jvm.functions.Function2;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.mobilenativefoundation.store.cache5.c;
+
+/* loaded from: classes5.dex */
+public final class b<Key, Output> {
+
+    /* renamed from: a, reason: collision with root package name */
+    private long f52249a = -1;
+
+    /* renamed from: b, reason: collision with root package name */
+    private long f52250b = -1;
+
+    /* renamed from: c, reason: collision with root package name */
+    private long f52251c;
+
+    /* renamed from: d, reason: collision with root package name */
+    private long f52252d;
+
+    /* renamed from: e, reason: collision with root package name */
+    @Nullable
+    private Function2<? super Key, ? super Output, Integer> f52253e;
+
+    public b() {
+        long j11;
+        long j12;
+        kotlin.time.a.f45034e.getClass();
+        j11 = kotlin.time.a.f45035i;
+        this.f52251c = j11;
+        j12 = kotlin.time.a.f45035i;
+        this.f52252d = j12;
+    }
+
+    @NotNull
+    public final c.i a() {
+        if (this.f52249a == -1 || this.f52253e == null) {
+            return new c.i(this);
+        }
+        s0.b("Maximum size cannot be combined with weigher.");
+        return null;
+    }
+
+    @NotNull
+    public final void b(long j11) {
+        if (kotlin.time.a.x(j11)) {
+            g.c("Duration must be non-negative.");
+        } else {
+            this.f52251c = j11;
+        }
+    }
+
+    @NotNull
+    public final void c(long j11) {
+        if (kotlin.time.a.x(j11)) {
+            g.c("Duration must be non-negative.");
+        } else {
+            this.f52252d = j11;
+        }
+    }
+
+    public final long d() {
+        return this.f52251c;
+    }
+
+    public final long e() {
+        return this.f52252d;
+    }
+
+    public final long f() {
+        return this.f52249a;
+    }
+
+    public final long g() {
+        return this.f52250b;
+    }
+
+    @Nullable
+    public final Function2<Key, Output, Integer> h() {
+        return this.f52253e;
+    }
+
+    @NotNull
+    public final void i(long j11) {
+        if (j11 >= 0) {
+            this.f52249a = j11;
+        } else {
+            g.c("Maximum size must be non-negative.");
+        }
+    }
+
+    @NotNull
+    public final void j(long j11, @NotNull Function2 function2) {
+        if (j11 < 0) {
+            g.c("Maximum weight must be non-negative.");
+        } else {
+            this.f52250b = j11;
+            this.f52253e = function2;
+        }
+    }
+}

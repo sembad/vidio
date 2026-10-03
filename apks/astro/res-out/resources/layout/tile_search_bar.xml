@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:clickable="false"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:id="@+id/icon_back"
+        android:layout_width="17dp"
+        android:layout_height="36dp"
+        android:layout_marginStart="14dp"
+        android:gravity="center"
+        android:text=""
+        android:clickable="true"
+        android:textAlignment="center"
+        android:textSize="17sp"
+        app:layout_constraintTop_toTopOf="@id/search_bar"
+        app:layout_constraintBottom_toBottomOf="@id/search_bar"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:ignore="MissingConstraints" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginStart="40dp"
+        android:gravity="center_vertical"
+        android:layout_marginEnd="15dp"
+        app:layout_constraintStart_toStartOf="@id/icon_back"
+        app:layout_constraintRight_toRightOf="parent"
+        android:id="@+id/search_bar"
+        android:paddingLeft="4dp"
+        android:paddingTop="7dp"
+        android:paddingRight="4dp"
+        android:clickable="false"
+        android:paddingBottom="7dp"
+        tools:ignore="MissingConstraints">
+
+        <TextView
+            android:id="@+id/icon_search"
+            android:layout_width="23dp"
+            android:layout_height="22dp"
+            android:layout_alignParentStart="true"
+            android:gravity="center"
+            android:clickable="true"
+            android:text=""
+            android:textColor="#99ebebf5"
+            android:textSize="17sp" />
+
+
+        <EditText
+            android:id="@+id/edit_text_search"
+            android:layout_width="match_parent"
+            android:layout_height="22dp"
+            android:paddingStart="2dp"
+            android:maxLines="1"
+            android:singleLine="true"
+            android:focusable="true"
+            android:inputType="text"
+            android:focusableInTouchMode="true"
+            android:paddingEnd="18dp"
+            android:layout_toStartOf="@id/icon_mic"
+            android:layout_toEndOf="@id/icon_search"
+            android:autofillHints="Search for Movies and TV Shows..."
+            android:background="@android:color/transparent"
+            android:gravity="start"
+            android:hint="Search for Movies and TV Shows..."
+            android:textColorHint="#99ebebf5"
+            android:textSize="17sp"
+            android:ellipsize="end"
+            android:supportsRtl="true"
+            android:textDirection="anyRtl"/>
+
+        <TextView
+            android:id="@+id/icon_mic"
+            android:layout_width="17dp"
+            android:layout_height="22dp"
+            android:layout_alignParentEnd="true"
+            android:gravity="center"
+            android:text=""
+            android:clickable="true"
+            android:visibility="visible"
+            android:textColor="#8e8e93"
+            android:textSize="17sp" />
+
+        <TextView
+            android:id="@+id/icon_clear"
+            android:layout_width="20dp"
+            android:layout_height="22dp"
+            android:layout_alignParentEnd="true"
+            android:gravity="center"
+            android:clickable="true"
+            android:text=""
+            android:visibility="visible"
+            android:textColor="#99ebebf5"
+            android:textSize="17sp" />
+    </RelativeLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

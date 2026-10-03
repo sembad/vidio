@@ -1,0 +1,40 @@
+package com.google.android.gms.internal.ads;
+
+import android.content.Context;
+import com.google.android.gms.ads.internal.t;
+import com.google.android.gms.ads.internal.util.client.VersionInfoParcel;
+import com.google.android.gms.ads.internal.util.y;
+
+/* loaded from: classes3.dex */
+public final class zzcpb implements zzher {
+    private final zzcot zza;
+    private final zzhfj zzb;
+    private final zzhfj zzc;
+    private final zzhfj zzd;
+    private final zzhfj zze;
+
+    public zzcpb(zzcot zzcotVar, zzhfj zzhfjVar, zzhfj zzhfjVar2, zzhfj zzhfjVar3, zzhfj zzhfjVar4) {
+        this.zza = zzcotVar;
+        this.zzb = zzhfjVar;
+        this.zzc = zzhfjVar2;
+        this.zzd = zzhfjVar3;
+        this.zze = zzhfjVar4;
+    }
+
+    public static zzddk zza(zzcot zzcotVar, final Context context, final VersionInfoParcel versionInfoParcel, final zzfbo zzfboVar, final zzfcj zzfcjVar) {
+        return new zzddk(new zzcxh() { // from class: com.google.android.gms.internal.ads.zzcor
+            @Override // com.google.android.gms.internal.ads.zzcxh
+            public final void zzs() {
+                y w11 = t.w();
+                Context context2 = context;
+                zzfcj zzfcjVar2 = zzfcjVar;
+                w11.n(context2, versionInfoParcel.f18408d, zzfboVar.zzC.toString(), zzfcjVar2.zzf);
+            }
+        }, zzbzw.zzg);
+    }
+
+    @Override // com.google.android.gms.internal.ads.zzhfj, com.google.android.gms.internal.ads.zzhfi
+    public final /* bridge */ /* synthetic */ Object zzb() {
+        return zza(this.zza, (Context) this.zzb.zzb(), ((zzchs) this.zzc).zza(), ((zzcrq) this.zzd).zza(), ((zzcvk) this.zze).zza());
+    }
+}

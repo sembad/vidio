@@ -1,0 +1,555 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="RobotoRegular">
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="RobotoLight">
+        <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+
+    <style name="RobotoCondensed">
+        <item name="android:fontFamily">sans-serif-condensed</item>
+    </style>
+
+    <style name="RobotoBlack">
+        <item name="android:fontFamily">sans-serif-black</item>
+    </style>
+
+    <style name="RobotoBlackItalic">
+        <item name="android:fontFamily">sans-serif-black</item>
+        <item name="android:textStyle">italic</item>
+    </style>
+
+    <style name="RobotoThin">
+        <item name="android:fontFamily">sans-serif-thin</item>
+    </style>
+
+    <style name="RobotoMedium">
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="RobotoMediumItalic">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textStyle">italic</item>
+    </style>
+
+    <style name="RobotoBold">
+        <item name="android:fontFamily">@font/roboto_bold</item>
+    </style>
+
+    <style name="RobotoBoldItalic">
+        <item name="android:fontFamily">@font/roboto_bold_italic</item>
+    </style>
+
+    <style name="MoviesPageEventTitle" parent="SeriesPageEventTitle" />
+
+    <style name="GuestModeBottomSheetTitle" parent="RobotoMedium">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:lineSpacingExtra">1sp</item>
+    </style>
+
+    <style name="GuestModeBottomSheetDescription" parent="RobotoRegular">
+        <item name="android:textColor">#b2adaf</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineSpacingExtra">4sp</item>
+    </style>
+
+    <style name="GuestModeBottomSheetSecondaryButton" parent="RobotoRegular">
+        <item name="android:lineSpacingExtra">1sp</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="SeriesPageEventTitle" parent="RobotoMedium">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:shadowColor">#000000</item>
+        <item name="android:shadowDx">0.0</item>
+        <item name="android:shadowDy">2.0</item>
+        <item name="android:shadowRadius">4.0</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+    
+    <style name="DownloadStatusBottomSheetFragmentTextViewStyle" parent="RobotoRegular">
+        <item name="android:singleLine">true</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:requiresFadingEdge">horizontal</item>
+        <item name="android:fadingEdgeLength">30dp</item>
+    </style>
+
+    <style name="MoreInfoBottomSheetItemStyle" parent="RobotoRegular">
+        <item name="android:singleLine">true</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:requiresFadingEdge">horizontal</item>
+        <item name="android:fadingEdgeLength">30dp</item>
+    </style>
+
+    <style name="MaxUserExceededTitle" parent="RobotoMedium">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="MaxUserExceededTitleForTablet" parent="RobotoMedium">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:textSize">22sp</item>
+    </style>
+
+    <style name="MaxUserExceededDescription" parent="RobotoRegular">
+        <item name="android:textColor">#99ebebeb</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="MaxUserExceededDescriptionForTablet" parent="RobotoRegular">
+        <item name="android:textColor">#99ebebeb</item>
+        <item name="lineHeight">26dp</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="MaxUserExceededLoginButton" parent="RobotoRegular">
+        <item name="android:textColor">#ffffff</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <!--    android: lineSpacingMultiplier = lineHeight/textSize  -->
+
+    <style name="MoviesEventMetadata" parent="SeriesEventMetadata" />
+
+    <style name="SeriesEventMetadata" parent="RobotoRegular">
+        <item name="android:textColor">#b2adaf</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+
+    <style name="SeasonNumberOfSeasonListSpinnerStyle" parent="RobotoRegular">
+        <item name="android:singleLine">true</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:requiresFadingEdge">horizontal</item>
+        <item name="android:fadingEdgeLength">30dp</item>
+    </style>
+
+    <style name="BottomSheetItemStyle" parent="RobotoMedium">
+        <item name="android:singleLine">true</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:requiresFadingEdge">horizontal</item>
+        <item name="android:fadingEdgeLength">30dp</item>
+    </style>
+
+    <style name="WatchInfoKeyTextStyle" parent="RobotoMedium">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineSpacingMultiplier">1.4</item>
+    </style>
+
+    <style name="WatchInfoValueTextStyle" parent="RobotoRegular">
+        <item name="android:textColor">#b2adaf</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineSpacingMultiplier">1.4</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:requiresFadingEdge">horizontal</item>
+        <item name="android:fadingEdgeLength">30dp</item>
+    </style>
+
+    <style name="WatchInfoKeyTextStyleInTablets" parent="RobotoMediumWithShadow">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+
+    <style name="WatchInfoValueTextStyleInTablets" parent="RobotoRegular">
+        <item name="android:textColor">#b2adaf</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:lineSpacingMultiplier">1.4</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:requiresFadingEdge">horizontal</item>
+        <item name="android:fadingEdgeLength">30dp</item>
+    </style>
+
+    <style name="PositiveButtonTextStyle" parent="RobotoMedium">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineSpacingMultiplier">1.25</item>
+        <item name="android:gravity">center</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="NegativeButtonTextStyle" parent="RobotoMedium">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineSpacingMultiplier">1.25</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="PrimaryButtonTextStyle" parent="RobotoMedium">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineSpacingMultiplier">1.25</item>
+        <item name="android:gravity">center</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="PrimaryButtonTextStyleInTablets" parent="RobotoMedium">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineSpacingMultiplier">1.5</item>
+        <item name="android:gravity">center</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="SecondaryButtonTextStyle">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">20dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="SecondaryButtonTextStyleInTablets">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textSize">24dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="RobotoBoldWithShadow" parent="RobotoBold">
+        <item name="android:shadowColor">#000000</item>
+        <item name="android:shadowDx">0.0</item>
+        <item name="android:shadowDy">2.0</item>
+        <item name="android:shadowRadius">4.0</item>
+    </style>
+
+    <style name="RobotoMediumWithShadow" parent="RobotoMedium">
+        <item name="android:shadowColor">#000000</item>
+        <item name="android:shadowDx">0.0</item>
+        <item name="android:shadowDy">2.0</item>
+        <item name="android:shadowRadius">4.0</item>
+    </style>
+
+    <style name="RobotoRegularWithShadow" parent="RobotoRegular">
+        <item name="android:shadowColor">#000000</item>
+        <item name="android:shadowDx">0.0</item>
+        <item name="android:shadowDy">2.0</item>
+        <item name="android:shadowRadius">4.0</item>
+    </style>
+
+    <style name="MoviesSynopsisTextStyle" parent="SeriesSynopsisTextStyle" />
+
+    <style name="SeriesSynopsisTextStyle" parent="RobotoRegularWithShadow">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:lineSpacingMultiplier">1.4</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:gravity">start</item>
+    </style>
+
+    <!--Even if Synopsis is missing, Synopsis must occupy empty space
+         whose height should be equal to height of 3 lines long Synopsis
+         Therefore, minLines = 3 -->
+    <style name="PremiumHeroBannerItemSynopsisStyle" parent="RobotoRegularWithShadow">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:lineSpacingMultiplier">1.4</item>
+        <item name="android:maxLines">3</item>
+        <item name="android:minLines">3</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:gravity">start</item>
+    </style>
+
+    <style name="PremiumHeroBannerItemTitleStyle" parent="RobotoMedium">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:shadowColor">#000000</item>
+        <item name="android:shadowDx">0.0</item>
+        <item name="android:shadowDy">2.0</item>
+        <item name="android:shadowRadius">4.0</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+        <item name="android:textSize">32sp</item>
+    </style>
+
+    <style name="PortraitHeroBannerItemTitleStyle" parent="PremiumHeroBannerItemTitleStyle">
+        <item name="android:maxLines">1</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:lineSpacingMultiplier">1.3</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:requiresFadingEdge">horizontal</item>
+        <item name="android:fadingEdgeLength">30dp</item>
+        <item name="android:textColor">#ffffff</item>
+    </style>
+
+    <style name="PremiumHeroBannerItemMetadata" parent="RobotoRegular">
+        <item name="android:textColor">#b2adaf</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:fadingEdgeLength">30dp</item>
+        <item name="android:requiresFadingEdge">horizontal</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+
+    <style name="PortraitHeroBannerItemMetadata" parent="RobotoRegular">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">#D8D8D8</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:fadingEdgeLength">30dp</item>
+        <item name="android:requiresFadingEdge">horizontal</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+
+    <style name="CastInfoKeyTextStyle" parent="RobotoRegularWithShadow">
+        <item name="android:textColor">#b2adaf</item>
+        <item name="android:lineSpacingMultiplier">1.4</item>
+    </style>
+
+    <style name="CastInfoValueTextStyle" parent="RobotoRegularWithShadow">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:lineSpacingMultiplier">1.4</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:requiresFadingEdge">horizontal</item>
+        <item name="android:fadingEdgeLength">30dp</item>
+    </style>
+
+    <style name="DirectorInfoKeyTextStyle" parent="CastInfoKeyTextStyle" />
+
+    <style name="DirectorInfoValueTextStyle" parent="CastInfoValueTextStyle" />
+
+    <style name="EpisodeItemCastInfoKeyTextStyle" parent="RobotoRegularWithShadow">
+        <item name="android:textColor">#b2adaf</item>
+        <item name="android:lineSpacingMultiplier">1.4</item>
+    </style>
+
+    <style name="EpisodeItemCastInfoValueTextStyle" parent="RobotoRegularWithShadow">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:lineSpacingMultiplier">1.4</item>
+    </style>
+
+    <style name="EpisodeItemDirectorInfoKeyTextStyle" parent="EpisodeItemCastInfoKeyTextStyle" />
+
+    <style name="EpisodeItemDirectorInfoValueTextStyle" parent="EpisodeItemCastInfoValueTextStyle" />
+
+
+    <style name="EpisodeItemAudioInfoKeyTextStyle" parent="EpisodeItemCastInfoKeyTextStyle" />
+
+    <style name="EpisodeItemAudioInfoValueTextStyle" parent="EpisodeItemCastInfoValueTextStyle" />
+
+    <style name="EpisodeItemSubtitlesInfoKeyTextStyle" parent="EpisodeItemCastInfoKeyTextStyle" />
+
+    <style name="EpisodeItemSubtitlesInfoValueTextStyle" parent="EpisodeItemCastInfoValueTextStyle" />
+
+    <style name="ShowMoreTextStyleMobile" parent="ShowMoreTextStyle">
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="EpisodeItemShowMoreTextStyleMobile" parent="ShowMoreTextStyle">
+        <item name="android:textColor">@color/show_more_text_color_for_episode</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="EpisodeItemShowMoreTextStyleTablet" parent="ShowMoreTextStyle">
+        <item name="android:textColor">@color/show_more_text_color_for_episode</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="ShowMoreTextStyle" parent="RobotoRegular">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+
+    <style name="SeriesPageTabText" parent="@android:style/TextAppearance.Widget.TabWidget">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">#80b2adaf</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+        <item name="android:shadowColor">#000000</item>
+        <item name="android:shadowDx">0.0</item>
+        <item name="android:shadowDy">2.0</item>
+        <item name="android:shadowRadius">4.0</item>
+        <item name="android:gravity">top</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="SeriesPageTabTextInTablets" parent="@android:style/TextAppearance.Widget.TabWidget">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">#99ebebeb</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:lineSpacingMultiplier">1</item>
+        <item name="android:gravity">top</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+
+    <style name="SeasonListSelectedItem" parent="RobotoMedium">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:lineSpacingMultiplier">1</item>
+    </style>
+
+    <style name="SeasonListNotSelectedItem" parent="RobotoRegular">
+        <item name="android:textColor">#99ebebeb</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:lineSpacingMultiplier">1</item>
+    </style>
+
+    <style name="DateListSelectedItem" parent="SeasonListSelectedItem" />
+
+    <style name="DateListNotSelectedItem" parent="SeasonListNotSelectedItem" />
+
+    <style name="DateListSelectedItemTablet" parent="RobotoMedium">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:textSize">60sp</item>
+        <item name="android:lineSpacingMultiplier">1.4</item>
+<!--        <item name="android:letterSpacing">0.5</item>-->
+    </style>
+
+    <style name="DateListFirstNotSelectedItemTablet" parent="DateListSelectedItemTablet">
+        <item name="android:textColor">#B3ebebeb</item>
+        <item name="android:textSize">46sp</item>
+    </style>
+
+    <style name="DateListSecondNotSelectedItemTablet" parent="DateListFirstNotSelectedItemTablet">
+        <item name="android:textColor">#80ebebeb</item>
+        <item name="android:textSize">35sp</item>
+    </style>
+
+    <style name="DateListThirdNotSelectedItemTablet" parent="DateListFirstNotSelectedItemTablet">
+        <item name="android:textColor">#40ebebeb</item>
+        <item name="android:textSize">26sp</item>
+    </style>
+
+    <style name="DateListFourthNotSelectedItemTablet" parent="DateListFirstNotSelectedItemTablet">
+        <item name="android:textColor">#26ebebeb</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+
+    <style name="ShowMoreDialogKeyTextStyle" parent="RobotoRegularWithShadow">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">#b2adaf</item>
+        <item name="android:lineSpacingMultiplier">1.35</item>
+    </style>
+
+    <style name="ShowMoreDialogValueTextStyle" parent="RobotoRegularWithShadow">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:lineSpacingMultiplier">1.35</item>
+    </style>
+
+    <style name="ShowMoreDialogTitleValueTextStyle" parent="RobotoMediumWithShadow">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:lineSpacingMultiplier">1.35</item>
+    </style>
+
+    <style name="ChannelSynopsisTextStyle" parent="RobotoRegularWithShadow">
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:lineSpacingMultiplier">1.4</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:gravity">start</item>
+    </style>
+
+    <style name="WrapContentDialog" parent="Theme.AppCompat.Light.Dialog">
+        <item name="windowMinWidthMajor">0%</item>
+        <item name="windowMinWidthMinor">0%</item>
+    </style>
+
+    <style name="AssetLabelDisplay" parent="RobotoBold">
+        <item name="android:shadowColor">#0F000000</item>
+        <item name="android:shadowDx">0.0</item>
+        <item name="android:shadowDy">1.0</item>
+        <item name="android:shadowRadius">3.0</item>
+        <item name="android:paddingLeft">6dp</item>
+        <item name="android:paddingTop">3dp</item>
+        <item name="android:paddingRight">6dp</item>
+        <item name="android:paddingBottom">3dp</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:requiresFadingEdge">horizontal</item>
+        <item name="android:fadingEdgeLength">30dp</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:background">@drawable/series_label_background</item>
+        <item name="android:textColor">#EBEBEB</item>
+        <item name="android:visibility">gone</item>
+    </style>
+
+    <style name="DummyAssetLabelDisplay" parent="AssetLabelDisplay">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:visibility">visible</item>
+    </style>
+
+    <style name="GuestLoginPopupDialogCTAButtons" parent="RobotoMedium">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:lineSpacingMultiplier">1.5</item>
+        <item name="android:textColor">#EBEBEB</item>
+        <item name="android:radius">8dp</item>
+    </style>
+
+    <style name="BrandTitleStyle" parent="RobotoMedium">
+        <item name="android:textSize">20sp</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <style name="SwimLaneItemTitleStyle" parent="RobotoMedium">
+        <item name="android:textSize">@dimen/hub_screen_swimlane_title_text_size</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:requiresFadingEdge">horizontal</item>
+        <item name="android:fadingEdgeLength">30dp</item>
+        <item name="android:ellipsize">none</item>
+    </style>
+
+    <style name="SwimLaneItemSeeAllStyle" parent="RobotoMedium">
+        <item name="android:textSize">@dimen/hub_screen_swimlane_see_all_text_size</item>
+        <item name="android:visibility">gone</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
+    <style name="BrandedSwimLaneTitleStyle" parent="RobotoMedium">
+        <item name="android:textSize">@dimen/branded_swimlane_title_text_size</item>
+        <item name="android:singleLine">true</item>
+        <item name="android:requiresFadingEdge">horizontal</item>
+        <item name="android:fadingEdgeLength">30dp</item>
+        <item name="android:ellipsize">none</item>
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+
+    <style name="BrandedSwimLaneItemTitleStyle" parent="RobotoMedium">
+        <item name="android:textSize">@dimen/branded_swimlane_item_title_text_size</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:maxLines">2</item>
+        <item name="android:textColor">#ebebeb</item>
+        <item name="android:lineSpacingMultiplier">1.2</item>
+    </style>
+
+    <style name="BrandedPageToolbarBackIconStyle" parent="RobotoBold">
+        <item name="android:textSize">@dimen/branded_page_toolbar_back_icon_size</item>
+        <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
+        <item name="android:clickable">true</item>
+        <item name="android:textColor">#ebebeb</item>
+    </style>
+
+    <style name="BrandedPageToolbarSearchIconStyle" parent="BrandedPageToolbarBackIconStyle">
+        <item name="android:textSize">@dimen/branded_page_toolbar_search_icon_size</item>
+    </style>
+
+
+
+    <!--    https://stackoverflow.com/questions/16611759/how-set-alpha-opacity-value-to-color-on-xml-drawable-->
+
+</resources>

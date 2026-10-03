@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/tile_poster_title_swimlane_layout"
+    android:layout_width="128dp"
+    android:layout_height="wrap_content"
+    app:cardElevation="10dp"
+    app:cardCornerRadius="8dp"
+    android:layout_marginEnd="8dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <com.cisco.veop.sf_ui.ui_configuration.UiConfigTextView
+            android:id="@+id/tile_event_default_text"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/tile_poster_height"
+            android:layout_alignBottom="@id/tile_poster"
+            android:gravity="center_vertical|left"
+            android:lineSpacingMultiplier="0.55"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:text="Random text"
+            android:textColor="@android:color/darker_gray"
+            android:textSize="@dimen/tile_poster_default_text_size"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/tile_poster"
+            tools:ignore="MissingConstraints" />
+
+        <ImageView
+            android:id="@+id/tile_poster"
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            tools:ignore="MissingConstraints" />
+
+        <View
+            android:id="@+id/tile_poster_gradient"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/tile_poster_gradient_height"
+            android:background="@drawable/tile_poster_gradient"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <TextView
+            android:id="@+id/tile_item_label"
+            style="@style/AssetLabelDisplay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:textSize="10sp"
+            app:layout_constrainedWidth="true"
+            app:layout_constraintTop_toTopOf="@id/tile_poster"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:text="New"
+            tools:visibility="visible"
+            android:lineSpacingMultiplier="1.17"
+            app:layout_constraintHorizontal_bias="1" />
+
+        <TextView
+            android:id="@+id/tile_item_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="0dp"
+            android:ellipsize="end"
+            android:gravity="end"
+            android:maxLines="1"
+            android:paddingBottom="4dp"
+            android:text="Knives Out"
+            android:textColor="#ebebeb"
+            android:textSize="12sp"
+            app:layout_constraintBottom_toBottomOf="@+id/tile_poster"
+            app:layout_constraintStart_toStartOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+
+</androidx.cardview.widget.CardView>

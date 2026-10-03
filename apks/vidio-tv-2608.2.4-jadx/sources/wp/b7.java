@@ -1,0 +1,31 @@
+package wp;
+
+import kotlin.jvm.functions.Function1;
+import wp.c7;
+
+/* loaded from: classes4.dex */
+public final /* synthetic */ class b7 implements Function1 {
+
+    /* renamed from: d, reason: collision with root package name */
+    public final /* synthetic */ int f66262d;
+
+    /* renamed from: e, reason: collision with root package name */
+    public final /* synthetic */ Object f66263e;
+
+    public /* synthetic */ b7(Object obj, int i11) {
+        this.f66262d = i11;
+        this.f66263e = obj;
+    }
+
+    @Override // kotlin.jvm.functions.Function1
+    public final Object invoke(Object obj) {
+        switch (this.f66262d) {
+            case 0:
+                c7 c7Var = (c7) this.f66263e;
+                ((c7.d) obj).getClass();
+                return c7.d.a(c7Var.getState().getValue(), 0, null, false, false, c7.c.f66295d, 15);
+            default:
+                return y3.g.a((y3.g) this.f66263e, obj);
+        }
+    }
+}

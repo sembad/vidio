@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/player_banner_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="start">
+
+            <com.cisco.veop.sf_ui.ui_configuration.UiConfigTextView
+                android:id="@+id/channelNumber"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <LinearLayout
+                android:id="@+id/channelLogo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" />
+
+            <com.cisco.veop.sf_ui.ui_configuration.UiConfigTextView
+                android:id="@+id/eventTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <com.cisco.veop.sf_ui.ui_configuration.UiConfigTextView
+                android:id="@+id/eventInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </androidx.appcompat.widget.Toolbar>
+
+    </LinearLayout>
+
+    <view
+        class="com.cisco.veop.client.kiott.player.ui.KTTrickmodeBarView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/playerView"/>
+    <include
+        layout="@layout/timeline_dimmer_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="90dp"
+        android:layout_below="@id/playerView"
+        android:id="@+id/player_banner_bottombar"
+        android:layout_marginBottom="101dp"
+        android:gravity="bottom">
+
+        <LinearLayout
+            android:id="@+id/progress_time"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="right"
+            android:orientation="horizontal">
+
+            <com.cisco.veop.sf_ui.ui_configuration.UiConfigTextView
+                android:id="@+id/currentTimes"
+                android:gravity="right"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <com.cisco.veop.sf_ui.ui_configuration.UiConfigTextView
+                android:id="@+id/totalTime"
+                android:gravity="right"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <com.cisco.veop.client.kiott.player.ui.KTSeekBarView
+            android:id="@+id/playbackScrubberBar"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            />
+
+    </RelativeLayout>
+
+    <com.cisco.veop.sf_ui.ui_configuration.UiConfigTextView
+        android:id="@+id/skipIntro"
+        android:layout_width="wrap_content"
+        android:visibility="gone"
+        android:layout_height="wrap_content" />
+
+</RelativeLayout>

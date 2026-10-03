@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.cisco.veop.sf_ui.ui_configuration.UiConfigTextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/no_content_available"
+    android:layout_width="wrap_content"
+    android:layout_height="0dp"/>

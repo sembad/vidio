@@ -1,0 +1,56 @@
+package com.appsflyer.internal;
+
+import android.content.Context;
+import com.facebook.share.internal.ShareConstants;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Observable;
+import java.util.Observer;
+
+/* loaded from: classes.dex */
+public abstract class AFj1tSDK extends Observable {
+    public final String AFAdRevenueData;
+    public final String component2;
+    long component4;
+    final Runnable getRevenue;
+    public final Map<String, Object> getMediationNetwork = new HashMap();
+    public AFa1ySDK areAllFieldsValid = AFa1ySDK.NOT_STARTED;
+
+    /* renamed from: com.appsflyer.internal.AFj1tSDK$2, reason: invalid class name */
+    final class AnonymousClass2 implements Observer {
+        AnonymousClass2() {
+        }
+
+        @Override // java.util.Observer
+        public final void update(Observable observable, Object obj) {
+            AFj1tSDK.this.getRevenue.run();
+        }
+    }
+
+    public enum AFa1ySDK {
+        NOT_STARTED,
+        STARTED,
+        FINISHED
+    }
+
+    public AFj1tSDK(String str, String str2, Runnable runnable) {
+        this.getRevenue = runnable;
+        this.AFAdRevenueData = str2;
+        this.component2 = str;
+    }
+
+    public abstract void AFAdRevenueData(Context context);
+
+    protected void getMonetizationNetwork() {
+        this.getMediationNetwork.put("latency", Long.valueOf(System.currentTimeMillis() - this.component4));
+    }
+
+    public final void getRevenue() {
+        this.getMediationNetwork.put(ShareConstants.FEED_SOURCE_PARAM, this.AFAdRevenueData);
+        this.getMediationNetwork.put("type", this.component2);
+        getMonetizationNetwork();
+        this.areAllFieldsValid = AFa1ySDK.FINISHED;
+        setChanged();
+        notifyObservers();
+    }
+}

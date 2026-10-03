@@ -1,0 +1,21 @@
+.class public final Lk5/h;
+.super Lk5/e;
+.source "SourceFile"
+
+
+# direct methods
+.method public constructor <init>()V
+    .locals 1
+
+    .line 1
+    const-string v0, "androidx.credentials.TYPE_IN_USE_ATTRIBUTE_ERROR"
+
+    .line 2
+    .line 3
+    invoke-direct {p0, v0}, Lk5/e;-><init>(Ljava/lang/String;)V
+
+    .line 4
+    .line 5
+    .line 6
+    return-void
+.end method

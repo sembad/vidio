@@ -1,0 +1,19 @@
+package com.google.android.gms.internal.auth;
+
+import android.os.Bundle;
+import com.google.android.gms.common.api.Status;
+import ri.i;
+
+/* loaded from: classes5.dex */
+final class zzy extends zzj {
+    final /* synthetic */ i zza;
+
+    zzy(zzab zzabVar, i iVar) {
+        this.zza = iVar;
+    }
+
+    @Override // com.google.android.gms.internal.auth.zzk
+    public final void zzb(Status status, Bundle bundle) {
+        zzab.zzf(status, bundle, this.zza);
+    }
+}

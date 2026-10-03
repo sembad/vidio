@@ -1,0 +1,203 @@
+.class final Lcom/google/android/material/chip/ChipGroup$b;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+# interfaces
+.implements Landroid/view/ViewGroup$OnHierarchyChangeListener;
+
+
+# annotations
+.annotation system Ldalvik/annotation/EnclosingClass;
+    value = Lcom/google/android/material/chip/ChipGroup;
+.end annotation
+
+.annotation system Ldalvik/annotation/InnerClass;
+    accessFlags = 0x2
+    name = "b"
+.end annotation
+
+
+# instance fields
+.field private c:Landroid/view/ViewGroup$OnHierarchyChangeListener;
+
+.field final synthetic d:Lcom/google/android/material/chip/ChipGroup;
+
+
+# direct methods
+.method constructor <init>(Lcom/google/android/material/chip/ChipGroup;)V
+    .locals 0
+
+    .line 1
+    invoke-direct {p0}, Ljava/lang/Object;-><init>()V
+
+    .line 2
+    .line 3
+    .line 4
+    iput-object p1, p0, Lcom/google/android/material/chip/ChipGroup$b;->d:Lcom/google/android/material/chip/ChipGroup;
+
+    .line 5
+    .line 6
+    return-void
+.end method
+
+.method static synthetic a(Lcom/google/android/material/chip/ChipGroup$b;Landroid/view/ViewGroup$OnHierarchyChangeListener;)V
+    .locals 0
+
+    .line 1
+    iput-object p1, p0, Lcom/google/android/material/chip/ChipGroup$b;->c:Landroid/view/ViewGroup$OnHierarchyChangeListener;
+
+    .line 2
+    .line 3
+    return-void
+.end method
+
+
+# virtual methods
+.method public final onChildViewAdded(Landroid/view/View;Landroid/view/View;)V
+    .locals 3
+
+    .line 1
+    iget-object v0, p0, Lcom/google/android/material/chip/ChipGroup$b;->d:Lcom/google/android/material/chip/ChipGroup;
+
+    .line 2
+    .line 3
+    if-ne p1, v0, :cond_1
+
+    .line 4
+    .line 5
+    instance-of v1, p2, Lcom/google/android/material/chip/Chip;
+
+    .line 6
+    .line 7
+    if-eqz v1, :cond_1
+
+    .line 8
+    .line 9
+    invoke-virtual {p2}, Landroid/view/View;->getId()I
+
+    .line 10
+    .line 11
+    .line 12
+    move-result v1
+
+    .line 13
+    const/4 v2, -0x1
+
+    .line 14
+    if-ne v1, v2, :cond_0
+
+    .line 15
+    .line 16
+    sget v1, Landroidx/core/view/p0;->g:I
+
+    .line 17
+    .line 18
+    invoke-static {}, Landroid/view/View;->generateViewId()I
+
+    .line 19
+    .line 20
+    .line 21
+    move-result v1
+
+    .line 22
+    invoke-virtual {p2, v1}, Landroid/view/View;->setId(I)V
+
+    .line 23
+    .line 24
+    .line 25
+    :cond_0
+    invoke-static {v0}, Lcom/google/android/material/chip/ChipGroup;->f(Lcom/google/android/material/chip/ChipGroup;)Lcom/google/android/material/internal/b;
+
+    .line 26
+    .line 27
+    .line 28
+    move-result-object v0
+
+    .line 29
+    move-object v1, p2
+
+    .line 30
+    check-cast v1, Lcom/google/android/material/chip/Chip;
+
+    .line 31
+    .line 32
+    invoke-virtual {v0, v1}, Lcom/google/android/material/internal/b;->e(Lcom/google/android/material/chip/Chip;)V
+
+    .line 33
+    .line 34
+    .line 35
+    :cond_1
+    iget-object v0, p0, Lcom/google/android/material/chip/ChipGroup$b;->c:Landroid/view/ViewGroup$OnHierarchyChangeListener;
+
+    .line 36
+    .line 37
+    if-eqz v0, :cond_2
+
+    .line 38
+    .line 39
+    invoke-interface {v0, p1, p2}, Landroid/view/ViewGroup$OnHierarchyChangeListener;->onChildViewAdded(Landroid/view/View;Landroid/view/View;)V
+
+    .line 40
+    .line 41
+    .line 42
+    :cond_2
+    return-void
+.end method
+
+.method public final onChildViewRemoved(Landroid/view/View;Landroid/view/View;)V
+    .locals 2
+
+    .line 1
+    iget-object v0, p0, Lcom/google/android/material/chip/ChipGroup$b;->d:Lcom/google/android/material/chip/ChipGroup;
+
+    .line 2
+    .line 3
+    if-ne p1, v0, :cond_0
+
+    .line 4
+    .line 5
+    instance-of v1, p2, Lcom/google/android/material/chip/Chip;
+
+    .line 6
+    .line 7
+    if-eqz v1, :cond_0
+
+    .line 8
+    .line 9
+    invoke-static {v0}, Lcom/google/android/material/chip/ChipGroup;->f(Lcom/google/android/material/chip/ChipGroup;)Lcom/google/android/material/internal/b;
+
+    .line 10
+    .line 11
+    .line 12
+    move-result-object v0
+
+    .line 13
+    move-object v1, p2
+
+    .line 14
+    check-cast v1, Lcom/google/android/material/chip/Chip;
+
+    .line 15
+    .line 16
+    invoke-virtual {v0, v1}, Lcom/google/android/material/internal/b;->i(Lcom/google/android/material/chip/Chip;)V
+
+    .line 17
+    .line 18
+    .line 19
+    :cond_0
+    iget-object v0, p0, Lcom/google/android/material/chip/ChipGroup$b;->c:Landroid/view/ViewGroup$OnHierarchyChangeListener;
+
+    .line 20
+    .line 21
+    if-eqz v0, :cond_1
+
+    .line 22
+    .line 23
+    invoke-interface {v0, p1, p2}, Landroid/view/ViewGroup$OnHierarchyChangeListener;->onChildViewRemoved(Landroid/view/View;Landroid/view/View;)V
+
+    .line 24
+    .line 25
+    .line 26
+    :cond_1
+    return-void
+.end method

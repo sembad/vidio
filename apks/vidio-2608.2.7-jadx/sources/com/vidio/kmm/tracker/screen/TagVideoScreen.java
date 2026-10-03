@@ -1,0 +1,69 @@
+package com.vidio.kmm.tracker.screen;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+import com.vidio.kmm.tracker.plenty.event.Screen;
+import com.vidio.kmm.tracker.screen.ContentTagScreenTracker;
+import kotlin.Metadata;
+import kotlin.jvm.internal.Intrinsics;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+@Metadata(d1 = {"\u0000\n\n\u0002\u0018\u0002\n\u0002\u0018\u0002\n\u0000\b\u0086\b\u0018\u00002\u00020\u0001¨\u0006\u0002"}, d2 = {"Lcom/vidio/kmm/tracker/screen/TagVideoScreen;", "Lcom/vidio/kmm/tracker/screen/ScreenName;", "shared"}, k = 1, mv = {2, 2, 0}, xi = 48)
+/* loaded from: classes6.dex */
+public final /* data */ class TagVideoScreen extends ScreenName {
+
+    @NotNull
+    public static final Parcelable.Creator<TagVideoScreen> CREATOR = new a();
+
+    /* renamed from: e, reason: collision with root package name */
+    @NotNull
+    private final String f34239e;
+
+    public static final class a implements Parcelable.Creator<TagVideoScreen> {
+        @Override // android.os.Parcelable.Creator
+        public final TagVideoScreen createFromParcel(Parcel parcel) {
+            parcel.getClass();
+            return new TagVideoScreen(parcel.readString());
+        }
+
+        @Override // android.os.Parcelable.Creator
+        public final TagVideoScreen[] newArray(int i11) {
+            return new TagVideoScreen[i11];
+        }
+    }
+
+    /* JADX WARN: 'super' call moved to the top of the method (can break code semantics) */
+    public TagVideoScreen(@NotNull String str) {
+        super(new Screen.TagVideo(str), ContentTagScreenTracker.Video.f34144e);
+        str.getClass();
+        this.f34239e = str;
+    }
+
+    @Override // android.os.Parcelable
+    public final int describeContents() {
+        return 0;
+    }
+
+    public final boolean equals(@Nullable Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        return (obj instanceof TagVideoScreen) && Intrinsics.a(this.f34239e, ((TagVideoScreen) obj).f34239e);
+    }
+
+    public final int hashCode() {
+        return this.f34239e.hashCode();
+    }
+
+    @NotNull
+    public final String toString() {
+        return android.support.v4.media.a.a("TagVideoScreen(slug=", this.f34239e, ")");
+    }
+
+    @Override // android.os.Parcelable
+    public final void writeToParcel(@NotNull Parcel parcel, int i11) {
+        parcel.getClass();
+        parcel.writeString(this.f34239e);
+    }
+}

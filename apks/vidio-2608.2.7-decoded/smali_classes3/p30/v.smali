@@ -1,0 +1,38 @@
+.class public interface abstract Lp30/v;
+.super Ljava/lang/Object;
+.source "SourceFile"
+
+
+# annotations
+.annotation system Ldalvik/annotation/MemberClasses;
+    value = {
+        Lp30/v$a;
+    }
+.end annotation
+
+.annotation runtime Lld0/k;
+.end annotation
+
+
+# static fields
+.field public static final Companion:Lp30/v$a;
+    .annotation build Lorg/jetbrains/annotations/NotNull;
+    .end annotation
+.end field
+
+
+# direct methods
+.method static constructor <clinit>()V
+    .locals 1
+
+    .line 1
+    sget-object v0, Lp30/v$a;->a:Lp30/v$a;
+
+    .line 2
+    .line 3
+    sput-object v0, Lp30/v;->Companion:Lp30/v$a;
+
+    .line 4
+    .line 5
+    return-void
+.end method
