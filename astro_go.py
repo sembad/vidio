@@ -264,7 +264,8 @@ def _solver_post(path: str, payload: dict, tries: int = 3) -> dict:
 
 
 def solve_recaptcha(api_key: str, sitekey: str, pageurl: str) -> str:
-    step("CAPTCHA", "reCAPTCHA v2 via MuaraiCaptcha")
+    # spinner step 3 (pemanggil) tetap aktif selama solving - tidak perlu
+    # spinner kedua yang menimpa barisnya
     d = _solver_post("createTask", {
         "clientKey": api_key,
         "task": {
