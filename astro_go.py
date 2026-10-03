@@ -57,6 +57,8 @@ CONFIG = {
     # OPSIONAL: cookie cf_clearance dari browser kamu (devtools -> Cookies
     # -> auth.astro.com.my) kalau /oauth2/auth kena "Just a moment".
     # Dari IP residential (rumah, bukan VPS/cloud) biasanya TIDAK perlu.
+    # PENTING: cf_clearance terikat pada User-Agent + IP — kalau dipakai,
+    # samakan "ua" di bawah dengan UA browser yang membuatkannya.
     "cf_clearance": "",
 }
 
@@ -116,9 +118,17 @@ def follow_chain(s: requests.Session, url: str, max_hops=12):
         if r.status_code == 403 and "Just a moment" in r.text:
             sys.exit(
                 "\n!! Cloudflare managed challenge di: " + url[:100] +
-                "\n   IP ini terdeteksi datacenter. Dari IP residential (rumah) "
-                "biasanya langsung lolos.\n   Alternatif: isi CONFIG['cf_clearance'] "
-                "dengan cookie cf_clearance dari browser."
+                "\n\n   Challenge ini TIDAK bisa diselesaikan dengan token captcha"
+                "\n   (Turnstile/reCAPTCHA) apa pun — body exchange-nya blob"
+                "\n   terenkripsi yang hanya bisa dibuat JS Cloudflare sendiri"
+                "\n   (diverifikasi: POST /cdn-cgi/challenge-platform/h/b/fo/..."
+                "\n   berisi payload terenkripsi, bukan form token)."
+                "\n\n   Solusi:"
+                "\n   1. Jalankan dari IP residential (WiFi rumah di Malaysia) —"
+                "\n      challenge tidak akan muncul sama sekali."
+                "\n   2. Atau isi CONFIG['cf_clearance'] + samakan CONFIG['ua']"
+                "\n      dengan UA browser yang membuatkannya (cookie terikat"
+                "\n      pada UA + IP)."
             )
         loc = r.headers.get("location", "")
         # cari code= di URL mana pun dalam chain

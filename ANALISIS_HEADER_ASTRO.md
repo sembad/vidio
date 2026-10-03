@@ -678,3 +678,55 @@ Status verifikasi:
 | 7 (keepAlive) | Format dari HAR |
 
 Blokir tunggal yang tersisa: **geo/entitlement** — playsession menolak IP cloud (terdeteksi VPN) dan guest tidak punya hak channel. Dengan IP Malaysia + akun berlangganan (atau token sesi login nyata seperti di HAR), langkah 4–6 akan menghasilkan MPD dan license secara penuh. Semua format request/response sudah terdokumentasi di atas dan siap dipakai.
+
+---
+
+# Bagian 4: Cloudflare di auth.astro.com.my — Batas Solving via API Captcha
+
+## 4.1 Peta proteksi
+
+Hanya **satu** endpoint yang dijaga Cloudflare managed challenge: `auth.astro.com.my/oauth2/auth` (Hydra). Endpoint lain lolos dengan HTTP client biasa:
+
+| Endpoint | Cloudflare? | Catatan |
+|---|---|---|
+| `auth.astro.com.my/` | Tidak | 200 langsung |
+| `auth.astro.com.my/login` + `/self-service/login/*` | Tidak | Kratos flow bisa dibuat via curl |
+| `auth.astro.com.my/api/login` | Tidak | Submit password + reCAPTCHA token lolos |
+| `auth.astro.com.my/oidc/authorize` | Tidak | 302 normal |
+| `auth.astro.com.my/oauth2/auth` | **YA — managed challenge** | 403 "Just a moment..." dari IP datacenter |
+| `api-ivp.astro.com.my/*` | Tidak | Semua API bebas |
+
+Trigger-nya reputasi IP: dari IP residential challenge tidak muncul sama sekali (terbukti di HAR web — browser user langsung lolos).
+
+## 4.2 Anatomi challenge (hasil reverse)
+
+```
+GET /oauth2/auth → 403 + HTML berisi window._cf_chl_opt:
+  cType: 'managed', cRay: <ray id>, cN: <nonce 22 char>,
+  cH: <chlPageData>, md: <blob panjang>, cUPMDTk: <path+__cf_chl_tk>
+GET /cdn-cgi/challenge-platform/h/b/orchestrate/chl_page/v1?ray=<cRay>
+  → JS obfuscated 240KB yang:
+  - load https://challenges.cloudflare.com/turnstile/v0/b/<hash>/api.js?render=explicit
+  - render Turnstile dengan sitekey 0x4AAAAAAADnPIDROrmt1Wwj (konstanta global CF challenge)
+  - saat token didapat, POST ke endpoint exchange
+POST /cdn-cgi/challenge-platform/h/b/fo/<key>:<ts>:<hash>/<cRay>/<md>
+  → body: BLOB TERENKRIPSI (bukan form) → response Set-Cookie: cf_clearance
+```
+
+Endpoint `fo` ditemukan via performance entry browser + grep orch.js; segmen `3426666802:<ts>:<hash>` di-serve fresh per challenge di orch.js.
+
+## 4.3 Kenapa token captcha API tidak cukup (terverifikasi)
+
+Diuji dengan MuaraiCaptcha (`TurnstileTaskProxyless`, $1.38/1k):
+
+1. Sitekey challenge asli `0x4AAAAAAADnPIDROrmt1Wwj` → **ditolak** `ERROR_BAD_PARAMETERS` (dengan/tanpa action/data/pagedata). Sitekey lain diterima — berarti penolakan spesifik untuk sitekey challenge CF.
+2. Sitekey mirip yang terbenam di blob orch.js (`0x5ot2d5mfGWJTNcF4kOeZo2...`) juga ditolak — itu fragmen base64, bukan sitekey.
+3. Hook fetch/XHR di browser menangkap exchange POST asli: body-nya **payload terenkripsi** (`FRVabFoalJFguvDsM51$g5XTj...`) — token Turnstile terbenam di dalam blob yang hanya bisa dibangun oleh JS Cloudflare sendiri.
+
+Kesimpulan: solver token-only (Muarai, 2captcha turnstile, dll.) tidak bisa menyelesaikan managed challenge. Layanan yang mengklaim bisa (CapSolver AntiCloudflareTask, FlareSolverr) menjalankan engine JS/browser sungguhan di belakang layar.
+
+## 4.4 Solusi yang berlaku
+
+1. **IP residential (utama)** — jalankan `astro_go.py` dari WiFi rumah Malaysia: challenge tidak pernah muncul, seluruh flow jalan tanpa cookie tambahan.
+2. **cf_clearance manual (fallback)** — isi `CONFIG["cf_clearance"]` dari browser + samakan `CONFIG["ua"]` dengan UA browser tersebut (cookie terikat UA + IP).
+3. reCAPTCHA v2 login Kratos tetap ter-solve via Muarai (`RecaptchaV2TaskProxyless`) — itu widget standalone, token-nya memang cukup.
