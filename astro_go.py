@@ -73,14 +73,31 @@ IMP = "chrome124"  # TLS fingerprint Chrome -> lolos Cloudflare dasar
 CONFIG["proxy"] = os.environ.get("ASTRO_PROXY", CONFIG["proxy"])
 # override via env: ASTRO_UA=android -> pakai UA webview Android
 CONFIG["ua"] = os.environ.get("ASTRO_UA", "")
+# override via env: kredensial & channel (dipakai UI manual mode)
+CONFIG["email"] = os.environ.get("ASTRO_EMAIL", CONFIG["email"])
+CONFIG["password"] = os.environ.get("ASTRO_PASSWORD", CONFIG["password"])
+CONFIG["channel_id"] = os.environ.get("ASTRO_CHANNEL_ID", CONFIG["channel_id"])
 
 
 # ---------------------------------------------------------------- helper ----
 VERBOSE = os.environ.get("ASTRO_VERBOSE", "")  # set 1 untuk log detail
 
+# hook event untuk UI (astro_ui.py): kalau di-set, tiap progres dikirim
+# ke sana sebagai dict - terminal tetap berjalan normal
+EVENT_HOOK = None
+
+
+def emit(ev: dict) -> None:
+    if EVENT_HOOK:
+        try:
+            EVENT_HOOK(ev)
+        except Exception:
+            pass
+
 
 def step(n, title):
     print(f"[STEP {n}] {title}")
+    emit({"type": "step", "n": str(n), "title": title})
 
 
 def show(r, body_limit=700, label=""):
@@ -181,6 +198,7 @@ def solve_recaptcha(api_key: str, sitekey: str, pageurl: str) -> str:
         timeout=30,
     )
     print(f"[createTask HTTP {r.status_code}] {r.text[:200]}")
+    emit({"type": "captcha", "status": "processing"})
     task_id = r.json().get("taskId")
     if not task_id:
         sys.exit(f"createTask gagal: {r.text}")
@@ -194,9 +212,11 @@ def solve_recaptcha(api_key: str, sitekey: str, pageurl: str) -> str:
         )
         d = r.json()
         print(f"  poll {i}: {d.get('status')}")
+        emit({"type": "captcha", "poll": i, "status": d.get("status")})
         if d.get("status") == "ready":
             token = d["solution"]["token"]
             print(f"  token: {token[:60]}... ({len(token)} chars)")
+            emit({"type": "captcha", "status": "ready"})
             return token
         if d.get("errorId"):
             # task kadang hilang di sisi solver -> recreate sekali
@@ -284,6 +304,7 @@ def kratos_login(s: requests.Session, flow: str = None):
     who = decode_jwt(s.cookies.get("ory_kratos_session") or "")
     print("login OK - session:", bool(s.cookies.get("ory_kratos_session")),
           "| email:", (who.get("identity") or {}).get("traits", {}).get("email"))
+    emit({"type": "info", "msg": "Login berhasil"})
     return flow, r
 
 
@@ -501,6 +522,7 @@ def exchange_token(s: requests.Session, code: str, verifier: str) -> dict:
     tok = r.json()
     print("--- respon asli STEP 7 (POST /oauth2/token) ---")
     print(json.dumps(tok, indent=2))
+    emit({"type": "raw", "step": 7, "data": tok})
     return tok
 
 
@@ -611,6 +633,7 @@ def playsession(s: requests.Session, access_token: str, channel_id: str,
     ps = r.json()
     print("--- respon asli STEP 8 (POST playsessions) ---")
     print(json.dumps(ps, indent=2))
+    emit({"type": "raw", "step": 8, "data": ps})
     return ps
 
 
@@ -679,6 +702,8 @@ def keepalive(s: requests.Session, access_token: str, href: str) -> None:
         timeout=30,
     )
     show(r, body_limit=200)
+    if r.status_code == 200:
+        emit({"type": "info", "msg": "KeepAlive OK - sesi streaming aktif"})
 
 
 # ------------------------------------------------------- real license (opt) ----
@@ -781,6 +806,7 @@ def main():
     print(f"sessionId: {session_id}")
 
     pssh = check_mpd(s, play_url) if play_url else None
+    emit({"type": "info", "msg": f"MPD {'OK' if pssh else 'tidak terbaca'}"})
 
     # token mDRM: Authorization license server (butuh sesi user berlangganan)
     mdrm = None
@@ -799,6 +825,8 @@ def main():
         keepalive(s, at, ka_href)
 
     print("\nSELESAI.")
+    emit({"type": "done", "playUrl": play_url, "sessionId": session_id,
+          "drmBlob": blob, "channelId": CONFIG["channel_id"]})
 
 
 if __name__ == "__main__":
