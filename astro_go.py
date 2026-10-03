@@ -76,12 +76,17 @@ CONFIG["ua"] = os.environ.get("ASTRO_UA", "")
 
 
 # ---------------------------------------------------------------- helper ----
+VERBOSE = os.environ.get("ASTRO_VERBOSE", "")  # set 1 untuk log detail
+
+
 def step(n, title):
-    print(f"\n{'=' * 64}\nSTEP {n}: {title}\n{'=' * 64}")
+    print(f"[STEP {n}] {title}")
 
 
 def show(r, body_limit=700, label=""):
-    """print status + header penting + potongan body"""
+    """log detail request - hanya tampil kalau ASTRO_VERBOSE=1"""
+    if not VERBOSE:
+        return
     if label:
         print(f"--- {label} ---")
     print(f"[HTTP {r.status_code}] {r.url[:120]}")
@@ -125,11 +130,11 @@ def follow_chain(s: requests.Session, url: str, max_hops=12):
     for i in range(max_hops):
         r = s.get(url, allow_redirects=False, timeout=30)
         show(r, body_limit=300, label=f"hop {i + 1}")
-        if urlparse(url).path.endswith("/authorizeEnd"):
+        if VERBOSE and urlparse(url).path.endswith("/authorizeEnd"):
             st = parse_qs(urlparse(url).query).get("state", [""])[0]
             sj = decode_jwt(st)
             if sj:
-                print(f"  authorizeEnd state JWT penuh: {json.dumps(sj)[:500]}")
+                print(f"  authorizeEnd state JWT: {json.dumps(sj)[:500]}")
         if r.status_code == 403 and "Just a moment" in r.text:
             sys.exit(
                 "\n!! Cloudflare managed challenge di: " + url[:100] +
@@ -492,11 +497,10 @@ def exchange_token(s: requests.Session, code: str, verifier: str) -> dict:
     )
     show(r, body_limit=400)
     if r.status_code != 200:
-        sys.exit("token exchange gagal")
+        sys.exit(f"token exchange gagal: HTTP {r.status_code}\n{r.text[:300]}")
     tok = r.json()
-    claims = decode_jwt(tok.get("access_token", ""))
-    print("access_token claims:", json.dumps(
-        {k: claims.get(k) for k in ("sub", "scope", "client_id", "exp")}, indent=1))
+    print("--- respon asli STEP 7 (POST /oauth2/token) ---")
+    print(json.dumps(tok, indent=2))
     return tok
 
 
@@ -526,12 +530,18 @@ def mdrm_token(s: requests.Session, access_token: str,
         if not tok:
             continue
         sess = s_sg if "sg-host" in name else s
-        r = sess.post(
-            url,
-            headers={"Authorization": f"Bearer {tok}",
-                     "Content-Type": "application/json"},
-            json=body, timeout=30,
-        )
+        try:
+            r = sess.post(
+                url,
+                headers={"Authorization": f"Bearer {tok}",
+                         "Content-Type": "application/json"},
+                json=body, timeout=30,
+            )
+        except Exception as e:
+            # port 9443 bisa diblokir jaringan/proxy (SSL reset dll) -
+            # lewati varian ini, jangan crash
+            print(f"  device_assertion [{name}]: dilewati ({type(e).__name__})")
+            continue
         show(r, body_limit=200, label=f"device_assertion [{name}]")
         if r.status_code == 200:
             try:
@@ -590,8 +600,6 @@ def playsession(s: requests.Session, access_token: str, channel_id: str,
         timeout=30,
     )
     show(r, body_limit=1200)
-    wsb = s.cookies.get("WsbSession")
-    print(f"WsbSession cookie: {'ada (' + str(len(wsb)) + ' chars)' if wsb else 'TIDAK ada'}")
     if r.status_code != 200:
         if "ANONYMOUS_IP" in r.text or "PROXY_OR_VPN" in r.text:
             sys.exit(
@@ -599,8 +607,11 @@ def playsession(s: requests.Session, access_token: str, channel_id: str,
                 "   Jalankan dari IP Malaysia residential (bukan VPS/cloud) — "
                 "format request sudah benar."
             )
-        sys.exit(f"playsession gagal: HTTP {r.status_code}")
-    return r.json()
+        sys.exit(f"playsession gagal: HTTP {r.status_code}\n{r.text[:300]}")
+    ps = r.json()
+    print("--- respon asli STEP 8 (POST playsessions) ---")
+    print(json.dumps(ps, indent=2))
+    return ps
 
 
 def check_mpd(s: requests.Session, play_url: str):
