@@ -129,8 +129,7 @@ def follow_chain(s: requests.Session, url: str, max_hops=12):
             st = parse_qs(urlparse(url).query).get("state", [""])[0]
             sj = decode_jwt(st)
             if sj:
-                print(f"  authorizeEnd state JWT: client_id={sj.get('client_id')} "
-                      f"redirect_uri={sj.get('redirect_uri')} response_type={sj.get('response_type')}")
+                print(f"  authorizeEnd state JWT penuh: {json.dumps(sj)[:500]}")
         if r.status_code == 403 and "Just a moment" in r.text:
             sys.exit(
                 "\n!! Cloudflare managed challenge di: " + url[:100] +
@@ -301,15 +300,14 @@ def oauth_get_code(s: requests.Session, guest=False):
             f"&redirect_uri={quote(cfg['redirect_uri'])}&scope={quote(scope)}"
         )
     else:
-        # web SSO (astrogo): bootstrap client browser -> chain Hydra ->
-        # authorizeEnd -> fragment #access_token scope "browse playback".
-        # (authorize client APK untuk user justru memberi token
-        #  device_management - flow device-login, bukan playback)
-        step(5, "GET /oauth2/authorize (bootstrap client browser, response_type=token)")
+        # APK user: authorize PKCE scope user -> SSO chain -> device-management
+        # -> deviceManagementEnd -> pastro://code
+        step(5, "GET /oauth2/authorize (PKCE, scope=user, client APK)")
         authz = (
-            f"{cfg['api']}/oauth2/authorize?client_id=browser&state=bootup"
-            f"&redirect_uri={quote('https://astrogo.astro.com.my')}"
-            f"&response_type=token"
+            f"{cfg['api']}/oauth2/authorize?response_type=code"
+            f"&client_id={quote(cfg['client_id'])}&state={state}"
+            f"&code_challenge_method=S256&ui_locales=en&code_challenge={challenge}"
+            f"&redirect_uri={quote(cfg['redirect_uri'])}&scope={quote(scope)}"
         )
     r = s.get(authz, allow_redirects=False, timeout=30)
     show(r, body_limit=200)
@@ -362,9 +360,63 @@ def oauth_get_code(s: requests.Session, guest=False):
             if nxt:
                 r, code, final_url = follow_chain(s, nxt)
 
-    # web SSO dulu: authorizeEnd redirect ke devicelogin dengan #access_token.
-    # Setelah sesi SSO terbentuk, ULANGI authorize -> VCS memberi pastro://code
-    # (pola yang sama dengan guest).
+    # VCS mengarahkan ke SPA device-management (devicelogin.astro.com.my)
+    # sebelum memberi code: emulasi SPA-nya (handler.js) ->
+    # 1) GET /device-management/deviceQuotaInfo?deviceFullType=X (Bearer frag)
+    # 2) kalau minNumToBeDeleted <= 0 -> GET /oauth2/deviceManagementEnd?state=
+    #    -> VCS lanjut -> pastro://code
+    m = re.search(r"devicelogin\.astro\.com\.my[^\s]*#(.+)$", final_url)
+    if m:
+        # code ory_ac_ (Hydra) yang tertangkap follow_chain tidak dipakai -
+        # yang kita butuhkan code VCS dari deep link pastro://
+        code = None
+        frag = parse_qs(m.group(1))
+        at_d = (frag.get("access_token") or [None])[0]
+        st_d = (frag.get("state") or [None])[0]
+        dft = (frag.get("device_full_type") or [None])[0]
+        step("6c", f"SPA device-management: quota check (deviceFullType={dft})")
+        # sg-sg-sg memakai port 9443 yang diblokir egress proxy DataImpulse
+        # (CONNECT 403) -> panggil langsung tanpa proxy; endpoint stateless
+        # (auth via Bearer JWT, bukan cookie session)
+        s_sg = requests.Session(impersonate=IMP)
+        s_sg.headers["User-Agent"] = s.headers["User-Agent"]
+        rq = s_sg.get(
+            "https://sg-sg-sg.astro.com.my:9443/device-management/deviceQuotaInfo",
+            params={"deviceFullType": dft},
+            headers={"Authorization": f"Bearer {at_d}", "Accept-Language": "en"},
+            timeout=30,
+        )
+        show(rq, body_limit=600)
+        try:
+            dq = rq.json()
+        except Exception:
+            dq = {}
+        min_del = dq.get("minNumToBeDeleted", 0)
+        devs = dq.get("devices") or []
+        print(f"minNumToBeDeleted: {min_del} | terdaftar: {len(devs)} device")
+        if min_del and min_del > 0:
+            for d in devs:
+                print(f"  - {d.get('displayDeviceType')} / {d.get('friendlyName')} "
+                      f"({d.get('deviceId')}) removable={d.get('isQuotaOccupier')}")
+            sys.exit("Kuota device penuh: hapus satu device di akun (SPA devicelogin) lalu ulangi.")
+        step("6d", "GET /oauth2/deviceManagementEnd (SPA redirect balik ke VCS)")
+        # redirect dalam sg-sg-sg lewat s_sg (tanpa proxy); begitu keluar
+        # host itu, lanjutkan chain dengan session ber-proxy + cookies
+        url_dm = f"https://sg-sg-sg.astro.com.my:9443/oauth2/deviceManagementEnd?state={st_d}"
+        for _ in range(6):
+            rr = s_sg.get(url_dm, allow_redirects=False, timeout=30)
+            show(rr, body_limit=200)
+            loc_dm = rr.headers.get("location", "")
+            if not loc_dm:
+                break
+            if not loc_dm.startswith(("http://", "https://")) or \
+                    (urlparse(loc_dm).hostname or "").endswith("sg-sg-sg.astro.com.my"):
+                url_dm = urljoin(url_dm, loc_dm)
+                continue
+            r, code, final_url = follow_chain(s, loc_dm)
+            break
+
+    # web SSO: authorizeEnd memberi #access_token langsung (fallback)
     m = re.search(r"[#&]access_token=([^&]+)", final_url)
     if m:
         at = m.group(1)
@@ -569,6 +621,10 @@ def main():
         s.headers["User-Agent"] = ("Mozilla/5.0 (Linux; Android 13; Pixel 7) "
                                    "AppleWebKit/537.36 (KHTML, like Gecko) "
                                    "Chrome/124.0.0.0 Mobile Safari/537.36")
+    elif CONFIG["ua"] == "dalvik":
+        # persis transport APK (HttpURLConnection)
+        s.headers["User-Agent"] = ("Dalvik/2.1.0 (Linux; U; Android 14; "
+                                   "Pixel 6 Build/UQ1A.240105.A4)")
     else:
         s.headers["User-Agent"] = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
                                    "(KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36")

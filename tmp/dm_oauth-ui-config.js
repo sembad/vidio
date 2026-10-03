@@ -1,0 +1,1 @@
+const sgEndpoint = "https://sg-sg-sg.astro.com.my:9443"
