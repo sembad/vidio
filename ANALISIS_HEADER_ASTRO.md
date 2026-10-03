@@ -386,3 +386,176 @@ DRM utama aplikasi adalah `mdrm` (`pref_app_drmTypeConfig`), dengan subtitle SMP
 - Nilai `sessionType` divalidasi dengan pengujian sistematis; `pip` satu-satunya yang lolos validasi server dari enam nilai yang diuji.
 - Refresh token tamu dan `device_assertion` terbukti menolak kredensial tamu (401/invalid_scope) — keduanya memerlukan sesi berlangganan; analisis kode menunjukkan jalur Basic auth dinonaktifkan (`q()` → `null`).
 - `x-cisco-device-state` dan UA WebView direkonstruksi dari dekompilasi persis (string format dan pemanggilnya ditemukan), namun belum diverifikasi dengan capture jaringan perangkat fisik.
+
+---
+
+# Bagian 2: Analisis HAR Web (astrogo.astro.com.my)
+
+Sumber: capture Reqable 3.2.23, 652 request, sesi browser nyata (login + browsing), 3 Oktober 2026. File: `apks/astro/web.har`.
+
+## Temuan paling penting: web TIDAK mengirim FLOW_CONTEXT
+
+Berbeda total dari Android:
+
+- **Android**: klien membuat `FLOW_CONTEXT` (UUID hex uppercase) per request dan mengirimnya sebagai header.
+- **Web**: **nol** request membawa header `flow_context` (diverifikasi: 0 dari 246 request ke api-ivp). Sebaliknya, **server** yang mengembalikan `flow_context` di response header setiap kali:
+
+```
+flow_context: 6AC0FAB011A6236802000642
+```
+
+Formatnya 24 karakter hex, prefix `6AC0FA` konstan, sisanya bertambah monoton mengikuti waktu — pola timestamp server (bukan acak). Artinya flow context adalah **ID transaksi server-side**, dan versi Android yang mengirim UUID buatan klien hanyalah cara klien "menyewa" slot ID yang sama.
+
+## Header request web ke api-ivp (lengkap)
+
+```
+authorization: Bearer <JWT RS256, ~1085 char>
+accept-language: en
+cache-control: no-cache , no-store
+accept: application/json, text/plain, */*
+user-agent: Mozilla/5.0 (X11; Linux x86_64) ... Chrome/154.0.0.0 Safari/537.36
+origin: https://astrogo.astro.com.my
+referer: https://astrogo.astro.com.my/
+cookie: settings=...; lckCh=...; favCh=...; subs=...; WsbSession=<JWT HS512>; ...
+```
+
+Yang **tidak ada** di web dibanding Android: `FLOW_CONTEXT`, `x-cisco-device-state`. Yang **tambahan** di web: cookie `WsbSession` (JWT HS512) yang membawa seluruh state sesi.
+
+## Prefix path berbeda: `r1.6.0` vs `1.6.0`
+
+Semua endpoint web memakai `/ctap/r1.6.0/...` (prefix `r`), Android memakai `/ctap/1.6.0/...`. Keduanya hidup bersamaan di server yang sama. Endpoint yang terlihat di HAR web:
+
+| Endpoint | Fungsi |
+|---|---|
+| `GET /ctap/r1.6.0/ctap/about` | Info build |
+| `GET /ctap/r1.6.0/shared/content?categoryId=...` | Katalog per kategori |
+| `GET /ctap/r1.6.0/shared/bulkContent/node:IVP:Home?clientToken=v:1!r:80000!ur:POSTPAID!...` | Bulk home; clientToken mengandung region `80000` dan `POSTPAID` |
+| `GET /ctap/r1.6.0/contentInstances/uri:prg:1:10000712:57473162~...` | Detail program (format URI `uri:prg:<tipe>:<channel>:<event>`) |
+| `GET /ctap/r1.6.0/agg/grid?isPlayable=true&eventsLimit=1&...` | Grid EPG |
+| `GET /ctap/r1.6.0/agg/recommendations/related?source=ltv&contentId=...` | Rekomendasi |
+| `GET /ctap/r1.6.0/channels/recent?isPadded=false&limit=20` | Channel terakhir ditonton |
+| `GET /ctap/r1.6.0/personal/viewingHistory?source=vod` | Riwayat |
+| `GET /ctap/r1.6.0/personal/entitledOffers` | Offer yang berhak |
+| `GET /ctap/r1.6.0/household/me/diskQuota` | Kuota recording cDVR: `{"percentageUsed":47,"recordingQuota":[{"totalRecordingTime":720000,"recordingTime":378510}]}` |
+| `GET /ctap/r1.6.0/userProfiles/me/settings` / `PATCH /ctap/r1.6.0/devices/me/settings` | Setting profil/perangkat |
+| `GET /ctap/r1.6.0/platform/avatars` | Avatar profil |
+| `PUT /clienteventreporter/report` | Telemetri batch |
+| `GET /vgemultidrm/v1/widevine/getservicecertificate` | Sertifikat Widevine (Bearer) |
+
+## Alur auth web (Hydra OIDC — berbeda dari Android)
+
+Rantai redirect yang terekam lengkap:
+
+```
+1. GET  api-ivp/oauth2/auth?client_id=browser&state=bootup
+        &redirect_uri=https://astrogo.astro.com.my&response_type=token
+   → 302 ke auth.astro.com.my/oidc/authorize?...
+
+2. GET  auth.astro.com.my/oauth2/auth?client_id=e19c0fcc-8a9a-4985-88ee-3575240d2fdc
+        &response_type=code&prompt=login&nonce=<uuid>
+        &scope=openid email phone profile internal astro_consumption_account
+        &redirect_uri=https://api-ivp.astro.com.my/oauth2/authorizeEnd
+        &state=<JWT>
+   → 302 ke /login?login_challenge=...   (Hydra login challenge)
+
+3. POST auth.astro.com.my/api/login?flow=<uuid>   (multipart: method=password, csrf_token, identitas)
+   → login_verifier
+
+4. GET  auth.astro.com.my/api/consent?consent_challenge=...
+   → consent_verifier
+
+5. GET  api-ivp.astro.com.my/oauth2/authorizeEnd?code=ory_ac_<JWT>&scope=...
+   → 302 ke devicelogin.astro.com.my/ASTRO/device-management/index.html#access_token=<JWT>
+```
+
+Perbedaan kunci vs Android:
+
+| Aspek | Android (Astro GO) | Web (astrogo) |
+|---|---|---|
+| OAuth server | Synamedia VCS (`/oauth2/register` + PKCE) | Ory Hydra (`/oidc/authorize`, login/consent challenge) |
+| client_id | `02.ASTRO-Android.7c764874-...` (dari register) | `browser` (bootstrap) → `e19c0fcc-8a9a-4985-88ee-3575240d2fdc` (OIDC) |
+| Scope | `urn:synamedia:vcs:ovp:guest-user` | `openid email phone profile internal astro_consumption_account` |
+| PKCE | Ya (S256) | Tidak (code + verifier server-side di authorizeEnd) |
+| Delivery token | JSON response | **URL fragment** `#access_token=...` ke SPA |
+| Code prefix | JWT biasa | `ory_ac_...` |
+
+`state` pada langkah 2 adalah JWT tersendiri (kid `81fbc4a4-...`) berisi:
+
+```json
+{ "deviceFullType": "Browser-Default", "response_type": "token",
+  "redirect_uri": "https://astrogo.astro.com.my", "state": "bootup",
+  "nonce": "145d2c1f-...", "client_id": "browser",
+  "device_uuid": "cea855ea-6a5c-4f31-8807-4a275c587965" }
+```
+
+## Isi access token web (JWT RS256)
+
+```json
+header: { "kid": "57767960-bdb3-4679-b2d6-c3da50fbedd1",
+          "jku": "https://sg-sg-sg.astro.com.my:9443/oauth2/jwks?kid=57767960-...",
+          "alg": "RS256" }
+claims: { "sub": "83697918", "aud": "ivp.sessionguard",
+          "scope": "browse playback", "client_id": "browser",
+          "deviceFullType": "Browser-Default", "token_type": "access_token",
+          "session_data": { "session": { "devId": "83697918.cea855ea-...",
+              "hhId": "83697918", "busUnitId": "ASTRO", "guestMode": false } },
+          "iat": 1791031913, "exp": 1791042713 }   // TTL 3 jam
+```
+
+Catatan: `jku` menunjuk JWKS eksternal — server memverifikasi token dengan kunci yang URL-nya dibawa token itu sendiri.
+
+## Cookie `WsbSession` — state sesi di sisi klien
+
+JWT HS512 yang di-set ulang server di hampir setiap response (termasuk pola `WsbSession=REFRESH` yang menyuruh klien mempertahankan nilai lama). Isi klaim `sessionData`:
+
+```json
+{ "busUnitId": "ASTRO", "ams": 1, "mpf": 1,
+  "deviceFeatures": ["ABR","PERSONAL-COMPUTER","UNMANAGED","DASH","WV-DRM","SecondScreen"],
+  "devId": "83697918.cea855ea-...", "hhId": "83697918", "region": "POSTPAID",
+  "sessionId": "ec00990b-...", "tenant": "k", "cmdcDeviceType": "PC",
+  "deviceType": "COMPANION", "guestMode": false, "hhHash": 68,
+  "community": "Malaysia Live", "cmdcRegion": "80000",
+  "profileType": "Adults", "upId": "83697918_0",
+  "daiHhId": "9ffbe2eb090f51f63da1fd948812a834" }
+```
+
+Cookie lain (semua signed cookie Express format `s:<payload>.<sig>`): `settings` (`{"uxFlavour":"Astro_unmanaged","ccPackageDeviceType":"CHROME-FF"}`), `lckCh` (locked channels), `favCh` (favorit, format packed), `subs` (zipped-gzip langganan).
+
+## Identitas perangkat web
+
+- Sebelum login: `deviceId = GUEST.Browser-Default.<uuid>`, `householdId = GUEST.<uuid>`
+- Setelah login: `deviceId = <hhId>.<uuid>`, `householdId = <hhId>`
+- Versi web client (dari event reporter): `262.6.1-3-f6084d19` — bandingkan Android `2.262.5/AC26.2.5/39f0006c44`
+
+## Telemetri: clienteventreporter
+
+`PUT /clienteventreporter/report`, body batch event:
+
+```json
+{"events":[{"category":"BOOT","event":"DEVICE_APP_LAUNCHED",
+  "subsystem":"Chrome","browserVersion":"154.0.0.0",
+  "deviceVersion":"262.6.1-3-f6084d19","component":"WEBCLIENT",
+  "deviceType":"PC","deviceId":"GUEST.Browser-Default.cea855ea-...",
+  "householdId":"GUEST.cea855ea-...","msg":"App Launched","lang":"eng"}]}
+```
+
+## DRM web vs Android
+
+| Aspek | Android | Web |
+|---|---|---|
+| Layanan | mDRM Synamedia (`/oauth2/*` + device_assertion) | VGE MultiDRM (`/vgemultidrm/v1/widevine/getservicecertificate`) |
+| Sertifikat Widevine | Provisioning mDRM | GET langsung dengan Bearer token |
+| Fitur perangkat | Deklarasi lokal | Terdaftar di WsbSession: `ABR, PERSONAL-COMPUTER, UNMANAGED, DASH, WV-DRM, SecondScreen` |
+
+## Kesimpulan perbandingan tiga sumber
+
+| Aspek | Vidio (Android) | Astro GO (Android) | Astro GO (Web) |
+|---|---|---|---|
+| ID request | `X-VISITOR-ID` klien | `FLOW_CONTEXT` klien (UUID) | Tidak dikirim — server buat `flow_context` sendiri |
+| Auth | Email+token custom | Synamedia OAuth2 + PKCE | Ory Hydra OIDC + fragment token |
+| State sesi | SharedPreferences | EncryptedPrefs | Cookie `WsbSession` (JWT HS512) |
+| Device state header | Tidak ada | `x-cisco-device-state` | Tidak ada |
+| Prefix API | `/api/v1/...` JSON:API | `/ctap/1.6.0/` | `/ctap/r1.6.0/` |
+| DRM | Widevine mDRM | mDRM + device_assertion | VGE MultiDVM + service certificate |
+
+Implikasi praktis: untuk mereplikasi klien web, yang dibutuhkan hanyalah (1) cookie `WsbSession` yang valid, (2) Bearer token dari fragment `authorizeEnd`, (3) header `Origin`/`Referer` yang benar — tanpa FLOW_CONTEXT, tanpa device-state, tanpa PKCE. Server-lah yang mengisi flow context, sehingga permintaan tanpa header tersebut tetap diterima selama cookie sesi dan Bearer valid.
