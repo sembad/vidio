@@ -398,7 +398,27 @@ def oauth_get_code(s: requests.Session, guest=False):
             for d in devs:
                 print(f"  - {d.get('displayDeviceType')} / {d.get('friendlyName')} "
                       f"({d.get('deviceId')}) removable={d.get('isQuotaOccupier')}")
-            sys.exit("Kuota device penuh: hapus satu device di akun (SPA devicelogin) lalu ulangi.")
+            # kosongkan slot: hapus device Browser terlama yang masih removable
+            # (slot browser daftar ulang otomatis saat login web berikutnya)
+            cands = [
+                d for d in devs
+                if d.get("isQuotaOccupier") and not d.get("deletionBlockedUntil")
+                and "browser" in (d.get("displayDeviceType") or "").lower()
+            ]
+            cands.sort(key=lambda d: d.get("createdAt") or "")
+            if not cands:
+                sys.exit("Kuota penuh tapi tidak ada slot Browser yang bisa dihapus.")
+            victim = cands[0]
+            step("6c1", f"DELETE /device-management/device (hapus slot Browser "
+                        f"terlama: {victim.get('createdAt')})")
+            rd = s_sg.delete(
+                f"https://sg-sg-sg.astro.com.my:9443/device-management/device/"
+                f"{victim['deviceId']}",
+                headers={"Authorization": f"Bearer {at_d}"}, timeout=30)
+            show(rd, body_limit=300)
+            if rd.status_code not in (200, 404):
+                sys.exit(f"hapus device gagal: HTTP {rd.status_code}")
+            print("slot Browser terlama dihapus -> lanjut")
         step("6d", "GET /oauth2/deviceManagementEnd (SPA redirect balik ke VCS)")
         # redirect dalam sg-sg-sg lewat s_sg (tanpa proxy); begitu keluar
         # host itu, lanjutkan chain dengan session ber-proxy + cookies
@@ -409,9 +429,17 @@ def oauth_get_code(s: requests.Session, guest=False):
             loc_dm = rr.headers.get("location", "")
             if not loc_dm:
                 break
-            if not loc_dm.startswith(("http://", "https://")) or \
-                    (urlparse(loc_dm).hostname or "").endswith("sg-sg-sg.astro.com.my"):
-                url_dm = urljoin(url_dm, loc_dm)
+            if not loc_dm.startswith(("http://", "https://")):
+                # deep link pastro://com.astro.astro/authn/?code=... (VCS)
+                q = parse_qs(urlparse(loc_dm).query)
+                c = (q.get("code") or [None])[0]
+                if not c:
+                    sys.exit(f"deep link tanpa code: {loc_dm[:150]}")
+                print(f"CODE (deviceManagementEnd -> pastro): "
+                      f"{c[:60]}... ({len(c)} chars)")
+                return c, verifier, False
+            if (urlparse(loc_dm).hostname or "").endswith("sg-sg-sg.astro.com.my"):
+                url_dm = loc_dm
                 continue
             r, code, final_url = follow_chain(s, loc_dm)
             break
@@ -426,6 +454,16 @@ def oauth_get_code(s: requests.Session, guest=False):
                                         "session_data", "deviceFullType")}, indent=1)[:600])
         print(f"WEB SSO: access_token langsung dari fragment ({len(at)} chars)")
         return at, verifier, True
+
+    # deep link pastro:// dari follow_chain: code VCS (JWT eyJ...) ada di
+    # situ - lebih prioritas daripada code ory_ac_ Hydra yang ikut tertangkap
+    # di hop authorizeEnd?code=ory_ac_...
+    if final_url.startswith("pastro://"):
+        q = parse_qs(urlparse(final_url).query)
+        c = (q.get("code") or [None])[0]
+        if c:
+            print(f"CODE (pastro deep link): {c[:60]}... ({len(c)} chars)")
+            return c, verifier, False
 
     if not code:
         # fallback: scan URL terakhir
@@ -463,6 +501,69 @@ def exchange_token(s: requests.Session, code: str, verifier: str) -> dict:
 
 
 # ------------------------------------------------------------- playback ----
+def mdrm_token(s: requests.Session, access_token: str,
+               id_token: str = "") -> str:
+    """JWT perangkat (device_assertion) -> token-exchange -> token mDRM.
+    Ini Authorization-nya license server (mdrm.f.Y()), bukan token sesi."""
+    step("8b", "POST /oauth2/device_assertion (JWT perangkat vg-drm)")
+    da_body = {"client_assertion_type":
+               "urn:ietf:params:oauth:client-assertion-type:synamedia:vg-drm"}
+    jwt_dev = None
+    # APK mengirim "Bearer <jwt dari login>" - coba semua kandidat JWT &
+    # varian endpoint (api-ivp, sg-sg-sg:9443 langsung, dengan client_id)
+    s_sg = requests.Session(impersonate=IMP)
+    s_sg.headers["User-Agent"] = s.headers["User-Agent"]
+    variants = [
+        ("vcs", f"{CONFIG['api']}/oauth2/device_assertion", access_token, da_body),
+        ("vcs+client_id", f"{CONFIG['api']}/oauth2/device_assertion", access_token,
+         {**da_body, "client_id": CONFIG["client_id"]}),
+        ("kratos", f"{CONFIG['api']}/oauth2/device_assertion",
+         s.cookies.get("ory_kratos_session") or "", da_body),
+        ("sg-host", "https://sg-sg-sg.astro.com.my:9443/oauth2/device_assertion",
+         access_token, da_body),
+    ]
+    for name, url, tok, body in variants:
+        if not tok:
+            continue
+        sess = s_sg if "sg-host" in name else s
+        r = sess.post(
+            url,
+            headers={"Authorization": f"Bearer {tok}",
+                     "Content-Type": "application/json"},
+            json=body, timeout=30,
+        )
+        show(r, body_limit=200, label=f"device_assertion [{name}]")
+        if r.status_code == 200:
+            try:
+                dj = r.json()
+                jwt_dev = next(v for v in dj.values()
+                               if isinstance(v, str) and v.count(".") == 2)
+            except Exception:
+                jwt_dev = r.text.strip()
+            break
+    if not jwt_dev:
+        sys.exit("device_assertion gagal (401 di semua varian)")
+    print(f"device JWT: {jwt_dev[:60]}... ({len(jwt_dev)} chars)")
+
+    step("8c", "POST /oauth2/token (token-exchange vg-drm -> token mDRM)")
+    r = s.post(
+        f"{CONFIG['api']}/oauth2/token",
+        params={
+            "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
+            "subject_token": jwt_dev,
+            "subject_token_type":
+                "urn:ietf:params:oauth:client-assertion-type:synamedia:vg-drm",
+        },
+        timeout=30,
+    )
+    show(r, body_limit=300)
+    if r.status_code != 200:
+        sys.exit(f"token exchange mDRM gagal: HTTP {r.status_code}")
+    mt = r.json()["access_token"]
+    print(f"mDRM token: {mt[:60]}... ({len(mt)} chars)")
+    return mt
+
+
 def playsession(s: requests.Session, access_token: str, channel_id: str,
                 web: bool = False) -> dict:
     """web=True: gaya klien web (fragment token + Origin/Referer + cookie
@@ -526,13 +627,13 @@ def check_mpd(s: requests.Session, play_url: str):
     return None
 
 
-def get_license(s: requests.Session, access_token: str, channel_id: str,
+def get_license(s: requests.Session, mdrm_tok: str, channel_id: str,
                 auth_token: str, challenge: str) -> None:
     step(10, "POST /vgemultidrm/v1/widevine/license")
     r = s.post(
         f"{CONFIG['api']}/vgemultidrm/v1/widevine/license",
         headers={
-            "Authorization": f"Bearer {access_token}",
+            "Authorization": f"Bearer {mdrm_tok}",
             "Content-Type": "application/json",
             "FLOW_CONTEXT": flow_context(),
         },
@@ -554,10 +655,11 @@ def get_license(s: requests.Session, access_token: str, channel_id: str,
         pass
 
 
-def keepalive(s: requests.Session, access_token: str, session_id: str) -> None:
-    step(11, "POST keepAlive")
+def keepalive(s: requests.Session, access_token: str, href: str) -> None:
+    # href dari _links.keepAlive playsession (/sm/linear/streamingSession/...)
+    step(11, f"POST {href}")
     r = s.post(
-        f"{CONFIG['api']}/ctap/r1.6.0/devices/me/playsessions/{session_id}/keepAlive",
+        href if href.startswith("http") else f"{CONFIG['api']}{href}",
         headers={
             "Authorization": f"Bearer {access_token}",
             "FLOW_CONTEXT": flow_context(),
@@ -653,25 +755,37 @@ def main():
     else:
         tok = exchange_token(s, code, verifier)
         at = tok["access_token"]
+        print("token keys:", sorted(tok.keys()))
 
     ps = playsession(s, at, CONFIG["channel_id"], web=is_access_token)
-    play_url = ps.get("playUrl") or (ps.get("playbacks") or [{}])[0].get("url", "")
+    play_url = ps.get("playUrl") or \
+        ((ps.get("_links") or {}).get("playUrl") or {}).get("href", "") or \
+        (ps.get("playbacks") or [{}])[0].get("url", "")
     blob = (ps.get("drmProperties") or {}).get("blob", "")
     session_id = ps.get("id", "")
+    ka_href = ((ps.get("_links") or {}).get("keepAlive") or {}).get("href") or \
+        f"/ctap/r1.6.0/devices/me/playsessions/{session_id}/keepAlive"
     print(f"\nplayUrl : {play_url}")
     print(f"drmBlob : {blob[:60]}... ({len(blob)} chars)")
     print(f"sessionId: {session_id}")
 
     pssh = check_mpd(s, play_url) if play_url else None
 
+    # token mDRM: Authorization license server (butuh sesi user berlangganan)
+    mdrm = None
+    try:
+        mdrm = mdrm_token(s, at, tok.get("id_token", "") if not is_access_token else "")
+    except SystemExit:
+        print("(token mDRM gagal -> license pakai token sesi)")
+
     if device and pssh:
-        real_license(device, pssh, at, CONFIG["channel_id"], blob, s)
+        real_license(device, pssh, mdrm or at, CONFIG["channel_id"], blob, s)
     else:
         # tanpa CDM asli: kirim challenge dummy -> server jawab 1007 (bukti endpoint hidup)
-        get_license(s, at, CONFIG["channel_id"], blob or "DUMMY", "DUMMY")
+        get_license(s, mdrm or at, CONFIG["channel_id"], blob or "DUMMY", "DUMMY")
 
     if session_id:
-        keepalive(s, at, session_id)
+        keepalive(s, at, ka_href)
 
     print("\nSELESAI.")
 
