@@ -48,11 +48,9 @@ const STAGING_UA = "tv-android/2608.2.4 (1020)";
 // upstream menolak (401/error auth), index maju ke token berikutnya.
 const STAGING_EMAIL = "@gmail.com";
 const STAGING_TOKENS = [
-  "73CSxBpvZTuZj3748QaQ",
-  "RkE6AhGLZgyWzQ8ZpyRv",
-  "yHHS1vrMVYeUHHsCxA3Q",
-  "TU6pkXrGnpLKzi1Mzgwm",
-  "wfBA1ZDuRoDcTHPs1AMz",
+  "H6GXMs368Xb98tE2VuZ9",
+  "9J5WTn6VAwBRNKwHDahQ",
+  "1ECSbGA5zxPTgAaJvbfh",
 ];
 let stagingTokenIndex = 0;
 function currentStagingToken(): string {
@@ -1063,15 +1061,6 @@ function isEmailVerificationError(body: string): boolean {
 }
 
 /**
- * Respons stream yang URL playback-nya di CDN staging tidak bisa diputar:
- * manifest staging 404 di device (log playback 777). CDN production memakai
- * host etslive-v3 / geo-id-etslive-v3 tanpa "-staging".
- */
-function isStagingCdnStream(body: string): boolean {
-  return body.includes("etslive-staging");
-}
-
-/**
  * Mengklasifikasi respons stream/video_data dari upstream, tanpa hardcode
  * hostname apa pun:
  * - "full": ada URL hls/dash yang bisa dipakai.
@@ -1524,24 +1513,24 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
   }
 
-  // Sumber TUNGGAL: API staging (akun tv-android staging, urutan ACAK).
-  // DILARANG production di MPD/HLS — tidak ada fallback kredensial
-  // production maupun kredensial user di endpoint stream.
-  // Respons staging ber-URL CDN staging (etslive-staging-*) ditolak karena
-  // MPD-nya 404 di device; coba token staging berikutnya sampai dapat URL
-  // yang bisa diputar. Semua lewat cache 2,5 menit.
+  // Sumber utama: API staging (akun tv-android staging, urutan ACAK).
+  // Retry akun demi akun sampai 200 OK — maksimal 15 detik per akun.
+  // Cadangan: production (urutan ACAK, retry sama) → kredensial user.
+  // Semua lewat cache 2,5 menit — staging maksimal 1 GET per window cache.
   const fullResult = await fetchStreamResultShared(cacheKey, async () => {
     for (const token of shuffled(STAGING_TOKENS)) {
       const staging = await proxyStagingStream(streamId, request, token);
-      if (staging && staging.status === 200 && !isStagingCdnStream(staging.body)) {
-        return staging;
-      }
+      if (staging && staging.status === 200) return staging;
       // Staging menolak dengan "Verifikasi Email untuk Nonton" (403) →
       // akun staging tidak berhak; langsung redirect ke api.vidio.com resmi
       // agar app mengejar redirect dengan kredensial user sendiri.
       if (staging && staging.status === 403 && isEmailVerificationError(staging.body)) {
         return REDIRECT_OFFICIAL_SENTINEL;
       }
+    }
+    for (const cred of shuffled(PRODUCTION_CREDENTIALS)) {
+      const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA, PER_ACCOUNT_TIMEOUT_MS);
+      if (r && r.status === 200) return r;
     }
     return null;
   });
@@ -1552,6 +1541,17 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   if (result && isHlsOnlyStream(result.body)) {
     return redirectOfficialStream(streamId, request);
   }
+  if (!result) {
+    // Kredensial hardcode gagal → coba kredensial asli user yang request
+    const own = await proxyUltimateStream(
+      streamId,
+      { email: requestedEmail, token: trimmedToken },
+      request,
+      CHROME_UA,
+    );
+    result = own ?? null;
+  }
+  if (result && isHlsOnlyStream(result.body)) return redirectOfficialStream(streamId, request);
   if (result) {
     // Sembunyikan treatment preview (badge) supaya aplikasi tidak melewatkan
     // penjadwalan refresh stream-nya.
@@ -1888,14 +1888,6 @@ async function selfCheck(): Promise<void> {
   }
   if (isEmailVerificationError(JSON.stringify({ errors: [{ title: "not_logged_in" }] })) || isEmailVerificationError("not json")) {
     throw new Error("Non-verification errors must not trigger the official redirect");
-  }
-
-  // Respons stream ber-URL CDN staging harus ditolak (MPD staging 404 di device)
-  if (!isStagingCdnStream('{"stream_url":"https://etslive-staging-v3-vidio-com-tokenized.akamaized.net/stream/777/file/stream.mpd"}')) {
-    throw new Error("Staging-CDN stream responses must be rejected");
-  }
-  if (isStagingCdnStream('{"stream_url":"https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/733/stream.mpd"}')) {
-    throw new Error("Production-CDN stream responses must be accepted");
   }
 
   // Klasifikasi kualitas respons upstream: full (ada URL) / error
