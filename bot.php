@@ -29,53 +29,6 @@ define('DEFAULT_MINIMAL_TOPUP', 5000); // Minimal top up Rp 5.000 (default)
 define('PAYMENT_TIMEOUT', 600); // 10 menit dalam detik
 define('ULTIMATE_DURATION', 30 * 24 * 60 * 60); // 30 hari
 
-$CREDENTIALS = [
-[
-        'nomor' => 1,
-        'email' => '0720069c-bf32-4c29-9003-b17c3609e435-tcl@fake-tcl.com',
-        'token' => 'TBmhPj15NAUAe_nJVysK',
-    ],
-    [
-        'nomor' => 2,
-        'email' => 'c01df64a-7e45-4baa-b35a-6407a21d725c-tcl@fake-tcl.com',
-        'token' => '_FXJjCJN3agcyxiCsWJ4',
-    ],
-    [
-        'nomor' => 3,
-        'email' => 'de615d25-09be-46fb-bf67-bc2c25ec5935-tcl@fake-tcl.com',
-        'token' => 'PnVxnS7eYjHbSTis-ysk',
-    ],
-    [
-        'nomor' => 4,
-        'email' => 'd665f0d1-cf2a-4e2b-82bc-8a4b8a4037d7-tcl@fake-tcl.com',
-        'token' => 'A-ggDxsDBd2cYmp8B2UR',
-    ],
-    [
-        'nomor' => 5,
-        'email' => '13fd1914-62e4-42ab-b317-ffbf5b78973e-tcl@fake-tcl.com',
-        'token' => 'Ye2ZsTUaDHohQZoRAY3X',
-    ],
-    [
-        'nomor' => 6,
-        'email' => 'ad7c6f1a-37ad-4921-b2f0-b57ff830b34c-tcl@fake-tcl.com',
-        'token' => 'AtXqAmvcSY_oFRkALHrk',
-    ],
-    [
-        'nomor' => 7,
-        'email' => '9cf9c825-8ef1-442a-994a-1da74f3759ec-tcl@fake-tcl.com',
-        'token' => 'ys2hJkt15zF1PXm4eWD5',
-    ],
-    [
-        'nomor' => 8,
-        'email' => '19c52fee-a14b-4d4a-8d53-628421fefa9f-tcl@fake-tcl.com',
-        'token' => 'z_oRFBchj68SHqtdEQqP',
-    ],
-    [
-        'nomor' => 9,
-        'email' => '7a9a7ba0-872c-471f-bde4-e41643739654-tcl@fake-tcl.com',
-        'token' => 'UPjhYzGyZKx67gCHRYn7',
-    ],
-];
 
 // Konfigurasi Auto Limit Gratis
 define('DEFAULT_LIMIT_GRATIS_DURATION', 10); // 10 menit default
@@ -1322,78 +1275,6 @@ function updateAccountSubPackagePrice($package, $sub_package, $tier, $price) {
     return ['success' => true];
 }
 
-function getUltimateCredentials() {
-    global $CREDENTIALS;
-    return $CREDENTIALS;
-}
-
-function getUltimateCredentialByNumber($number) {
-    foreach (getUltimateCredentials() as $credential) {
-        if ((int)$credential['nomor'] === (int)$number) {
-            return $credential;
-        }
-    }
-    return null;
-}
-
-function getAvailableUltimateCredentialFromData($data) {
-    $now = time();
-    $used_numbers = [];
-    foreach (($data['akun_ultimate'] ?? []) as $accounts) {
-        if (!is_array($accounts)) continue;
-        foreach ($accounts as $account) {
-            if ((int)($account['ultimate_expires_at'] ?? 0) > $now && isset($account['ultimate_credential_number'])) {
-                $used_numbers[(int)$account['ultimate_credential_number']] = true;
-            }
-        }
-    }
-    foreach (($data['ultimate_credential_reservations'] ?? []) as $reservation) {
-        if ((int)($reservation['expires_at'] ?? 0) > $now) {
-            $used_numbers[(int)$reservation['credential_number']] = true;
-        }
-    }
-    foreach (getUltimateCredentials() as $credential) {
-        if (empty($used_numbers[(int)$credential['nomor']])) {
-            return $credential;
-        }
-    }
-    return null;
-}
-
-function reserveUltimateCredential($chat_id) {
-    $data = loadData();
-    $now = time();
-    foreach (($data['ultimate_credential_reservations'] ?? []) as $reservation_id => $reservation) {
-        if ((int)($reservation['expires_at'] ?? 0) <= $now) {
-            unset($data['ultimate_credential_reservations'][$reservation_id]);
-        }
-    }
-    $credential = getAvailableUltimateCredentialFromData($data);
-    if (!$credential) {
-        releaseDataLock();
-        return ['success' => false, 'error' => ' Ultimate sedang habis. Transaksi tidak diproses dan saldo tidak dipotong.'];
-    }
-
-    $reservation_id = 'ULT_' . time() . '_' . substr(md5($chat_id . microtime(true)), 0, 8);
-    $data['ultimate_credential_reservations'][$reservation_id] = [
-        'credential_number' => (int)$credential['nomor'],
-        'chat_id' => (int)$chat_id,
-        'expires_at' => $now + 3600
-    ];
-    $saved = saveData($data);
-    if (!$saved) {
-        return ['success' => false, 'error' => 'Gagal memesan Ultimate.'];
-    }
-    return ['success' => true, 'reservation_id' => $reservation_id, 'credential' => $credential];
-}
-
-function releaseUltimateCredentialReservation($reservation_id) {
-    if (!$reservation_id) return;
-    $data = loadData();
-    unset($data['ultimate_credential_reservations'][$reservation_id]);
-    saveData($data);
-}
-
 function getAccountBuyerTierFromData($data, $chat_id) {
     $saldo = (int)($data['users'][$chat_id]['saldo'] ?? 0);
     $total_topup = getTotalTopupFromData($data, $chat_id);
@@ -2161,7 +2042,6 @@ function loadData() {
                 'akun_biasa' => [],
                 'akun_mobile' => [],
                 'akun_ultimate' => [],
-                'ultimate_credential_reservations' => [],
                 'warranty_claims' => [],
                 'settings' => [
                     'bot_active' => true,
@@ -2258,7 +2138,6 @@ function loadData() {
                 if (!isset($data['akun_biasa']) || !is_array($data['akun_biasa'])) $data['akun_biasa'] = [];
                 if (!isset($data['akun_mobile']) || !is_array($data['akun_mobile'])) $data['akun_mobile'] = [];
                 if (!isset($data['akun_ultimate']) || !is_array($data['akun_ultimate'])) $data['akun_ultimate'] = [];
-                if (!isset($data['ultimate_credential_reservations'])) $data['ultimate_credential_reservations'] = [];
 
                 // Pulihkan created_accounts dari indeks paket lama agar riwayat/upgrade tetap tampil.
                 foreach (array_keys(getAccountPackageDefinitions()) as $package) {
@@ -3975,7 +3854,7 @@ function removeAccountRecordFromData(&$data, $chat_id, $account_id) {
 }
 
 // FUNGSI BARU: Simpan akun yang dibuat ke riwayat
-function saveCreatedAccount($chat_id, $email, $password, $status, $created_at = null, $is_free = false, $warranty_source = null, $package = null, $price = 0, $buyer_tier = null, $ultimate_credential = null, $ultimate_reservation_id = null, $sub_package = null) {
+function saveCreatedAccount($chat_id, $email, $password, $status, $created_at = null, $is_free = false, $warranty_source = null, $package = null, $price = 0, $buyer_tier = null, $sub_package = null) {
     $data = loadData();
     
     if (!isset($data['created_accounts'][$chat_id])) {
@@ -4025,9 +3904,6 @@ function saveCreatedAccount($chat_id, $email, $password, $status, $created_at = 
     }
 
     $data['created_accounts'][$chat_id][$account_id] = $record;
-    if ($ultimate_reservation_id) {
-        unset($data['ultimate_credential_reservations'][$ultimate_reservation_id]);
-    }
     $saved = saveData($data);
     return $saved ? $account_id : false;
 }
@@ -5004,10 +4880,6 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
             
             // Akun pengganti mewarisi paket; masa Ultimate dimulai ulang 30 hari dari klaim.
             $original_package = $original_account['package'] ?? 'biasa';
-            // Ultimate tidak lagi memakai pool $CREDENTIALS: tanpa reservasi,
-            // kredensial di bot_data.json diisi '-' saja.
-            $ultimate_credential = null;
-            $ultimate_reservation_id = null;
             $new_account_id = saveCreatedAccount(
                 $chat_id,
                 $email,
@@ -5019,12 +4891,9 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
                 $original_package,
                 (int)($original_account['purchase_price'] ?? 0),
                 $original_account['buyer_tier'] ?? getAccountBuyerTier($chat_id),
-                $ultimate_credential,
-                $ultimate_reservation_id,
                 $original_sub_package
             );
             if (!$new_account_id) {
-                releaseUltimateCredentialReservation($ultimate_reservation_id);
                 $data = loadData();
                 $data['warranty_claims'][$account_id]['status'] = 'pending';
                 $data['warranty_claims'][$account_id]['claimed_at'] = time();
@@ -7396,11 +7265,6 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
         return;
     }
 
-    // Ultimate tidak lagi memakai pool $CREDENTIALS: tanpa reservasi,
-    // kredensial di bot_data.json diisi '-' saja.
-    $ultimate_reservation_id = null;
-    $ultimate_credential = null;
-
     // Simpan saldo awal untuk mengembalikan jika gagal
     $saldo_awal = cekSaldo($chat_id);
     $pakai_saldo = false;
@@ -7435,7 +7299,6 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
     if (!$is_free) {
         // Potong saldo dulu (akan dikembalikan jika gagal)
         if (!kurangiSaldo($chat_id, $harga_per_akun)) {
-            releaseUltimateCredentialReservation($ultimate_reservation_id);
             sendMessage($chat_id, "Gagal memotong saldo. Silakan coba lagi.");
             return;
         }
@@ -7455,7 +7318,6 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
         $partner_result = getPartnerTokenForUser($chat_id, $email, $partner_brand);
         
         if (!$partner_result['success']) {
-            releaseUltimateCredentialReservation($ultimate_reservation_id);
             if ($is_free) releaseUserDailyClaim($chat_id);
             // Jika gagal mendapatkan token, kembalikan saldo jika menggunakan saldo
             if ($pakai_saldo) {
@@ -7561,9 +7423,8 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
         if ($has_subscription) {
             // AKUN SUKSES DENGAN SUBSCRIPTION
             // Simpan ke riwayat akun dan ikat credential sebelum transaksi dinyatakan selesai.
-            $created_account_id = saveCreatedAccount($chat_id, $email, $password_to_use, 'sukses', time(), $is_free, null, $package, $is_free ? 0 : $harga_per_akun, $buyer_tier, $ultimate_credential, $ultimate_reservation_id, $sub_package);
+            $created_account_id = saveCreatedAccount($chat_id, $email, $password_to_use, 'sukses', time(), $is_free, null, $package, $is_free ? 0 : $harga_per_akun, $buyer_tier, $sub_package);
             if (!$created_account_id) {
-                releaseUltimateCredentialReservation($ultimate_reservation_id);
                 if ($is_free) releaseUserDailyClaim($chat_id);
                 if ($pakai_saldo) kembalikanSaldo($chat_id, $harga_per_akun);
                 sendMessage($chat_id, "Gagal menyimpan akun. Saldo dikembalikan, silakan coba lagi.");
@@ -7611,7 +7472,6 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
             
         } else {
             // AKUN SUKSES TAPI TANPA SUBSCRIPTION
-            releaseUltimateCredentialReservation($ultimate_reservation_id);
             if ($is_free) releaseUserDailyClaim($chat_id);
             // Kembalikan saldo jika menggunakan saldo
             if ($pakai_saldo) {
