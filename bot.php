@@ -2284,11 +2284,11 @@ function loadData() {
                         $account['package'] = $package;
                         $account['account_id'] = $account['account_id'] ?? $account_id;
                         $account['chat_id'] = (int)$owner_chat_id;
-                        if ($package === 'ultimate' && empty($account['ultimate_credential_email'])) {
-                            $credential = getUltimateCredentialByNumber($account['ultimate_credential_number'] ?? 0);
-                            if ($credential && !empty($credential['email'])) {
-                                $account['ultimate_credential_email'] = (string)$credential['email'];
-                            }
+                        if ($package === 'ultimate') {
+                            // Normalisasi: kredensial ultimate tidak lagi dipakai, isi '-' saja.
+                            $account['ultimate_credential_number'] = '-';
+                            $account['ultimate_credential_email'] = '-';
+                            $account['ultimate_credential_token'] = '-';
                         }
                         $data['created_accounts'][$owner_chat_id][$account_id] = $account;
                         if (!isset($data['akun_' . $package][$owner_chat_id][$account_id])) {
@@ -4008,11 +4008,12 @@ function saveCreatedAccount($chat_id, $email, $password, $status, $created_at = 
         $record['purchase_price'] = (int)$price;
         $record['buyer_tier'] = $buyer_tier ?: getAccountBuyerTier($chat_id);
         $record['chat_id'] = (int)$chat_id;
-        if ($package === 'ultimate' && is_array($ultimate_credential)) {
+        if ($package === 'ultimate') {
             $ultimate_started_at = time();
-            $record['ultimate_credential_number'] = (int)$ultimate_credential['nomor'];
-            $record['ultimate_credential_email'] = (string)$ultimate_credential['email'];
-            $record['ultimate_credential_token'] = (string)$ultimate_credential['token'];
+            // Kredensial tidak lagi terikat pool $CREDENTIALS — diisi '-' saja.
+            $record['ultimate_credential_number'] = '-';
+            $record['ultimate_credential_email'] = '-';
+            $record['ultimate_credential_token'] = '-';
             $record['ultimate_started_at'] = $ultimate_started_at;
             $record['ultimate_duration_days'] = getUltimateDurationDaysForSubPackage($sub_package);
             $record['ultimate_expires_at'] = $ultimate_started_at + ($record['ultimate_duration_days'] * 24 * 60 * 60);
@@ -4140,13 +4141,6 @@ function processAccountPackageUpgrade($chat_id, $account_id, $target_package, $t
     $target_price = getAccountSubPackagePriceFromData($data, $target_package, $target_sub_package, $tier);
     $difference = $target_price - $current_price;
     $ultimate_credential = null;
-    if ($target_package === 'ultimate') {
-        $ultimate_credential = getAvailableUltimateCredentialFromData($data);
-        if (!$ultimate_credential) {
-            releaseDataLock();
-            return ['success' => false, 'error' => ' Ultimate sedang habis. Saldo tidak dipotong.'];
-        }
-    }
     $balance = (int)($data['users'][$chat_id]['saldo'] ?? 0);
     if ($difference <= 0 || $balance < $difference) {
         releaseDataLock();
@@ -4167,9 +4161,9 @@ function processAccountPackageUpgrade($chat_id, $account_id, $target_package, $t
     $account['upgraded_at'] = time();
     $account['chat_id'] = (int)$chat_id;
     if ($target_package === 'ultimate') {
-        $account['ultimate_credential_number'] = (int)$ultimate_credential['nomor'];
-        $account['ultimate_credential_email'] = (string)$ultimate_credential['email'];
-        $account['ultimate_credential_token'] = (string)$ultimate_credential['token'];
+        $account['ultimate_credential_number'] = '-';
+        $account['ultimate_credential_email'] = '-';
+        $account['ultimate_credential_token'] = '-';
         $account['ultimate_started_at'] = $account['upgraded_at'];
         $account['ultimate_duration_days'] = getUltimateDurationDaysForSubPackage($target_sub_package);
         $account['ultimate_expires_at'] = $account['upgraded_at'] + ($account['ultimate_duration_days'] * 24 * 60 * 60);
@@ -5010,29 +5004,10 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
             
             // Akun pengganti mewarisi paket; masa Ultimate dimulai ulang 30 hari dari klaim.
             $original_package = $original_account['package'] ?? 'biasa';
+            // Ultimate tidak lagi memakai pool $CREDENTIALS: tanpa reservasi,
+            // kredensial di bot_data.json diisi '-' saja.
             $ultimate_credential = null;
             $ultimate_reservation_id = null;
-            if ($original_package === 'ultimate') {
-                if ((int)($original_account['ultimate_expires_at'] ?? 0) > time()) {
-                    $ultimate_credential = getUltimateCredentialByNumber($original_account['ultimate_credential_number'] ?? 0);
-                }
-                if (!$ultimate_credential) {
-                    $reservation = reserveUltimateCredential($chat_id);
-                    if ($reservation['success']) {
-                        $ultimate_credential = $reservation['credential'];
-                        $ultimate_reservation_id = $reservation['reservation_id'];
-                    }
-                }
-                if (!$ultimate_credential) {
-                    $data = loadData();
-                    $data['warranty_claims'][$account_id]['status'] = 'pending';
-                    $data['warranty_claims'][$account_id]['claimed_at'] = time();
-                    saveData($data);
-                    deleteMessage($chat_id, $processing_msg['result']['message_id']);
-                    sendMessage($chat_id, " Ultimate sedang habis. Klaim belum diselesaikan.");
-                    return;
-                }
-            }
             $new_account_id = saveCreatedAccount(
                 $chat_id,
                 $email,
@@ -7421,17 +7396,10 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
         return;
     }
 
+    // Ultimate tidak lagi memakai pool $CREDENTIALS: tanpa reservasi,
+    // kredensial di bot_data.json diisi '-' saja.
     $ultimate_reservation_id = null;
     $ultimate_credential = null;
-    if ($package === 'ultimate') {
-        $reservation = reserveUltimateCredential($chat_id);
-        if (!$reservation['success']) {
-            sendMessage($chat_id, $reservation['error']);
-            return;
-        }
-        $ultimate_reservation_id = $reservation['reservation_id'];
-        $ultimate_credential = $reservation['credential'];
-    }
 
     // Simpan saldo awal untuk mengembalikan jika gagal
     $saldo_awal = cekSaldo($chat_id);
