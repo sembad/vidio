@@ -149,12 +149,16 @@ def patch_fz_a(root: Path) -> str:
     b_idx = text.find(b_marker)
     if b_idx == -1:
         raise SystemExit("[update-blocker] fz/a: method b not found")
-    b_locals_idx = text.find(".locals 6", b_idx)
-    if b_locals_idx == -1:
-        raise SystemExit("[update-blocker] fz/a: .locals 6 not found in method b")
-    text = text[:b_locals_idx] + ".locals 7" + text[b_locals_idx + len(".locals 6"):]
     if text.count(TAKE_OLD) != 1:
-        raise SystemExit(f"[update-blocker] fz/a: expected one take() anchor, found {text.count(TAKE_OLD)}")
+        # Decode ini memakai tata register berbeda (v6 sudah dipakai, jump ke
+        # :cond_5); FIX45 berjalan tanpa fallback ini, jadi lewati saja.
+        print("[update-blocker] fz/a: take() anchor not found, skipped")
+        return "fz/a: skipped (anchor mismatch)"
+    b_locals = re.search(r"\.locals (\d+)", text[b_idx:b_idx + 200])
+    if not b_locals:
+        raise SystemExit("[update-blocker] fz/a: .locals not found in method b")
+    n = int(b_locals.group(1)) + 1
+    text = text[:b_idx + b_locals.start()] + f".locals {n}" + text[b_idx + b_locals.end():]
     text = text.replace(TAKE_OLD, TAKE_NEW, 1)
     if text.count(BUILD_ANCHOR) != 1:
         raise SystemExit(f"[update-blocker] fz/a: expected one build anchor, found {text.count(BUILD_ANCHOR)}")

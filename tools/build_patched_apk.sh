@@ -7,7 +7,7 @@ DECODED=$1
 OUTPUT=$2
 PROFILE=${3:-tv}
 ROOT=/vercel/share/v0-project
-TOOLS=$ROOT/tools/.apk-patch-tools
+TOOLS=$ROOT/.apk-patch-tools
 
 export JAVA_HOME=$TOOLS/jdk
 export PATH=$JAVA_HOME/bin:$TOOLS/build-tools:$PATH
