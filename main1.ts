@@ -50,17 +50,66 @@ const STAGING_UA = "tv-android/2608.2.4 (1020)";
 // Kredensial staging: 5 token berputar. Token dipakai bergantian; bila
 // upstream menolak (401/error auth), index maju ke token berikutnya.
 const STAGING_EMAIL = "@gmail.com";
-const STAGING_TOKENS = [
+// Token staging diambil dari txt (satu token per baris) dan di-refresh
+// berkala — tidak lagi hardcoded. Fallback awal: daftar terakhir yang
+// diketahui, dipakai bila fetch gagal agar worker tetap berjalan.
+const STAGING_TOKENS_URL = "https://baru.pw/productioniwjowj.txt";
+const STAGING_TOKENS_REFRESH_MS = 10 * 60_000;
+const stagingTokens: string[] = [
   "H6GXMs368Xb98tE2VuZ9",
   "9J5WTn6VAwBRNKwHDahQ",
   "1ECSbGA5zxPTgAaJvbfh",
 ];
 let stagingTokenIndex = 0;
+let stagingTokensLoadedAt = 0;
+let stagingTokensLoading: Promise<void> | null = null;
+
+async function loadStagingTokens(): Promise<void> {
+  const now = Date.now();
+  if (now - stagingTokensLoadedAt < STAGING_TOKENS_REFRESH_MS) return;
+  if (!stagingTokensLoading) {
+    stagingTokensLoading = (async () => {
+      try {
+        const res = await fetch(`${STAGING_TOKENS_URL}?_nocache=${now}`, {
+          signal: AbortSignal.timeout(10_000),
+          redirect: "follow",
+          headers: {
+            // WAF baru.pw memblokir UA default runtime (Deno/*) dengan 403.
+            "user-agent": USER_AGENT,
+            accept: "*/*",
+            "cache-control": "no-cache, no-store, must-revalidate",
+            pragma: "no-cache",
+          },
+        });
+        if (res.ok) {
+          const text = await res.text();
+          const tokens = text
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0);
+          if (tokens.length > 0) {
+            stagingTokens.splice(0, stagingTokens.length, ...tokens);
+            stagingTokenIndex = 0;
+            stagingTokensLoadedAt = now;
+            console.log(`[v0] staging tokens loaded: ${tokens.length}`);
+          }
+        }
+      } catch {
+        // Gagal fetch: pertahankan daftar lama, coba lagi di refresh berikutnya.
+      } finally {
+        stagingTokensLoadedAt = now;
+        stagingTokensLoading = null;
+      }
+    })();
+  }
+  await stagingTokensLoading;
+}
+
 function currentStagingToken(): string {
-  return STAGING_TOKENS[stagingTokenIndex % STAGING_TOKENS.length] as string;
+  return stagingTokens[stagingTokenIndex % stagingTokens.length] as string;
 }
 function rotateStagingToken(): void {
-  stagingTokenIndex = (stagingTokenIndex + 1) % STAGING_TOKENS.length;
+  stagingTokenIndex = (stagingTokenIndex + 1) % stagingTokens.length;
 }
 
 /** Salinan array dengan urutan acak (Fisher-Yates) — pemilihan akun acak. */
@@ -1282,6 +1331,7 @@ export async function proxyStagingStream(
 ): Promise<UpstreamResult | null> {
   const incoming = request ? new URL(request.url) : null;
   const search = incoming && incoming.search ? incoming.search : "?initialize=true";
+  await loadStagingTokens();
   const headers = new Headers({
     "user-agent": STAGING_UA,
     "accept-encoding": "gzip",
@@ -1556,7 +1606,8 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   // Cadangan: production (urutan ACAK, retry sama) → kredensial user.
   // Semua lewat cache 2,5 menit — staging maksimal 1 GET per window cache.
   const fullResult = await fetchStreamResultShared(cacheKey, async () => {
-    for (const token of shuffled(STAGING_TOKENS)) {
+    await loadStagingTokens();
+    for (const token of shuffled(stagingTokens)) {
       const staging = await proxyStagingStream(streamId, request, token);
       if (staging && staging.status === 200) return staging;
       // Staging menolak dengan "Verifikasi Email untuk Nonton" (403) →
