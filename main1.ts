@@ -1628,13 +1628,19 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
       if (staging && staging.status === 403 && isEmailVerificationError(staging.body)) {
         return REDIRECT_OFFICIAL_SENTINEL;
       }
-      // Event belum mulai (403 not_yet_started + meta.start_time) →
+      // Event belum mulai (not_yet_started + meta.start_time) →
       // teruskan JSON-nya apa adanya ke app: semua akun pasti menerima
       // jawaban yang sama, jadi percuma merotasi token staging (kuota
       // 1 GET/menit) atau mencoba kredensial produksi. Patch APK memakai
       // meta.start_time dari body ini untuk pesan "belum mulai".
-      if (staging && staging.status === 403 && isNotYetStartedError(staging.body)) {
-        return staging;
+      // Status selalu dinormalisasi ke 403: api.vidio.com produksi membalas
+      // not_yet_started dengan 200, tapi app (KMM) hanya membentuk
+      // HttpResponseException dari status error — dengan 200 body errors
+      // dianggap payload stream yang gagal di-parse dan patch APK tidak
+      // pernah terpicu.
+      const notYetStarted = staging && isNotYetStartedError(staging.body);
+      if (staging && notYetStarted) {
+        return staging.status === 403 ? staging : { ...staging, status: 403 };
       }
     }
     for (const cred of shuffled(PRODUCTION_CREDENTIALS)) {
@@ -1661,6 +1667,12 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     result = own ?? null;
   }
   if (result && isHlsOnlyStream(result.body)) return redirectOfficialStream(streamId, request);
+  // Fallback kredensial user bisa menerima not_yet_started dari produksi
+  // dengan status 200 — normalisasi ke 403 agar app membentuk
+  // HttpResponseException dan patch APK menampilkan blocker start_time.
+  if (result && result.status !== 403 && isNotYetStartedError(result.body)) {
+    result = { ...result, status: 403 };
+  }
   if (result) {
     // Sembunyikan treatment preview (badge) supaya aplikasi tidak melewatkan
     // penjadwalan refresh stream-nya.
