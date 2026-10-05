@@ -28,6 +28,9 @@ const ULTIMATE_UA = "vidioandroid/2609.1.14-c11a00be7f (3191940)";
 const ULTIMATE_VISITOR_ID = "75dec05f-d3e9-4c4e-a384-2bc238868076";
 const ULTIMATE_USER_ID = "231108280";
 const REDIRECT_URL = "https://vidio.com";
+// Naikkan setiap kali main1.ts berubah — tercetak di log saat self-check
+// supaya versi yang live di Deno Deploy bisa dipastikan, bukan ditebak.
+const WORKER_VERSION = "2026-10-05.4";
 const USER_AGENT = "tv-android/ (1020";
 
 // Sumber MPD live stream: API staging dengan akun tv-android khusus.
@@ -47,19 +50,66 @@ const STAGING_UA = "tv-android/2608.2.4 (1020)";
 // Kredensial staging: 5 token berputar. Token dipakai bergantian; bila
 // upstream menolak (401/error auth), index maju ke token berikutnya.
 const STAGING_EMAIL = "@gmail.com";
-const STAGING_TOKENS = [
-  "73CSxBpvZTuZj3748QaQ",
-  "RkE6AhGLZgyWzQ8ZpyRv",
-  "yHHS1vrMVYeUHHsCxA3Q",
-  "TU6pkXrGnpLKzi1Mzgwm",
-  "wfBA1ZDuRoDcTHPs1AMz",
+// Token staging diambil dari txt (satu token per baris) dan di-refresh
+// berkala — tidak lagi hardcoded. Fallback awal: daftar terakhir yang
+// diketahui, dipakai bila fetch gagal agar worker tetap berjalan.
+const STAGING_TOKENS_URL = "https://baru.pw/productioniwjowj.txt";
+const STAGING_TOKENS_REFRESH_MS = 10 * 60_000;
+const stagingTokens: string[] = [
+  "H6GXMs368Xb98tE2VuZ9",
+  "9J5WTn6VAwBRNKwHDahQ",
+  "1ECSbGA5zxPTgAaJvbfh",
 ];
 let stagingTokenIndex = 0;
+let stagingTokensLoadedAt = 0;
+let stagingTokensLoading: Promise<void> | null = null;
+
+async function loadStagingTokens(): Promise<void> {
+  const now = Date.now();
+  if (now - stagingTokensLoadedAt < STAGING_TOKENS_REFRESH_MS) return;
+  if (!stagingTokensLoading) {
+    stagingTokensLoading = (async () => {
+      try {
+        const res = await fetch(`${STAGING_TOKENS_URL}?_nocache=${now}`, {
+          signal: AbortSignal.timeout(10_000),
+          redirect: "follow",
+          headers: {
+            // WAF baru.pw memblokir UA default runtime (Deno/*) dengan 403.
+            "user-agent": USER_AGENT,
+            accept: "*/*",
+            "cache-control": "no-cache, no-store, must-revalidate",
+            pragma: "no-cache",
+          },
+        });
+        if (res.ok) {
+          const text = await res.text();
+          const tokens = text
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0);
+          if (tokens.length > 0) {
+            stagingTokens.splice(0, stagingTokens.length, ...tokens);
+            stagingTokenIndex = 0;
+            stagingTokensLoadedAt = now;
+            console.log(`[v0] staging tokens loaded: ${tokens.length}`);
+          }
+        }
+      } catch {
+        // Gagal fetch: pertahankan daftar lama, coba lagi di refresh berikutnya.
+      } finally {
+        stagingTokensLoadedAt = now;
+        stagingTokensLoading = null;
+      }
+    })();
+  }
+  await stagingTokensLoading;
+}
+
 function currentStagingToken(): string {
-  return STAGING_TOKENS[stagingTokenIndex % STAGING_TOKENS.length] as string;
+  return stagingTokens[stagingTokenIndex % stagingTokens.length] as string;
 }
 function rotateStagingToken(): void {
-  stagingTokenIndex = (stagingTokenIndex + 1) % STAGING_TOKENS.length;
+  stagingTokenIndex = (stagingTokenIndex + 1) % stagingTokens.length;
 }
 
 /** Salinan array dengan urutan acak (Fisher-Yates) — pemilihan akun acak. */
@@ -446,7 +496,23 @@ async function storeMpdCache(origin: string, streamId: string, text: string): Pr
  */
 async function fetchMpdBody(url: string): Promise<string | null> {
   const headers = { "user-agent": CHROME_UA, accept: "*/*", referer: "https://www.vidio.com/" };
-  // 1) Direct ke host manifest: ikuti redirect exchange-nya.
+  // 1) Lewat proxy DataImpulse (exit Indonesia) — MPD Akamai live geo-locked
+  //    ke ID, fetch direct dari datacenter luar selalu 403.
+  try {
+    const res = await fetch(url, {
+      headers,
+      redirect: "follow",
+      signal: AbortSignal.timeout(20_000),
+      ...proxyFetchInit(),
+    } as RequestInit);
+    if (res.ok) {
+      const text = await res.text();
+      if (text.includes("<MPD")) return text;
+    }
+  } catch {
+    // Proxy gagal → coba direct.
+  }
+  // 2) Direct ke host manifest: ikuti redirect exchange-nya.
   try {
     const res = await fetch(url, {
       headers,
@@ -470,14 +536,19 @@ async function fetchMpdBody(url: string): Promise<string | null> {
   } catch {
     // Direct gagal (network/geo-block) → coba mirror.
   }
-  // 2) Fallback lewat mirror (redirect diikuti internal oleh mirror).
+  // 3) Fallback lewat mirror (redirect diikuti internal oleh mirror).
   try {
     const res = await fetch(viaMirror(url), {
       headers,
       redirect: "follow",
       signal: AbortSignal.timeout(15_000),
     } as RequestInit);
-    if (res.ok) return await res.text();
+    if (res.ok) {
+      const text = await res.text();
+      // Mirror menyalurkan halaman "Access Denied" Akamai dengan status 200 —
+      // bukan MPD, jangan dipakai sebagai sumber PSSH.
+      if (text.includes("<MPD")) return text;
+    }
   } catch {
     // Mirror juga gagal.
   }
@@ -667,6 +738,19 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   const attrs = jsonApiAttributeRecords(parsed)[0];
   if (!attrs) return body;
 
+  // Diagnostik: bila decrypt gagal, sertakan penyebabnya di respons (atribut
+  // decrypt_error) + log console agar tahap yang rusak langsung ketahuan.
+  // Body TANPA info DRM (tidak ada dash) harus lewat UTUH — kontrak
+  // self-check: jangan suntik atribut apa pun ke body non-DRM.
+  const fail = (reason: string): string => {
+    console.error(`[v0] decrypt ${streamId}: ${reason}`);
+    if (typeof attrs.dash === "string" && attrs.dash) {
+      attrs.decrypt_error = reason;
+      return JSON.stringify(parsed);
+    }
+    return body;
+  };
+
   // Cache clearkey dicek PALING DULU (tahan restart via Deno KV, TTL 1
   // hari): kalau sudah ada, skip fetch MPD + decrypt sama sekali — respons
   // tetap mendapat clearkey walau layanan decrypt/upstream sedang gagal.
@@ -683,22 +767,22 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
     let mpdText = await readMpdCache(origin, streamId);
     if (!mpdText) {
       const dash = typeof attrs.dash === "string" ? attrs.dash : "";
-      if (!dash) return body;
+      if (!dash) return fail("no_dash_url");
       const mpdBody = await fetchMpdBody(dash);
-      if (!mpdBody) return body;
+      if (!mpdBody) return fail("mpd_fetch_failed");
       mpdText = mpdBody;
       void storeMpdCache(origin, streamId, mpdText);
     }
 
     const pssh = extractPsshFromMpd(mpdText);
-    if (!pssh) return body;
+    if (!pssh) return fail("no_pssh_in_mpd");
 
     // License: PRODUCTION + custom_data production fresh (flow terbukti).
     const prodCd = await fetchProductionCustomData(streamId, request);
-    if (!prodCd) return body;
+    if (!prodCd) return fail("no_production_custom_data");
     const licenseUrl = `https://license.vidio.com/ri/licenseManager.do?pallycon-customdata-v2=${prodCd}`;
     const result = await decryptPsshWithLicenseUrl(pssh, licenseUrl);
-    if (!result.ok) return body;
+    if (!result.ok) return fail(`key_service: ${result.error}`);
     json = result.json;
     void storeClearKeyCache(origin, streamId, json);
   }
@@ -706,7 +790,7 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   const keys: Array<{ kty: string; k: string; kid: string }> = [];
   try {
     const parsedKeys = (JSON.parse(json) as { keys?: unknown }).keys;
-    if (!Array.isArray(parsedKeys)) return body;
+    if (!Array.isArray(parsedKeys)) return fail("invalid_cached_key_json");
     for (const key of parsedKeys) {
       if (key && typeof key === "object" &&
         typeof (key as Record<string, unknown>).kty === "string" &&
@@ -717,12 +801,13 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
       }
     }
   } catch {
-    return body;
+    return fail("invalid_cached_key_json");
   }
-  if (keys.length === 0) return body;
+  if (keys.length === 0) return fail("no_keys_in_cached_json");
 
   registerClearKeyJson(streamId, json);
 
+  delete attrs.decrypt_error;
   attrs.clearkey = { keys, type: "temporary" };
   // Mode clearkey APK seamless: custom_data dihapus + is_drm true → patch
   // aplikasi memakai scheme "clearkey". drm_license_url menunjuk ke URL
@@ -1063,15 +1148,6 @@ function isEmailVerificationError(body: string): boolean {
 }
 
 /**
- * Respons stream yang URL playback-nya di CDN staging tidak bisa diputar:
- * manifest staging 404 di device (log playback 777). CDN production memakai
- * host etslive-v3 / geo-id-etslive-v3 tanpa "-staging".
- */
-function isStagingCdnStream(body: string): boolean {
-  return body.includes("etslive-staging");
-}
-
-/**
  * Mengklasifikasi respons stream/video_data dari upstream, tanpa hardcode
  * hostname apa pun:
  * - "full": ada URL hls/dash yang bisa dipakai.
@@ -1255,6 +1331,7 @@ export async function proxyStagingStream(
 ): Promise<UpstreamResult | null> {
   const incoming = request ? new URL(request.url) : null;
   const search = incoming && incoming.search ? incoming.search : "?initialize=true";
+  await loadStagingTokens();
   const headers = new Headers({
     "user-agent": STAGING_UA,
     "accept-encoding": "gzip",
@@ -1524,24 +1601,25 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
   }
 
-  // Sumber TUNGGAL: API staging (akun tv-android staging, urutan ACAK).
-  // DILARANG production di MPD/HLS — tidak ada fallback kredensial
-  // production maupun kredensial user di endpoint stream.
-  // Respons staging ber-URL CDN staging (etslive-staging-*) ditolak karena
-  // MPD-nya 404 di device; coba token staging berikutnya sampai dapat URL
-  // yang bisa diputar. Semua lewat cache 2,5 menit.
+  // Sumber utama: API staging (akun tv-android staging, urutan ACAK).
+  // Retry akun demi akun sampai 200 OK — maksimal 15 detik per akun.
+  // Cadangan: production (urutan ACAK, retry sama) → kredensial user.
+  // Semua lewat cache 2,5 menit — staging maksimal 1 GET per window cache.
   const fullResult = await fetchStreamResultShared(cacheKey, async () => {
-    for (const token of shuffled(STAGING_TOKENS)) {
+    await loadStagingTokens();
+    for (const token of shuffled(stagingTokens)) {
       const staging = await proxyStagingStream(streamId, request, token);
-      if (staging && staging.status === 200 && !isStagingCdnStream(staging.body)) {
-        return staging;
-      }
+      if (staging && staging.status === 200) return staging;
       // Staging menolak dengan "Verifikasi Email untuk Nonton" (403) →
       // akun staging tidak berhak; langsung redirect ke api.vidio.com resmi
       // agar app mengejar redirect dengan kredensial user sendiri.
       if (staging && staging.status === 403 && isEmailVerificationError(staging.body)) {
         return REDIRECT_OFFICIAL_SENTINEL;
       }
+    }
+    for (const cred of shuffled(PRODUCTION_CREDENTIALS)) {
+      const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA, PER_ACCOUNT_TIMEOUT_MS);
+      if (r && r.status === 200) return r;
     }
     return null;
   });
@@ -1552,6 +1630,17 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   if (result && isHlsOnlyStream(result.body)) {
     return redirectOfficialStream(streamId, request);
   }
+  if (!result) {
+    // Kredensial hardcode gagal → coba kredensial asli user yang request
+    const own = await proxyUltimateStream(
+      streamId,
+      { email: requestedEmail, token: trimmedToken },
+      request,
+      CHROME_UA,
+    );
+    result = own ?? null;
+  }
+  if (result && isHlsOnlyStream(result.body)) return redirectOfficialStream(streamId, request);
   if (result) {
     // Sembunyikan treatment preview (badge) supaya aplikasi tidak melewatkan
     // penjadwalan refresh stream-nya.
@@ -1719,6 +1808,7 @@ async function handleRequest(request: Request): Promise<Response> {
 }
 
 async function selfCheck(): Promise<void> {
+  console.log(`[v0] selfCheck worker version ${WORKER_VERSION}`);
   const stagingSample = JSON.stringify({ data: { attributes: { hls: "https://www.staging.vidio.com/videos/2384351/common_tokenized_playlist.m3u8?ott=test", dash: null } } });
   if (!isHlsOnlyStream(stagingSample)
     || !isHlsOnlyStream(stagingSample.replace("www.staging.vidio.com", "www.vidio.com"))
@@ -1888,14 +1978,6 @@ async function selfCheck(): Promise<void> {
   }
   if (isEmailVerificationError(JSON.stringify({ errors: [{ title: "not_logged_in" }] })) || isEmailVerificationError("not json")) {
     throw new Error("Non-verification errors must not trigger the official redirect");
-  }
-
-  // Respons stream ber-URL CDN staging harus ditolak (MPD staging 404 di device)
-  if (!isStagingCdnStream('{"stream_url":"https://etslive-staging-v3-vidio-com-tokenized.akamaized.net/stream/777/file/stream.mpd"}')) {
-    throw new Error("Staging-CDN stream responses must be rejected");
-  }
-  if (isStagingCdnStream('{"stream_url":"https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/733/stream.mpd"}')) {
-    throw new Error("Production-CDN stream responses must be accepted");
   }
 
   // Klasifikasi kualitas respons upstream: full (ada URL) / error
