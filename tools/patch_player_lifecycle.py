@@ -134,8 +134,13 @@ def patch(root):
     const-string v2, "x-user-email"
 '''
     if 'vck_early_done' not in b:
-        b = replace_once(b, early_anchor, early_block)
-        print('[player-lifecycle] early beginStreamLoading hooked in intercept()')
+        if b.count(early_anchor) == 1:
+            b = replace_once(b, early_anchor, early_block)
+            print('[player-lifecycle] early beginStreamLoading hooked in intercept()')
+        else:
+            # Tree dari build generasi sebelumnya sudah memuat hook early
+            # beginStreamLoading dengan bentuk/label yang berbeda.
+            print('[player-lifecycle] early beginStreamLoading hook already present, skipped')
     bridge.write_text(b)
     if 'const/16 v3, 0x1ad' not in text:
         text = replace_once(text, '    if-eq v2, v3, :cond_ready\n', '''    if-eq v2, v3, :cond_ready

@@ -136,10 +136,25 @@ def patch(root):
         if field not in gate:
             gate = gate.replace('.source "LoginGate.java"', '.source "LoginGate.java"\n\n' + field, 1)
     gate = method(gate, 'showStreamLoading()V', f'''.method public static showStreamLoading()V
-    .locals 1
+    .locals 2
+    # FIX42: popup "Tunggu sebentar ya" hanya boleh tampil di atas activity
+    # player (WatchActivity). Retry OkHttp dan callback player lama bisa masih
+    # berjalan di background setelah user keluar dari player; tanpa gate ini
+    # popup muncul lagi dan menempel di halaman non-player (Live/Home).
+    sget-object v0, {GATE}->currentActivity:Ljava/lang/Object;
+    if-eqz v0, :skip_show
+    invoke-virtual {{v0}}, Ljava/lang/Object;->getClass()Ljava/lang/Class;
+    move-result-object v0
+    invoke-virtual {{v0}}, Ljava/lang/Class;->getName()Ljava/lang/String;
+    move-result-object v0
+    const-string v1, "WatchActivity"
+    invoke-virtual {{v0, v1}}, Ljava/lang/String;->endsWith(Ljava/lang/String;)Z
+    move-result v0
+    if-eqz v0, :skip_show
     const/4 v0, 0x1
     sput-boolean v0, {GATE}->streamLoadingShown:Z
     invoke-static {{}}, {GATE}->refreshStreamLoading()V
+    :skip_show
     return-void
 .end method''')
     gate = method(gate, 'refreshStreamLoading()V', f'''.method public static declared-synchronized refreshStreamLoading()V

@@ -5,6 +5,7 @@ set -euo pipefail
 
 DECODED=$1
 OUTPUT=$2
+PROFILE=${3:-tv}
 ROOT=/vercel/share/v0-project
 TOOLS=$ROOT/tools/.apk-patch-tools
 
@@ -14,8 +15,12 @@ export PATH=$JAVA_HOME/bin:$TOOLS/build-tools:$PATH
 WORK=$(mktemp -d /tmp/apkbuild-XXXXXX)
 trap 'rm -rf "$WORK"' EXIT
 
-python3 "$ROOT/tools/patch_update_blocker.py" "$DECODED"
-python3 "$ROOT/tools/patch_trace.py" "$DECODED"
+# patch_update_blocker dan patch_trace menyuntik kelas khusus TV (u0, fz/a,
+# TvApplication); profil mobile tidak punya kelas tersebut.
+if [[ $PROFILE == tv ]]; then
+  python3 "$ROOT/tools/patch_update_blocker.py" "$DECODED"
+  python3 "$ROOT/tools/patch_trace.py" "$DECODED"
+fi
 python3 "$ROOT/tools/patch_player_lifecycle.py" "$DECODED"
 python3 "$ROOT/tools/patch_loading_recovery.py" "$DECODED"
 python3 "$ROOT/tools/patch_visible_loading.py" "$DECODED"
