@@ -124,3 +124,38 @@ Tidak ditemukan: AWS/Stripe/Slack/GitHub key, admin token, hardcoded password, A
 ---
 Artefak: woilo_src/ (source jadx), woilo_res/ (resources), dex/ (5 dex), flows.txt (req/resp HAR),
 endpoints_map.txt (391 endpoint + param), analysis.md (catatan ringkas).
+
+## 11. Tambahan: Fungsi Key Logging & Scan Native Libraries
+
+### Key `2ZYq6lCRYc9V0W7DLdM9Ockrvq6lKKSuN2w2Vwabnk6NBGB6qc` (ju0.java:119)
+Auth key untuk endpoint logging internal developer:
+```
+GET https://woilotest.xyz/sestyc/apis/public/log_api_call.php
+    ?name=<path endpoint yg dipanggil>&user_id=<uid>&key=<KEY>&is_success=<status>
+```
+- Fire-and-forget di background thread setiap kali sebuah API call selesai
+- HANYA aktif untuk user_id 3555650–3556650 (kohort 1000 akun — internal test/monitoring)
+- Domain tujuan: woilotest.xyz (server test), bukan produksi
+- Fungsi: telemetri keberhasilan API utk kohort tertentu. Bukan key pembayaran/auth user.
+
+### Scan 21 native libraries (lib/arm64-v8a, 35 MB)
+Tidak ada secret hardcoded. Hanya URL toolchain standar (android.googlesource.com),
+string sertifikat Agora/GoDaddy, dan field-name generik ("secret" di ffmpeg/lip_sync
+adalah nama config, bukan nilai). Native libs murni: Agora RTC suite (7 lib),
+TikTok Pangle (tt_ugen_layout, pglarmor), Unity coherence, APM Insight, TensorFlow Lite
+(language_id), soundtouch, fdkaac.
+
+### Verifikasi signature final: 226/226 request ber-signature di HAR match (0 mismatch)
+Fallback username session (kjaohan) dipakai utk request yang tidak mengirim user_name
+di body — app menghitung signature dari username session, bukan dari body request.
+
+### Real responses (dari HAR, offline — tanpa mengirim request baru ke server)
+- login: {"result":1,"user_id":"4107633","email":"kjaohan@gmail.com",...}
+- user_bonus/init: {"result":1,"message":"Bonus available"}
+- count_lovid_time (second_time=5): {"result":0,"message":"No bonus available"} — server menolak durasi 5 detik
+- lucky_spin/init: prize_list 50..1.000.000 (jackpot utk >=500)
+- referral/init: misi + reward Rp1000, is_referred=1
+- wallet init: balance=0, pending_balance=0
+- view_video, get_current_app_version, user_analytic: response kosong (200)
+
+Toolkit Python: woilo-analysis/woilo_toolkit.py (verify | cipher | real)
