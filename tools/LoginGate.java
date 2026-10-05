@@ -90,6 +90,19 @@ public final class LoginGate {
     private static final String PROFILE = "mobile";
     private static final String[] ACCOUNT_QUERIES = accountQueries(PROFILE);
     private static final String DENIED_MESSAGE = deniedMessage(PROFILE);
+    // Worker mengunci JWT ke IP klien pada request playback pertama (KV
+    // jwtip). App TV tidak pernah memperbarui JWT-nya sendiri:
+    // AccessTokenRepository (lp/e) hanya mencoba refresh ketika token
+    // sudah expired, dan refresh token expired justru gagal, jadi JWT
+    // dari login terakhir dipakai berhari-hari. Begitu IP berubah, worker
+    // menolak dengan 403 forbidden. Mobile aman karena login ulang diam-
+    // diam setiap app dibuka. Patch TV melakukan rotasinya sendiri via
+    // POST https://api.vidio.com/auth memakai kredensial session yang
+    // sudah dibawa request playback.
+    private static final Object JWT_REFRESH_LOCK = new Object();
+    private static final long JWT_REFRESH_INTERVAL_MS = 10 * 60 * 1000L;
+    private static volatile String refreshedJwt = null;
+    private static volatile long refreshedJwtAt = 0L;
     private static final String ERROR_MESSAGE = "Tidak dapat memeriksa izin email, silakan coba lagi";
     private static final int MAX_RESPONSE_CHARS = 16;
     private static final String ACCOUNT_MODE_FILE = "stream_account_mode.txt";
@@ -389,11 +402,114 @@ public final class LoginGate {
                 setHeader.invoke(builder, "x-partner-signature", "");
             }
             Object auth = getHeader.invoke(request, "x-authorization");
-            if (auth == null) {
+            String currentAuth = auth == null ? null : auth.toString();
+            String playbackAuth = resolvePlaybackJwt(url, request, currentAuth);
+            if (playbackAuth != null) {
+                setHeader.invoke(builder, "x-authorization", playbackAuth);
+            } else if (auth == null) {
                 setHeader.invoke(builder, "x-authorization", "");
             }
         } catch (Throwable ignored) {
         }
+    }
+
+    /**
+     * Memilih JWT x-authorization untuk request playback. Mengembalikan null
+     * ketika tidak ada yang perlu di-override (bukan TV, bukan URL playback,
+     * atau tidak ada JWT sama sekali) sehingga perilaku lama tetap jalan.
+     */
+    static String resolvePlaybackJwt(String url, Object request, String currentAuth) {
+        if (!"tv".equals(PROFILE) || !isPlaybackHeaderUrl(url)) {
+            return null;
+        }
+        String cached = refreshedJwt;
+        if (cached != null && !cached.isEmpty()
+                && System.currentTimeMillis() - refreshedJwtAt < JWT_REFRESH_INTERVAL_MS) {
+            return cached;
+        }
+        if (currentAuth == null || currentAuth.trim().isEmpty()) {
+            return cached;
+        }
+        String fresh = refreshPlaybackJwt(request, currentAuth);
+        if (fresh == null || fresh.isEmpty()) {
+            // Refresh gagal (jaringan/upstream) -- pakai JWT dari request
+            // seperti perilaku lama, jangan sampai playback mati total.
+            return currentAuth;
+        }
+        refreshedJwt = fresh;
+        refreshedJwtAt = System.currentTimeMillis();
+        return fresh;
+    }
+
+    private static String refreshPlaybackJwt(Object request, String currentAuth) {
+        synchronized (JWT_REFRESH_LOCK) {
+            String cached = refreshedJwt;
+            if (cached != null && !cached.isEmpty()
+                    && System.currentTimeMillis() - refreshedJwtAt < JWT_REFRESH_INTERVAL_MS) {
+                return cached;
+            }
+            HttpURLConnection connection = null;
+            try {
+                connection = (HttpURLConnection) new URL("https://api.vidio.com/auth").openConnection();
+                connection.setConnectTimeout(10_000);
+                connection.setReadTimeout(10_000);
+                connection.setInstanceFollowRedirects(false);
+                connection.setRequestMethod("POST");
+                connection.setRequestProperty("Accept", "application/json");
+                connection.setRequestProperty("x-authorization", currentAuth);
+                String apiAuth = requestHeaderValue(request, "x-api-auth");
+                connection.setRequestProperty("x-api-auth",
+                        apiAuth != null && !apiAuth.trim().isEmpty()
+                                ? apiAuth.trim()
+                                : "laZOmogezono5ogekaso5oz4Mezimew1");
+                connection.setRequestProperty("x-api-platform", "tv-android");
+                String email = requestHeaderValue(request, "x-user-email");
+                if (email != null && !email.trim().isEmpty()) {
+                    connection.setRequestProperty("x-user-email", email.trim());
+                }
+                String userToken = requestHeaderValue(request, "x-user-token");
+                if (userToken != null && !userToken.trim().isEmpty()) {
+                    connection.setRequestProperty("x-user-token", userToken.trim());
+                }
+                connection.setRequestProperty("User-Agent", defaultApiUa());
+                int status = connection.getResponseCode();
+                if (status != HttpURLConnection.HTTP_OK) {
+                    return null;
+                }
+                String token = extractJsonString(readAll(connection.getInputStream()), "access_token");
+                return token == null || token.trim().isEmpty() ? null : token.trim();
+            } catch (Throwable ignored) {
+                return null;
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
+                }
+            }
+        }
+    }
+
+    private static String requestHeaderValue(Object request, String name) {
+        try {
+            Object value = request.getClass().getMethod("d", String.class).invoke(request, name);
+            return value == null ? null : value.toString();
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static String readAll(InputStream stream) throws IOException {
+        StringBuilder body = new StringBuilder(2048);
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+            char[] buffer = new char[2048];
+            int read;
+            while ((read = reader.read(buffer)) >= 0) {
+                body.append(buffer, 0, read);
+                if (body.length() > 1_000_000) {
+                    break;
+                }
+            }
+        }
+        return body.toString();
     }
 
     static String streamHeaderValue(String url, String name, String currentValue) {
