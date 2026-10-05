@@ -688,10 +688,15 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
 
   // Diagnostik: bila decrypt gagal, sertakan penyebabnya di respons (atribut
   // decrypt_error) + log console agar tahap yang rusak langsung ketahuan.
+  // Body TANPA info DRM (tidak ada dash) harus lewat UTUH — kontrak
+  // self-check: jangan suntik atribut apa pun ke body non-DRM.
   const fail = (reason: string): string => {
-    attrs.decrypt_error = reason;
     console.error(`[v0] decrypt ${streamId}: ${reason}`);
-    return JSON.stringify(parsed);
+    if (typeof attrs.dash === "string" && attrs.dash) {
+      attrs.decrypt_error = reason;
+      return JSON.stringify(parsed);
+    }
+    return body;
   };
 
   // Cache clearkey dicek PALING DULU (tahan restart via Deno KV, TTL 1
