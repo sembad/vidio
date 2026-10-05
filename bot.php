@@ -3889,7 +3889,7 @@ function saveCreatedAccount($chat_id, $email, $password, $status, $created_at = 
         $record['chat_id'] = (int)$chat_id;
         if ($package === 'ultimate') {
             $ultimate_started_at = time();
-            // Kredensial tidak lagi terikat pool $CREDENTIALS — diisi '-' saja.
+            // Kredensial ultimate tidak dipakai — diisi '-' saja.
             $record['ultimate_credential_number'] = '-';
             $record['ultimate_credential_email'] = '-';
             $record['ultimate_credential_token'] = '-';
@@ -7281,13 +7281,11 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
     $harga_per_akun = getAccountSubPackagePrice($chat_id, $package, $sub_package, $buyer_tier);
 
     if ($is_free && !addUserToDailyClaim($chat_id)) {
-        releaseUltimateCredentialReservation($ultimate_reservation_id);
         sendMessage($chat_id, "Klaim gratis sudah digunakan atau kuota baru saja habis.");
         return;
     }
 
     if ($harga_per_akun <= 0 && !$is_free) {
-        releaseUltimateCredentialReservation($ultimate_reservation_id);
         sendMessage($chat_id, "Harga paket belum diatur admin.");
         return;
     }
@@ -7500,7 +7498,6 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
         }
     } else {
         // AKUN GAGAL
-        releaseUltimateCredentialReservation($ultimate_reservation_id);
         if ($is_free) releaseUserDailyClaim($chat_id);
         // Kembalikan saldo jika menggunakan saldo
         if ($pakai_saldo) {
