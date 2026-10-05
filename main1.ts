@@ -1147,6 +1147,18 @@ function isEmailVerificationError(body: string): boolean {
   }
 }
 
+/** 403 JSON:API { errors: [{ title: "not_yet_started", meta: { start_time } }] }. */
+function isNotYetStartedError(body: string): boolean {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (!isRecord(parsed) || !Array.isArray(parsed.errors)) return false;
+    return parsed.errors.some((error) =>
+      isRecord(error) && error.title === "not_yet_started");
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Mengklasifikasi respons stream/video_data dari upstream, tanpa hardcode
  * hostname apa pun:
@@ -1615,6 +1627,14 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
       // agar app mengejar redirect dengan kredensial user sendiri.
       if (staging && staging.status === 403 && isEmailVerificationError(staging.body)) {
         return REDIRECT_OFFICIAL_SENTINEL;
+      }
+      // Event belum mulai (403 not_yet_started + meta.start_time) →
+      // teruskan JSON-nya apa adanya ke app: semua akun pasti menerima
+      // jawaban yang sama, jadi percuma merotasi token staging (kuota
+      // 1 GET/menit) atau mencoba kredensial produksi. Patch APK memakai
+      // meta.start_time dari body ini untuk pesan "belum mulai".
+      if (staging && staging.status === 403 && isNotYetStartedError(staging.body)) {
+        return staging;
       }
     }
     for (const cred of shuffled(PRODUCTION_CREDENTIALS)) {
