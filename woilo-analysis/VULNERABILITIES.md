@@ -205,6 +205,60 @@ CWE-327.
 | L5 | SHA1 untuk fingerprint sertifikat | `o72.java:72` (kode Firebase, bukan app) |
 | L6 | 24 permission termasuk lokasi presisi, kamera, mikrofon, 5× ADSERVICES | manifest |
 | L7 | Penulisan ke direktori publik `DCIM/Woilo/` | `SestycWalletShareActivity.java` (8 lokasi), `ShareMyProfileActivity.java:86` |
+| L8 | **Version disclosure** — endpoint PHP Woilo mengirim `X-Powered-By: PHP/8.1.34` + `Server: cloudflare` | header response `.php` di HAR. Versi PHP persis memudahkan pencarian exploit yang cocok. Perbaikan: `expose_php = Off` + unset header di Cloudflare/nginx. (Header lain di HAR berasal dari pihak ketiga: `nginx/1.22.0`, `Jetty(12.0.33)`, `AmazonS3`, `volc-dcdn`, `sffe`, `ESF`, `cafe`, `Playlog`, `TLB`) |
+| L9 | Facebook App status "Data Use Checkup" — 6 request Graph API `v16.0` balas `400 "API access disrupted"` | HAR. Operasional, bukan keamanan: login/share Facebook kemungkinan tidak berfungsi |
+
+---
+
+## Analisis pasif perilaku server (dari response yang sudah ter-capture)
+
+Metode: `passive_server_scan.py` memindai **seluruh 495 response** di HAR, lalu menilai
+**220 endpoint PHP milik server target** untuk jejak kerentanan sisi server. Murni
+membaca data yang sudah ada — **tidak ada request baru yang dikirim ke server**.
+
+### Hasil: TIDAK ADA bukti SQL injection atau kebocoran informasi sisi server
+
+| Pola yang dicari | Hasil pada 220 endpoint PHP |
+|---|---|
+| SQL error (`You have an error in your SQL syntax`, `SQLSTATE[`, `mysqli_`, `PDOException`, `ORA-nnnnn`, `SQLite3::`, `Unclosed quotation mark`) | **0 hit** |
+| PHP error (`<b>Fatal error</b>`, `<b>Warning</b>:`, `<b>Notice</b>:`, `<b>Parse error</b>`, `Uncaught Exception/Error`, `Stack trace:\n#0`) | **0 hit** |
+| Path disclosure (`/var/www/`, `/home/*/public_html`, `DOCUMENT_ROOT`, `SCRIPT_FILENAME`, `on line N of /`) | **0 hit** |
+| Debug dump (`var_dump(`, `print_r(`, `phpinfo(`, `XDEBUG_SESSION`, `Whoops\`) | **0 hit** |
+| Internal IP (10.x, 192.168.x, 172.16-31.x) | **0 hit** |
+| Credential (`DB_PASS*=`, `AWS_SECRET_ACCESS_KEY`, `BEGIN RSA PRIVATE KEY`) | **0 hit** |
+
+**False positive yang disaring** (penting untuk kejujuran hasil):
+- `pdO` di `profile_post_images_init_script.php` — ternyata di dalam **caption base64**
+  (`...be a good person. It's not about ur God...`), bukan pesan error PDO
+- `Warning:` / `dd(` di `/obj/ad-pattern-sg/*.js`, `/jquery-1.9.1.min.js`,
+  `/mads/...native_ads.html`, `/ad-player/...index.js` — **kode JS minified SDK iklan
+  pihak ketiga**, bukan output server Woilo
+- `xDEBUG` di `/content-file-video/*.mp4` — kecocokan acak pada **konten biner video**
+
+Karena itu pola diperketat dengan word-boundary dan bentuk khas pesan error, dan aset
+pihak ketiga/biner dikecualikan dari penilaian.
+
+**Distribusi status HTTP:** `200`: 428 · `206`: 38 (video range) · `403`: 8 · `400`: 6 ·
+`404`: 2 · `204`: 2 · `0`: 11 (gagal jaringan)
+
+**Perilaku error:** response `404` dari endpoint PHP ber-body kosong. Response `403`
+pada `/compressed-image/` berisi **halaman "Forbidden" standar Cloudflare** (HTML statis
+umum, tanpa detail internal). Response `400` berasal dari Graph API Facebook, bukan
+server Woilo. Tidak ada pesan error internal, path, atau query SQL yang terekspos.
+Response `.php` non-JSON hanya string `success` atau halaman HTML ToS yang memang
+dimaksudkan.
+
+### Kesimpulan jujur tentang SQL injection sisi server
+
+**Tidak ada bukti** SQL injection pada backend `sestyc.com` dalam traffic yang
+ter-capture: server mengembalikan JSON bersih, body error kosong, tanpa output debug.
+
+Namun ketiadaan bukti dalam 495 request normal **bukan** bukti ketiadaan kerentanan —
+endpoint yang tidak pernah menerima input berbahaya tidak akan menunjukkan gejala apa
+pun. Menentukan ada/tidaknya SQLi sisi server **memerlukan pengujian aktif** terhadap
+server, dan itu **tidak dilakukan** karena membutuhkan otorisasi tertulis dari pemilik
+sistem. Klaim "ada SQLi di server" tanpa pengujian sah akan menjadi tebakan, dan klaim
+"tidak ada" juga akan menjadi tebakan — keduanya tidak saya buat.
 
 ---
 
@@ -221,7 +275,8 @@ CWE-327.
 | **Secret di native lib** | **AMAN** | 21 `.so` (35 MB) dipindai: hanya URL toolchain standar & string sertifikat Agora/GoDaddy. Tidak ada API key/token. |
 | **Debug flag** | **AMAN** | Tidak ada `android:debuggable`, `android:testOnly`, atau `BuildConfig.DEBUG=true`. |
 | **Deserialisasi tidak aman** | **AMAN** | Tidak ada `ObjectInputStream`/`readObject()` pada data eksternal. |
-| **SQL injection sisi server** | **TIDAK DAPAT DINILAI** | Logika ada di backend; tidak diuji (butuh otorisasi pemilik). |
+| **SQL injection sisi server** | **TIDAK DAPAT DINILAI** | Logika ada di backend. Scan pasif 495 response: 0 jejak SQL error/stack trace/path disclosure (lihat bagian "Analisis pasif perilaku server"). Pengujian aktif tidak dilakukan — butuh otorisasi pemilik. |
+| **Kebocoran info di response error** | **AMAN** | `404` endpoint PHP ber-body kosong; `403` `/compressed-image/` berisi halaman "Forbidden" standar Cloudflare (statis, tanpa detail internal); `400` berasal dari Graph API Facebook. Tidak ada pesan error internal, path, atau query SQL terekspos. |
 
 ---
 
@@ -266,6 +321,7 @@ membocor atribut activity berikutnya. Setelah manifest di-parse dengan
 | `woilo-analysis/VULNERABILITIES.md` | laporan ini | — |
 | `woilo-analysis/session_token_poc.py` | rekonstruksi + pembuktian determinisme token sesi (C1) | **dijalankan, 3/3 check lulus** |
 | `woilo-analysis/sqli_local_poc.py` | reproduksi SQL injection di SQLite lokal (H3) | **dijalankan, 5/5 check lulus** |
+| `woilo-analysis/passive_server_scan.py` | scan pasif 495 response HAR untuk jejak kerentanan sisi server | **dijalankan, 220 endpoint PHP → 0 hit** |
 | `woilo-analysis/woilo_toolkit.py` | verifikasi signature (226/226), cipher password, real response HAR | **dijalankan** |
 | `woilo-analysis/REPORT.md` | bedah arsitektur & secrets | — |
 | `woilo-analysis/STATIC_REVIEW.md` | review statis awal (sebagian dikoreksi di sini) | — |
