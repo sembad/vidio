@@ -231,6 +231,16 @@ public final class LoginGate {
     private static volatile boolean streamRequestPending;
     private static volatile boolean streamPlaybackFailed;
     private static volatile String loadingStreamPath;
+
+    // Auto-retry dekripsi DRM: clearkey kosong/salah membuat stream gagal dan
+    // blocker DRM ("Perangkatmu tidak mendukung DRM") tampil sebagai dead end.
+    // Saat blocker itu render, kunci lama dibuang lalu blocker ditutup dengan
+    // aksi RefreshStream sehingga stream memuat ulang dan worker mengirim
+    // clearkey baru. Budget dibatasi per jendela waktu agar tidak loop tanpa henti.
+    private static final int MAX_DECRYPT_RETRIES = 2;
+    private static final long DECRYPT_RETRY_WINDOW_MS = 60000L;
+    private static long decryptRetryWindowStart;
+    private static int decryptRetriesInWindow;
     private static String lastLoadingWindowError;
     private static volatile String cachedAccountEmail;
     private static volatile Boolean cachedUltimate;
@@ -981,7 +991,74 @@ public final class LoginGate {
         streamFrameRendered = false;
         streamPlaybackFailed = true;
         hideStreamLoading();
+        if (isDrmError(error)) return; // blocker DRM memicu retry dekripsi otomatis
         showToast("Siaran gagal diputar. Coba buka ulang channel.");
+    }
+
+    private static boolean isDrmError(Object error) {
+        if (error == null) return false;
+        try {
+            String className = error.getClass().getName();
+            if (className.contains("Drm") || className.contains("Crypto")) return true;
+            Object code = error.getClass().getMethod("getErrorCode").invoke(error);
+            if (code instanceof Integer) {
+                int value = (Integer) code;
+                if (value >= 3000 && value < 4000) return true; // ExoPlayer ERROR_CODE_DRM_*
+            }
+        } catch (Throwable ignored) {
+        }
+        return false;
+    }
+
+    // Dipanggil renderer blocker (u0.a) saat blocker DRM (c0$j) akan ditampilkan.
+    // "Perangkatmu tidak mendukung DRM" hampir selalu berarti clearkey kosong
+    // (fallback license server) atau clearkey salah - bukan masalah perangkat.
+    public static void onDrmBlocker(Object blockerActivity) {
+        long now = System.currentTimeMillis();
+        if (now - decryptRetryWindowStart > DECRYPT_RETRY_WINDOW_MS) {
+            decryptRetryWindowStart = now;
+            decryptRetriesInWindow = 0;
+        }
+        if (decryptRetriesInWindow >= MAX_DECRYPT_RETRIES) {
+            traceLog("DECRYPT retry budget habis, blocker dibiarkan tampil");
+            return;
+        }
+        decryptRetriesInWindow++;
+        traceLog("DECRYPT retry " + decryptRetriesInWindow + "/" + MAX_DECRYPT_RETRIES
+                + ": buang clearkey lama + RefreshStream");
+        try {
+            Class.forName("com.vidio.android.patch.ClearKeyHolder").getMethod("clear").invoke(null);
+        } catch (Throwable ignored) {
+        }
+        finishBlockerWithRefresh(blockerActivity);
+    }
+
+    // Menutup BlockerActivity seolah tombol OK memilih aksi RefreshStream, supaya
+    // WatchActivity memuat ulang stream lewat mekanisme bawaannya sendiri.
+    private static void finishBlockerWithRefresh(Object blockerActivity) {
+        try {
+            if (blockerActivity == null) return;
+            Class<?> activityClass = Class.forName("android.app.Activity");
+            Class<?> intentClass = Class.forName("android.content.Intent");
+            Object intent = intentClass.getConstructor().newInstance();
+            Class<?> actionClass = Class.forName(
+                    "com.vidio.android.tv.watch.blocker.PostBlockerAction$RefreshStream");
+            Object action = actionClass.getField("d").get(null);
+            intentClass.getMethod("putExtra", String.class, Class.forName("android.os.Parcelable"))
+                    .invoke(intent, ".extra.post.blocker.action", action);
+            activityClass.getMethod("setResult", int.class, intentClass)
+                    .invoke(blockerActivity, -1, intent);
+            activityClass.getMethod("finish").invoke(blockerActivity);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void traceLog(String message) {
+        try {
+            Class.forName("com.vidio.android.patch.VckTrace")
+                    .getMethod("log", String.class).invoke(null, message);
+        } catch (Throwable ignored) {
+        }
     }
 
     public static void onStreamPlaybackState(int state) {
