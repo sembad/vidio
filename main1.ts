@@ -285,8 +285,29 @@ function getCachedStreamResponse(key: string, nowMs = Date.now()): CachedStreamR
   return cached;
 }
 
+/**
+ * Body DRM yang TIDAK membawa clearkey (decrypt di worker gagal): punya
+ * attributes.dash tapi tanpa attributes.clearkey. Respons seperti ini tidak
+ * boleh di-cache — retry reload dari APK harus memicu decrypt fresh, bukan
+ * menerima respons tanpa clearkey yang sama selama 2,5 menit.
+ */
+function isDrmBodyWithoutClearKey(body: string): boolean {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    for (const record of jsonApiAttributeRecords(parsed)) {
+      if (typeof record.dash === "string" && record.dash && !("clearkey" in record)) {
+        return true;
+      }
+    }
+  } catch {
+    // Bukan JSON — biarkan aturan cache lama yang memutuskan.
+  }
+  return false;
+}
+
 function storeStreamResponse(key: string, result: UpstreamResult, nowMs = Date.now()): void {
   if (result.status !== 200 || upstreamStreamQuality(result.body) !== "full") return;
+  if (isDrmBodyWithoutClearKey(result.body)) return;
   const cached: CachedStreamResponse = {
     status: result.status,
     body: result.body,
