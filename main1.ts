@@ -444,7 +444,23 @@ async function storeMpdCache(origin: string, streamId: string, text: string): Pr
  */
 async function fetchMpdBody(url: string): Promise<string | null> {
   const headers = { "user-agent": CHROME_UA, accept: "*/*", referer: "https://www.vidio.com/" };
-  // 1) Direct ke host manifest: ikuti redirect exchange-nya.
+  // 1) Lewat proxy DataImpulse (exit Indonesia) — MPD Akamai live geo-locked
+  //    ke ID, fetch direct dari datacenter luar selalu 403.
+  try {
+    const res = await fetch(url, {
+      headers,
+      redirect: "follow",
+      signal: AbortSignal.timeout(20_000),
+      ...proxyFetchInit(),
+    } as RequestInit);
+    if (res.ok) {
+      const text = await res.text();
+      if (text.includes("<MPD")) return text;
+    }
+  } catch {
+    // Proxy gagal → coba direct.
+  }
+  // 2) Direct ke host manifest: ikuti redirect exchange-nya.
   try {
     const res = await fetch(url, {
       headers,
@@ -468,14 +484,19 @@ async function fetchMpdBody(url: string): Promise<string | null> {
   } catch {
     // Direct gagal (network/geo-block) → coba mirror.
   }
-  // 2) Fallback lewat mirror (redirect diikuti internal oleh mirror).
+  // 3) Fallback lewat mirror (redirect diikuti internal oleh mirror).
   try {
     const res = await fetch(viaMirror(url), {
       headers,
       redirect: "follow",
       signal: AbortSignal.timeout(15_000),
     } as RequestInit);
-    if (res.ok) return await res.text();
+    if (res.ok) {
+      const text = await res.text();
+      // Mirror menyalurkan halaman "Access Denied" Akamai dengan status 200 —
+      // bukan MPD, jangan dipakai sebagai sumber PSSH.
+      if (text.includes("<MPD")) return text;
+    }
   } catch {
     // Mirror juga gagal.
   }
@@ -665,6 +686,14 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   const attrs = jsonApiAttributeRecords(parsed)[0];
   if (!attrs) return body;
 
+  // Diagnostik: bila decrypt gagal, sertakan penyebabnya di respons (atribut
+  // decrypt_error) + log console agar tahap yang rusak langsung ketahuan.
+  const fail = (reason: string): string => {
+    attrs.decrypt_error = reason;
+    console.error(`[v0] decrypt ${streamId}: ${reason}`);
+    return JSON.stringify(parsed);
+  };
+
   // Cache clearkey dicek PALING DULU (tahan restart via Deno KV, TTL 1
   // hari): kalau sudah ada, skip fetch MPD + decrypt sama sekali — respons
   // tetap mendapat clearkey walau layanan decrypt/upstream sedang gagal.
@@ -681,22 +710,22 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
     let mpdText = await readMpdCache(origin, streamId);
     if (!mpdText) {
       const dash = typeof attrs.dash === "string" ? attrs.dash : "";
-      if (!dash) return body;
+      if (!dash) return fail("no_dash_url");
       const mpdBody = await fetchMpdBody(dash);
-      if (!mpdBody) return body;
+      if (!mpdBody) return fail("mpd_fetch_failed");
       mpdText = mpdBody;
       void storeMpdCache(origin, streamId, mpdText);
     }
 
     const pssh = extractPsshFromMpd(mpdText);
-    if (!pssh) return body;
+    if (!pssh) return fail("no_pssh_in_mpd");
 
     // License: PRODUCTION + custom_data production fresh (flow terbukti).
     const prodCd = await fetchProductionCustomData(streamId, request);
-    if (!prodCd) return body;
+    if (!prodCd) return fail("no_production_custom_data");
     const licenseUrl = `https://license.vidio.com/ri/licenseManager.do?pallycon-customdata-v2=${prodCd}`;
     const result = await decryptPsshWithLicenseUrl(pssh, licenseUrl);
-    if (!result.ok) return body;
+    if (!result.ok) return fail(`key_service: ${result.error}`);
     json = result.json;
     void storeClearKeyCache(origin, streamId, json);
   }
@@ -704,7 +733,7 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   const keys: Array<{ kty: string; k: string; kid: string }> = [];
   try {
     const parsedKeys = (JSON.parse(json) as { keys?: unknown }).keys;
-    if (!Array.isArray(parsedKeys)) return body;
+    if (!Array.isArray(parsedKeys)) return fail("invalid_cached_key_json");
     for (const key of parsedKeys) {
       if (key && typeof key === "object" &&
         typeof (key as Record<string, unknown>).kty === "string" &&
@@ -715,12 +744,13 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
       }
     }
   } catch {
-    return body;
+    return fail("invalid_cached_key_json");
   }
-  if (keys.length === 0) return body;
+  if (keys.length === 0) return fail("no_keys_in_cached_json");
 
   registerClearKeyJson(streamId, json);
 
+  delete attrs.decrypt_error;
   attrs.clearkey = { keys, type: "temporary" };
   // Mode clearkey APK seamless: custom_data dihapus + is_drm true → patch
   // aplikasi memakai scheme "clearkey". drm_license_url menunjuk ke URL
