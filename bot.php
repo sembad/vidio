@@ -30,15 +30,50 @@ define('PAYMENT_TIMEOUT', 600); // 10 menit dalam detik
 define('ULTIMATE_DURATION', 30 * 24 * 60 * 60); // 30 hari
 
 $CREDENTIALS = [
-    [
-        'nomor' => 27,
-        'email' => '183e2645-e1ef-4e32-8609-b7520d90e426-tcl@fake-tcl.com',
-        'token' => 'PfijvXn-AyypqXcCsauJ',
+[
+        'nomor' => 1,
+        'email' => '0720069c-bf32-4c29-9003-b17c3609e435-tcl@fake-tcl.com',
+        'token' => 'TBmhPj15NAUAe_nJVysK',
     ],
     [
-        'nomor' => 482,
-        'email' => '434d5b48-7e39-4c80-b806-563641a72d59-tcl@fake-tcl.com',
-        'token' => 'iCgCRZLDzkbWczNH23Gk',
+        'nomor' => 2,
+        'email' => 'c01df64a-7e45-4baa-b35a-6407a21d725c-tcl@fake-tcl.com',
+        'token' => '_FXJjCJN3agcyxiCsWJ4',
+    ],
+    [
+        'nomor' => 3,
+        'email' => 'de615d25-09be-46fb-bf67-bc2c25ec5935-tcl@fake-tcl.com',
+        'token' => 'PnVxnS7eYjHbSTis-ysk',
+    ],
+    [
+        'nomor' => 4,
+        'email' => 'd665f0d1-cf2a-4e2b-82bc-8a4b8a4037d7-tcl@fake-tcl.com',
+        'token' => 'A-ggDxsDBd2cYmp8B2UR',
+    ],
+    [
+        'nomor' => 5,
+        'email' => '13fd1914-62e4-42ab-b317-ffbf5b78973e-tcl@fake-tcl.com',
+        'token' => 'Ye2ZsTUaDHohQZoRAY3X',
+    ],
+    [
+        'nomor' => 6,
+        'email' => 'ad7c6f1a-37ad-4921-b2f0-b57ff830b34c-tcl@fake-tcl.com',
+        'token' => 'AtXqAmvcSY_oFRkALHrk',
+    ],
+    [
+        'nomor' => 7,
+        'email' => '9cf9c825-8ef1-442a-994a-1da74f3759ec-tcl@fake-tcl.com',
+        'token' => 'ys2hJkt15zF1PXm4eWD5',
+    ],
+    [
+        'nomor' => 8,
+        'email' => '19c52fee-a14b-4d4a-8d53-628421fefa9f-tcl@fake-tcl.com',
+        'token' => 'z_oRFBchj68SHqtdEQqP',
+    ],
+    [
+        'nomor' => 9,
+        'email' => '7a9a7ba0-872c-471f-bde4-e41643739654-tcl@fake-tcl.com',
+        'token' => 'UPjhYzGyZKx67gCHRYn7',
     ],
 ];
 
@@ -2736,10 +2771,10 @@ function savePartnerHeaderRecord($brand, $post_fields, $request_headers, $email,
 // FUNGSI BARU: Buat token langsung dari endpoint partner
 function updateTokenPool($brand = 'tcl') {
     // Kredensial resmi partner Vidio
-    $endpoint = '';
-    $aes_key_base64 = '';
-    $key_id = '';
-    $x_api_auth = '';
+    $endpoint = 'https://golden-stoat-2961.tiltol.deno.net/api.vidio.com/api/partner/auth';
+    $aes_key_base64 = 'O8NAJlk7o7GNeNn01qUXxjezrD/Z2djOMjSizTRZt1U=';
+    $key_id = 'ZXhDgP7RixaP';
+    $x_api_auth = 'laZOmogezono5ogekaso5oz4Mezimew1';
 
     $brand_catalog = [
         'tcl' => [
@@ -3254,7 +3289,7 @@ function checkSubscriptionStatus($email, $password, $chat_id = null) {
         'accept-encoding: gzip'
     ];
 
-    $proxy_prefix = 'https://joyful-deer-9935.siapasajabolehkamu.deno.net/';
+    $proxy_prefix = 'https://golden-stoat-2961.tiltol.deno.net/';
     $ch = curl_init($proxy_prefix . 'api.vidio.com/api/login');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
@@ -5054,8 +5089,8 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
 	            $response .= "Durasi: " . $info['durasi'] . " hari\n";
 	            $response .= "Expired: " . $expired_date . "\n\n";
 	            $response .= getPackageInformationText($original_package) . "\n\n";
-	            $response .= "Apk TV: https://t.me/hwiwhwiweveu/8\n\n";
-            $response .= "Apk HP: https://t.me/hwiwhwiweveu/9\n\n";
+	            $response .= "Apk TV: https://t.me/hwiwhwiweveu/21\n\n";
+            $response .= "Apk HP: https://t.me/hwiwhwiweveu/22\n\n";
             $response .= "Untuk paket mobile atau ultimate harus pakai aplikasi ini jika memakai apk official dijamin 100% tidak akan bisa\n";
             $response .= "Akun siap digunakan!\n";
             $response .= "By : @vidiotvbot";
@@ -7598,8 +7633,8 @@ function cloneTvTaskSingle($chat_id, $email, $password_to_use, $package = 'biasa
             } else {
                 $response .= "TERIMAKASIH .\n";
             }
-            $response .= "Apk TV: https://t.me/hwiwhwiweveu/8\n\n";
-            $response .= "Apk HP: https://t.me/hwiwhwiweveu/8\n\n";
+            $response .= "Apk TV: https://t.me/hwiwhwiweveu/21\n\n";
+            $response .= "Apk HP: https://t.me/hwiwhwiweveu/22\n\n";
             $response .= "Untuk paket mobile atau ultimate harus pakai aplikasi ini jika memakai apk official dijamin 100% tidak akan bisa\n";
             $response .= "Akun siap digunakan!\n";
             $response .= "By : @vidiotvbot";
