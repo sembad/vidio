@@ -28,6 +28,9 @@ const ULTIMATE_UA = "vidioandroid/2609.1.14-c11a00be7f (3191940)";
 const ULTIMATE_VISITOR_ID = "75dec05f-d3e9-4c4e-a384-2bc238868076";
 const ULTIMATE_USER_ID = "231108280";
 const REDIRECT_URL = "https://vidio.com";
+// Naikkan setiap kali main1.ts berubah — tercetak di log saat self-check
+// supaya versi yang live di Deno Deploy bisa dipastikan, bukan ditebak.
+const WORKER_VERSION = "2026-10-05.4";
 const USER_AGENT = "tv-android/ (1020";
 
 // Sumber MPD live stream: API staging dengan akun tv-android khusus.
@@ -1754,6 +1757,7 @@ async function handleRequest(request: Request): Promise<Response> {
 }
 
 async function selfCheck(): Promise<void> {
+  console.log(`[v0] selfCheck worker version ${WORKER_VERSION}`);
   const stagingSample = JSON.stringify({ data: { attributes: { hls: "https://www.staging.vidio.com/videos/2384351/common_tokenized_playlist.m3u8?ott=test", dash: null } } });
   if (!isHlsOnlyStream(stagingSample)
     || !isHlsOnlyStream(stagingSample.replace("www.staging.vidio.com", "www.vidio.com"))
