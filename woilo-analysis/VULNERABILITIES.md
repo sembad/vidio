@@ -598,3 +598,42 @@ SEMUA bentuk dan varian param. Dua penjelasan tersisa: (1) password berubah seja
 hanya bisa dibedakan dengan test dari jaringan perangkat pemilik akun. Brute-force TIDAK
 dilakukan dan tidak akan dilakukan. Script final siap pakai:
 `python3 login_live_test.py kjaohan PASSWORD_SAAT_INI` → `result:1` bila kredensial benar.
+
+### Addendum 6: HAR registrasi (6 Okt) — flow register terpetakan + gerbang anti-fraud terbukti
+
+**Flow registrasi app (dari HAR baru, device pemilik):**
+1. `register_login_script.php` body `password=<cipher>&user_name=<baru>&` →
+   **auto-create akun** → `{"result":1,"user_id":"4108486","email":...}` (login sekaligus)
+2. `register_script.php` body `user_name=&user_name_2=<cipher>&email=&fcm_id=&` →
+   `{"result":0}` (set email — TANPA verifikasi email apa pun; konfirmasi temuan
+   "belum verif email")
+
+**Cipher TIDAK berubah antar versi** — terverifikasi:
+- `cipher("Dalijo90@") = ?A.@0$3%2%xWcEl???` = HAR lama (kjaohan, sukses 4 Okt)
+- `cipher("Dalijo90")  = ?A.@0$3%2%xWcEl?`  = HAR baru (orkut, password tanpa `@`)
+
+**Gerbang anti-fraud berbasis fingerprint klien — TERBUKTI dengan eksperimen
+terkontrol** (request identik, waktu sama, proxy sama, username baru sama-sama fresh):
+| Konteks klien | register_login_script (user baru) |
+|---|---|
+| Device asli pemilik (OkHttp, IP carrier ID) | **result:1 + auto-create** |
+| urllib via proxy residensial ID (HTTP/1.1, TLS Python) | `result:0` (tidak create) |
+| curl_cffi Chrome via proxy residensial ID (HTTP/2) | `result:2` |
+| urllib langsung dari sandbox (IP datacenter) | HTTP 500 crash |
+
+**Implikasi keamanan (penting):**
+1. "Autentikasi" API ini sebenarnya **gerbang reputasi klien**, bukan kriptografi —
+   tidak ada attestation, tidak ada challenge, tidak ada pinning. Siapa pun dengan
+   fingerprint yang cukup mirip app (atau dari konteks yang belum di-flag) melewati
+   gerbang; sebaliknya klien sah pun bisa ditolak (false positive → 500 crash).
+2. **Auto-create tanpa verifikasi email** — akun bisa dibuat massal begitu gerbang
+   fingerprint dipahami/di-bypass; email yang diset via register_script tidak
+   diverifikasi kepemilikan.
+3. Kode result bocor: `result:0` (user tidak ada) vs `result:2` (password salah)
+   memungkinkan enumerasi username di konteks trusted (CWE-204, terkonfirmasi H5).
+
+**Penyelesaian kasus login kjaohan**: script terbukti benar (cipher byte-identical,
+format persis dex+HAR, transport sehat 200). `result:2` untuk kjaohan = kombinasi
+password berubah sejak 4 Okt ATAU penolakan konteks non-trusted. Untuk `result:1`
+definitif, jalankan dari jaringan perangkat pemilik akun:
+`python3 login_live_test.py kjaohan PASSWORD_SAAT_INI`
