@@ -381,3 +381,45 @@ di-neuter pada build modifikasi (ekspektasi normal untuk proteksi client).
 - LOW 7 — tetap
 - Diperiksa & bersih: SSL handling, RCE client, PendingIntent, world-readable, AES key,
   native libs, debug flag, deserialisasi, 8 deeplink routing-only, offerwall client-side.
+
+## Addendum 2: Inventaris Total Dex (cakupan penuh)
+
+### Struktur dex (29.466 file Java hasil decompile)
+| Paket | File | Keterangan |
+|---|---|---|
+| com.ciangproduction.sestyc | 435 | **kode app** — semua temuan berasal dari sini |
+| defpackage | 6.266 | hasil obfuscation (campuran app + SDK) |
+| com.google | 11.437 | Play Services, GMA, Firebase, ML Kit, PairIP |
+| com.bytedance / com.mbridge / com.ironsource / com.unity3d / com.vungle / com.inmobi / com.bykv / com.iab / com.tiktok | ±7.000 | SDK iklan |
+| com.facebook | 72 | Facebook SDK |
+| com/ayet | 20 | Ayetstudios offerwall |
+| com.pairip | 10 | PairIP integrity |
+| gatewayprotocol | 262 | Unity Ads proto |
+| androidx / kotlin / okhttp / dll | sisanya | library standar |
+
+### Temuan baru dari sweep penuh
+- **DexClassLoader ADA — tapi milik Google Mobile Ads SDK** (`zzbcg.java:119`):
+  GMA mengekstrak jar terenkripsi bawaan (blob base64 di `zzgiy`/`zzgiz`, XOR-68 +
+  AES) ke `files/1779220303675.jar` lalu memuatnya via `DexClassLoader` untuk rendering
+  iklan. Perilaku standar GMA, bukan kode app. Tidak ada DexClassLoader di kode app sendiri.
+- **RSA public key classes2.dex** = `LicenseClient.licensePubKey` (PairIP) — by design publik.
+- **Root detection** (`getRooted/hasRooted`) = telemetri Unity Ads saja; app sendiri tidak
+  melakukan root detection.
+- **Dynamic receiver**: hanya `LocalBroadcastManager` (in-process, tidak bisa diakses app lain) — aman.
+- **getSerializableExtra** (8 lokasi): semua di activity non-exported, data dari intent internal — aman.
+- **evaluateJavascript**: hanya shim `window.webkit.messageHandlers.closeWebView` untuk Ayet — aman.
+- **Tidak ada** `setWebContentsDebuggingEnabled`, tidak ada intent redirection
+  (getParcelableExtra→startActivity), tidak ada fragment injection.
+- **launchMode**: 4 singleTask, 2 singleTop — task hijacking risiko rendah (tidak ada
+  activity sensitif exported dengan singleTask).
+- **Services/receivers**: semua SDK; satu-satunya milik app = `PushReceiver` (FCM,
+  exported sesuai standar Firebase).
+- **Blob terenkripsi lain** (classes4/5, prefix `+`): string obfuscation SDK iklan
+  (ByteDance/Pangle) — bukan secret app.
+
+### Kesimpulan akhir cakupan
+Seluruh 5 dex telah dipindai: manifest (XML parser), semua konstruksi SQL, semua
+kriptografi, semua komponen exported, semua WebView, semua storage, semua URL/secret,
+semua blob terenkripsi, semua dynamic loading, semua receiver/service/provider.
+Kode app (435 file) tercakup penuh; SDK pihak ketiga dipindai untuk pola berbahaya
+(RCE, SSL bypass, secret) dan bersih kecuali perilaku standar yang didokumentasikan.
