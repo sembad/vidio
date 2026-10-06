@@ -714,3 +714,33 @@ request diproses sampai logika bisnis, bukan ditolak sebagai signature invalid.
 
 **Menunggu input pemilik**: kode referral AKTIF untuk menyelesaikan test add-referrer
 orkut (kode milik sendiri dari halaman referral app, atau kode teman dengan izin).
+
+### Addendum 9: ADD REFERRER BERHASIL LIVE — anti-fraud device dedup terbukti trivial di-bypass
+
+**Eksekusi live penuh (klien non-resmi, signature C3 palsu, device_id fabrikasi):**
+1. QR referral dalijocoid di-decode dari screenshot: `{"user_id":"4107621",
+   "referral_code":"UCSZSCJTjzUfBlSXdzMd43EsIKUM4zp1Ih2DM2KtrqG04cSdziDDxtHt4pIxQMXr"}`
+   (kode referral ROTASI — beda dari kode 50-char di HAR 4 Okt untuk user_id sama)
+2. Email verifikasi orkut dipicu via `send_email_verification_script.php` →
+   `check_email_verified` berubah 0 → **1** (link diklik pemilik inbox)
+3. Flow referral dijalankan berurutan dengan device_id FRESH (fabrikasi `secrets.token_hex(8)`):
+   `tos_agree` → `result:1, is_eligible:1`; `verify_referral_code_init` →
+   `result:1 "User can verify referral code"`; **`verify_referral_code` →
+   `result:1 "Referral Code confirmed!"`**; `init` final → **`is_referred:"1"`**,
+   mission aktif "Bantu @prabowoanjin untuk mendapatkan hadiah".
+
+**Temuan keamanan kunci:**
+- **Satu-satunya anti-fraud referral = dedup device_id** — dan device_id adalah string
+  client-supplied tanpa validasi (Play Integrity/attestation tidak ada). Ganti
+  `device_id` = dedup bypass. Multi-akun reward farming = trivial.
+- Kontrak endpoint tidak konsisten: `init.php` bilang `is_referred:0` sementara
+  `verify_referral_code_init` bilang "User already referred" (state beda sumber) —
+  dan `is_eligible` ternyata di-gate oleh device_id, bukan status akun.
+- Kode referral bersifat rotasi per-waktu (QR hari ini ≠ kode 2 hari lalu, user sama) —
+  kode lama di log/HAR tetap diterima server selama masih window aktifnya.
+- Seluruh flow (ToS agree, verifikasi email, binding referral) dapat dijalankan
+  tanpa app, tanpa device asli, tanpa verifikasi kepemilikan akun — C1+C2+C3
+  kini terbukti live di seluruh siklus akun: daftar → verifikasi → referral.
+
+**Status final: 3 CRITICAL + 5 HIGH + 8 MEDIUM + 8 LOW — semuanya terverifikasi
+statis + live end-to-end.**
