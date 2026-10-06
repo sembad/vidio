@@ -677,3 +677,40 @@ session_key=<token C1>                         (pola C1 persis rekonstruksi)
 oleh siapa pun yang membaca dex — tidak ada mekanisme yang mengikat sesi ke device/app
 asli (tanpa attestation, tanpa pinning, tanpa challenge). Skor final:
 **3 CRITICAL + 5 HIGH + 8 MEDIUM + 8 LOW**, semua terverifikasi statis + live.
+
+### Addendum 8: Email verification + referral flow — C3 terbukti live
+
+**C3 (signature dipalsukan) — TERBUKTI LIVE**: formula `SHA256("styc_{ts}_{user_name}_{user_id}_app")`
+terverifikasi terhadap **28/28 signature asli** di HAR login 6 Okt (wallet, lucky spin,
+moments, ads, bonus, messaging — semuanya match). Live: signature buatan replikasi
+DITERIMA server untuk 2 user berbeda (kjaohan 4107633, orkut 4108486) di 4 endpoint
+(send_email_verification, check_email_verified, verify_referral_code, referral/init) —
+request diproses sampai logika bisnis, bukan ditolak sebagai signature invalid.
+
+**Email verification flow:**
+- `verify/send_email_verification_script.php` (param global + signature C3) → HTTP 200
+  dengan **body KOSONG** — server tidak pernah mengonfirmasi keberhasilan (bug reporting;
+  di HAR device asli pun kosong — inilah kenapa "email tidak pernah terkirim" sulit
+  didiagnosis dari sisi client).
+- `verify/check_email_verified_script.php` → `{"verifiedEmail":0|1}` — status verifikasi
+  bisa di-polling siapa pun dengan signature palsu (informasi status akun bocor).
+- Live: verifikasi email orkut (orkutyan@gmail.com) sudah dipicu 1x; status masih 0
+  (menunggu klik link di inbox).
+
+**Referral flow (add referrer):**
+- Endpoint (dari dex ii5.java, base URL di-set runtime dari remote config → cdn.sestyc.com):
+  `init.php`, `tos_init_script.php`, `tos_agree_script.php`, `get_referral_code.php`,
+  `check_referral_code.php`, `verify_referral_code_init.php`, `verify_referral_code.php`,
+  `claim_referral_prize.php`, `get_invite_instruction.php`.
+- `verify_referral_code.php` MASIH HIDUP di sestyc.com: menerima signature palsu,
+  memproses kode → `{"result":0,"message":"Failed to confirm referral code"}` untuk
+  kode yang sudah terpakai. Kode AKTIF akan terkonfirmasi (`result:1` di HAR).
+- `cdn.sestyc.com` dilindungi Cloudflare WAF yang memblok seluruh pool IP proxy
+  (10/10 attempt → 401) — satu-satunya proteksi jaringan yang BEKERJA di infrastruktur
+  ini; kontras: sestyc.com (API utama) bisa diakses bebas dari IP apa pun.
+- **Implikasi**: klaim referral (reward) dapat dipicu dari klien non-resmi selama
+  memiliki kode referral aktif + signature yang dapat dipalsukan — tidak ada binding
+  ke device/app. Reward farming multi-akun adalah risiko bisnis langsung.
+
+**Menunggu input pemilik**: kode referral AKTIF untuk menyelesaikan test add-referrer
+orkut (kode milik sendiri dari halaman referral app, atau kode teman dengan izin).
