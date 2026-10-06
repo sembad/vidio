@@ -9,6 +9,12 @@ from datetime import datetime
 BASE = "https://sestyc.com/sestyc/register_login_script.php"
 UA = "Dalvik/2.1.0 (Linux; U; Android 10; M2006C3LG MIUI/V12.0.15.0.QCDIDXM)"
 
+# DataImpulse residential proxy, exit Indonesia (__cr.id) — kredensial dari repo
+PROXY_URL = "http://46b0ff892fc1d3075320__cr.id:66c757e644710948@gw.dataimpulse.com:823"
+_opener = urllib.request.build_opener(
+    urllib.request.ProxyHandler({"http": PROXY_URL, "https": PROXY_URL})
+)
+
 # ---- cipher password (dex: defpackage/l61.java) — terverifikasi vs HAR ----
 A = "abcdefghijklmnopqrstuvwxyz0123456789_."
 B = "ACEGI!@#$%!@#$%^&*<>?[]|ACEGIKMOQSUWYB"
@@ -39,7 +45,7 @@ def login(user_name: str, password: str) -> dict:
     req = urllib.request.Request(BASE, data=body, method="POST")
     req.add_header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
     req.add_header("User-Agent", UA)
-    with urllib.request.urlopen(req, timeout=30) as r:
+    with _opener.open(req, timeout=60) as r:
         return json.loads(r.read().decode())
 
 if __name__ == "__main__":

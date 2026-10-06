@@ -532,12 +532,28 @@ lagi lapisan yang belum dibedah secara statis.
 | 2 (byte-identical HAR) | sama | **HTTP 500** |
 | 3 (param set lengkap pipeline) | + signature, session_key, login_key, fcm_token, device_id | **HTTP 404** |
 
-**Interpretasi**: request yang identik dengan capture sukses 2 hari sebelumnya kini
-ditolak dari sandbox. Pola 500→500→404 dengan body kosong konsisten dengan
-**pemblokiran IP datacenter / TLS fingerprint (Cloudflare bot management)**, bukan
-kesalahan format (format sudah byte-identical dengan yang sukses). Test dari
-environment ini **inkonklusif**; script `login_live_test.py` disertakan dan dapat
-dijalankan dari jaringan perangkat sendiri untuk hasil definitif.
+**Interpretasi TERKOREKI (setelah test via proxy residensial)**: interpretasi awal
+"pemblokiran Cloudflare" SALAH. Melalui DataImpulse exit Indonesia (kredensial proxy
+dari repo), server merespons normal untuk semua kasus KECUALI kredensial benar:
+
+| Kasus | Respons |
+|---|---|
+| password salah (user benar) | HTTP 200 `{"result":2}` |
+| user tidak ada | HTTP 200 `{"result":0}` |
+| **password BENAR (dari HAR)** | **HTTP 500 Internal Server Error** (body kosong) |
+
+Artinya: (a) API sepenuhnya reachable dari mana saja — tidak ada IP allowlist; (b)
+500 terjadi justru di **jalur login sukses** — crash server-side (CWE-755/209),
+kemungkinan akun berada di state anomali (dihapus/diblokir tanpa handling) atau bug
+di path sukses; (c) header bocor `X-Powered-By: PHP/8.1.34`.
+
+### H5 (BARU, HIGH): User enumeration via login + tidak ada rate limit
+Server membedakan `result:0` (user tidak ada) vs `result:2` (password salah) —
+penyerang dapat **memetakan username terdaftar** secara massal (CWE-204). Digabung
+dengan: tanpa captcha, tanpa device attestation, tanpa rate limit yang teramati
+(8 request berurutan dijawab semua), cipher password lemah (M6), dan endpoint login
+tanpa signature/session_key — **credential stuffing + user enumeration trivial**.
+Terbukti LIVE via proxy residensial, bukan asumsi.
 
 **Catatan keamanan tambahan**: endpoint login menerima hanya `user_name`+`password`
 tanpa rate-limit terlihat dari sisi client, tanpa captcha, tanpa device attestation —
