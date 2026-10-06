@@ -423,3 +423,44 @@ kriptografi, semua komponen exported, semua WebView, semua storage, semua URL/se
 semua blob terenkripsi, semua dynamic loading, semua receiver/service/provider.
 Kode app (435 file) tercakup penuh; SDK pihak ketiga dipindai untuk pola berbahaya
 (RCE, SSL bypass, secret) dan bersih kecuali perilaku standar yang didokumentasikan.
+
+## Addendum 3: Inventaris Secret & Key Seluruh Dex
+
+### H4 (BARU, HIGH): Video call Agora TANPA token authentication
+`CallMeCallingActivity.java:88,93`:
+```java
+RtcEngine.create(getApplicationContext(), "dcdd3e66d3d047eb90db8b08659bbc31", this.y);
+...
+this.d.joinChannel((String) null, this.m, (String) null, this.e);
+// this.m = getIntent().getStringExtra("channel_id")
+```
+- App ID Agora hardcoded; join dengan **token NULL** → App Certificate Agora project
+  mereka **nonaktif** (jika aktif, join null-token pasti ditolak server Agora).
+- Konsekuensi: siapa pun yang punya App ID (terekstrak dari APK) dapat **join channel
+  video call apa pun** yang namanya diketahui/ditebak — tanpa autentikasi, tanpa token
+  dari server. Tidak ada endpoint `rtc_token` di seluruh dex (server tidak menerbitkan token).
+- Dampak: penyadapan/pengintaian panggilan video (privasi), gangguan sesi (join sebagai
+  host role 1). CWE-306 (Missing Authentication for Critical Function) pada lapisan RTC.
+
+### Inventaris lengkap secret/key (hasil sweep 5 dex)
+| Item | Nilai/lokasi | Klasifikasi |
+|---|---|---|
+| Agora App ID | `dcdd3e66d3d047eb90db8b08659bbc31` (CallMeCallingActivity:88) | semi-publik, tapi dipakai TANPA token → H4 |
+| Logging key signature | `styc_` (ea.java:501, MainActivity:907) | CRITICAL C3 |
+| Session token seed | `HARDCODED_FCM_ID_` (LoginActivityNew:224, h9.java:88) | CRITICAL C1 |
+| Google API key | `AIzaSyBgAJUZNJFuiqfOI23-pAh8XV5AgC5eDEg` (strings.xml:926) | publik by design (dibatasi console) |
+| Facebook App ID / Client Token | `1266996096794264` / `8831162787c176f36e320c53ba0be2d8` | publik by design |
+| AdMob App ID | `ca-app-pub-7223798354466955~8243402740` | publik by design |
+| maticoo_app_key | `8b075b78...b8587` (manifest:548) | ad network key, semi-publik |
+| Sentry DSN | `https://b5028cac...@sentry.lyr.id/14` | mengungkap infra `lyr.id` (self-hosted Sentry) |
+| Firebase project | `sestyc-project-cp`, OAuth client `889617509485-*` | publik by design |
+| Xendit | VA code `88908` (PT SINAR DIGITAL TERDEPAN) — hanya instruksi bayar; **tidak ada private key di client** | bersih |
+| AES video DataSource | `defpackage/l7.java` (AES/CBC/PKCS7, key+IV via konstruktor) | **dead code** — tidak ada instansiasi di dex mana pun |
+| Cache encryption | `defpackage/zy.java:192` (AES, key runtime dari field) | obfuscation cache internal, key tidak hardcoded |
+| SecretKeySpec lainnya (±30) | bytedance/GMA/inmobi/ironsource(StringFog)/mbridge | internal SDK, bukan secret app |
+| PairIP RSA pubkey | classes2.dex | publik by design |
+| Blob terenkripsi GMA | zzgiy/zzgiz (XOR-68+AES) → DexClassLoader (zzbcg:119) | mekanisme standar GMA, bukan secret app |
+
+Kesimpulan: **tidak ada private key payment gateway, tidak ada AES key hardcoded milik
+app** di seluruh dex. Secret bermasalah yang benar-benar berdampak tetap tiga yang sudah
+didokumentasikan (styc_ signature, HARDCODED_FCM_ID seed, dan sekarang Agora null-token).
