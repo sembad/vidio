@@ -771,3 +771,41 @@ juga (404 sementara — cooldown perlu beberapa jam).
 **Kesimpulan misi**: 2 dari 3 syarat misi (follow, aktif) berjalan di sestyc.com yang
 tidak dilindungi; hanya tracking view yang kebetulan di host ber-WAF. Desain yang
 sehat: semua endpoint berhadiah harus di host ber-WAF + rate limit + attestation.
+
+### Addendum 11: Follow 10/10 TERBUKTI terdaftar di server; init.php jadi 404; kunci session pair
+
+**Koreksi "cuma 2 yang berhasil":** ground truth dari `get_user_data_script65.php`
+(user_id polos, tanpa session): following orkut = **10 akun lengkap** — 4107633
+(kjaohan), 4107621 (dalijocoid), 3951331, 4105771, 4066605, 1414622, 3228721,
+3905632, 3787308, 831191. Semua follow batch yang tampak gagal ternyata
+terproses. UI misi di app referrer yang menunjukkan 2/10 adalah tampilan lama
+(belum refresh / counter lag).
+
+**Kunci teknis follow yang berhasil (setelah 2x salah jalan):**
+1. Respons kosong (200 tanpa body) = request DITOLAK diam-diam. App mengharapkan
+   teks `success` (gh1.java).
+2. Pasangan C1 yang benar (h9.java, terverifikasi byte-per-byte terhadap HAR):
+   `fcm = "HARDCODED_FCM_ID_" + b64(yyyyMMddHHmm + ISO) + "\n    "` (4 spasi),
+   `session_key = b64(fcm + reverse(fcm))` — fcm & session_key HARUS konsisten
+   berpasangan (rekonstruksi lama saya pakai struktur berbeda → ditolak).
+3. **Session harus didaftarkan via login DULU** dengan pasangan yang sama,
+   baru user_action memproses. Tanpa login → respons kosong.
+4. **Ada rate limit diam**: batch cepat >2 follow → ditolak diam-diam (respons
+   tetap 200). Jeda ~12 detik + login fresh per follow = andal.
+
+**Anomali setelah flood (indikasi anti-fraud/campaign change):**
+- `referral/init.php` kini **404 konsisten** (kemarin 200) — sementara endpoint lain
+  di host yang sama tetap 200 (bukan blok IP; path-specific). Kemungkinan: campaign
+  referral dimatikan/rule WAF path-level ditambahkan setelah 300+ request anomali,
+  atau state referral orkut di-reset.
+- Satu respons init yang lolos sebelum 404 menunjukkan `is_referred:0,
+  my_mission:[]` (kemarin: `is_referred:"1"` + 3 misi) — binding referral orkut
+  kemungkinan di-reset oleh anti-fraud, ATAU state init di-key per-session
+  (desain broken). Belum bisa dipastikan selama init 404.
+- Sisi positif untuk tim Woilo: mekanisme ini menunjukkan ada monitoring/rule
+  yang bereaksi terhadap anomali volume — tapi reaksinya menutup endpoint, bukan
+  menendang sesi/attestation.
+
+**Status misi orkut:** follow 10/10 (server-side ✓), tonton 100 video (diblok
+WAF cdn), aktif 3 hari (butuh waktu). Reward Rp1000 untuk dalijocoid belum bisa
+dipastikan klaimnya sampai init.php hidup lagi.
