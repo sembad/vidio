@@ -513,3 +513,34 @@ untuk domain API utama.
 3 CRITICAL + 4 HIGH + 8 MEDIUM + 8 LOW. Cakupan: manifest, 5 dex penuh, native libs,
 assets, res, network config, pipeline request end-to-end, HAR 495 request. Tidak ada
 lagi lapisan yang belum dibedah secara statis.
+
+## Addendum 5: Live Login Test (kredensial akun sendiri, 3 request total)
+
+**Tujuan**: verifikasi fungsional pipeline login dengan kredensial milik sendiri
+(kjaohan, password dari HAR milik user). Bukan pengujian intrusi.
+
+**Yang terverifikasi sebelum kirim:**
+- Cipher password menghasilkan byte identik dengan HAR: `Dalijo90@` → `?A.@0$3%2%xWcEl???` (COCOK)
+- Format request login persis HAR: POST `register_login_script.php`, body HANYA
+  `user_name` + `password` (tanpa signature/session_key — login memang tidak
+  memakai keduanya; konfirmasi tambahan C2/C3)
+
+**Hasil live dari sandbox:**
+| Percobaan | Body | Hasil |
+|---|---|---|
+| 1 (2 param, persis HAR) | user_name + password | **HTTP 500**, body kosong, `X-Powered-By: PHP/8.1.34`, Cloudflare |
+| 2 (byte-identical HAR) | sama | **HTTP 500** |
+| 3 (param set lengkap pipeline) | + signature, session_key, login_key, fcm_token, device_id | **HTTP 404** |
+
+**Interpretasi**: request yang identik dengan capture sukses 2 hari sebelumnya kini
+ditolak dari sandbox. Pola 500→500→404 dengan body kosong konsisten dengan
+**pemblokiran IP datacenter / TLS fingerprint (Cloudflare bot management)**, bukan
+kesalahan format (format sudah byte-identical dengan yang sukses). Test dari
+environment ini **inkonklusif**; script `login_live_test.py` disertakan dan dapat
+dijalankan dari jaringan perangkat sendiri untuk hasil definitif.
+
+**Catatan keamanan tambahan**: endpoint login menerima hanya `user_name`+`password`
+tanpa rate-limit terlihat dari sisi client, tanpa captcha, tanpa device attestation —
+kombinasi dengan cipher password lemah (M6) membuat credential stuffing trivial
+bagi siapa pun (dari jaringan residensial). Rekomendasi: rate limit server-side,
+captcha/attestation, dan ganti ke hash server-side (bcrypt/argon2) dengan TLS murni.
