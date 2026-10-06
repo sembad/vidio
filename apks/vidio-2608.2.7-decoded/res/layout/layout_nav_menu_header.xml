@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout android:orientation="horizontal" android:background="@color/backgroundElement" android:layout_width="fill_parent" android:layout_height="wrap_content" android:elevation="@dimen/cardElevationDefault"
-  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
-    <TextView android:textSize="@dimen/medium_text" android:textColor="@color/textPrimary" android:ellipsize="end" android:id="@id/vTitle" android:layout_width="0.0dip" android:layout_height="wrap_content" android:layout_margin="@dimen/large_margin" android:maxLines="1" android:layout_weight="1.0" android:fontFamily="sans-serif-medium" />
-    <ImageView android:id="@id/vImage" android:layout_width="0.0dip" android:layout_height="28.0dip" android:layout_marginLeft="@dimen/large_margin" android:layout_marginTop="@dimen/middle_margin" android:layout_marginRight="@dimen/large_margin" android:layout_marginBottom="@dimen/middle_margin" android:scaleType="fitStart" android:layout_weight="1.0" android:layout_marginHorizontal="@dimen/large_margin" android:layout_marginVertical="@dimen/middle_margin" />
-    <ImageView android:layout_gravity="center" android:id="@id/vBtnClose" android:layout_width="wrap_content" android:layout_height="wrap_content" android:src="@drawable/ic_cross" android:layout_marginEnd="@dimen/large_margin" app:tint="@color/iconPrimary" />
-</LinearLayout>

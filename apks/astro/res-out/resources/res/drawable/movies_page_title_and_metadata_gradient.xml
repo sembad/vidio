@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <gradient
-        android:startColor="@color/new_movies_page_translucent_overlay"
-        android:endColor="#0e101900"
-        android:angle="90"/>
-</shape>

@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<shape android:shape="oval"
-  xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="@color/red_strong" />
-    <size android:height="@dimen/banner_circle_indicator" android:width="@dimen/banner_circle_indicator" />
-    <stroke android:width="1.0dip" android:color="@color/red_strong_op_30" />
-</shape>

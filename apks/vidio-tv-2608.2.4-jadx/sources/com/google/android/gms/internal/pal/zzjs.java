@@ -1,9 +1,0 @@
-package com.google.android.gms.internal.pal;
-
-/* loaded from: classes4.dex */
-public abstract class zzjs {
-    protected zzjs() {
-    }
-
-    protected abstract Throwable zzh();
-}

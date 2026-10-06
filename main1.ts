@@ -47,19 +47,14 @@ function viaMirror(url: string): string {
     : url;
 }
 const STAGING_UA = "tv-android/2608.2.4 (1020)";
-// Kredensial staging: 5 token berputar. Token dipakai bergantian; bila
-// upstream menolak (401/error auth), index maju ke token berikutnya.
+// Kredensial staging: token berputar yang diambil MURNI dari txt
+// (satu token per baris) dan di-refresh berkala. Tidak ada fallback
+// hardcoded: bila fetch gagal dan daftar masih kosong, request staging
+// dilewati dan alur lanjut ke kredensial produksi/user.
 const STAGING_EMAIL = "@gmail.com";
-// Token staging diambil dari txt (satu token per baris) dan di-refresh
-// berkala — tidak lagi hardcoded. Fallback awal: daftar terakhir yang
-// diketahui, dipakai bila fetch gagal agar worker tetap berjalan.
 const STAGING_TOKENS_URL = "https://baru.pw/productioniwjowj.txt";
 const STAGING_TOKENS_REFRESH_MS = 10 * 60_000;
-const stagingTokens: string[] = [
-  "H6GXMs368Xb98tE2VuZ9",
-  "9J5WTn6VAwBRNKwHDahQ",
-  "1ECSbGA5zxPTgAaJvbfh",
-];
+const stagingTokens: string[] = [];
 let stagingTokenIndex = 0;
 let stagingTokensLoadedAt = 0;
 let stagingTokensLoading: Promise<void> | null = null;
@@ -106,9 +101,11 @@ async function loadStagingTokens(): Promise<void> {
 }
 
 function currentStagingToken(): string {
+  if (stagingTokens.length === 0) return "";
   return stagingTokens[stagingTokenIndex % stagingTokens.length] as string;
 }
 function rotateStagingToken(): void {
+  if (stagingTokens.length === 0) return;
   stagingTokenIndex = (stagingTokenIndex + 1) % stagingTokens.length;
 }
 
@@ -981,26 +978,13 @@ function clientIpFromRequest(request: Request): string | null {
 }
 
 /**
- * Kunci JWT ke IP: x-authorization WAJIB ada; IP pertama yang memakai JWT
- * tersebut dicatat di Deno KV (TTL 1 hari, auto-hapus), dan IP kedua dan
- * seterusnya dengan JWT yang sama ditolak 403.
+ * x-authorization (JWT) wajib ada. Lock IP sudah DIHAPUS: JWT yang sama
+ * boleh dipakai dari IP mana pun (rotasi JWT di APK TV membuat IP binding
+ * justru sering menolak playback yang sah dengan 403 forbidden).
  */
-async function enforceJwtIpLock(request: Request): Promise<Response | null> {
+function requireJwt(request: Request): Response | null {
   const jwt = request.headers.get("x-authorization")?.trim();
   if (!jwt) {
-    return textResponse("forbidden", 403);
-  }
-  const ip = clientIpFromRequest(request);
-  if (!ip) {
-    // Tanpa IP yang bisa dipercaya, kunci tidak bisa ditegakkan — tolak.
-    return textResponse("forbidden", 403);
-  }
-  const bound = await kvGet(["jwtip", jwt]);
-  if (typeof bound !== "string" || !bound) {
-    await kvSet(["jwtip", jwt], ip);
-    return null;
-  }
-  if (bound !== ip) {
     return textResponse("forbidden", 403);
   }
   return null;
@@ -1142,6 +1126,18 @@ function isEmailVerificationError(body: string): boolean {
     return parsed.errors.some((error) =>
       isRecord(error) && typeof error.title === "string"
       && error.title.startsWith("Verifikasi Email"));
+  } catch {
+    return false;
+  }
+}
+
+/** 403 JSON:API { errors: [{ title: "not_yet_started", meta: { start_time } }] }. */
+function isNotYetStartedError(body: string): boolean {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    if (!isRecord(parsed) || !Array.isArray(parsed.errors)) return false;
+    return parsed.errors.some((error) =>
+      isRecord(error) && error.title === "not_yet_started");
   } catch {
     return false;
   }
@@ -1332,6 +1328,10 @@ export async function proxyStagingStream(
   const incoming = request ? new URL(request.url) : null;
   const search = incoming && incoming.search ? incoming.search : "?initialize=true";
   await loadStagingTokens();
+  // Daftar token kosong (fetch txt gagal dan belum pernah sukses) →
+  // lewati staging, jangan kirim request dengan x-user-token kosong.
+  const stagingToken = token ?? currentStagingToken();
+  if (!stagingToken) return null;
   const headers = new Headers({
     "user-agent": STAGING_UA,
     "accept-encoding": "gzip",
@@ -1343,7 +1343,7 @@ export async function proxyStagingStream(
     "x-api-app-info": STAGING_APP_INFO,
     "accept-language": "id",
     "x-user-email": STAGING_EMAIL,
-    "x-user-token": token ?? currentStagingToken(),
+    "x-user-token": stagingToken,
     "x-visitor-id": STAGING_VISITOR_ID,
     "content-type": "application/vnd.api+json",
   });
@@ -1519,8 +1519,8 @@ async function verifyLiveVidioSessionUpstream(
 }
 
 async function proxyStream(streamId: string, request: Request): Promise<Response> {
-  // x-authorization (JWT) wajib dan terkunci ke IP pertama yang memakainya.
-  const jwtGate = await enforceJwtIpLock(request);
+  // x-authorization (JWT) wajib ada (tanpa lock IP).
+  const jwtGate = requireJwt(request);
   if (jwtGate) return jwtGate;
 
   const userEmail = request.headers.get("x-user-email");
@@ -1616,6 +1616,20 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
       if (staging && staging.status === 403 && isEmailVerificationError(staging.body)) {
         return REDIRECT_OFFICIAL_SENTINEL;
       }
+      // Event belum mulai (not_yet_started + meta.start_time) →
+      // teruskan JSON-nya apa adanya ke app: semua akun pasti menerima
+      // jawaban yang sama, jadi percuma merotasi token staging (kuota
+      // 1 GET/menit) atau mencoba kredensial produksi. Patch APK memakai
+      // meta.start_time dari body ini untuk pesan "belum mulai".
+      // Status selalu dinormalisasi ke 403: api.vidio.com produksi membalas
+      // not_yet_started dengan 200, tapi app (KMM) hanya membentuk
+      // HttpResponseException dari status error — dengan 200 body errors
+      // dianggap payload stream yang gagal di-parse dan patch APK tidak
+      // pernah terpicu.
+      const notYetStarted = staging && isNotYetStartedError(staging.body);
+      if (staging && notYetStarted) {
+        return staging.status === 403 ? staging : { ...staging, status: 403 };
+      }
     }
     for (const cred of shuffled(PRODUCTION_CREDENTIALS)) {
       const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA, PER_ACCOUNT_TIMEOUT_MS);
@@ -1641,6 +1655,12 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     result = own ?? null;
   }
   if (result && isHlsOnlyStream(result.body)) return redirectOfficialStream(streamId, request);
+  // Fallback kredensial user bisa menerima not_yet_started dari produksi
+  // dengan status 200 — normalisasi ke 403 agar app membentuk
+  // HttpResponseException dan patch APK menampilkan blocker start_time.
+  if (result && result.status !== 403 && isNotYetStartedError(result.body)) {
+    result = { ...result, status: 403 };
+  }
   if (result) {
     // Sembunyikan treatment preview (badge) supaya aplikasi tidak melewatkan
     // penjadwalan refresh stream-nya.
@@ -1684,8 +1704,8 @@ function redirectToOfficial(
 }
 
 async function proxyVideoData(videoId: string, request: Request): Promise<Response> {
-  // x-authorization (JWT) wajib dan terkunci ke IP pertama yang memakainya.
-  const jwtGate = await enforceJwtIpLock(request);
+  // x-authorization (JWT) wajib ada (tanpa lock IP).
+  const jwtGate = requireJwt(request);
   if (jwtGate) return jwtGate;
 
   const userEmail = request.headers.get("x-user-email");
@@ -1922,13 +1942,6 @@ async function selfCheck(): Promise<void> {
     const kvObj = await kvGet(["selfcheck", "k2"]);
     if (!isRecord(kvObj) || kvObj.a !== 1) {
       throw new Error("Deno KV object roundtrip failed");
-    }
-
-    // Lock JWT-IP: JWT pertama mengikat IP-nya; IP lain ditolak.
-    await kvSet(["jwtip", "jwt-selfcheck"], "1.2.3.4");
-    const bound = await kvGet(["jwtip", "jwt-selfcheck"]);
-    if (bound !== "1.2.3.4") {
-      throw new Error("JWT IP-lock roundtrip failed");
     }
   }
 

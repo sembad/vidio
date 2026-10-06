@@ -1,9 +1,0 @@
-package androidx.media3.exoplayer.offline;
-
-import androidx.media3.common.StreamKey;
-import java.util.List;
-
-/* loaded from: classes.dex */
-public interface s<T> {
-    T a(List<StreamKey> list);
-}

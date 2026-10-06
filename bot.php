@@ -3041,9 +3041,14 @@ function loginTv($email, $emailpartner, $tokenpartner, $password_to_use) {
         ];
     }
     
-    // Email belum diverifikasi. vidio balikin HTTP 422 ATAU 403 dengan error_code 10030027.
+    // Email belum diverifikasi HANYA jika vidio mengirim error_code 10030027
+    // (atau pesan error yang jelas menyebut verifikasi). Dulu semua 422/403
+    // dianggap "belum diverifikasi" — padahal password salah, token partner
+    // kadaluarsa, dan rate-limit juga bisa berupa 4xx, sehingga akun yang
+    // emailnya sudah terverifikasi ikut dituduh belum diverifikasi.
     $error_code = isset($result['error_code']) ? (int)$result['error_code'] : 0;
-    if ($http_code == 422 || $http_code == 403 || $error_code == 10030027) {
+    $error_text = strtolower((string)($result['error'] ?? ''));
+    if ($error_code == 10030027 || strpos($error_text, 'verif') !== false) {
         return [
             'success' => false,
             'needs_verification' => true,
@@ -4747,13 +4752,32 @@ function processDirectWarrantyClaim($chat_id, $account_id) {
     $existing_claim = $data['warranty_claims'][$account_id] ?? null;
     if (is_array($existing_claim)) {
         $existing_status = $existing_claim['status'] ?? '';
-        $still_active = time() - (int)($existing_claim['claimed_at'] ?? 0) < 600;
+        // 'processing' memakai processing_at (claimed_at tidak di-update saat
+        // masuk processing). Sesi tanpa progres lebih dari 10 menit dianggap
+        // mati (proses crash/timeout) dan otomatis dibuang agar klaim bisa
+        // diulang, tidak lagi mengunci selamanya.
+        $active_at = $existing_status === 'processing'
+            ? (int)($existing_claim['processing_at'] ?? 0)
+            : (int)($existing_claim['claimed_at'] ?? 0);
+        $still_active = time() - $active_at < 600;
         if (in_array($existing_status, ['pending', 'processing'], true) && $still_active) {
             flock($claim_lock, LOCK_UN);
             fclose($claim_lock);
-            sendMessage($chat_id, "Klaim akun ini sedang diproses. Lanjutkan sesi yang sudah terbuka.");
+            $keyboard = [
+                'inline_keyboard' => [
+                    [
+                        ['text' => 'Hapus Sesi Klaim', 'callback_data' => 'cancel_warranty_claim_' . $account_id]
+                    ],
+                    [
+                        ['text' => 'Kembali ke Daftar', 'callback_data' => 'warranty_check_page_1']
+                    ]
+                ]
+            ];
+            sendMessage($chat_id, "Klaim akun ini sedang diproses. Lanjutkan sesi yang sudah terbuka, atau hapus sesi ini untuk mulai ulang.", $keyboard);
             return;
         }
+        unset($data['warranty_claims'][$account_id]);
+        saveData($data);
     }
 
     if (!isset($data['warranty_claims'])) {
@@ -4847,8 +4871,9 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
     if (!$partner_result['success']) {
         $data = loadData();
         if (($data['warranty_claims'][$account_id]['claim_id'] ?? '') === $claim_id) {
-            $data['warranty_claims'][$account_id]['status'] = 'pending';
-            $data['warranty_claims'][$account_id]['claimed_at'] = time();
+            // Klaim gagal: buang sesinya agar user bisa langsung mengajukan
+            // ulang tanpa terjebak "lanjutkan sesi yang sudah terbuka".
+            unset($data['warranty_claims'][$account_id]);
             saveData($data);
         }
         deleteMessage($chat_id, $processing_msg['result']['message_id']);
@@ -4895,8 +4920,8 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
             );
             if (!$new_account_id) {
                 $data = loadData();
-                $data['warranty_claims'][$account_id]['status'] = 'pending';
-                $data['warranty_claims'][$account_id]['claimed_at'] = time();
+                // Klaim gagal: buang sesinya agar bisa langsung diajukan ulang.
+                unset($data['warranty_claims'][$account_id]);
                 saveData($data);
                 deleteMessage($chat_id, $processing_msg['result']['message_id']);
                 sendMessage($chat_id, "Gagal menyimpan akun garansi. Silakan coba lagi.");
@@ -4943,12 +4968,12 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
             
         } else {
             $data = loadData();
-            $data['warranty_claims'][$account_id]['status'] = 'pending';
-            $data['warranty_claims'][$account_id]['claimed_at'] = time();
+            // Klaim gagal: buang sesinya agar bisa langsung diajukan ulang.
+            unset($data['warranty_claims'][$account_id]);
             saveData($data);
-            
+
             deleteMessage($chat_id, $processing_msg['result']['message_id']);
-            
+
             $response = "Mohon maaf, proses akun garansi gagal\n\n";
             $response .= "Email: " . $email . "\n";
             $response .= "Password: " . $password . "\n";
@@ -4960,12 +4985,12 @@ function createWarrantyAccount($chat_id, $account_id, $claim_id, $email, $passwo
         }
     } else {
         $data = loadData();
-        $data['warranty_claims'][$account_id]['status'] = 'pending';
-        $data['warranty_claims'][$account_id]['claimed_at'] = time();
+        // Klaim gagal: buang sesinya agar bisa langsung diajukan ulang.
+        unset($data['warranty_claims'][$account_id]);
         saveData($data);
-        
+
         deleteMessage($chat_id, $processing_msg['result']['message_id']);
-        
+
         if (!empty($login_result['needs_verification'])) {
             $pesan_verif = "Email belum diverifikasi\n\n";
             $pesan_verif .= "Email: " . $email . "\n\n";
@@ -8759,6 +8784,21 @@ function handleCallbackQuery($callback_query) {
         deleteMessage($chat_id, $message_id);
         startWarrantyPasswordChange($chat_id, $account_id, $return_page);
         
+    } elseif (strpos($callback_data, 'cancel_warranty_claim_') === 0) {
+        answerCallbackQuery($callback_id);
+        $account_id = str_replace('cancel_warranty_claim_', '', $callback_data);
+        $data = loadData();
+        $claim = $data['warranty_claims'][$account_id] ?? null;
+        if (is_array($claim) && (int)($claim['chat_id'] ?? 0) === (int)$chat_id
+                && in_array($claim['status'] ?? '', ['pending', 'processing'], true)) {
+            unset($data['warranty_claims'][$account_id]);
+            saveData($data);
+            deleteMessage($chat_id, $message_id);
+            sendMessage($chat_id, "Sesi klaim garansi dihapus. Silakan ajukan klaim ulang dari menu Cek Status Garansi.");
+        } else {
+            answerCallbackQuery($callback_id, "Sesi klaim sudah tidak ada.");
+        }
+
     } elseif (strpos($callback_data, 'claim_warranty_direct_') === 0) {
         answerCallbackQuery($callback_id);
         $account_id = str_replace('claim_warranty_direct_', '', $callback_data);

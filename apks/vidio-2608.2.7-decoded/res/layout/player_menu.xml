@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout android:layout_gravity="center" android:orientation="horizontal" android:layout_width="wrap_content" android:layout_height="fill_parent"
-  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
-    <androidx.appcompat.widget.AppCompatImageView android:id="@id/gamesIcon" android:visibility="gone" android:layout_width="wrap_content" android:layout_height="fill_parent" android:scaleType="fitCenter" android:adjustViewBounds="true" android:layout_marginEnd="@dimen/double_xl_24_margin" app:srcCompat="@null" app:tint="@color/white" />
-    <androidx.appcompat.widget.AppCompatImageView android:layout_gravity="center_vertical" android:id="@id/chatIcon" android:visibility="gone" android:layout_width="wrap_content" android:layout_height="fill_parent" android:scaleType="fitCenter" android:adjustViewBounds="true" android:layout_marginEnd="@dimen/double_xl_24_margin" app:srcCompat="@null" />
-    <androidx.constraintlayout.helper.widget.Flow android:id="@id/iconFlow" android:layout_width="wrap_content" android:layout_height="wrap_content" app:constraint_referenced_ids="gamesIcon,chatIcon" app:flow_horizontalGap="24.0dip" app:flow_wrapMode="none" app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent" app:layout_constraintStart_toStartOf="parent" app:layout_constraintTop_toTopOf="parent" />
-</androidx.constraintlayout.widget.ConstraintLayout>

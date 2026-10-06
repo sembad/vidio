@@ -1,3 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<TextView android:textSize="@dimen/normal_text" android:textStyle="normal" android:textColor="@color/textPrimary" android:ellipsize="end" android:gravity="center_vertical" android:orientation="horizontal" android:id="@id/deviceName" android:layout_width="fill_parent" android:layout_height="@dimen/cast_device_item_height" android:maxLines="1" android:drawablePadding="18.0dip" android:fontFamily="sans-serif" app:drawableStartCompat="@drawable/ic_chrome_cast" app:drawableTint="@color/textPrimary"
-  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" />

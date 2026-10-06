@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout android:gravity="center" android:orientation="vertical" android:background="#ff1e1e1e" android:layout_width="fill_parent" android:layout_height="fill_parent"
-  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
-    <androidx.appcompat.widget.AppCompatImageView android:layout_width="166.0dip" android:layout_height="166.0dip" android:layout_marginBottom="24.0dip" app:srcCompat="@drawable/ic_phone_number_not_found" />
-    <TextView android:textSize="24.0sp" android:textStyle="bold" android:textColor="#ffffffff" android:gravity="center_horizontal" android:id="@id/blockerTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="24.0dip" android:text="@string/title_phone_number_not_found" android:fontFamily="sans-serif" />
-    <TextView android:textSize="16.0sp" android:textStyle="normal" android:textColor="#99ffffff" android:gravity="center_horizontal" android:id="@id/blockerDesc" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="24.0dip" android:lineSpacingExtra="5.0sp" android:fontFamily="sans-serif" android:layout_marginStart="@dimen/ultra_large_margin" android:layout_marginEnd="@dimen/ultra_large_margin" />
-    <androidx.appcompat.widget.AppCompatButton android:textStyle="normal" android:gravity="center" android:id="@id/btnOk" android:background="@drawable/button_gray_red_selector_round_background_selector" android:focusable="true" android:focusableInTouchMode="true" android:layout_width="156.0dip" android:layout_height="44.0dip" android:text="@string/ok_button" android:textAllCaps="false" />
-</LinearLayout>

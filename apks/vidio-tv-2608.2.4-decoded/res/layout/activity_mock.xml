@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<merge android:id="@id/parentContainer" android:layout_width="fill_parent" android:layout_height="fill_parent"
-  xmlns:android="http://schemas.android.com/apk/res/android">
-    <SurfaceView android:id="@id/surfakeView" android:layout_width="fill_parent" android:layout_height="fill_parent" />
-    <FrameLayout android:id="@id/container" android:layout_width="fill_parent" android:layout_height="fill_parent" />
-    <LinearLayout android:orientation="vertical" android:id="@id/linearContainer" android:layout_width="fill_parent" android:layout_height="fill_parent" />
-    <androidx.constraintlayout.widget.ConstraintLayout android:id="@id/containerConstraint" android:layout_width="fill_parent" android:layout_height="fill_parent" />
-</merge>

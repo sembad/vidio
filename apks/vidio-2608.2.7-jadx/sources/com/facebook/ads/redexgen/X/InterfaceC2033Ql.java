@@ -1,9 +1,0 @@
-package com.facebook.ads.redexgen.X;
-
-/* renamed from: com.facebook.ads.redexgen.X.Ql, reason: case insensitive filesystem */
-/* loaded from: assets/audience_network.dex */
-public interface InterfaceC2033Ql {
-    void A5U(int i11);
-
-    void A5V();
-}

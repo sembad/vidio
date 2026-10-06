@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout android:gravity="center" android:orientation="vertical" android:layout_width="fill_parent" android:layout_height="fill_parent"
-  xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
-    <ImageView android:layout_width="wrap_content" android:layout_height="wrap_content" android:src="@null" />
-    <TextView android:textSize="20.0sp" android:textStyle="bold" android:textColor="@color/textPrimary" android:gravity="center_horizontal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="16.0dip" android:layout_marginBottom="8.0dip" android:text="@string/download_list_need_login_title" android:lineSpacingExtra="8.0sp" android:fontFamily="sans-serif" android:layout_marginStart="@dimen/double_xl_24_margin" android:layout_marginEnd="@dimen/double_xl_24_margin" android:letterSpacing="0.03" />
-    <TextView android:textSize="14.0sp" android:textStyle="normal" android:textColor="@color/textSecondary" android:gravity="center_horizontal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="32.0dip" android:text="@string/download_list_need_login_description" android:lineSpacingExtra="7.0sp" android:fontFamily="sans-serif" android:layout_marginStart="@dimen/double_xl_24_margin" android:layout_marginEnd="@dimen/double_xl_24_margin" />
-    <com.vidio.common.ui.customview.PillShapedButton android:id="@id/loginButton" android:layout_width="160.0dip" android:layout_height="wrap_content" android:layout_marginTop="@dimen/extra_large_margin" app:text="@string/cta_sign_in" />
-</LinearLayout>

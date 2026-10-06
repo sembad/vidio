@@ -1,7 +1,0 @@
-package com.google.android.gms.internal.ads;
-
-/* loaded from: classes5.dex */
-public final class zzac extends IllegalStateException {
-    public zzac(zzbq zzbqVar, int i11, long j11) {
-    }
-}

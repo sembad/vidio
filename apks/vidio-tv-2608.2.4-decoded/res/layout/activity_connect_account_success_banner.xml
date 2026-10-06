@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout android:gravity="center" android:orientation="vertical" android:background="#ff1e1e1e" android:layout_width="fill_parent" android:layout_height="fill_parent"
-  xmlns:android="http://schemas.android.com/apk/res/android">
-    <ImageView android:layout_width="166.0dip" android:layout_height="166.0dip" android:layout_marginBottom="24.0dip" android:src="@null" />
-    <TextView android:textSize="24.0sp" android:textStyle="bold" android:textColor="#ffffffff" android:gravity="center_horizontal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="24.0dip" android:text="@string/connect_account_success_title" android:fontFamily="sans-serif" />
-    <TextView android:textSize="16.0sp" android:textStyle="normal" android:textColor="#99ffffff" android:gravity="center_horizontal" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="192.0dip" android:layout_marginRight="168.0dip" android:layout_marginBottom="24.0dip" android:text="@string/connect_account_success_desc" android:lineSpacingExtra="5.0sp" android:fontFamily="sans-serif" />
-    <androidx.appcompat.widget.AppCompatButton android:textStyle="normal" android:gravity="center" android:id="@id/btnWatch" android:background="@drawable/button_gray_red_selector_round_background_selector" android:focusable="true" android:focusableInTouchMode="true" android:layout_width="156.0dip" android:layout_height="44.0dip" android:text="@string/cta_watch_now" android:textAllCaps="false" />
-</LinearLayout>

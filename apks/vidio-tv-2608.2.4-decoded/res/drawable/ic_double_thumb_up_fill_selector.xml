@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<selector
-  xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:state_focused="true" android:drawable="@drawable/ic_double_thumb_up_fill" />
-    <item android:drawable="@drawable/ic_double_thumb_up_fill" android:state_hovered="true" />
-    <item android:state_selected="true" android:drawable="@drawable/ic_double_thumb_up_fill" />
-    <item android:drawable="@drawable/ic_double_thumb_up_fill_white" />
-</selector>

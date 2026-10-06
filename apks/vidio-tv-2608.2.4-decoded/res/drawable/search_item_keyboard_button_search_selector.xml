@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<selector
-  xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:state_pressed="true" android:drawable="@drawable/search_item_keyboard_button_search_unselected" />
-    <item android:state_focused="true" android:drawable="@drawable/search_item_keyboard_selected" />
-    <item android:drawable="@drawable/search_item_keyboard_selected" android:state_hovered="true" />
-    <item android:drawable="@drawable/search_item_keyboard_button_search_unselected" />
-</selector>

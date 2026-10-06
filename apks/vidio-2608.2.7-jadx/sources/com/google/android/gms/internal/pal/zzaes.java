@@ -1,6 +1,0 @@
-package com.google.android.gms.internal.pal;
-
-/* loaded from: classes5.dex */
-interface zzaes {
-    zzaer zza(Class cls);
-}
