@@ -47,19 +47,14 @@ function viaMirror(url: string): string {
     : url;
 }
 const STAGING_UA = "tv-android/2608.2.4 (1020)";
-// Kredensial staging: 5 token berputar. Token dipakai bergantian; bila
-// upstream menolak (401/error auth), index maju ke token berikutnya.
+// Kredensial staging: token berputar yang diambil MURNI dari txt
+// (satu token per baris) dan di-refresh berkala. Tidak ada fallback
+// hardcoded: bila fetch gagal dan daftar masih kosong, request staging
+// dilewati dan alur lanjut ke kredensial produksi/user.
 const STAGING_EMAIL = "@gmail.com";
-// Token staging diambil dari txt (satu token per baris) dan di-refresh
-// berkala — tidak lagi hardcoded. Fallback awal: daftar terakhir yang
-// diketahui, dipakai bila fetch gagal agar worker tetap berjalan.
 const STAGING_TOKENS_URL = "https://baru.pw/productioniwjowj.txt";
 const STAGING_TOKENS_REFRESH_MS = 10 * 60_000;
-const stagingTokens: string[] = [
-  "H6GXMs368Xb98tE2VuZ9",
-  "9J5WTn6VAwBRNKwHDahQ",
-  "1ECSbGA5zxPTgAaJvbfh",
-];
+const stagingTokens: string[] = [];
 let stagingTokenIndex = 0;
 let stagingTokensLoadedAt = 0;
 let stagingTokensLoading: Promise<void> | null = null;
@@ -106,9 +101,11 @@ async function loadStagingTokens(): Promise<void> {
 }
 
 function currentStagingToken(): string {
+  if (stagingTokens.length === 0) return "";
   return stagingTokens[stagingTokenIndex % stagingTokens.length] as string;
 }
 function rotateStagingToken(): void {
+  if (stagingTokens.length === 0) return;
   stagingTokenIndex = (stagingTokenIndex + 1) % stagingTokens.length;
 }
 
@@ -1344,6 +1341,10 @@ export async function proxyStagingStream(
   const incoming = request ? new URL(request.url) : null;
   const search = incoming && incoming.search ? incoming.search : "?initialize=true";
   await loadStagingTokens();
+  // Daftar token kosong (fetch txt gagal dan belum pernah sukses) →
+  // lewati staging, jangan kirim request dengan x-user-token kosong.
+  const stagingToken = token ?? currentStagingToken();
+  if (!stagingToken) return null;
   const headers = new Headers({
     "user-agent": STAGING_UA,
     "accept-encoding": "gzip",
@@ -1355,7 +1356,7 @@ export async function proxyStagingStream(
     "x-api-app-info": STAGING_APP_INFO,
     "accept-language": "id",
     "x-user-email": STAGING_EMAIL,
-    "x-user-token": token ?? currentStagingToken(),
+    "x-user-token": stagingToken,
     "x-visitor-id": STAGING_VISITOR_ID,
     "content-type": "application/vnd.api+json",
   });
