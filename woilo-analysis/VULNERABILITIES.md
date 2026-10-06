@@ -330,3 +330,54 @@ membocor atribut activity berikutnya. Setelah manifest di-parse dengan
 Semua POC berjalan **offline**. Tidak ada satu pun request yang dikirim ke server
 produksi Woilo; reproduksi SQL injection memakai SQLite lokal dengan skema yang
 disalin dari dex.
+
+## Addendum: Bedah Lanjutan (pembelian, offerwall, PairIP, SQLi callers, deeplink)
+
+### A1. Flow pembelian premium & topup koin (client-side)
+- `SestycPremiumPurchaseActivity.g0()`: kirim `product_id` + `purchase_token` (token asli
+  Google Play Billing) + `order_id` ke `woilo_premium/confirm_purchase_android.php`.
+  Token asli dikirim utuh — validasi server-side (Google Play Developer API) tidak dapat
+  dinilai dari APK; client tidak melakukan verifikasi lokal sendiri.
+- `SestycCoinTopupActivity.i0()`: sama, plus `purchase_key` dan `purchase_id` — keduanya
+  nilai client-stored dari SharedPreferences (`purchase_key_gen` / `purchase_id_gen`,
+  setter `jp0.r()/q()`, caller tidak ter-trace karena obfuscation). Nilai ini dikirim juga
+  pada request gift di chat & moments (`p63`, `jv3`, `kz1`, `q33`). Jika `purchase_key_gen`
+  bersifat replayable/guessable, request gift bisa diulang — perlu diverifikasi di server.
+- Temuan: **MEDIUM (potensial)** — keberadaan purchase key client-side di endpoint pembayaran
+  adalah pola berisiko; kepastian eksploitasi butuh pengujian berotorisasi.
+
+### A2. Offerwall Ayetstudios
+SDK standar (`offerwall.ayet.io`), lifecycle callbacks saja. Jalur kredit reward tidak
+terlihat di kode app (kemungkinan server postback Ayet → server Woilo). Tidak ada
+temuan client-side.
+
+### A3. PairIP license check
+`com.pairip.application.Application.attachBaseContext()` → `LicenseClient.checkLicense()`.
+Verifikasi respons Google Play licensing dengan SHA256withRSA + cek package info.
+Proteksi client-side standar; bukan kerentanan, hanya lapisan pertama yang dapat
+di-neuter pada build modifikasi (ekspektasi normal untuk proteksi client).
+
+### A4. SQL injection — caller tambahan (melengkapi H3)
+- **FIRST-ORDER (baru)**: `ls0.java:331` — `EditNameGroupActivity`: nama grup yang diketik
+  pengguna sendiri masuk langsung ke `UPDATE chat_room SET display_name = '<input>'...`
+  tanpa escaping. Mengetik nama mengandung apostrof (mis. `it's`) sudah merusak query
+  (self-DoS); membuktikan pola concat reachable dari input keyboard biasa.
+- **Second-order (baru)**: `g01.java:678` (`D0` dengan URL foto grup baru dari response
+  server), `x8.java:276-291` (`E0` berulang dengan nilai dari cursor DB lokal — rantai
+  second-order), `b50.java:1051,1092` (`A0`), `qs0.java:48` / `rs0.java:50` (`B0`).
+- Total caller ter-konfirmasi: 11 lokasi di 8 file. Semua satu akar masalah: us0.java.
+
+### A5. Deeplink — verifikasi penuh (melengkapi M3)
+- `LiveDeeplinkActivity` (exported + BROWSABLE): URI atau extra `url` dari app mana pun →
+  `substring(e0(url))` → dikirim mentah sebagai `stream_id` ke API. `stream_id` TIDAK
+  termasuk parameter signature → input attacker sepenuhnya tak-tertanda-tangan. Terkonfirmasi.
+- 8 deeplink lain (BeliYuk, Feature, Football, Moment, NFT, OtherProfile, Story, Loading):
+  hanya routing ke activity internal, tidak meneruskan data attacker ke API. Risiko rendah.
+
+### Status keseluruhan setelah addendum
+- CRITICAL 3 (C1 token deterministik, C2 session_key tak dienforce, C3 signature forgeable) — tetap
+- HIGH 3 (H1 cleartext+no pinning, H2 allowBackup+token plaintext, H3 SQLi lokal terbukti) — tetap
+- MEDIUM 6 + 1 baru (A1 purchase_key client-side) = 7
+- LOW 7 — tetap
+- Diperiksa & bersih: SSL handling, RCE client, PendingIntent, world-readable, AES key,
+  native libs, debug flag, deserialisasi, 8 deeplink routing-only, offerwall client-side.
