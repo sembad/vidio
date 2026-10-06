@@ -543,9 +543,20 @@ dari repo), server merespons normal untuk semua kasus KECUALI kredensial benar:
 | **password BENAR (dari HAR)** | **HTTP 500 Internal Server Error** (body kosong) |
 
 Artinya: (a) API sepenuhnya reachable dari mana saja — tidak ada IP allowlist; (b)
-500 terjadi justru di **jalur login sukses** — crash server-side (CWE-755/209),
-kemungkinan akun berada di state anomali (dihapus/diblokir tanpa handling) atau bug
-di path sukses; (c) header bocor `X-Powered-By: PHP/8.1.34`.
+500 terjadi spesifik di jalur verifikasi password BENAR — crash server-side
+(CWE-755/209); (c) header bocor `X-Powered-By: PHP/8.1.34`.
+
+**KOREKSI (klaim awal ditarik)**: dugaan "akun dihapus/diblokir" SALAH — pemilik akun
+mengonfirmasi akun masih aktif dan login via app berjalan normal. Setelah koreksi,
+request direplikasi ulang dengan param set lengkap `i5.java` case 4 (user_name,
+password, fcm_token, session_key — body HAR ternyata TERPOTONG di 62 char; trailing
+`&` menandakan param hilang dari capture) dan tetap HTTP 500, termasuk varian
+`session_key=""` (kondisi first-login). Kesimpulan yang dapat dipertanggungjawabkan:
+replikasi non-app (Python) selalu 500 di success path sementara app asli sukses —
+delta yang tersisa: format/nilai fcm_token asli, TLS fingerprint Dalvik/OkHttp vs
+Python, atau perubahan server pasca-capture. Yang PASTI terbukti: endpoint login
+TIDAK punya proteksi terhadap klien non-resmi (tanpa attestation/pinning) dan crash
+(500 kosong) alih-alih menolak dengan rapi — error handling buruk (CWE-209).
 
 ### H5 (BARU, HIGH): User enumeration via login + tidak ada rate limit
 Server membedakan `result:0` (user tidak ada) vs `result:2` (password salah) —

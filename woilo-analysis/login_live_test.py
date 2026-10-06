@@ -36,17 +36,33 @@ def build_login_key(ts_ms: int) -> str:
     s = "HARDCODED_FCM_ID_" + inner
     return base64.b64encode((s + s[::-1]).encode()).decode()
 
-def login(user_name: str, password: str) -> dict:
-    ts = int(datetime.now().timestamp() * 1000)
-    body = urllib.parse.urlencode({
-        "user_name": user_name,
-        "password": encode_password(password),
-    }).encode()
+def login(user_name: str, password: str, body: bytes = None) -> dict:
+    if body is None:
+        body = urllib.parse.urlencode({
+            "user_name": user_name,
+            "password": encode_password(password),
+        }).encode()
     req = urllib.request.Request(BASE, data=body, method="POST")
     req.add_header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
     req.add_header("User-Agent", UA)
     with _opener.open(req, timeout=60) as r:
         return json.loads(r.read().decode())
+
+
+def build_login_body(user_name: str, enc_password: str) -> bytes:
+    """Param set PERSIS i5.java case 4: user_name, password, fcm_token, session_key."""
+    dt = datetime.now()
+    iso = dt.strftime("%Y-%m-%dT%H:%M:%S")
+    inner = base64.b64encode(f"{dt.strftime('%Y%m%d%H%M')}{iso}".encode()).decode()
+    s = "HARDCODED_FCM_ID_" + inner
+    login_key = base64.b64encode((s + s[::-1]).encode()).decode()
+    params = [
+        ("user_name", user_name),
+        ("password", enc_password),
+        ("fcm_token", "debug_fcm_token_test"),
+        ("session_key", login_key),
+    ]
+    return urllib.parse.urlencode(params).encode()
 
 if __name__ == "__main__":
     user = sys.argv[1] if len(sys.argv) > 1 else "kjaohan"
@@ -56,9 +72,10 @@ if __name__ == "__main__":
     print(f"[i] password  : {pw!r}")
     print(f"[i] encoded   : {enc!r}")
     print(f"[i] (verifikasi vs HAR: {'COCOK' if enc == '?A.@0$3%2%xWcEl???' else 'BEDA'})")
-    print("[*] mengirim 1 request login live...")
+    print("[*] mengirim 1 request login live (4 param, persis i5.java case 4)...")
     try:
-        resp = login(user, pw)
+        body = build_login_body(user, enc)
+        resp = login(user, pw, body)
         print("[+] RESPONSE:")
         print(json.dumps(resp, indent=2, ensure_ascii=False))
     except Exception as e:
