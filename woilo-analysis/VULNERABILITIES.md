@@ -464,3 +464,52 @@ this.d.joinChannel((String) null, this.m, (String) null, this.e);
 Kesimpulan: **tidak ada private key payment gateway, tidak ada AES key hardcoded milik
 app** di seluruh dex. Secret bermasalah yang benar-benar berdampak tetap tiga yang sudah
 didokumentasikan (styc_ signature, HARDCODED_FCM_ID seed, dan sekarang Agora null-token).
+
+## Addendum 4: Bedah Lapisan Dalam (native, assets, pipeline request utuh)
+
+### M8 (BARU, MEDIUM): API key hardcoded untuk domain testing di kode produksi
+`defpackage/ju0.java:66-70` — telemetri internal dikirim ke **woilotest.xyz** (domain
+testing!) dengan **API key hardcoded**:
+```
+https://woilotest.xyz/sestyc/apis/public/log_api_call.php
+  ?name=<endpoint>&user_id=<uid>&key=2ZYq6lCRYc9V0W7DLdM9Ockrvq6lKKSuN2w2Vwabnk6NBGB6qc&is_success=<0|2>
+```
+Aktif hanya untuk user_id 3555650–3556650 (kohort debug). Domain testing di kode produksi
++ key hardcoded = kebocoran infrastruktur & kredensial API internal.
+
+### Pipeline request API — terpetakan utuh (ju0 → i5 → k15 → rd)
+- `rd.java:1307-1365`: `session_key` = SharedPreferences `login_key`; `user_id` = `user_id`;
+  `user_name` = `user_name`. **Token deterministik C1 dikirim di SETIAP request** —
+  rantai C1+C2 terkonfirmasi end-to-end dari kode.
+- `i5.java` (16 varian param): LOGIN (case 4) mengirim `user_name` + `password`
+  (dienkrip cipher lemah M6) + `fcm_token` + `login_key`. WALLET TOPUP (case 13/14)
+  mengirim `topup_amount` + `bank` dari client, ditandatangani signature yang bisa
+  dipalsukan (C3). REGISTER (case 10) mengirim birthday/gender/account_type.
+- `k15.java`: wrapper Volley standar, body form-urlencoded, tanpa header kustom
+  berisiko; cache TTL default 2,5 dtk, sebagian request 24 jam.
+- `ea.f()` (ea.java:501): SHA256("styc_"+ts+"_"+username+"_"+uid+"_app") — C3 terkonfirmasi
+  di level pipeline.
+
+### H1 terkonfirmasi penuh (network_security_config.xml)
+Cleartext diizinkan eksplisit untuk: `woilo.com`, `games.woilo.com`, `ads.woilo.com`,
+`woilotest.xyz`, `sestyc.com`, `live.sestyc.com` (semua + subdomain). Tidak ada pinning
+untuk domain API utama.
+
+### Temuan lapisan dalam lainnya
+- **Cert pinning object storage KADALUARSA**: `res/raw/woilo_object_storage.crt`
+  (GlobalSign, `*.nos.wjv-1.neo.id`, notAfter **2025-11-07**) dipakai sebagai trust
+  anchor kustom — sudah lewat 11 bulan dari tanggal audit (2026-10-06). Pin stale =
+  TLS ke object storage berpotensi gagal di build ini (misconfig, LOW).
+- **Tidak ada native library milik app**: 21 file .so semuanya SDK (Agora ×9,
+  ByteDance/Pangle ×7, androidx, unity, datastore). Tidak ada logika/secret tersembunyi
+  di native code.
+- **Tidak ada string decryption runtime di kode app** (nol hit pola XOR/char-array/
+  Base64-konstanta) — output jadx = ground truth, tidak ada lapisan obfuscasi tersembunyi.
+- **assets/dic** (4 KB, terenkripsi) = milik Pangle SDK (`com.pgl.ssdk.af.java:30`),
+  bukan app. assets lainnya = template iklan IronSource/Pangle, font, model TFLite.
+- **res/raw** = shader GLSL kamera/video, animasi Lottie, billing metadata — bersih.
+
+### Status akhir
+3 CRITICAL + 4 HIGH + 8 MEDIUM + 8 LOW. Cakupan: manifest, 5 dex penuh, native libs,
+assets, res, network config, pipeline request end-to-end, HAR 495 request. Tidak ada
+lagi lapisan yang belum dibedah secara statis.
