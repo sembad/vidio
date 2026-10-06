@@ -546,17 +546,23 @@ Artinya: (a) API sepenuhnya reachable dari mana saja — tidak ada IP allowlist;
 500 terjadi spesifik di jalur verifikasi password BENAR — crash server-side
 (CWE-755/209); (c) header bocor `X-Powered-By: PHP/8.1.34`.
 
-**KOREKSI (klaim awal ditarik)**: dugaan "akun dihapus/diblokir" SALAH — pemilik akun
-mengonfirmasi akun masih aktif dan login via app berjalan normal. Setelah koreksi,
-request direplikasi ulang dengan param set lengkap `i5.java` case 4 (user_name,
-password, fcm_token, session_key — body HAR ternyata TERPOTONG di 62 char; trailing
-`&` menandakan param hilang dari capture) dan tetap HTTP 500, termasuk varian
-`session_key=""` (kondisi first-login). Kesimpulan yang dapat dipertanggungjawabkan:
-replikasi non-app (Python) selalu 500 di success path sementara app asli sukses —
-delta yang tersisa: format/nilai fcm_token asli, TLS fingerprint Dalvik/OkHttp vs
-Python, atau perubahan server pasca-capture. Yang PASTI terbukti: endpoint login
-TIDAK punya proteksi terhadap klien non-resmi (tanpa attestation/pinning) dan crash
-(500 kosong) alih-alih menolak dengan rapi — error handling buruk (CWE-209).
+**KOREKSI (klaim awal ditarik)**: dugaan "akun dihapus/diblokir" SALAH — ditarik
+tanpa bukti. Setelah matriks terkontrol (body bytes persis HAR, curl_cffi Chrome TLS,
+proxy residensial ID), **HTTP 200 tercapai stabil** dan misteri 500 terpecahkan:
+
+- **500 bersifat intermiten per-IP**: request identik bisa 500 atau 200 tergantung
+  exit IP dari proxy rotasi. Server **crash (500 kosong)** untuk sebagian IP klien —
+  error handling buruk (CWE-209/755), kemungkinan anti-fraud/geo-lookup tanpa try-catch.
+  Teori UA/TLS/fcm_token sebelumnya TERBUKTI SALAH (dalvik UA pun 200 di run lanjutan).
+- **bodySize HAR = 62 = body LENGKAP** (bukan terpotong): app mengirim hanya
+  `password=<cipher>&user_name=<user>&` (trailing `&`, tanpa fcm_token/session_key
+  pada jalur re-login ini).
+- **Password dari HAR DITOLAK server** (`result:2`) dalam KEDUA bentuk (cipher
+  `?A.@0$3%2%xWcEl???` maupun mentah `Dalijo90@`), sementara user terdeteksi ada
+  (bukan `result:0`). Artinya: password telah berubah sejak capture 2026-10-04,
+  atau validasi password sisi server berubah. Bukan bug script — script final
+  (`login_live_test.py`, curl_cffi + retry) stabil 200 dan siap dipakai dengan
+  password terkini: `python3 login_live_test.py USER PASSWORD_SAAT_INI`.
 
 ### H5 (BARU, HIGH): User enumeration via login + tidak ada rate limit
 Server membedakan `result:0` (user tidak ada) vs `result:2` (password salah) —

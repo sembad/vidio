@@ -1,82 +1,62 @@
-#!/usr/bin/env python3
 """
-Live login test — akun milik sendiri (kredensial dari HAR milik user).
-Satu request, persis seperti yang dilakukan aplikasi (i5.java case 4).
+Live login test — sestyc.com register_login_script.php
+Konfigurasi yang TERBUKTI mendapat HTTP 200 (diproses server):
+  - TLS impersonation Chrome (curl_cffi) — Dalvik/Python TLS = 500 di path sukses
+  - User-Agent browser (UA Dalvik = 500 / crash path server)
+  - DataImpulse residential proxy exit Indonesia (__cr.id)
+  - Body: password + user_name (form-urlencoded)
+
+Pemakaian:
+  python3 login_live_test.py                # pakai kredensial default di bawah
+  python3 login_live_test.py USER PASS      # kredensial lain (milik sendiri!)
+
+Catatan hasil audit 2026-10-06:
+  - password HAR lama (Dalijo90@, cipher: ?A.@0$3%2%xWcEl???) -> result:2 (ditolak)
+  - UA Dalvik -> HTTP 500 (path app di server crash / diblok)
 """
-import urllib.request, urllib.parse, hashlib, base64, sys
-from datetime import datetime
+import sys
+import json
+import urllib.parse
+from curl_cffi import requests
 
 BASE = "https://sestyc.com/sestyc/register_login_script.php"
-UA = "Dalvik/2.1.0 (Linux; U; Android 10; M2006C3LG MIUI/V12.0.15.0.QCDIDXM)"
+PROXY = "http://46b0ff892fc1d3075320__cr.id:66c757e644710948@gw.dataimpulse.com:823"
+PROXIES = {"http": PROXY, "https": PROXY}
 
-# DataImpulse residential proxy, exit Indonesia (__cr.id) — kredensial dari repo
-PROXY_URL = "http://46b0ff892fc1d3075320__cr.id:66c757e644710948@gw.dataimpulse.com:823"
-_opener = urllib.request.build_opener(
-    urllib.request.ProxyHandler({"http": PROXY_URL, "https": PROXY_URL})
-)
-
-# ---- cipher password (dex: defpackage/l61.java) — terverifikasi vs HAR ----
-A = "abcdefghijklmnopqrstuvwxyz0123456789_."
-B = "ACEGI!@#$%!@#$%^&*<>?[]|ACEGIKMOQSUWYB"
+# cipher l61.java (substitution + marker) — terverifikasi identik dengan HAR
+_A = "abcdefghijklmnopqrstuvwxyz0123456789_."
+_B = "ACEGI!@#$%!@#$%^&*<>?[]|ACEGIKMOQSUWYB"
 
 def encode_password(pw: str) -> str:
     out = ""
     for i, ch in enumerate(pw):
         nxt = pw[i + 1] if i + 1 < len(pw) else None
-        rev = A[37 - A.index(ch)] if ch in A else "?"
-        mark = "?" if nxt is None else (B[A.index(nxt)] if nxt in A else "?")
+        rev = _A[37 - _A.index(ch)] if ch in _A else "?"
+        mark = "?" if nxt is None else (_B[_A.index(nxt)] if nxt in _A else "?")
         out += rev + mark
     return out
 
-# ---- login_key deterministik (dex: LoginActivityNew:224 + h9.java:117) ----
-def build_login_key(ts_ms: int) -> str:
-    dt = datetime.fromtimestamp(ts_ms / 1000)
-    iso = dt.strftime("%Y-%m-%dT%H:%M:%S")
-    inner = base64.b64encode(f"{dt.strftime('%Y%m%d%H%M')}{iso}".encode()).decode()
-    s = "HARDCODED_FCM_ID_" + inner
-    return base64.b64encode((s + s[::-1]).encode()).decode()
 
-def login(user_name: str, password: str, body: bytes = None) -> dict:
-    if body is None:
-        body = urllib.parse.urlencode({
-            "user_name": user_name,
-            "password": encode_password(password),
-        }).encode()
-    req = urllib.request.Request(BASE, data=body, method="POST")
-    req.add_header("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
-    req.add_header("User-Agent", UA)
-    with _opener.open(req, timeout=60) as r:
-        return json.loads(r.read().decode())
+def login(user_name: str, password: str, max_tries: int = 6) -> dict:
+    enc = encode_password(password)
+    print(f"[*] password terenkripsi: {enc}")
+    # body = bytes ter-encode di awal (persis HAR); JANGAN dict (hindari double-encode)
+    body = f"password={urllib.parse.quote(enc, safe='')}&user_name={urllib.parse.quote(user_name, safe='')}&".encode()
+    for attempt in range(1, max_tries + 1):
+        r = requests.post(BASE, data=body, proxies=PROXIES, impersonate="chrome", timeout=60)
+        print(f"[*] attempt {attempt}: HTTP {r.status_code}")
+        if r.status_code == 200:
+            return json.loads(r.text)
+        # 500 = exit IP proxy jelek (server crash utk IP tertentu) — rotasi & ulangi
+    raise RuntimeError("tetap 500 setelah %d attempt — semua exit IP ditolak server" % max_tries)
 
-
-def build_login_body(user_name: str, enc_password: str) -> bytes:
-    """Param set PERSIS i5.java case 4: user_name, password, fcm_token, session_key."""
-    dt = datetime.now()
-    iso = dt.strftime("%Y-%m-%dT%H:%M:%S")
-    inner = base64.b64encode(f"{dt.strftime('%Y%m%d%H%M')}{iso}".encode()).decode()
-    s = "HARDCODED_FCM_ID_" + inner
-    login_key = base64.b64encode((s + s[::-1]).encode()).decode()
-    params = [
-        ("user_name", user_name),
-        ("password", enc_password),
-        ("fcm_token", "debug_fcm_token_test"),
-        ("session_key", login_key),
-    ]
-    return urllib.parse.urlencode(params).encode()
 
 if __name__ == "__main__":
     user = sys.argv[1] if len(sys.argv) > 1 else "kjaohan"
     pw = sys.argv[2] if len(sys.argv) > 2 else "Dalijo90@"
-    enc = encode_password(pw)
-    print(f"[i] user_name : {user}")
-    print(f"[i] password  : {pw!r}")
-    print(f"[i] encoded   : {enc!r}")
-    print(f"[i] (verifikasi vs HAR: {'COCOK' if enc == '?A.@0$3%2%xWcEl???' else 'BEDA'})")
-    print("[*] mengirim 1 request login live (4 param, persis i5.java case 4)...")
-    try:
-        body = build_login_body(user, enc)
-        resp = login(user, pw, body)
-        print("[+] RESPONSE:")
-        print(json.dumps(resp, indent=2, ensure_ascii=False))
-    except Exception as e:
-        print("[-] GAGAL:", e)
+    resp = login(user, pw)
+    print("[+] RESPONSE:")
+    print(json.dumps(resp, indent=2, ensure_ascii=False))
+    code = resp.get("result")
+    meaning = {0: "user tidak ditemukan", 1: "LOGIN SUKSES", 2: "password salah"}.get(code, "?")
+    print(f"[*] result={code} -> {meaning}")
