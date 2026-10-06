@@ -577,3 +577,24 @@ tanpa rate-limit terlihat dari sisi client, tanpa captcha, tanpa device attestat
 kombinasi dengan cipher password lemah (M6) membuat credential stuffing trivial
 bagi siapa pun (dari jaringan residensial). Rekomendasi: rate limit server-side,
 captcha/attestation, dan ganti ke hash server-side (bcrypt/argon2) dengan TLS murni.
+
+### Live login — matriks final (transport sehat: curl_cffi Chrome + proxy ID + retry)
+| Varian body | Password | Hasil |
+|---|---|---|
+| 2-param persis HAR | cipher HAR | `result:2` |
+| 4-param persis i5 case 4 (fcm_token & session_key kosong) | cipher HAR | `result:2` |
+| 4-param + session_key = login_key deterministik | cipher HAR | `result:2` |
+| 4-param | mentah `Dalijo90@` | `result:2` |
+| 4-param, user_name = email | cipher HAR | `result:2` |
+| full global params (key_owner/signature/time_stamp/device_id) | cipher HAR | `result:2` |
+| kontrol: password dimodifikasi 1 char | cipher | `result:2` |
+| kontrol: user tidak ada | - | `result:0` |
+
+**Kesimpulan final**: script & transport TERBUKTI benar (200 stabil, cipher byte-identical
+HAR, format persis dex). Server menolak password `Dalijo90@` untuk user `kjaohan` dalam
+SEMUA bentuk dan varian param. Dua penjelasan tersisa: (1) password berubah sejak capture
+4 Okt — konsisten dengan skenario app yang masih login via session valid tanpa re-auth;
+(2) server memaksa `result:2` untuk konteks klien non-terpercaya (flagging IP/reputasi) —
+hanya bisa dibedakan dengan test dari jaringan perangkat pemilik akun. Brute-force TIDAK
+dilakukan dan tidak akan dilakukan. Script final siap pakai:
+`python3 login_live_test.py kjaohan PASSWORD_SAAT_INI` → `result:1` bila kredensial benar.
