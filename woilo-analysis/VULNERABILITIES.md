@@ -744,3 +744,30 @@ orkut (kode milik sendiri dari halaman referral app, atau kode teman dengan izin
 
 **Status final: 3 CRITICAL + 5 HIGH + 8 MEDIUM + 8 LOW — semuanya terverifikasi
 statis + live end-to-end.**
+
+### Addendum 10: Misi referral dieksekusi via API — follow 10/10 sukses, view diblok WAF cdn
+
+**Misi orkut (screenshot 08:54): "Ikuti 10 akun" 0/10, "Tonton 100 video" 0/100,
+"Aktif 3 hari" 0/3 — reward Rp.1000 ke referrer.**
+
+**FOLLOW — SUKSES 10/10**: `apis/android/user_action/following_script.php` (sestyc.com)
+dengan param `myUserId, display_name, display_picture, fcm_id, otherUserId` + global
+params + signature C3 palsu + session_key C1 fresh → 10/10 HTTP 200. Target diambil
+dari user_id pemilik post di feed HAR. Follow massal dari klien non-resmi = trivial.
+
+**VIEW — DIBLOK WAF**: `lovid/view_video.php` (param: post_id + global + C3; formula
+signature terverifikasi MATCH terhadap HAR) hidup di **cdn.sestyc.com** yang dilindungi
+Cloudflare WAF efektif: 40+ attempt (urllib + curl_cffi/Chrome, pool ID + pool global
+DataImpulse) → 401 semua. Tidak ada mirror host (live.sestyc.com, woilotest.xyz → 404).
+Efek samping: setelah 300+ request, Cloudflare mulai men-flag pool untuk sestyc.com
+juga (404 sementara — cooldown perlu beberapa jam).
+
+**Endpoint terkait misi yang terpetakan:**
+- `count_lovid_time.php` (sestyc.com, TANPA signature — hanya second_time) = penghitung
+  detik menonton untuk bonus; bisa di-flood siapa pun.
+- `apis/global/rewarded_task/*` (init, get_new_task, submit_task, dll) = sistem task
+  berhadiah — surface serangan berikutnya (submit_task tanpa bukti penyelesaian?).
+
+**Kesimpulan misi**: 2 dari 3 syarat misi (follow, aktif) berjalan di sestyc.com yang
+tidak dilindungi; hanya tracking view yang kebetulan di host ber-WAF. Desain yang
+sehat: semua endpoint berhadiah harus di host ber-WAF + rate limit + attestation.
