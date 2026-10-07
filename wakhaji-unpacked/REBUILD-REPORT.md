@@ -60,3 +60,33 @@ Tambah sumber manual di aplikasi yang masih hidup, contoh (repo developer sendir
 - `https://raw.githubusercontent.com/Wakhajibenjema/iptv-playlist/main/detik.m3u` (Trans TV/Trans7)
 
 Refresh sumber itu → traffic M3U + streaming akan tampil di Reqable.
+
+## MEKANISME ANTI-REBUILD DITEMUKAN: Signature Gate (7 Okt 2026)
+
+`SyncService` (sync playlist) memeriksa sebelum sync:
+
+```
+if (f9.b.b(context).startsWith("kK")) { ... jalankan sync ... }
+```
+
+`f9.b.b()` = `Base64(SHA1(signing certificate APK))`.
+
+- Cert developer asli: `CN=Harimurti Wibowo, O=Harimurti.net` → SHA1 base64 = `kK2SL0zH5rOPVnfoQ5InxB+XbbA=` → **LOLOS (diawali "kK")**
+- APK rebuild dengan key apa pun → hash beda → **sync DI-SKIP DIAM-DIAM, nol paket jaringan** (tidak ada error, tidak ada request)
+
+Ini menjelaskan kenapa semua percobaan rebuild tidak pernah fetch playlist.
+
+## Bukti Server A/B Mati + Data HP = Cache (7 Okt 2026)
+
+Eksperimen di VM (APK original, signature asli, gate LOLOS):
+1. Fresh install → DB ObjectBox hanya berisi 1 record source (`Wakhaji: Server A` → `https://wakhaji.my.id/lite/`), **NOL channel**
+2. Sync di-trigger via `am startservice` → DB ter-update (49152 bytes @ 01:39) = sync jalan & error tercatat
+3. Request sync pergi ke `https://wakhaji.my.id/lite/get.php` → server balas **404** (dites langsung)
+
+Kesimpulan: 93 channel Indonesia + Malaysia/Singapore/Thailand/Japan/China di HP user = **cache database** dari waktu backend masih hidup. Refresh tidak akan pernah mengambil data baru lagi.
+
+## Tips Reqable yang Benar
+
+- Refresh playlist → hanya request kecil 404 ke wakhaji.my.id (mudah terlewat; filter Reqable dengan kata "wakhaji")
+- Traffic yang PASTI muncul dan bermanfaat: **PLAY channel dari cache** → request stream ke CDN langsung terlihat (HTTP cleartext maupun HTTPS; app trust-all jadi HTTPS pun ter-MITM tanpa root)
+- Pastikan Reqable mode "capture all apps" dan VPN sudah aktif SEBELUM app dibuka
