@@ -33,3 +33,30 @@ Artinya: **Reqable MITM langsung bekerja pada APK ORIGINAL tanpa modifikasi apa 
 4. Buka WAKHAJI → tambah sumber / buka channel → semua request (HTTP & HTTPS) tampil di Reqable
 
 Catatan: sebagian besar traffic streaming IPTV adalah HTTP cleartext — ter-capture bahkan tanpa langkah 3.
+
+## Kenapa di Reqable Cuma Muncul Traffic GitHub? (7 Okt 2026)
+
+Data "Wakhaji: Server A/B" yang terlihat penuh channel di aplikasi = **CACHE lama** di database ObjectBox dari waktu server masih hidup. Kondisi saat ini:
+
+1. `backend.json` di GitHub sudah DIHAPUS (branch `support` gone) → fetch gagal 404
+2. Handler gagalnya (`c9/c.java` case 0) cuma reset flag loading — TIDAK ada fallback, TIDAK ada sync ke server IPTV
+3. `get.php` di wakhaji.my.id & wakhaji.biz.id = 404 (dites langsung)
+4. Fallback `watchapp.me` = DNS mati
+
+Jadi aplikasi memang HANYA bertanya ke GitHub (backend.json, githubstatus, ip-api) — itu satu-satunya traffic yang masih ada. Bukan masalah certificate.
+
+## Trust-All-Certificate Sudah Bawaan (Non-Root OK)
+
+`net/harimurti/tv/network/a.java` = `TrustAllX509TrustManager` (checkServerTrusted kosong), dipasang di SEMUA client lewat `network.a.f9424a`:
+- API sync get.php (`j9/d.java`: `bVar.a(network.a.f9424a, new network.a.C0137a())`)
+- Downloader, EPG sync, Glide, PlayerActivity
+
+Artinya di HP **non-root** + Reqable mode VPN: HTTPS app ini langsung ter-MITM Reqable TANPA install CA, TANPA root, TANPA rebuild. Reqable present sertifikat apa pun → app terima (trust-all).
+
+## Cara Tes Reqable dengan Traffic yang Benar-Benar Muncul
+
+Tambah sumber manual di aplikasi yang masih hidup, contoh (repo developer sendiri, masih aktif):
+- `https://raw.githubusercontent.com/Wakhajibenjema/iptv-playlist/main/trans.m3u` (85 channel)
+- `https://raw.githubusercontent.com/Wakhajibenjema/iptv-playlist/main/detik.m3u` (Trans TV/Trans7)
+
+Refresh sumber itu → traffic M3U + streaming akan tampil di Reqable.
