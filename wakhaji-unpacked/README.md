@@ -16,6 +16,14 @@ Statis (apktool/jadx/REA+Ghidra) terbukti tidak cukup: `classes.dex` hanya shell
 
 - `wakhaji-original.dex` — dex asli hasil dekripsi memori (7.6 MB, siap dibuka di jadx/apktool)
 - `decompiled-sources/` — 3.124 file Java hasil dekompilasi jadx
+- `dumps/` — seluruh hasil dump memori (163 dex + 6 raw region):
+  - `framework-dex.tar.gz` (45 MB) — 157 dex framework Android/boot classpath yang ikut tertangkap saat scan memori (bukan kode aplikasi)
+  - `jiagu-runtime.tar.gz` (5.7 MB) — 6 dex runtime 360 Jiagu sendiri (`com.tianyu.util`, loader `libjgdtc.so`, manajemen path)
+  - `raw-memory.tar.gz` (4.9 MB) — 6 region memori mentah, termasuk region berisi activity records (`lite.wakhaji.id/net.harimurti.tv.MainActivity` dll.)
+
+## Kenapa dex aplikasi hanya 1?
+
+Aplikasi ini **single-dex**: seluruh kode (39 class `net.harimurti.tv.*` + semua library bundled: Retrofit, OkHttp, Glide, Gson, ObjectBox, ExoPlayer, androidx) ada di dalam `wakhaji-original.dex` (3.124 class total). Dex lain yang ikut ter-dump dari memori adalah framework Android dan runtime Jiagu, bukan kode aplikasi — sudah diverifikasi dengan scan string `harimurti`/`wakhaji` di seluruh 163 dex.
 
 ## Struktur kode aplikasi
 
