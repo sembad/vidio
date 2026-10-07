@@ -1,10 +1,15 @@
 package debug;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
+import android.provider.MediaStore;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
@@ -14,6 +19,8 @@ import java.util.Locale;
 public final class CrashLogger {
 
     private static File logFile;
+    private static Uri pubUri;
+    private static android.content.Context appCtx;
 
     private CrashLogger() {
     }
@@ -24,6 +31,7 @@ public final class CrashLogger {
             if (dir == null) {
                 dir = ctx.getFilesDir();
             }
+            appCtx = ctx.getApplicationContext();
             logFile = new File(dir, "wakhaji_debug.log");
             append("=== APP OPENED ===");
             append("time: " + now());
@@ -35,11 +43,29 @@ public final class CrashLogger {
                 append("versionCode: " + pi.versionCode);
             } catch (PackageManager.NameNotFoundException ignored) {
             }
-            append("android: " + android.os.Build.VERSION.RELEASE
-                    + " (sdk " + android.os.Build.VERSION.SDK_INT + ")");
-            append("device: " + android.os.Build.MANUFACTURER + " "
-                    + android.os.Build.MODEL);
-            append("abi: " + android.os.Build.SUPPORTED_ABIS[0]);
+            append("android: " + Build.VERSION.RELEASE + " (sdk " + Build.VERSION.SDK_INT + ")");
+            append("device: " + Build.MANUFACTURER + " " + Build.MODEL);
+            append("abi: " + Build.SUPPORTED_ABIS[0]);
+
+            if (Build.VERSION.SDK_INT >= 29) {
+                try {
+                    ContentValues v = new ContentValues();
+                    v.put(MediaStore.MediaColumns.DISPLAY_NAME, "wakhaji_debug.log");
+                    v.put(MediaStore.MediaColumns.MIME_TYPE, "text/plain");
+                    v.put(MediaStore.MediaColumns.RELATIVE_PATH, "Download");
+                    pubUri = ctx.getContentResolver()
+                            .insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
+                    if (pubUri != null) {
+                        writePublic("=== APP OPENED (mirror) ===\n"
+                                + "time: " + now() + "\n"
+                                + "device: " + Build.MANUFACTURER + " " + Build.MODEL + "\n"
+                                + "android: " + Build.VERSION.RELEASE + "\n");
+                        append("mirror to Download OK: " + pubUri);
+                    }
+                } catch (Throwable t) {
+                    append("mirror to Download FAILED: " + t);
+                }
+            }
 
             final Thread.UncaughtExceptionHandler prev =
                     Thread.getDefaultUncaughtExceptionHandler();
@@ -48,8 +74,10 @@ public final class CrashLogger {
                 public void uncaughtException(Thread t, Throwable e) {
                     StringWriter sw = new StringWriter();
                     e.printStackTrace(new PrintWriter(sw));
-                    append("=== CRASH ===\nthread: " + t.getName()
-                            + "\n" + sw.toString());
+                    String text = "=== CRASH ===\nthread: " + t.getName()
+                            + "\n" + sw.toString();
+                    append(text);
+                    writePublic(text + "\n");
                     if (prev != null) {
                         prev.uncaughtException(t, e);
                     }
@@ -63,10 +91,6 @@ public final class CrashLogger {
 
     public static void log(String msg) {
         append(now() + "  " + msg);
-    }
-
-    public static String logFile() {
-        return logFile == null ? "unavailable" : logFile.getAbsolutePath();
     }
 
     private static String now() {
@@ -86,6 +110,27 @@ public final class CrashLogger {
             if (w != null) {
                 try {
                     w.close();
+                } catch (Throwable ignored) {
+                }
+            }
+        }
+    }
+
+    private static synchronized void writePublic(String text) {
+        if (pubUri == null) {
+            return;
+        }
+        OutputStream os = null;
+        try {
+            os = appCtx.getContentResolver()
+                    .openOutputStream(pubUri, "wa");
+            os.write(text.getBytes());
+            os.flush();
+        } catch (Throwable ignored) {
+        } finally {
+            if (os != null) {
+                try {
+                    os.close();
                 } catch (Throwable ignored) {
                 }
             }
