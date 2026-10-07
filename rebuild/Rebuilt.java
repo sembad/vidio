@@ -55,6 +55,7 @@ public final class Rebuilt {
     // MainActivity.onCreate
     // ------------------------------------------------------------------
     public static void main(MainActivity act, Bundle b) {
+        android.util.Log.i("Rebuilt", "main() enter");
         // binding: inflate + map (equivalent of DataBindingUtil.setContentView)
         e9.b bind = (e9.b) androidx.databinding.c.a(
                 act.getLayoutInflater(), LAYOUT_MAIN, (ViewGroup) null, (androidx.databinding.b) null);
@@ -78,7 +79,9 @@ public final class Rebuilt {
         try {
             java.lang.reflect.Field fn = MainActivity.class.getDeclaredField("N");
             fn.setAccessible(true);
-            io.objectbox.a channelBox = (io.objectbox.a) fn.get(act);
+            Object boxObj = fn.get(act);
+            android.util.Log.i("Rebuilt", "N field: " + boxObj);
+            io.objectbox.a channelBox = (io.objectbox.a) boxObj;
             io.objectbox.query.Query q = channelBox.query().build();
             Class<?> rc = Class.forName("net.harimurti.tv.MainActivity$c");
             Object receiver = rc.getConstructor(
@@ -87,8 +90,24 @@ public final class Rebuilt {
             java.lang.reflect.Field ft = MainActivity.class.getDeclaredField("T");
             ft.setAccessible(true);
             ft.set(act, receiver);
+            android.util.Log.i("Rebuilt", "receiver T set OK: " + ft.get(act));
         } catch (Throwable t) {
             android.util.Log.e("Rebuilt", "receiver init failed", t);
+        }
+
+        // lateinit networkReceiver (field U): connectivity watcher
+        // c9.z / k9.j are ACC_SYNTHETIC so javac hides them; use reflection
+        try {
+            Class<?> zc = Class.forName("c9.z");
+            Object z = zc.getConstructor(MainActivity.class).newInstance(act);
+            Class<?> jc = Class.forName("k9.j");
+            Object netReceiver = jc.getConstructor(zc).newInstance(z);
+            java.lang.reflect.Field fu = MainActivity.class.getDeclaredField("U");
+            fu.setAccessible(true);
+            fu.set(act, netReceiver);
+            android.util.Log.i("Rebuilt", "networkReceiver U set OK");
+        } catch (Throwable t) {
+            android.util.Log.e("Rebuilt", "networkReceiver init failed", t);
         }
 
         // app bar buttons
