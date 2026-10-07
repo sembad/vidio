@@ -11,7 +11,7 @@ import java.lang.reflect.Method;
 import net.harimurti.tv.UpdaterActivity;
 
 /* JADX INFO: compiled from: r8-map-id-ed656ac07c897a112d023af82379f23e3265be3a0f080aad78a9fefe9b618b88 */
-/* JADX INFO: loaded from: /tmp/wakhaji/final/dex_32_7cf71cac3000.dex */
+/* JADX INFO: loaded from: /tmp/wakhaji/fixed2/dex_32_7cf71cac3000.dex */
 public final /* synthetic */ class j implements Runnable {
 
     /* JADX INFO: renamed from: c, reason: collision with root package name */
@@ -54,25 +54,28 @@ public final /* synthetic */ class j implements Runnable {
                     return;
                 }
                 if (((i11 != 26 && i11 != 27) || method != null) && (b0.h.f2279e != null || b0.h.f2278d != null)) {
-                    Object obj3 = b0.h.f2277c.get(activity);
-                    if (obj3 != null && (obj = b0.h.f2276b.get(activity)) != null) {
-                        Application application = activity.getApplication();
-                        b0.h.a aVar = new b0.h.a(activity);
-                        application.registerActivityLifecycleCallbacks(aVar);
-                        handler.post(new b0.e(aVar, obj3));
-                        try {
-                            if (i11 == 26 || i11 == 27) {
-                                Boolean bool = Boolean.FALSE;
-                                method.invoke(obj, obj3, null, null, 0, bool, null, null, bool, bool);
-                            } else {
-                                activity.recreate();
+                    try {
+                        Object obj3 = b0.h.f2277c.get(activity);
+                        if (obj3 != null && (obj = b0.h.f2276b.get(activity)) != null) {
+                            Application application = activity.getApplication();
+                            b0.h.a aVar = new b0.h.a(activity);
+                            application.registerActivityLifecycleCallbacks(aVar);
+                            handler.post(new b0.e(aVar, obj3));
+                            try {
+                                if (i11 == 26 || i11 == 27) {
+                                    Boolean bool = Boolean.FALSE;
+                                    method.invoke(obj, obj3, null, null, 0, bool, null, null, bool, bool);
+                                } else {
+                                    activity.recreate();
+                                }
+                                handler.post(new b0.f(application, aVar));
+                                return;
+                            } catch (Throwable th) {
+                                handler.post(new b0.f(application, aVar));
+                                throw th;
                             }
-                            handler.post(new b0.f(application, aVar));
-                            return;
-                        } catch (Throwable th) {
-                            handler.post(new b0.f(application, aVar));
-                            throw th;
                         }
+                    } catch (Throwable unused) {
                     }
                 }
                 activity.recreate();

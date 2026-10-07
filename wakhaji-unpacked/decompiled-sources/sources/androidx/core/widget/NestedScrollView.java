@@ -46,7 +46,7 @@ import m0.v;
 import n0.h;
 
 /* JADX INFO: compiled from: r8-map-id-ed656ac07c897a112d023af82379f23e3265be3a0f080aad78a9fefe9b618b88 */
-/* JADX INFO: loaded from: /tmp/wakhaji/final/dex_32_7cf71cac3000.dex */
+/* JADX INFO: loaded from: /tmp/wakhaji/fixed2/dex_32_7cf71cac3000.dex */
 public class NestedScrollView extends FrameLayout implements t, q {
     public static final float E = (float) (Math.log(0.78d) / Math.log(0.9d));
     public static final a F = new a();

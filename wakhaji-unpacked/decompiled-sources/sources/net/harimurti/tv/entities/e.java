@@ -3,7 +3,7 @@ package net.harimurti.tv.entities;
 import c9.m0;
 
 /* JADX INFO: compiled from: r8-map-id-ed656ac07c897a112d023af82379f23e3265be3a0f080aad78a9fefe9b618b88 */
-/* JADX INFO: loaded from: /tmp/wakhaji/final/dex_32_7cf71cac3000.dex */
+/* JADX INFO: loaded from: /tmp/wakhaji/fixed2/dex_32_7cf71cac3000.dex */
 public final class e {
     public static void a(io.objectbox.g gVar) {
         io.objectbox.g.a aVarEntity = gVar.entity(m0.a(new byte[]{-61, -109, -76, 40, 127, 105, 40, -90, -28, -107, -75, 35}, new byte[]{-112, -4, -63, 90, 28, 12, 109, -56}));

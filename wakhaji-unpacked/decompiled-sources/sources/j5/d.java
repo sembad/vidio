@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.checkerframework.checker.initialization.qual.NotOnlyInitialized;
 
 /* JADX INFO: compiled from: r8-map-id-ed656ac07c897a112d023af82379f23e3265be3a0f080aad78a9fefe9b618b88 */
-/* JADX INFO: loaded from: /tmp/wakhaji/final/dex_32_7cf71cac3000.dex */
+/* JADX INFO: loaded from: /tmp/wakhaji/fixed2/dex_32_7cf71cac3000.dex */
 public final class d implements Handler.Callback {
 
     /* JADX INFO: renamed from: q, reason: collision with root package name */
@@ -143,28 +143,24 @@ public final class d implements Handler.Callback {
         Context context = this.f7208g;
         dVar.getClass();
         synchronized (q5.a.class) {
-            try {
-                Context origApplicationContext = StubApp.getOrigApplicationContext(context.getApplicationContext());
-                Context context2 = q5.a.f10324c;
-                if (context2 == null || (bool = q5.a.f10325d) == null || context2 != origApplicationContext) {
-                    q5.a.f10325d = null;
-                    if (Build.VERSION.SDK_INT >= 26) {
-                        q5.a.f10325d = Boolean.valueOf(origApplicationContext.getPackageManager().isInstantApp());
-                    } else {
-                        try {
-                            context.getClassLoader().loadClass("com.google.android.instantapps.supervisor.InstantAppsRuntime");
-                            q5.a.f10325d = Boolean.TRUE;
-                        } catch (ClassNotFoundException unused) {
-                            q5.a.f10325d = Boolean.FALSE;
-                        }
-                    }
-                    q5.a.f10324c = origApplicationContext;
-                    zBooleanValue = q5.a.f10325d.booleanValue();
+            Context origApplicationContext = StubApp.getOrigApplicationContext(context.getApplicationContext());
+            Context context2 = q5.a.f10324c;
+            if (context2 == null || (bool = q5.a.f10325d) == null || context2 != origApplicationContext) {
+                q5.a.f10325d = null;
+                if (Build.VERSION.SDK_INT >= 26) {
+                    q5.a.f10325d = Boolean.valueOf(origApplicationContext.getPackageManager().isInstantApp());
                 } else {
-                    zBooleanValue = bool.booleanValue();
+                    try {
+                        context.getClassLoader().loadClass("com.google.android.instantapps.supervisor.InstantAppsRuntime");
+                        q5.a.f10325d = Boolean.TRUE;
+                    } catch (ClassNotFoundException unused) {
+                        q5.a.f10325d = Boolean.FALSE;
+                    }
                 }
-            } catch (Throwable th) {
-                throw th;
+                q5.a.f10324c = origApplicationContext;
+                zBooleanValue = q5.a.f10325d.booleanValue();
+            } else {
+                zBooleanValue = bool.booleanValue();
             }
         }
         if (!zBooleanValue) {

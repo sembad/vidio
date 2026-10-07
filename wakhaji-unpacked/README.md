@@ -1,29 +1,27 @@
-# WAKHAJI LITE 1.0 — Unpacked from 360 Jiagu
+# WAKHAJI LITE 1.0 — Unpacked (360 Jiagu Free)
 
-Hasil unpacking penuh (runtime memory dump) APK `WAKHAJI LITE_1.0.apk`
-(package `lite.wakhaji.id`, rebrand dari NontonTV `net.harimurti.tv`)
-yang diproteksi 360 Jiagu versi free.
-
-## Isi
-
-- `wakhaji-original.dex` — dex asli aplikasi hasil dump memori
-  (7.6 MB, 1.877 class, checksum & signature sudah diperbaiki, siap dibuka jadx/apktool)
-- `decompiled-sources/` — hasil decompile jadx lengkap (3.124 file .java)
-  - `sources/net/harimurti/tv/` — kode aplikasi (39 class: entities, network, widget, utils)
-  - sisanya library: Glide, Gson, ObjectBox, Retrofit/OkHttp, ExoPlayer, dll.
+Hasil unpacking penuh APK `WAKHAJI LITE_1.0.apk` (package `lite.wakhaji.id`) yang diproteksi 360 Jiagu versi free.
 
 ## Metode
 
-1. Analisis statis: REA + Ghidra pada `libjiagu_a64.so` (971 fungsi) —
-   dex asli terenkripsi (AES, kunci runtime), tidak bisa didekripsi statis.
-2. Emulator: Android-x86 7.1 r5 (x86_64) di QEMU TCG (`-cpu max` agar
-   surfaceflinger tidak SIGILL), boot live permissive.
-3. Runtime: install APK via `pm install`, launch
-   `lite.wakhaji.id/net.harimurti.tv.MainActivity`, tunggu Jiagu mendekripsi
-   dex di memori (proses ~400 MB RSS).
-4. Dump: dumper C statis memindai `/proc/<pid>/mem` (private + shared maps),
-   menemukan 20 dex + 16 region memori berisi class descriptor aplikasi.
-5. Fix header dex (file_size, SHA-1 signature, Adler-32 checksum) lalu
-   decompile dengan jadx.
+Statis (apktool/jadx/REA+Ghidra) terbukti tidak cukup: `classes.dex` hanya shell `com.stub.StubApp`, dex asli dienkripsi AES dengan kunci runtime-only. Jadi dilakukan runtime dump:
 
-Dex dump lain (framework/boot classpath) tidak disertakan.
+1. Android-x86 7.1 r5 di QEMU (TCG, `-cpu max`, serial console)
+2. Install APK via `pm install`, launch via `am start`
+3. Dumper C statis memindai `/proc/<pid>/mem` (deteksi magic `dex\n035` + dex tanpa magic + raw region berisi class aplikasi)
+4. 20 dex + 16 raw region tertangkap; `dex_32` (7.6 MB) = dex asli terdekripsi
+5. Header dex diperbaiki (file_size, SHA-1, Adler-32) lalu didekompilasi dengan jadx
+
+## Isi folder
+
+- `wakhaji-original.dex` — dex asli hasil dekripsi memori (7.6 MB, siap dibuka di jadx/apktool)
+- `decompiled-sources/` — 3.124 file Java hasil dekompilasi jadx
+
+## Struktur kode aplikasi
+
+- `net/harimurti/tv/` — MainActivity, NontonTV, PlayerActivity, PlayerMultiActivity, SettingsActivity, SourcesActivity, UpdaterActivity/Service, SyncService, SyncEpgService
+- `net/harimurti/tv/entities/` — ChannelEntity, CategoryEntity, SourceEntity, EPG entities (ObjectBox)
+- `net/harimurti/tv/network/Downloader.java` — Retrofit client (update daftar channel)
+- `net/harimurti/tv/utils/`, `widget/` — utilitas dan komponen UI
+
+Catatan: aplikasi ini rebrand dari project open-source NontonTV (github.com/hariimurti/NontonTV).
