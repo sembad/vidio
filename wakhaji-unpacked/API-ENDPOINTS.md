@@ -51,3 +51,17 @@ Base: `https://github.com/Wakhajibenjema/Lite/support/blob/main/`
 - MD5: hanya untuk verifikasi file update
 - Argon2: generate token `X-Lite`
 - XOR repeating-key: obfuscation string (sudah di-break, lihat `deobfuscated-strings.txt`)
+
+## Status endpoint (dicek langsung, 7 Okt 2026)
+
+| Endpoint | Status |
+|---|---|
+| `https://wakhaji.my.id/lite/` | HIDUP (Cloudflare, PHP 8.1.34) tapi respons **kosong** |
+| `https://wakhaji.my.id/lite/get.php` (GET & POST, semua kredensial) | **404** — file tidak ada |
+| `https://wakhaji.biz.id/lite/` + `get.php` | Sama — 404 / kosong |
+| `https://watchapp.me/...` (fallback di dex) | **DNS mati** (domain expired) |
+| `github.com/Wakhajibenjema/Lite` branch `support` (backend.json, update.json) | **DIHAPUS** — tinggal `main` berisi Readme.md |
+| `github.com/Wakhajibenjema/Lite/releases/download/v1.0/update.json` | **404** |
+| `github.com/Wakhajibenjema/iptv-playlist` | **MASIH HIDUP**, diupdate aktif |
+
+Kesimpulan: backend IPTV resmi WAKHAJI LITE sudah dimatikan — aplikasi versi ini tidak lagi mendapat data dari Server A/B. Yang masih dirawat developer: repo `iptv-playlist` berisi `detik.m3u` (Trans TV/Trans7 via stream resmi 20.detik.com) dan `trans.m3u` (85 channel Indonesia via CDN Transvision, sebagian pakai ClearKey DRM) — formatnya persis seperti yang diparse `k9/o.java` (tvg-id, tvg-logo, group-title, #KODIPROP, #EXTHTTP, license_key).
