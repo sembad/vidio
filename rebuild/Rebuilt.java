@@ -74,6 +74,23 @@ public final class Rebuilt {
         bind.v.setLayoutManager(new LinearLayoutManager(1));
         bind.v.setAdapter(act.R);
 
+        // lateinit broadcastReceiver (field T): sync-complete receiver over channel query
+        try {
+            java.lang.reflect.Field fn = MainActivity.class.getDeclaredField("N");
+            fn.setAccessible(true);
+            io.objectbox.a channelBox = (io.objectbox.a) fn.get(act);
+            io.objectbox.query.Query q = channelBox.query().build();
+            Class<?> rc = Class.forName("net.harimurti.tv.MainActivity$c");
+            Object receiver = rc.getConstructor(
+                    io.objectbox.query.Query.class, kotlinx.coroutines.sync.c.class, MainActivity.class)
+                    .newInstance(q, new kotlinx.coroutines.sync.c(), act);
+            java.lang.reflect.Field ft = MainActivity.class.getDeclaredField("T");
+            ft.setAccessible(true);
+            ft.set(act, receiver);
+        } catch (Throwable t) {
+            android.util.Log.e("Rebuilt", "receiver init failed", t);
+        }
+
         // app bar buttons
         View root = bind.c;
         wire(root, ID_EXIT, new Runnable() {
