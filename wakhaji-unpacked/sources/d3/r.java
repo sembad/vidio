@@ -1,0 +1,9 @@
+package d3;
+
+/* JADX INFO: compiled from: r8-map-id-ed656ac07c897a112d023af82379f23e3265be3a0f080aad78a9fefe9b618b88 */
+/* JADX INFO: loaded from: /tmp/wakhaji/APP.dex */
+public final class r {
+    public static boolean a(Throwable th) {
+        return q.g(th);
+    }
+}
