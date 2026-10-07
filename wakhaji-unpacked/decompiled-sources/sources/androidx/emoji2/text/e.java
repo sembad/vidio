@@ -1,0 +1,20 @@
+package androidx.emoji2.text;
+
+import android.text.TextPaint;
+
+/* JADX INFO: compiled from: r8-map-id-ed656ac07c897a112d023af82379f23e3265be3a0f080aad78a9fefe9b618b88 */
+/* JADX INFO: loaded from: /tmp/wakhaji/final/dex_32_7cf71cac3000.dex */
+public final class e implements g.d {
+
+    /* JADX INFO: renamed from: b, reason: collision with root package name */
+    public static final ThreadLocal<StringBuilder> f1225b = new ThreadLocal<>();
+
+    /* JADX INFO: renamed from: a, reason: collision with root package name */
+    public final TextPaint f1226a;
+
+    public e() {
+        TextPaint textPaint = new TextPaint();
+        this.f1226a = textPaint;
+        textPaint.setTextSize(10.0f);
+    }
+}
