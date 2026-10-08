@@ -28,9 +28,6 @@ const ULTIMATE_UA = "vidioandroid/2609.1.14-c11a00be7f (3191940)";
 const ULTIMATE_VISITOR_ID = "75dec05f-d3e9-4c4e-a384-2bc238868076";
 const ULTIMATE_USER_ID = "231108280";
 const REDIRECT_URL = "https://vidio.com";
-// Naikkan setiap kali main1.ts berubah — tercetak di log saat self-check
-// supaya versi yang live di Deno Deploy bisa dipastikan, bukan ditebak.
-const WORKER_VERSION = "2026-10-05.4";
 const USER_AGENT = "tv-android/ (1020";
 
 // Sumber MPD live stream: API staging dengan akun tv-android khusus.
@@ -47,66 +44,22 @@ function viaMirror(url: string): string {
     : url;
 }
 const STAGING_UA = "tv-android/2608.2.4 (1020)";
-// Kredensial staging: token berputar yang diambil MURNI dari txt
-// (satu token per baris) dan di-refresh berkala. Tidak ada fallback
-// hardcoded: bila fetch gagal dan daftar masih kosong, request staging
-// dilewati dan alur lanjut ke kredensial produksi/user.
+// Kredensial staging: 5 token berputar. Token dipakai bergantian; bila
+// upstream menolak (401/error auth), index maju ke token berikutnya.
 const STAGING_EMAIL = "@gmail.com";
-const STAGING_TOKENS_URL = "https://baru.pw/productioniwjowj.txt";
-const STAGING_TOKENS_REFRESH_MS = 10 * 60_000;
-const stagingTokens: string[] = [];
+const STAGING_TOKENS = [
+  "73CSxBpvZTuZj3748QaQ",
+  "RkE6AhGLZgyWzQ8ZpyRv",
+  "yHHS1vrMVYeUHHsCxA3Q",
+  "TU6pkXrGnpLKzi1Mzgwm",
+  "wfBA1ZDuRoDcTHPs1AMz",
+];
 let stagingTokenIndex = 0;
-let stagingTokensLoadedAt = 0;
-let stagingTokensLoading: Promise<void> | null = null;
-
-async function loadStagingTokens(): Promise<void> {
-  const now = Date.now();
-  if (now - stagingTokensLoadedAt < STAGING_TOKENS_REFRESH_MS) return;
-  if (!stagingTokensLoading) {
-    stagingTokensLoading = (async () => {
-      try {
-        const res = await fetch(`${STAGING_TOKENS_URL}?_nocache=${now}`, {
-          signal: AbortSignal.timeout(10_000),
-          redirect: "follow",
-          headers: {
-            // WAF baru.pw memblokir UA default runtime (Deno/*) dengan 403.
-            "user-agent": USER_AGENT,
-            accept: "*/*",
-            "cache-control": "no-cache, no-store, must-revalidate",
-            pragma: "no-cache",
-          },
-        });
-        if (res.ok) {
-          const text = await res.text();
-          const tokens = text
-            .split(/\r?\n/)
-            .map((line) => line.trim())
-            .filter((line) => line.length > 0);
-          if (tokens.length > 0) {
-            stagingTokens.splice(0, stagingTokens.length, ...tokens);
-            stagingTokenIndex = 0;
-            stagingTokensLoadedAt = now;
-            console.log(`[v0] staging tokens loaded: ${tokens.length}`);
-          }
-        }
-      } catch {
-        // Gagal fetch: pertahankan daftar lama, coba lagi di refresh berikutnya.
-      } finally {
-        stagingTokensLoadedAt = now;
-        stagingTokensLoading = null;
-      }
-    })();
-  }
-  await stagingTokensLoading;
-}
-
 function currentStagingToken(): string {
-  if (stagingTokens.length === 0) return "";
-  return stagingTokens[stagingTokenIndex % stagingTokens.length] as string;
+  return STAGING_TOKENS[stagingTokenIndex % STAGING_TOKENS.length] as string;
 }
 function rotateStagingToken(): void {
-  if (stagingTokens.length === 0) return;
-  stagingTokenIndex = (stagingTokenIndex + 1) % stagingTokens.length;
+  stagingTokenIndex = (stagingTokenIndex + 1) % STAGING_TOKENS.length;
 }
 
 /** Salinan array dengan urutan acak (Fisher-Yates) — pemilihan akun acak. */
@@ -493,23 +446,7 @@ async function storeMpdCache(origin: string, streamId: string, text: string): Pr
  */
 async function fetchMpdBody(url: string): Promise<string | null> {
   const headers = { "user-agent": CHROME_UA, accept: "*/*", referer: "https://www.vidio.com/" };
-  // 1) Lewat proxy DataImpulse (exit Indonesia) — MPD Akamai live geo-locked
-  //    ke ID, fetch direct dari datacenter luar selalu 403.
-  try {
-    const res = await fetch(url, {
-      headers,
-      redirect: "follow",
-      signal: AbortSignal.timeout(20_000),
-      ...proxyFetchInit(),
-    } as RequestInit);
-    if (res.ok) {
-      const text = await res.text();
-      if (text.includes("<MPD")) return text;
-    }
-  } catch {
-    // Proxy gagal → coba direct.
-  }
-  // 2) Direct ke host manifest: ikuti redirect exchange-nya.
+  // 1) Direct ke host manifest: ikuti redirect exchange-nya.
   try {
     const res = await fetch(url, {
       headers,
@@ -533,19 +470,14 @@ async function fetchMpdBody(url: string): Promise<string | null> {
   } catch {
     // Direct gagal (network/geo-block) → coba mirror.
   }
-  // 3) Fallback lewat mirror (redirect diikuti internal oleh mirror).
+  // 2) Fallback lewat mirror (redirect diikuti internal oleh mirror).
   try {
     const res = await fetch(viaMirror(url), {
       headers,
       redirect: "follow",
       signal: AbortSignal.timeout(15_000),
     } as RequestInit);
-    if (res.ok) {
-      const text = await res.text();
-      // Mirror menyalurkan halaman "Access Denied" Akamai dengan status 200 —
-      // bukan MPD, jangan dipakai sebagai sumber PSSH.
-      if (text.includes("<MPD")) return text;
-    }
+    if (res.ok) return await res.text();
   } catch {
     // Mirror juga gagal.
   }
@@ -735,19 +667,6 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   const attrs = jsonApiAttributeRecords(parsed)[0];
   if (!attrs) return body;
 
-  // Diagnostik: bila decrypt gagal, sertakan penyebabnya di respons (atribut
-  // decrypt_error) + log console agar tahap yang rusak langsung ketahuan.
-  // Body TANPA info DRM (tidak ada dash) harus lewat UTUH — kontrak
-  // self-check: jangan suntik atribut apa pun ke body non-DRM.
-  const fail = (reason: string): string => {
-    console.error(`[v0] decrypt ${streamId}: ${reason}`);
-    if (typeof attrs.dash === "string" && attrs.dash) {
-      attrs.decrypt_error = reason;
-      return JSON.stringify(parsed);
-    }
-    return body;
-  };
-
   // Cache clearkey dicek PALING DULU (tahan restart via Deno KV, TTL 1
   // hari): kalau sudah ada, skip fetch MPD + decrypt sama sekali — respons
   // tetap mendapat clearkey walau layanan decrypt/upstream sedang gagal.
@@ -764,22 +683,22 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
     let mpdText = await readMpdCache(origin, streamId);
     if (!mpdText) {
       const dash = typeof attrs.dash === "string" ? attrs.dash : "";
-      if (!dash) return fail("no_dash_url");
+      if (!dash) return body;
       const mpdBody = await fetchMpdBody(dash);
-      if (!mpdBody) return fail("mpd_fetch_failed");
+      if (!mpdBody) return body;
       mpdText = mpdBody;
       void storeMpdCache(origin, streamId, mpdText);
     }
 
     const pssh = extractPsshFromMpd(mpdText);
-    if (!pssh) return fail("no_pssh_in_mpd");
+    if (!pssh) return body;
 
     // License: PRODUCTION + custom_data production fresh (flow terbukti).
     const prodCd = await fetchProductionCustomData(streamId, request);
-    if (!prodCd) return fail("no_production_custom_data");
+    if (!prodCd) return body;
     const licenseUrl = `https://license.vidio.com/ri/licenseManager.do?pallycon-customdata-v2=${prodCd}`;
     const result = await decryptPsshWithLicenseUrl(pssh, licenseUrl);
-    if (!result.ok) return fail(`key_service: ${result.error}`);
+    if (!result.ok) return body;
     json = result.json;
     void storeClearKeyCache(origin, streamId, json);
   }
@@ -787,7 +706,7 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
   const keys: Array<{ kty: string; k: string; kid: string }> = [];
   try {
     const parsedKeys = (JSON.parse(json) as { keys?: unknown }).keys;
-    if (!Array.isArray(parsedKeys)) return fail("invalid_cached_key_json");
+    if (!Array.isArray(parsedKeys)) return body;
     for (const key of parsedKeys) {
       if (key && typeof key === "object" &&
         typeof (key as Record<string, unknown>).kty === "string" &&
@@ -798,13 +717,12 @@ export async function embedClearKeyInBody(body: string, request: Request, stream
       }
     }
   } catch {
-    return fail("invalid_cached_key_json");
+    return body;
   }
-  if (keys.length === 0) return fail("no_keys_in_cached_json");
+  if (keys.length === 0) return body;
 
   registerClearKeyJson(streamId, json);
 
-  delete attrs.decrypt_error;
   attrs.clearkey = { keys, type: "temporary" };
   // Mode clearkey APK seamless: custom_data dihapus + is_drm true → patch
   // aplikasi memakai scheme "clearkey". drm_license_url menunjuk ke URL
@@ -978,13 +896,26 @@ function clientIpFromRequest(request: Request): string | null {
 }
 
 /**
- * x-authorization (JWT) wajib ada. Lock IP sudah DIHAPUS: JWT yang sama
- * boleh dipakai dari IP mana pun (rotasi JWT di APK TV membuat IP binding
- * justru sering menolak playback yang sah dengan 403 forbidden).
+ * Kunci JWT ke IP: x-authorization WAJIB ada; IP pertama yang memakai JWT
+ * tersebut dicatat di Deno KV (TTL 1 hari, auto-hapus), dan IP kedua dan
+ * seterusnya dengan JWT yang sama ditolak 403.
  */
-function requireJwt(request: Request): Response | null {
+async function enforceJwtIpLock(request: Request): Promise<Response | null> {
   const jwt = request.headers.get("x-authorization")?.trim();
   if (!jwt) {
+    return textResponse("forbidden", 403);
+  }
+  const ip = clientIpFromRequest(request);
+  if (!ip) {
+    // Tanpa IP yang bisa dipercaya, kunci tidak bisa ditegakkan — tolak.
+    return textResponse("forbidden", 403);
+  }
+  const bound = await kvGet(["jwtip", jwt]);
+  if (typeof bound !== "string" || !bound) {
+    await kvSet(["jwtip", jwt], ip);
+    return null;
+  }
+  if (bound !== ip) {
     return textResponse("forbidden", 403);
   }
   return null;
@@ -1131,16 +1062,13 @@ function isEmailVerificationError(body: string): boolean {
   }
 }
 
-/** 403 JSON:API { errors: [{ title: "not_yet_started", meta: { start_time } }] }. */
-function isNotYetStartedError(body: string): boolean {
-  try {
-    const parsed: unknown = JSON.parse(body);
-    if (!isRecord(parsed) || !Array.isArray(parsed.errors)) return false;
-    return parsed.errors.some((error) =>
-      isRecord(error) && error.title === "not_yet_started");
-  } catch {
-    return false;
-  }
+/**
+ * Respons stream yang URL playback-nya di CDN staging tidak bisa diputar:
+ * manifest staging 404 di device (log playback 777). CDN production memakai
+ * host etslive-v3 / geo-id-etslive-v3 tanpa "-staging".
+ */
+function isStagingCdnStream(body: string): boolean {
+  return body.includes("etslive-staging");
 }
 
 /**
@@ -1327,11 +1255,6 @@ export async function proxyStagingStream(
 ): Promise<UpstreamResult | null> {
   const incoming = request ? new URL(request.url) : null;
   const search = incoming && incoming.search ? incoming.search : "?initialize=true";
-  await loadStagingTokens();
-  // Daftar token kosong (fetch txt gagal dan belum pernah sukses) →
-  // lewati staging, jangan kirim request dengan x-user-token kosong.
-  const stagingToken = token ?? currentStagingToken();
-  if (!stagingToken) return null;
   const headers = new Headers({
     "user-agent": STAGING_UA,
     "accept-encoding": "gzip",
@@ -1343,7 +1266,7 @@ export async function proxyStagingStream(
     "x-api-app-info": STAGING_APP_INFO,
     "accept-language": "id",
     "x-user-email": STAGING_EMAIL,
-    "x-user-token": stagingToken,
+    "x-user-token": token ?? currentStagingToken(),
     "x-visitor-id": STAGING_VISITOR_ID,
     "content-type": "application/vnd.api+json",
   });
@@ -1519,8 +1442,8 @@ async function verifyLiveVidioSessionUpstream(
 }
 
 async function proxyStream(streamId: string, request: Request): Promise<Response> {
-  // x-authorization (JWT) wajib ada (tanpa lock IP).
-  const jwtGate = requireJwt(request);
+  // x-authorization (JWT) wajib dan terkunci ke IP pertama yang memakainya.
+  const jwtGate = await enforceJwtIpLock(request);
   if (jwtGate) return jwtGate;
 
   const userEmail = request.headers.get("x-user-email");
@@ -1601,39 +1524,24 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
     return renderUpstream({ status: cached.status, body: cached.body, headers: cached.headers }, shouldEncrypt);
   }
 
-  // Sumber utama: API staging (akun tv-android staging, urutan ACAK).
-  // Retry akun demi akun sampai 200 OK — maksimal 15 detik per akun.
-  // Cadangan: production (urutan ACAK, retry sama) → kredensial user.
-  // Semua lewat cache 2,5 menit — staging maksimal 1 GET per window cache.
+  // Sumber TUNGGAL: API staging (akun tv-android staging, urutan ACAK).
+  // DILARANG production di MPD/HLS — tidak ada fallback kredensial
+  // production maupun kredensial user di endpoint stream.
+  // Respons staging ber-URL CDN staging (etslive-staging-*) ditolak karena
+  // MPD-nya 404 di device; coba token staging berikutnya sampai dapat URL
+  // yang bisa diputar. Semua lewat cache 2,5 menit.
   const fullResult = await fetchStreamResultShared(cacheKey, async () => {
-    await loadStagingTokens();
-    for (const token of shuffled(stagingTokens)) {
+    for (const token of shuffled(STAGING_TOKENS)) {
       const staging = await proxyStagingStream(streamId, request, token);
-      if (staging && staging.status === 200) return staging;
+      if (staging && staging.status === 200 && !isStagingCdnStream(staging.body)) {
+        return staging;
+      }
       // Staging menolak dengan "Verifikasi Email untuk Nonton" (403) →
       // akun staging tidak berhak; langsung redirect ke api.vidio.com resmi
       // agar app mengejar redirect dengan kredensial user sendiri.
       if (staging && staging.status === 403 && isEmailVerificationError(staging.body)) {
         return REDIRECT_OFFICIAL_SENTINEL;
       }
-      // Event belum mulai (not_yet_started + meta.start_time) →
-      // teruskan JSON-nya apa adanya ke app: semua akun pasti menerima
-      // jawaban yang sama, jadi percuma merotasi token staging (kuota
-      // 1 GET/menit) atau mencoba kredensial produksi. Patch APK memakai
-      // meta.start_time dari body ini untuk pesan "belum mulai".
-      // Status selalu dinormalisasi ke 403: api.vidio.com produksi membalas
-      // not_yet_started dengan 200, tapi app (KMM) hanya membentuk
-      // HttpResponseException dari status error — dengan 200 body errors
-      // dianggap payload stream yang gagal di-parse dan patch APK tidak
-      // pernah terpicu.
-      const notYetStarted = staging && isNotYetStartedError(staging.body);
-      if (staging && notYetStarted) {
-        return staging.status === 403 ? staging : { ...staging, status: 403 };
-      }
-    }
-    for (const cred of shuffled(PRODUCTION_CREDENTIALS)) {
-      const r = await proxyUltimateStream(streamId, cred, request, CHROME_UA, PER_ACCOUNT_TIMEOUT_MS);
-      if (r && r.status === 200) return r;
     }
     return null;
   });
@@ -1643,23 +1551,6 @@ async function proxyStream(streamId: string, request: Request): Promise<Response
   }
   if (result && isHlsOnlyStream(result.body)) {
     return redirectOfficialStream(streamId, request);
-  }
-  if (!result) {
-    // Kredensial hardcode gagal → coba kredensial asli user yang request
-    const own = await proxyUltimateStream(
-      streamId,
-      { email: requestedEmail, token: trimmedToken },
-      request,
-      CHROME_UA,
-    );
-    result = own ?? null;
-  }
-  if (result && isHlsOnlyStream(result.body)) return redirectOfficialStream(streamId, request);
-  // Fallback kredensial user bisa menerima not_yet_started dari produksi
-  // dengan status 200 — normalisasi ke 403 agar app membentuk
-  // HttpResponseException dan patch APK menampilkan blocker start_time.
-  if (result && result.status !== 403 && isNotYetStartedError(result.body)) {
-    result = { ...result, status: 403 };
   }
   if (result) {
     // Sembunyikan treatment preview (badge) supaya aplikasi tidak melewatkan
@@ -1704,8 +1595,8 @@ function redirectToOfficial(
 }
 
 async function proxyVideoData(videoId: string, request: Request): Promise<Response> {
-  // x-authorization (JWT) wajib ada (tanpa lock IP).
-  const jwtGate = requireJwt(request);
+  // x-authorization (JWT) wajib dan terkunci ke IP pertama yang memakainya.
+  const jwtGate = await enforceJwtIpLock(request);
   if (jwtGate) return jwtGate;
 
   const userEmail = request.headers.get("x-user-email");
@@ -1828,7 +1719,6 @@ async function handleRequest(request: Request): Promise<Response> {
 }
 
 async function selfCheck(): Promise<void> {
-  console.log(`[v0] selfCheck worker version ${WORKER_VERSION}`);
   const stagingSample = JSON.stringify({ data: { attributes: { hls: "https://www.staging.vidio.com/videos/2384351/common_tokenized_playlist.m3u8?ott=test", dash: null } } });
   if (!isHlsOnlyStream(stagingSample)
     || !isHlsOnlyStream(stagingSample.replace("www.staging.vidio.com", "www.vidio.com"))
@@ -1943,6 +1833,13 @@ async function selfCheck(): Promise<void> {
     if (!isRecord(kvObj) || kvObj.a !== 1) {
       throw new Error("Deno KV object roundtrip failed");
     }
+
+    // Lock JWT-IP: JWT pertama mengikat IP-nya; IP lain ditolak.
+    await kvSet(["jwtip", "jwt-selfcheck"], "1.2.3.4");
+    const bound = await kvGet(["jwtip", "jwt-selfcheck"]);
+    if (bound !== "1.2.3.4") {
+      throw new Error("JWT IP-lock roundtrip failed");
+    }
   }
 
   // Rewrite dash: URL staging menggantikan dash production di body JSON:API.
@@ -1991,6 +1888,14 @@ async function selfCheck(): Promise<void> {
   }
   if (isEmailVerificationError(JSON.stringify({ errors: [{ title: "not_logged_in" }] })) || isEmailVerificationError("not json")) {
     throw new Error("Non-verification errors must not trigger the official redirect");
+  }
+
+  // Respons stream ber-URL CDN staging harus ditolak (MPD staging 404 di device)
+  if (!isStagingCdnStream('{"stream_url":"https://etslive-staging-v3-vidio-com-tokenized.akamaized.net/stream/777/file/stream.mpd"}')) {
+    throw new Error("Staging-CDN stream responses must be rejected");
+  }
+  if (isStagingCdnStream('{"stream_url":"https://etslive-v3-vidio-com-tokenized.akamaized.net/stream/733/stream.mpd"}')) {
+    throw new Error("Production-CDN stream responses must be accepted");
   }
 
   // Klasifikasi kualitas respons upstream: full (ada URL) / error

@@ -90,19 +90,6 @@ public final class LoginGate {
     private static final String PROFILE = "mobile";
     private static final String[] ACCOUNT_QUERIES = accountQueries(PROFILE);
     private static final String DENIED_MESSAGE = deniedMessage(PROFILE);
-    // Worker mengunci JWT ke IP klien pada request playback pertama (KV
-    // jwtip). App TV tidak pernah memperbarui JWT-nya sendiri:
-    // AccessTokenRepository (lp/e) hanya mencoba refresh ketika token
-    // sudah expired, dan refresh token expired justru gagal, jadi JWT
-    // dari login terakhir dipakai berhari-hari. Begitu IP berubah, worker
-    // menolak dengan 403 forbidden. Mobile aman karena login ulang diam-
-    // diam setiap app dibuka. Patch TV melakukan rotasinya sendiri via
-    // POST https://api.vidio.com/auth memakai kredensial session yang
-    // sudah dibawa request playback.
-    private static final Object JWT_REFRESH_LOCK = new Object();
-    private static final long JWT_REFRESH_INTERVAL_MS = 10 * 60 * 1000L;
-    private static volatile String refreshedJwt = null;
-    private static volatile long refreshedJwtAt = 0L;
     private static final String ERROR_MESSAGE = "Tidak dapat memeriksa izin email, silakan coba lagi";
     private static final int MAX_RESPONSE_CHARS = 16;
     private static final String ACCOUNT_MODE_FILE = "stream_account_mode.txt";
@@ -243,17 +230,10 @@ public final class LoginGate {
     private static volatile boolean streamFrameRendered;
     private static volatile boolean streamRequestPending;
     private static volatile boolean streamPlaybackFailed;
+    private static volatile boolean streamPlayerClosed;
+    private static volatile Object heldPlayer;
+    private static volatile Object streamActivity;
     private static volatile String loadingStreamPath;
-
-    // Auto-retry dekripsi DRM: clearkey kosong/salah membuat stream gagal dan
-    // blocker DRM ("Perangkatmu tidak mendukung DRM") tampil sebagai dead end.
-    // Saat blocker itu render, kunci lama dibuang lalu blocker ditutup dengan
-    // aksi RefreshStream sehingga stream memuat ulang dan worker mengirim
-    // clearkey baru. Budget dibatasi per jendela waktu agar tidak loop tanpa henti.
-    private static final int MAX_DECRYPT_RETRIES = 2;
-    private static final long DECRYPT_RETRY_WINDOW_MS = 60000L;
-    private static long decryptRetryWindowStart;
-    private static int decryptRetriesInWindow;
     private static String lastLoadingWindowError;
     private static volatile String cachedAccountEmail;
     private static volatile Boolean cachedUltimate;
@@ -402,114 +382,11 @@ public final class LoginGate {
                 setHeader.invoke(builder, "x-partner-signature", "");
             }
             Object auth = getHeader.invoke(request, "x-authorization");
-            String currentAuth = auth == null ? null : auth.toString();
-            String playbackAuth = resolvePlaybackJwt(url, request, currentAuth);
-            if (playbackAuth != null) {
-                setHeader.invoke(builder, "x-authorization", playbackAuth);
-            } else if (auth == null) {
+            if (auth == null) {
                 setHeader.invoke(builder, "x-authorization", "");
             }
         } catch (Throwable ignored) {
         }
-    }
-
-    /**
-     * Memilih JWT x-authorization untuk request playback. Mengembalikan null
-     * ketika tidak ada yang perlu di-override (bukan TV, bukan URL playback,
-     * atau tidak ada JWT sama sekali) sehingga perilaku lama tetap jalan.
-     */
-    static String resolvePlaybackJwt(String url, Object request, String currentAuth) {
-        if (!"tv".equals(PROFILE) || !isPlaybackHeaderUrl(url)) {
-            return null;
-        }
-        String cached = refreshedJwt;
-        if (cached != null && !cached.isEmpty()
-                && System.currentTimeMillis() - refreshedJwtAt < JWT_REFRESH_INTERVAL_MS) {
-            return cached;
-        }
-        if (currentAuth == null || currentAuth.trim().isEmpty()) {
-            return cached;
-        }
-        String fresh = refreshPlaybackJwt(request, currentAuth);
-        if (fresh == null || fresh.isEmpty()) {
-            // Refresh gagal (jaringan/upstream) -- pakai JWT dari request
-            // seperti perilaku lama, jangan sampai playback mati total.
-            return currentAuth;
-        }
-        refreshedJwt = fresh;
-        refreshedJwtAt = System.currentTimeMillis();
-        return fresh;
-    }
-
-    private static String refreshPlaybackJwt(Object request, String currentAuth) {
-        synchronized (JWT_REFRESH_LOCK) {
-            String cached = refreshedJwt;
-            if (cached != null && !cached.isEmpty()
-                    && System.currentTimeMillis() - refreshedJwtAt < JWT_REFRESH_INTERVAL_MS) {
-                return cached;
-            }
-            HttpURLConnection connection = null;
-            try {
-                connection = (HttpURLConnection) new URL("https://api.vidio.com/auth").openConnection();
-                connection.setConnectTimeout(10_000);
-                connection.setReadTimeout(10_000);
-                connection.setInstanceFollowRedirects(false);
-                connection.setRequestMethod("POST");
-                connection.setRequestProperty("Accept", "application/json");
-                connection.setRequestProperty("x-authorization", currentAuth);
-                String apiAuth = requestHeaderValue(request, "x-api-auth");
-                connection.setRequestProperty("x-api-auth",
-                        apiAuth != null && !apiAuth.trim().isEmpty()
-                                ? apiAuth.trim()
-                                : "laZOmogezono5ogekaso5oz4Mezimew1");
-                connection.setRequestProperty("x-api-platform", "tv-android");
-                String email = requestHeaderValue(request, "x-user-email");
-                if (email != null && !email.trim().isEmpty()) {
-                    connection.setRequestProperty("x-user-email", email.trim());
-                }
-                String userToken = requestHeaderValue(request, "x-user-token");
-                if (userToken != null && !userToken.trim().isEmpty()) {
-                    connection.setRequestProperty("x-user-token", userToken.trim());
-                }
-                connection.setRequestProperty("User-Agent", defaultApiUa());
-                int status = connection.getResponseCode();
-                if (status != HttpURLConnection.HTTP_OK) {
-                    return null;
-                }
-                String token = extractJsonString(readAll(connection.getInputStream()), "access_token");
-                return token == null || token.trim().isEmpty() ? null : token.trim();
-            } catch (Throwable ignored) {
-                return null;
-            } finally {
-                if (connection != null) {
-                    connection.disconnect();
-                }
-            }
-        }
-    }
-
-    private static String requestHeaderValue(Object request, String name) {
-        try {
-            Object value = request.getClass().getMethod("d", String.class).invoke(request, name);
-            return value == null ? null : value.toString();
-        } catch (Throwable ignored) {
-            return null;
-        }
-    }
-
-    private static String readAll(InputStream stream) throws IOException {
-        StringBuilder body = new StringBuilder(2048);
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
-            char[] buffer = new char[2048];
-            int read;
-            while ((read = reader.read(buffer)) >= 0) {
-                body.append(buffer, 0, read);
-                if (body.length() > 1_000_000) {
-                    break;
-                }
-            }
-        }
-        return body.toString();
     }
 
     static String streamHeaderValue(String url, String name, String currentValue) {
@@ -1062,11 +939,13 @@ public final class LoginGate {
         return streamLoadingShown;
     }
 
-    public static void beginStreamLoading(String url) {
+    public static synchronized void beginStreamLoading(String url) {
+        if (streamPlayerClosed) return;
         try {
             String path = new URL(url).getPath();
             if (path.equals(loadingStreamPath) && playerPlaying) return;
             loadingStreamPath = path;
+            streamActivity = currentActivity;
             playerPlaying = false;
             streamFrameRendered = false;
             streamPlaybackFailed = false;
@@ -1077,13 +956,33 @@ public final class LoginGate {
         }
     }
 
+    public static synchronized void holdPlayer(Object player) {
+        if (player == null) return;
+        heldPlayer = player;
+        streamPlayerClosed = false;
+    }
+
+    public static synchronized void onStreamPlayerClosed(Object player) {
+        if (player != null && player != heldPlayer) return;
+        streamPlayerClosed = true;
+        heldPlayer = null;
+        streamActivity = null;
+        loadingStreamPath = null;
+        streamRequestPending = false;
+        streamPlaybackFailed = false;
+        streamFrameRendered = false;
+        playerPlaying = false;
+        hideStreamLoading();
+    }
+
     public static void onStreamPlaying(boolean playing) {
-        if (streamRequestPending || streamPlaybackFailed) return;
+        if (streamPlayerClosed || loadingStreamPath == null || streamRequestPending || streamPlaybackFailed) return;
         playerPlaying = playing;
         if (playing && streamFrameRendered) hideStreamLoading();
     }
 
     public static void onStreamResponse(String url, int status) {
+        if (streamPlayerClosed) return;
         try {
             if (!new URL(url).getPath().equals(loadingStreamPath)) return;
             if (status == 200) streamRequestPending = false;
@@ -1096,93 +995,28 @@ public final class LoginGate {
     }
 
     public static void onStreamFirstFrame() {
-        if (streamRequestPending || streamPlaybackFailed) return;
+        if (streamPlayerClosed || loadingStreamPath == null || streamRequestPending || streamPlaybackFailed) return;
         streamFrameRendered = true;
         hideStreamLoading();
     }
 
     public static void onStreamPlayerError(Object error) {
-        if (loadingStreamPath == null || streamRequestPending) return;
+        if (streamPlayerClosed || loadingStreamPath == null || streamRequestPending) return;
         playerPlaying = false;
         streamFrameRendered = false;
         streamPlaybackFailed = true;
         hideStreamLoading();
-        if (isDrmError(error)) return; // blocker DRM memicu retry dekripsi otomatis
         showToast("Siaran gagal diputar. Coba buka ulang channel.");
     }
 
-    private static boolean isDrmError(Object error) {
-        if (error == null) return false;
-        try {
-            String className = error.getClass().getName();
-            if (className.contains("Drm") || className.contains("Crypto")) return true;
-            Object code = error.getClass().getMethod("getErrorCode").invoke(error);
-            if (code instanceof Integer) {
-                int value = (Integer) code;
-                if (value >= 3000 && value < 4000) return true; // ExoPlayer ERROR_CODE_DRM_*
-            }
-        } catch (Throwable ignored) {
-        }
-        return false;
-    }
-
-    // Dipanggil renderer blocker (u0.a) saat blocker DRM (c0$j) akan ditampilkan.
-    // "Perangkatmu tidak mendukung DRM" hampir selalu berarti clearkey kosong
-    // (fallback license server) atau clearkey salah - bukan masalah perangkat.
-    public static void onDrmBlocker(Object blockerActivity) {
-        long now = System.currentTimeMillis();
-        if (now - decryptRetryWindowStart > DECRYPT_RETRY_WINDOW_MS) {
-            decryptRetryWindowStart = now;
-            decryptRetriesInWindow = 0;
-        }
-        if (decryptRetriesInWindow >= MAX_DECRYPT_RETRIES) {
-            traceLog("DECRYPT retry budget habis, blocker dibiarkan tampil");
-            return;
-        }
-        decryptRetriesInWindow++;
-        traceLog("DECRYPT retry " + decryptRetriesInWindow + "/" + MAX_DECRYPT_RETRIES
-                + ": buang clearkey lama + RefreshStream");
-        try {
-            Class.forName("com.vidio.android.patch.ClearKeyHolder").getMethod("clear").invoke(null);
-        } catch (Throwable ignored) {
-        }
-        finishBlockerWithRefresh(blockerActivity);
-    }
-
-    // Menutup BlockerActivity seolah tombol OK memilih aksi RefreshStream, supaya
-    // WatchActivity memuat ulang stream lewat mekanisme bawaannya sendiri.
-    private static void finishBlockerWithRefresh(Object blockerActivity) {
-        try {
-            if (blockerActivity == null) return;
-            Class<?> activityClass = Class.forName("android.app.Activity");
-            Class<?> intentClass = Class.forName("android.content.Intent");
-            Object intent = intentClass.getConstructor().newInstance();
-            Class<?> actionClass = Class.forName(
-                    "com.vidio.android.tv.watch.blocker.PostBlockerAction$RefreshStream");
-            Object action = actionClass.getField("d").get(null);
-            intentClass.getMethod("putExtra", String.class, Class.forName("android.os.Parcelable"))
-                    .invoke(intent, ".extra.post.blocker.action", action);
-            activityClass.getMethod("setResult", int.class, intentClass)
-                    .invoke(blockerActivity, -1, intent);
-            activityClass.getMethod("finish").invoke(blockerActivity);
-        } catch (Throwable ignored) {
-        }
-    }
-
-    private static void traceLog(String message) {
-        try {
-            Class.forName("com.vidio.android.patch.VckTrace")
-                    .getMethod("log", String.class).invoke(null, message);
-        } catch (Throwable ignored) {
-        }
-    }
-
     public static void onStreamPlaybackState(int state) {
-        if (loadingStreamPath == null || streamPlaybackFailed) return;
+        if (streamPlayerClosed || loadingStreamPath == null || streamPlaybackFailed) return;
         if (state == 2) {
             playerPlaying = false;
             showStreamLoading();
-        } else if (!streamRequestPending && (state == 4 || (state == 1 && streamFrameRendered))) {
+        } else if (!streamRequestPending && state == 4) {
+            onStreamPlayerClosed(null);
+        } else if (!streamRequestPending && state == 1 && streamFrameRendered) {
             hideStreamLoading();
         } else if (state == 1 && !streamFrameRendered) {
             showStreamLoading();
@@ -1190,20 +1024,30 @@ public final class LoginGate {
     }
 
     public static void onStreamActivityResumed(Object activity) {
-        Object previousActivity = currentActivity;
         currentActivity = activity;
-        if (streamLoadingShown) {
-            refreshStreamLoading();
+        if (loadingStreamPath != null && streamActivity != null && streamActivity != activity) {
+            boolean changingConfigurations = false;
+            try {
+                changingConfigurations = Boolean.TRUE.equals(streamActivity.getClass()
+                        .getMethod("isChangingConfigurations").invoke(streamActivity));
+            } catch (ReflectiveOperationException ignored) {
+            }
+            if (changingConfigurations) streamActivity = activity;
+            else onStreamPlayerClosed(null);
         }
+        if (!streamPlayerClosed && loadingStreamPath != null && streamActivity == null) streamActivity = activity;
+        if (streamLoadingShown) refreshStreamLoading();
     }
 
     public static void onStreamActivityPaused(Object activity) {
         if (activity != currentActivity) return;
         currentActivity = null;
+        cancelStreamLoadingTick();
         dismissStreamLoadingWindow();
     }
 
     public static void showStreamLoading() {
+        if (streamPlayerClosed || loadingStreamPath == null) return;
         streamLoadingShown = true;
         if (loadingTask == null) loadingTask = new Runnable() {
             @Override
@@ -1215,9 +1059,10 @@ public final class LoginGate {
     }
 
     public static void renderStreamLoadingWindow() {
-        if (!streamLoadingShown) return;
+        if (!streamLoadingShown || streamPlayerClosed) return;
         try {
             Object activity = currentActivity;
+            if (activity != streamActivity) return;
             Class<?> activityClass = Class.forName("android.app.Activity");
             if (!activityClass.isInstance(activity)) return;
             if ((Boolean) activityClass.getMethod("isFinishing").invoke(activity)
@@ -1308,11 +1153,20 @@ public final class LoginGate {
     }
 
     public static synchronized void scheduleStreamLoadingTick() {
-        if (!streamLoadingShown) return;
+        if (!streamLoadingShown || streamPlayerClosed || currentActivity == null) return;
         try {
             Class<?> handlerClass = Class.forName("android.os.Handler");
             handlerClass.getMethod("removeCallbacks", Runnable.class).invoke(loadingHandler, loadingTask);
             handlerClass.getMethod("postDelayed", Runnable.class, long.class).invoke(loadingHandler, loadingTask, 250L);
+        } catch (ReflectiveOperationException ignored) {
+        }
+    }
+
+    public static synchronized void cancelStreamLoadingTick() {
+        if (loadingHandler == null || loadingTask == null) return;
+        try {
+            Class.forName("android.os.Handler").getMethod("removeCallbacks", Runnable.class)
+                    .invoke(loadingHandler, loadingTask);
         } catch (ReflectiveOperationException ignored) {
         }
     }
@@ -1322,6 +1176,7 @@ public final class LoginGate {
         // request (channel switch). Without this, the "Memuat siaran..."
         // overlay only ever appears on the first stream of the session.
         streamLoadingShown = false;
+        cancelStreamLoadingTick();
         runOnMainThread(new Runnable() {
             @Override
             public void run() {
@@ -1501,11 +1356,41 @@ public final class LoginGate {
         if (currentActivity != firstActivity) throw new AssertionError("An unrelated Activity pause must not clear the player");
         onStreamActivityPaused(firstActivity);
         if (currentActivity != null || !isStreamLoading()) throw new AssertionError("Pausing must clear the window owner without losing loading state");
+        onStreamActivityResumed(firstActivity);
+        if (!isStreamLoading()) throw new AssertionError("Resuming the same Activity must retain loading");
         onStreamActivityResumed(nextActivity);
-        if (currentActivity != nextActivity || !isStreamLoading()) throw new AssertionError("Resuming a new Activity must retain pending loading");
-        onStreamPlaybackState(4);
-        if (isStreamLoading()) throw new AssertionError("Ended playback must clear loading");
+        if (currentActivity != nextActivity || isStreamLoading() || loadingStreamPath != null) {
+            throw new AssertionError("Leaving the player Activity must end its loading session");
+        }
         String failedStream = "https://api.example.com/livestreamings/50/stream?initialize=true";
+        beginStreamLoading(failedStream);
+        onStreamResponse(failedStream, 200);
+        onStreamPlaybackState(2);
+        onStreamPlaying(true);
+        onStreamFirstFrame();
+        onStreamPlayerError(new IOException("Late error after close"));
+        showStreamLoading();
+        if (isStreamLoading() || playerPlaying || streamFrameRendered || loadingStreamPath != null) {
+            throw new AssertionError("Late callbacks and retries must not reopen a closed player");
+        }
+        Object oldPlayer = new Object();
+        Object newPlayer = new Object();
+        holdPlayer(oldPlayer);
+        beginStreamLoading(failedStream);
+        onStreamPlayerClosed(oldPlayer);
+        if (isStreamLoading() || heldPlayer != null || streamRequestPending) {
+            throw new AssertionError("Closing the active player must clear its pending loading state");
+        }
+        holdPlayer(newPlayer);
+        beginStreamLoading(failedStream);
+        onStreamPlayerClosed(oldPlayer);
+        if (!isStreamLoading() || heldPlayer != newPlayer) {
+            throw new AssertionError("Closing an old player must not cancel the new player");
+        }
+        onStreamResponse(failedStream, 200);
+        onStreamPlaybackState(4);
+        if (isStreamLoading() || !streamPlayerClosed) throw new AssertionError("Ended playback must end loading");
+        holdPlayer(newPlayer);
         beginStreamLoading(failedStream);
         onStreamResponse(failedStream, 200);
         onStreamPlayerError(new IOException("Decoder failed", new IllegalStateException("No video output")));
