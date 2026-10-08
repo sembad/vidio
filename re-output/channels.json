@@ -1,0 +1,4652 @@
+[
+ {
+  "name": "isHeader",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-192-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/wowow_live/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "isHeader"
+ },
+ {
+  "name": "wowowlive.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-193-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/wowow_cinema/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "wowowlive.jp"
+ },
+ {
+  "name": "wowowcinema.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-191-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/wowow_prime/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "wowowcinema.jp"
+ },
+ {
+  "name": "wowowprime.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-000b-101-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/nhk_bs4k/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "wowowprime.jp"
+ },
+ {
+  "name": "nhkbsp4k.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo@",
+  "stream": "https://www.youtube.com/live/HCEqojdt4sw",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "nhkbsp4k.jp"
+ },
+ {
+  "name": "HCEqojdt4sw",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/7XJVV45fwc8/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/7XJVV45fwc8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "HCEqojdt4sw"
+ },
+ {
+  "name": " Top Hits Indonesia 2026",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/HWj1FwivQW8/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/HWj1FwivQW8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": " Top Hits Indonesia 2026"
+ },
+ {
+  "name": "HWj1FwivQW8",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/5W6eaMsurJ0/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/5W6eaMsurJ0",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "HWj1FwivQW8"
+ },
+ {
+  "name": " Lagu Top Indo",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-153-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/mystery_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": " Lagu Top Indo"
+ },
+ {
+  "name": "mysterychannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-148-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/action_channel_(axn)/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "mysterychannel.jp"
+ },
+ {
+  "name": "axn.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-182-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/at-x/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "axn.jp"
+ },
+ {
+  "name": "atx.jp",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV8.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv8k.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "atx.jp"
+ },
+ {
+  "name": "CCTV 8K",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV8.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv8hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 8K"
+ },
+ {
+  "name": "CCTV 8",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV7.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv7hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 8"
+ },
+ {
+  "name": "CCTV 7",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV6.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv6hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 7"
+ },
+ {
+  "name": "CCTV 6",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV5+.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv5p.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 6"
+ },
+ {
+  "name": "CCTV 5+",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCB",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv5hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 5+"
+ },
+ {
+  "name": "CCTV 5",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV4.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv4k.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 5"
+ },
+ {
+  "name": "CCTV 4K",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV4.png",
+  "stream": "https://atemecdnbalancer-voe.sysln.id/live/eds/CCTV4/mediampd/CCTV4.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 4K"
+ },
+ {
+  "name": "CCTV4",
+  "num": "",
+  "logo": "https://raw.githubuserconten(",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv3hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV4"
+ },
+ {
+  "name": "CCTV 3",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV2.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv2hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 3"
+ },
+ {
+  "name": "CCTV 2",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV1.png",
+  "stream": "https://cd-live-stream.news.cctvplus.com/live/smil:CHANNEL1.smil/playlist.m3u8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 2"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://i.imgur.com/uVe56sB.jpeg",
+  "stream": "https://streaml01cf.nxtv.jp/p-menecoch01-amni5j72tc/index1/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "MEN'S NEC",
+  "num": "1122",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-195-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/v_paradise_nsfw/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "MEN'S NEC"
+ },
+ {
+  "name": "vparadise.jp",
+  "num": "",
+  "logo": "https://",
+  "stream": "https://haru.charandom.blog/stream/jp/animax/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "vparadise.jp"
+ },
+ {
+  "name": "animax.in",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-164-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/green_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "animax.in"
+ },
+ {
+  "name": "greenchannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65534-132-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/jsport_4/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "greenchannel.jp"
+ },
+ {
+  "name": "jsports4.jp",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/-on2-pqAm2Y/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/-on2-pqAm2Y",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "jsports4.jp"
+ },
+ {
+  "name": "Wakhaji: Server A",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/dbghelp/mewatch-EPG/refs/heads/main/mewatch.xml",
+  "stream": "https://www.youtube.com/live/uCHe6W2uDjM",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Wakhaji: Server A"
+ },
+ {
+  "name": "uCHe6W2uDjM",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/57FLXug6QBE/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/57FLXug6QBE",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "uCHe6W2uDjM"
+ },
+ {
+  "name": " Billboard u0026 Spotify Hits Today!",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/S47PnPdhNBI/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/S47PnPdhNBI",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": " Billboard u0026 Spotify Hits Today!"
+ },
+ {
+  "name": "S47PnPdhNBI",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/bSe6XXeO7uY/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/bSe6XXeO7uY",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "S47PnPdhNBI"
+ },
+ {
+  "name": "bSe6XXeO7uY",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/Pk_17JdAybg/hqdefault.jpg",
+  "stream": "https://haru.charandom.blog/stream/jp/ntv_news24/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bSe6XXeO7uY"
+ },
+ {
+  "name": "ntvnews24.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-190-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/nittele_plus/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "ntvnews24.jp"
+ },
+ {
+  "name": "nitteleplus.jp",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV17.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv17hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "nitteleplus.jp"
+ },
+ {
+  "name": "CCTV 17",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV16.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv16hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 17"
+ },
+ {
+  "name": "CCTV 16",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV15.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv15hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 16"
+ },
+ {
+  "name": "CCTV 15",
+  "num": "1122",
+  "logo": "https://",
+  "stream": "https://haru.charandom.blog/stream/jp/pigoo_nsfw/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 15"
+ },
+ {
+  "name": "pigoo.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-143-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tabi_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "pigoo.jp"
+ },
+ {
+  "name": "tabichannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65534-135-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/channel_ginga/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "tabichannel.jp"
+ },
+ {
+  "name": "channelginga.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65H",
+  "stream": "https://haru.charandom.blog/stream/jp/home_drama_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "channelginga.jp"
+ },
+ {
+  "name": "homedramachannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-106-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/sport_live_plus/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "homedramachannel.jp"
+ },
+ {
+  "name": "Wakhaji: Server A",
+  "num": "",
+  "logo": "https://www.transtv.co.id/themes/v25.7/src/assets/logo/01-t7.png",
+  "stream": "https://video.detik.com/trans7-sec/smil:trans7.smil/playlist.m3u8?wowzatokenstarttime=0&wowzatokenendtime=1791410713290&wowzatokenhash=fKGB2G8PDwitjRnSdRjGgzn5bFonJGF16W4MTI9ZrMw%3D",
+  "manifest": "hls",
+  "drm": "",
+  "headers": "{\"Cookie\":\"cshx\\u003d3bcdb206\",\"Referer\":\"https://20.detik.com/live/trans-7\",\"Origin\":\"https://20.detik.com\",\"User-Agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0\"}",
+  "channel": "Wakhaji: Server A"
+ },
+ {
+  "name": "TRANS7",
+  "num": "",
+  "logo": "https://www.transtv.co.id/themes/v25.7/src/assets/logo/01-20detik.png",
+  "stream": "https://live.cnbcindonesia.com/livecnbc-sec/smil:cnbctv.smil/playlist.m3u8?wowzatokenstarttime=0&wowzatokenendtime=1791410713586&wowzatokenhash=r5ux1EVgmBWfIX5pAOTFWBVQCL-Gj0kBzOoi1_ZDwkQ%3D",
+  "manifest": "hls",
+  "drm": "",
+  "headers": "{\"User-Agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko",
+  "channel": "TRANS7"
+ },
+ {
+  "name": "cnbc",
+  "num": "",
+  "logo": "https://www.transtv.co.id/themes/v25.7/src/assets/logo/01-cnn.png",
+  "stream": "https://live.cnnindonesia.com/livecnn-sec/smil:cnntv.smil/playlist.m3u8?wowzatokenstarttime=0&wowzatokenendtime=1791410713371&wowzatokenhash=TW0Kvkqw3sTGFDKrQ84kSXyFXIwbf2TrX3sGMd7_Qm8%3D",
+  "manifest": "hls",
+  "drm": "",
+  "headers": "{\"Cookie\":\"cshx\\u003da7f2d91b\",\"Referer\":\"https://www.cnnindonesia.com/\",\"Origin\":\"https://www.cnnindonesia.com\",\"User-Agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0\"}",
+  "channel": "cnbc"
+ },
+ {
+  "name": "cnn",
+  "num": "",
+  "logo": "https://www.transtv.co.id/themes/v25.7/src/assets/logo/01-ttv.png",
+  "stream": "https://video.detik.com/transtv-sec/smil:transtv.smil/playlist.m3u8?wowzatokenstarttime=0&wowzatokenendtime=1791410713333&wowzatokenhash=cUUEH3TEzsxvopRNdJ4eDWMPigAWqhVRrOii2bfMUJQ%3D",
+  "manifest": "hls",
+  "drm": "",
+  "headers": "{\"Cookie\":\"cshx\\u003d3bcdb206\",\"Referer\":\"https://20.detik.com/live/trans-tv\",\"Origin\":\"https://20.detik.com\",\"User-Agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0\"}",
+  "channel": "cnn"
+ },
+ {
+  "name": "transtv",
+  "num": "",
+  "logo": "https://www.transtv.co.id/themes/v25.7/src/assets/logo/01-t7.png",
+  "stream": "https://video.detik.com/trans7-sec/smil:trans7.smil/playlist.m3u8?wowzatokenstarttime=0&wowzatokenendtime=1791410713290&wowzatokenhash=fKGB2G8PDwitjRnSdRjGgzn5bFonJGF16W4MTI9ZrMw%3D",
+  "manifest": "hls",
+  "drm": "",
+  "headers": "{\"Cookie\":\"cshx\\u003d3bcdb206\",\"Referer\":\"https://20.detik.com/live/trans-7\",\"Origin\":\"https://20.detik.com\",\"User-Agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0\"}",
+  "channel": "transtv"
+ },
+ {
+  "name": "trans7",
+  "num": "",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/930c8097-dc6b-4161-b414-d7a70b0b8b98.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/VFZPTkU/manifest.mpd?signature=YWQ4YjJhNTEyMGU3OTRhNTk1MWVhM2Y1N2FjNmJhNmQ=&time=15261530035&device_id=Ozp6gClXbv0YHgBwhDr2FrY_SUUqrdYiDXesXuJMyWot",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a@",
+  "channel": "TVONE"
+ },
+ {
+  "name": "TVOne",
+  "num": "363",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/cfc9d256-0421-447e-9aae-431db3de77c3.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/TWV0cm9UVg/manifest.mpd?signature=MWMxZTQ4ZDBjNWI5ZjdkY2Y1NjZhZjZhZDZiYWJjZjU=&time=15261530034&device_id=X84RS6eFnPVbLVoX-a3DA7o0UYNr2V9Gpdm8Q9WvPOr-",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "MetroTV"
+ },
+ {
+  "name": "Metro TV",
+  "num": "211",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/ea2f3817-add8-44b7-b222-664cacd221ca.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q05CQy1JbmRvbmVzaWE/manifest.mpd?signature=NDNiODJmNDdhNGMxZWM2MjQ2NTc3YmY1ODMzYmY3ZTg=&time=15261530034&device_id=CYW7tQ9N2A9z-LKEHOkr4N06dHR3rSDQjArSuCDCsA9y",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "CNBC-Indonesia"
+ },
+ {
+  "name": "CNBC Indonesia",
+  "num": "213",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/0cc347d7-f3dc-49e8-ac20-53f4c3257019.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q05OaS1teQ/manifest.mpd?signature=NTUxNGZhYzAxODYyZGYzYjI1Y2U4ZGE0ZDlhNmVhMjM=&time=15261530034&device_id=igfq_bznM9N2hbEYv_iiq8fCPdkXTHuzVeDDEoYvPCuP",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "CNNi-my"
+ },
+ {
+  "name": "CNN Indonesia",
+  "num": "212",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/419ddbb6-dc83-4e1a-89e6-13c6c9422577.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/R1RWLUNIQU5ORUw/manifest.mpd?signature=NzlmN2Q2ODQ5YzdiYTY4NzI0NTk0ODA4M2M5OTg3ODA=&time=15261530036&device_id=snp8iH1-VJrpq4Gw6eg4WfS68WlYrlmutFn8m4T7gwVt",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a@",
+  "channel": "GTV-CHANNEL"
+ },
+ {
+  "name": "GTV",
+  "num": "218",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/15c10f90-4304-4410-a418-67891b5c185d.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/UkNUSS1DaGFubmVs/manifest.mpd?signature=NWNlMzdkZDg5OGQ5M2ZjZDFmNWY4MjM2OTZjNTkwMzc=&time=15261530036&device_id=91YZApC19qkJjwd_UPYdOf1lcAiAkbyK2gBqxNOj71iT",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "RCTI-Channel"
+ },
+ {
+  "name": "RCTI",
+  "num": "217",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/efc56c4c-23e5-43a5-8dbd-0697b99438cd.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/SW5kb3NpYXI/manifest.mpd?signature=YzNkYjZkNGQ5ZmUxODA3YWQyMzU1MDM0MTY3MWMzNTk=&time=15261530035&device_id=r4UYq-xKhVC8FauoPQPxj17mdfb8PXBj1KYRO67jImld",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Indosiar"
+ },
+ {
+  "name": "Indosiar",
+  "num": "216",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/5c547aea-58b4-403c-97cb-400d033b31eb.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/U0NUVi1teQ/manifest.mpd?signature=MTkyYzRhN2YwYTQyN2JiZjNhYWQ3ZjQ0ZGE0NmU0N2M=&time=15261530035&device_id=xbHqPDnti8nNWQnCZZX11_nexI0R_sp9L49ki01ttbHS",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "SCTV-my"
+ },
+ {
+  "name": "SCTV",
+  "num": "215",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/b717b7b9-4dab-4e80-8221-9bd42d3f26f1.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/TURUVg/manifest.mpd?signature=NGUwNmI1MGUxMGQyOTIzN2E0ZDY3ZjNlYWQzZTVkMDI=&time=15261530037&device_id=QDhoyN2Lba5K4HQsf6SDRCPuefygaAtBa8Ri4YE1a41x",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a@",
+  "channel": "MDTV"
+ },
+ {
+  "name": "MDTV",
+  "num": "221",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/f0771c7b-d473-4fa4-ad0f-cdffd4bc0ac5.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/S29tcGFzIFRW/manifest.mpd?signature=NTZmYTM2NDNkNTJkZDYyYzQ1MWJhYTA2NjZlYTNhZWM=&time=15261530037&device_id=GWe6O-bpr5EX69OkzXRMyUcisgEEW9SUsKgCYm9aoV-b",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Kompas TV"
+ },
+ {
+  "name": "Kompas TV",
+  "num": "220",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/e1d6bd56-4209-4337-b0f7-553fb6fdec9a.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/QlRWIENoYW5uZWw/manifest.mpd?signature=YjUxMzU2NTRjYWVjODYyNTNjN2UwMDg4MjY1NjEyN2Y=&time=15261530037&device_id=h2HXx1wGRngB8wOx6i6nxKmHQvTphhEN0NgGgQrsIAoY",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "BTV Channel"
+ },
+ {
+  "name": "BTV",
+  "num": "245",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/912d53a1-8222-40e0-8e97-affb43129850.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/SmFrIHR2IENoYW5uZWw/manifest.mpd?signature=ZTFiNDNmMTllMzQ3ZjZkNGM0YTU5ODZiMDhkYjM3MTk=&time=15261530036&device_id=Yvc8cTspgGv9l0ZJBtmu9MTStqhSQ3a8MDul1BbrtDFn",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Jak tv Channel"
+ },
+ {
+  "name": "JakTV",
+  "num": "243",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/804a0414-edd9-4e16-bd7e-1fbb593525ec.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/QU5UVg/manifest.mpd?signature=NTNlMDQxYThjNWIyNjQ0NzVlYzhiZWMwNTgwY2Q0OWY=&time=15261530040&device_id=exPGjvBt1devUK9s4JRmIsyLWgETT3MF7biVAkJqPt_z",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a@",
+  "channel": "ANTV"
+ },
+ {
+  "name": "ANTV",
+  "num": "364",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/6e55c83f-b399-4884-8b57-273acb663344.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/VFZSSQ/manifest.mpd?signature=NGEwODEzMmUwNWE0ZDhjNzdjZjI0MGQ2Y2Q0ZDZmMjk=&time=15261530040&device_id=3ZFrfCj8CAFibewDgTWW45F1zbLfZ6s5V6kLlLTI5x4q",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "TVRI"
+ },
+ {
+  "name": "TVRI",
+  "num": "223",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/788c4e9e-363d-47f7-9ef5-6ee1d9dd2619.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/TU5DVFY/manifest.mpd?signature=YWMzNjViMDdjNzEwMTBjZTM5ZWE1NGNlNmJlNDU5ZjE=&time=15261530040&device_id=3TBl1qoax-wGdHNJYfDs4qp_lXR8Pzs79oljBgEdkm3b",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "MNCTV"
+ },
+ {
+  "name": "MNC TV",
+  "num": "222",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/f4bd6cd9-d8a5-4f42-8dce-7f332ec55940.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/cnR2IENobmw/manifest.mpd?signature=YzlhZWM0NjA1NmEzZGIwYWRmMWY5MDU3NmNlNDc2ZWY=&time=15261530037&device_id=P0nfhRjIrpRyfhIVF5IAC0AUEQ4JzNyGFGZgGnWhGaN5",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "rtv Chnl"
+ },
+ {
+  "name": "RTV",
+  "num": "246",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/f124427a-931e-47d1-ab50-1b29a7a3e406.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q2VsZXN0aWFsIE1vdmllcw/manifest.mpd?signature=NGEyOTVmNWI4NDdhMGJlYWViNWExZGZiZDIwM2U5ODg=&time=15261530042&device_id=_SarstnhL97YhT52PzBB0rh7u1hcsz4ENlombXPWkwH9",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797ah",
+  "channel": "Celestial Movies"
+ },
+ {
+  "name": "Celestial Movies",
+  "num": "229",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/dc7d7072-39d4-4978-bc34-4e7654fe4469.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/R2FydWRhIFRW/manifest.mpd?signature=ZGI0ODI4YzBiNTgxNDFhMWIyM2JmYTZiYWU5MmEyMTA=&time=15261530041&device_id=fDziwaK0HOkfdZrH71OE-Z1CeGJVfQA7T9-wnvQ9xoNC",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Garuda TV"
+ },
+ {
+  "name": "Garuda TV",
+  "num": "219",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/c2f01ed0-b8ba-45ae-8b44-dc09e69aaaa9.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/QmVyaXRhIFNhdHU/manifest.mpd?signature=YTQ1YTI4NmU5ZTEzZDBjMThkN2VkNTRlMjI3ZDBiMmI=&time=15261530041&device_id=_vy37EH684GvZ2vl0ZMBv5Q3chq2YzZcju7o-xqQKl1w",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Berita Satu"
+ },
+ {
+  "name": "Berita Satu",
+  "num": "214",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/52d0d978-6550-4935-9899-aa78db628fff.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/anR2LUNoYW5uZWw/manifest.mpd?signature=YTU1ZWJmY2U2MDQxZDFhYTgyYzE4NTA3Mjc4NTQ0ZDY=&time=15261530041&device_id=sz6VboweuCz5X0uYtzNtgDdfsnvoxAdwBMQcR6hFlfc1",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "jtv-Channel"
+ },
+ {
+  "name": "jtv",
+  "num": "284",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/6e735e2f-e7db-47ec-b13b-23d3a0342124.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q2FydG9vbiBUViBQcmVtaXVt/manifest.mpd?signature=MzE2ODgyZGM5NGM4ZWQ4NTgxNWQ2M2MyMDhiNDMwNDY=&time=15261530043&device_id=grlby2WFfnvV7vQpiaGRu2z6kMsG9rALYwL-U2AOq63P",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797ah",
+  "channel": "Cartoon TV Premium"
+ },
+ {
+  "name": "Cartoon TV Premium",
+  "num": "248",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/8c6fb1a8-44f6-4d20-9093-fb4bb93bc5cd.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/TW92aWVzIE5ld3M/manifest.mpd?signature=ZjNiMmNhZTk0ZWMwNzU0OTM1MzhhNzA1OTBmMzk2ZDg=&time=15261530043&device_id=ANbHsCYYdGg20U_B8bw7j2Q6buCRto80mxNVNaVzo5sv",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Movies News"
+ },
+ {
+  "name": "Movies News",
+  "num": "185",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/6bec4b1b-262f-44e0-821f-a3897ce93251.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/VGhyaWxs/manifest.mpd?signature=OWM0M2QyZGJlNjVkNGZiZmIzZDQ5NjU4YzUyYjkwM2Q=&time=15261530042&device_id=JV6L4WV5udVtZSAEzbzXgEv-n0zJHgw344pJ77nqxeQZ",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Thrill"
+ },
+ {
+  "name": "Thrill",
+  "num": "232",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/5613ec24-ed04-42e5-917b-dee0e0ec074a.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Qmlvc2tvcCBJbmRvbmVzaWE/manifest.mpd?signature=MmUxMWQ5MTlmNWExY2E1M2IzZjkxYTcwM2MxOTYxNTA=&time=15261530042&device_id=eq6BU-aF2Nwrqay6zrAHPvnjc0DIfLLihkyCjuy-NDhB",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Bioskop Indonesia"
+ },
+ {
+  "name": "Bioskop Indonesia",
+  "num": "230",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/96641a38-47bd-479c-8e6d-efa73e7f618d.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/S25vd2xlZGdlKw/manifest.mpd?signature=YzIxOTkwNTgxYzMxM2QxZjlmNzQ5YjBjNWY2ZGJhOGE=&time=15261530044&device_id=bQAeZGPm-ojMsbQej6-13P0tK9Hj87yPYdaJqeFL4v71",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797aP",
+  "channel": "Bioskop Indonesia"
+ },
+ {
+  "name": "Knowledge+",
+  "num": "205",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/87c43b67-b234-41a8-b188-ae6b498a40b4.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q2FydG9vbiBUViBDbGFzc2ljcw/manifest.mpd?signature=NTBhNWM5ZWEzZmMwYTVkNWNiYzUyNjU0NWZmNmUxMDE=&time=15261530044&device_id=2XrmsynOlQlAyAPdBIcv6peLVmJjsDVrDhNXzdnlzFEL",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Cartoon TV Classics"
+ },
+ {
+  "name": "Cartoon TV Classic",
+  "num": "250",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/76e39ba2-62b9-4f96-90ae-3de803edb400.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/RHVuaWEgQW5haw/manifest.mpd?signature=MzRkMDAyNWU3M2E1NDc0ZDJhYWYyMjk3YWQwMjQxM2Y=&time=15261530044&device_id=3QvdtIVmlnhtwECND9E3RVdj5nJ4qfumrTafeoXoCaHI",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Dunia Anak"
+ },
+ {
+  "name": "Dunia Anak",
+  "num": "186",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/9e422d53-5c00-49ea-8422-e2a3f1e03f70.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q2FydG9vbiBUVg/manifest.mpd?signature=MDA4OGRiMmY0MzQ0OGEzOGVmM2NhNjBkMjVlOWFmMTQ=&time=15261530043&device_id=j0QScFT3IXQhWQkT7MwE-M4H1LQWyNMiztSJRo0RUi-4",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Cartoon TV"
+ },
+ {
+  "name": "Cartoon TV",
+  "num": "249",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/7be43f18-a28f-4825-b888-2d1ed538c667.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/epyctx01-aaf7e583a80211de0b2b2f9dcbed0bf9/dash/330-aW5zZXJ0LWNoLXNjdGUzNQ/live.mpd?signature=MzM1NmY5NzkyZDc3MGI5YmNkNmIzZmYwZmM4OWVhYjc=&time=15261530046&device_id=fA_-2Lnf5fjz_cP87gvJCKC4mv9KXK0NVGqpDkSExd0y",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797aP",
+  "channel": "Cartoon TV"
+ },
+ {
+  "name": "!nsert",
+  "num": "263",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/64efefa1-5f19-47e4-ac3d-7a871b590a23.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q2hhbm5lbCBKb3dv/manifest.mpd?signature=Yzk2ZDYzMTk2NjJlNzQ0OTIzMjY2NWVjYTBiYmVkNzQ=&time=15261530046&device_id=x3SBWwm2M_hDMKMwDNyYYTSaDRfo8GgTlA2cj-gbjKU1",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Channel Jowo"
+ },
+ {
+  "name": "Channel Jowo",
+  "num": "247",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/4ff96e7e-b79f-47e0-8ebc-9b81398c49b8.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/epyc-tx01/dash/Q0dUTiBEb2N1bWVudGFyeQ/manifest.mpd?signature=ZTNiOWFhNTJjMzMyMWYzMTUyMWZmM2IxODgyMWI3MzU=&time=15261530045&device_id=YwiqxJw3sr3jYfTGvILRI0rxNqveX-hwprYa6c5iyqNZ",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "CGTN Documentary"
+ },
+ {
+  "name": "CGTN Documentary",
+  "num": "234",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/fb33f9d0-75ea-409d-8898-9d8111c4211c.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/VFY1IE1vbmRl/manifest.mpd?signature=N2U5NjlmODBlODA4MzJlZWY4ZWI2OTg2MzA3YzJiMmE=&time=15261530047&device_id=CAFyTk3noEjbvLa6Pg5ZDSZ2VF5Hu7FsKO7W0ac6DfxP",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a40H",
+  "channel": "TV5 Monde"
+ },
+ {
+  "name": "TV5 Monde",
+  "num": "267",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/934d3d55-c1c5-4570-afc4-428e0bf0c86d.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q0NUViA0/manifest.mpd?signature=NmVkMTU3OGFlMTIyZjg5MmE3YWM0ZjM1NjI1MTg4NzM=&time=15261530047&device_id=OUdY_m6rKyN1HurU5cjg6zbqQD3XK23QRyZXA-3HGQy2",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "CCTV 4"
+ },
+ {
+  "name": "CCTV4",
+  "num": "266",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/4f477c14-5ec0-47d2-9665-925fe0056c64.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/RHVuaWEgTGFpbg/manifest.mpd?signature=NGI1MTBhMDlmY2ZmYzRkZDZmZmRmYmQzZTVlMWI1YWU=&time=15261530047&device_id=CQH_aF1YztK3ITw9RSYPvGdyyl-K9U8SR6dVgUHiyye_",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Dunia Lain"
+ },
+ {
+  "name": "Dunia Lain",
+  "num": "265",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/81f89101-76a5-43bb-a67a-8e9f4176b2e6.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/bGl2ZV9ldmVudF9jaGFubmVsMQ/manifest.mpd?signature=YTM4NGZlYWY0MWYyNGFkYWE1NTE3NzQwOGM5MzM3YTc=&time=15261530046&device_id=pecZ4HCyztTNy_MLTFUkPfkKvPIFMbKEucxaVlfqoWUS",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Dunia Lain"
+ },
+ {
+  "name": "Spesial Dunia Lain",
+  "num": "615",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/edc764c8-f879-4c80-aa9e-b7ba8bff73f7.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/RmFzaGlvbiBUVg/manifest.mpd?signature=MGQ3MWE4NDY2NDUwOTQ1MWRhNjUwM2Y5MTljNWM3ZmU=&time=15261530050&device_id=kNOZlR7bGayk5op0QtBl4DUOhNyq2VE8KVog34SaoH2K",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797aP",
+  "channel": "Fashion TV"
+ },
+ {
+  "name": "Fashion TV",
+  "num": "196",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/2c888072-873a-4b67-b104-27f7ee5caa63.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/RWF0IE4gR28/manifest.mpd?signature=YjI0ZTgzODgxYWYxNDQwZGU4MzE1NTdiYzM5NGYxZjI=&time=15261530050&device_id=LuyfvSvOL9-vNXPllA2hIwLFRDxf6KF_NvnHJ5TxnLpX",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Eat N Go"
+ },
+ {
+  "name": "Eat N Go",
+  "num": "208",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/9a3142d7-c566-476f-b6f8-d0d7350b2733.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/VHJhdmVsIFRW/manifest.mpd?signature=OGFkNTQwOGRkYWUwYjE1MDk0ZjFiY2I1NDJmODYwNWE=&time=15261530050&device_id=lNLJmKnwS0Y6mrSciqqpDbHVtksIBTxWZo13SNsPfr4_",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Travel TV"
+ },
+ {
+  "name": "Travel TV",
+  "num": "274",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/1b5b6dab-c6e7-4109-8813-273c05910c53.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/T25lIFRW/manifest.mpd?signature=NDQ0OWRlYmQ5NGViNzliNTY3ZDQ1ZWMxMWE2NzkzOTQ=&time=15261530047&device_id=94PJZldESUBxHNJ4-RN4V9KM1FD7LNccb1bz6EqJdgBk",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "One TV"
+ },
+ {
+  "name": "One TV",
+  "num": "268",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/eaa4d0a4-af9f-4fc6-96a7-5d9427a9d41a.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/U3VwZXJZYWNodCBUVg/manifest.mpd?signature=YmIzZDk0ODZjMWM4Yzk0MzVmOGViZGEzZmI3NDljMDc=&time=15261530051&device_id=-3q5UijGFAvBN0SL4Uq7nzW01RQ9eWLT4m9IcE0PMKAz",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a40X",
+  "channel": "SuperYacht TV"
+ },
+ {
+  "name": "Superyacht TV",
+  "num": "251",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/2e8b912a-015c-41c4-97bf-ea248c0b35e0.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/REVOUyBQbGF5IENoYW5uZWw/manifest.mpd?signature=NTI4ZmFiZjUwZTg2NjJlZjYzMmRmOWNiNmU5ZmEwOTI=&time=15261530051&device_id=F0_kzfcGwH58H2_SX27A7_083WzIyLD4VdJs0Kh1O1mG",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "DENS Play Channel"
+ },
+ {
+  "name": "DENS Play Channel",
+  "num": "279",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/2dbb1a79-69ac-4b91-9e9a-1d42e79963b5.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/REVOUyBGb29kIENoYW5uZWw/manifest.mpd?signature=NTgzMDVjNWE2MmRjZTNiNzY2NzEyYmEzMDg3OTYwNDA=&time=15261530051&device_id=0-3u5Ly5z1ExjRUENmURoF1lZR26tOChqfYWZuW3mnbj",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "DENS Food Channel"
+ },
+ {
+  "name": "DENS Food Channel",
+  "num": "278",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/dcbc4bc6-19c3-4719-9ee7-587aa3edffea.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/R2FtaW5nIFRW/manifest.mpd?signature=ZDlmZDEzZTlmZDIwMjMyMTVkMDNlZjZhZDg2ZjYyM2I=&time=15261530051&device_id=T77dObC5A0QnUNgiAC__8nXJwvbRySSyiz8yyxsTS1Zd",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Gaming TV"
+ },
+ {
+  "name": "Gaming TV",
+  "num": "277",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/89301bb9-40dc-4239-8f7f-ea59ef3555c8.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/epyc-tx01/dash/QUJDIEF1c3RyYWxpYQ/manifest.mpd?signature=OGQwYzY2YTMxNDEwMmRlYmM0N2IxMjQ5MDA3ZTA1Yzc=&time=15261530052&device_id=WM6RAkkvDrun7OI5JwovBTApVLQgyVfKuJDHtaWTGcIJ",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a408",
+  "channel": "ABC Australia"
+ },
+ {
+  "name": "ABC Australia",
+  "num": "238",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/3974fd33-9c3a-44b2-acdb-66c90f9492e5.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/U29uZyBUVg/manifest.mpd?signature=ZTRmMTEwMzFkMTcyYTdmNzA4ZGJkMGQxYjIzN2MzNDQ=&time=15261530052&device_id=QjZLAtOzktIzaSzZRs4zCYt2M8BFRnIhrw4q1jQJBaOA",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Song TV"
+ },
+ {
+  "name": "Song TV",
+  "num": "281",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/5532f74e-07ee-4a70-b7d4-b5233778381d.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/TXVzaWsgSW5kb25lc2lh/manifest.mpd?signature=NmM4NmFlNDVkNGIxZGVjMzJjMTI5YTA1NGIzOTY3OWU=&time=15261530052&device_id=9SgQioTxBf8uhG8nhr01TYkk1wa1brdoLBXiQ3UayNzC",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Musik Indonesia"
+ },
+ {
+  "name": "Musik Indonesia",
+  "num": "195",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/a06f0dd7-751f-442a-98bc-e6cad4b4f18d.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/REVOUyBTaG93Qml6/manifest.mpd?signature=MmE1NGE0YjM4ZTMyMTM5MWUwY2RiOGNhZjQ3MTRjOTQ=&time=15261530052&device_id=deGrToHUPPjyBQ6CirGt2WkQm42oxSWGmBd8FHH5aDpc",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "DENS ShowBiz"
+ },
+ {
+  "name": "DENS Show Bizz",
+  "num": "280",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/402656cb-b353-4db6-8ff0-1754c6bd3d94.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/RXVyb25ld3M/manifest_cc.mpd?signature=ZmJlMDc3N2Y4MmUxMWU5YWVjNjdlYTViZDYwNjNhYjE=&time=15261530053&device_id=61v0Z7nboqQ3n0Sfy4VrfrtMsMNOTV4MSYDtZfrIBuqp",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797aP",
+  "channel": "Euronews"
+ },
+ {
+  "name": "Euronews",
+  "num": "199",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/120d8d56-bd33-442d-b3c1-9c7581e5d18a.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/QWwgSmF6ZWVyYQ/manifest.mpd?signature=ZTg5N2IwYjcyYzEyNGYwMzM5YzFjN2EyN2E3ZTU4MGE=&time=15261530053&device_id=UvOYlQUHMJVqe4GQEb0uoICgQz528-a7QlxKZU0RIXcb",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Al Jazeera"
+ },
+ {
+  "name": "Al Jazeera",
+  "num": "197",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/dc57da9a-b87b-4145-b2ac-fead00387d1e.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q05CQyBBc2lh/manifest.mpd?signature=MWEwNDQyN2JlMjlhMGYxOGViNzg5YTQ1NjNhYTA0NDM=&time=15261530053&device_id=L4f3l9CjxfNXfwQDKcwyaSvjiT09CRTHJ5B6NPmH25ip",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "CNBC Asia"
+ },
+ {
+  "name": "CNBC Asia",
+  "num": "237",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/10dc34b0-674b-42fe-901f-d75a45de415a.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q2hhbm5lbCBOZXdzQXNpYQ/manifest.mpd?signature=OThkOTZlZDUwYWYxNDA0ZmI3MmI2MjEyM2FlZmQ0Nzc=&time=15261530053&device_id=qHAjEwfa2tgZGwintrbsJ_PuWdOFMOAz3CuuNwxcwo_w",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Channel NewsAsia"
+ },
+ {
+  "name": "Channel NewsAsia",
+  "num": "209",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/0d652a6e-a7c8-4561-8ea8-c9f37acfd9a4.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/QXJpcmFuZw/manifest.mpd?signature=ZmRhZGIzYjk0YTE2YzM1Y2ViMGEwOTM5YjFiYjRhM2I=&time=15261530054&device_id=MvtfND5EMv6t_vEbiHH8qFa8riRL3axLBn5Wj8AWzKfi",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a40@",
+  "channel": "Arirang"
+ },
+ {
+  "name": "Arirang",
+  "num": "261",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/423c22b4-75af-470c-92b9-0ce3406c8f75.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/UnVzc2lhIFRvZGF5/manifest.mpd?signature=ZjJkYzc5MTY5ODkwMTdjNzBlY2M5ZGQ1ZDM0ZGQ2MWI=&time=15261530054&device_id=dGJQMUeHQYVfwHvzCi5vaCpCh8yEuR-LB2HbJiiTWXRv",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Russia Today"
+ },
+ {
+  "name": "Russia Today",
+  "num": "260",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/b222c8a2-83eb-40d4-a716-ead1379d7b9e.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q0dUTiBDaGFubmVs/manifest.mpd?signature=NmY2ZjgxMjE4NmIyNGRmMTE2ZmZiZDUzYTVhNTA3NGQ=&time=15261530054&device_id=HLySUvWK8NQMkKM98rV3K5UlXAzg25VyMoJvptX5eF-A",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "CGTN Channel"
+ },
+ {
+  "name": "CGTN",
+  "num": "259",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/3888cfeb-554b-4ae9-81f6-2e44a707f2b1.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/RnJhbmNlIDI0/manifest.mpd?signature=YjY1OGIxNzYwMTgyMzBmOTUzNjVjZjJjMjY1MzcyMGI=&time=15261530054&device_id=uE6f_l56qboBvmvfZhP1DN-TNsFW9maKKEpVIJMUFGtS",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "France 24"
+ },
+ {
+  "name": "France 24",
+  "num": "258",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/8f63ea40-deea-4756-b93a-d19a9a3dbe2a.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/VFY5IENoYW5uZWw/manifest.mpd?signature=NDQ2NTZjMDIwNTE2M2JhM2I5Zjc0ZGUxYjcxNmFlNGU=&time=15261530055&device_id=ctq-Bh6bfx4Tnj0zrzJisUf5R7BV5YwCWG8A-_92ZKdl",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a@",
+  "channel": "TV9 Channel"
+ },
+ {
+  "name": "TV9",
+  "num": "239",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/1b908432-e3a7-4d39-ba32-1acc69966989.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/dHYgTXUgQ2hhbm5lbA/manifest.mpd?signature=MDFiOGRmZjI0ODdhYWI1NWNhOWVhMmIzZWU3ZjhkMDI=&time=15261530055&device_id=_iIQlsvGq-OJbEfo11ALVc1t9KnACyhHiR8XjGohMTtD",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "tv Mu Channel"
+ },
+ {
+  "name": "tvMU",
+  "num": "187",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/aa008aca-68fe-4efe-9918-2fd4c6b97884.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/YWxxdXJhbmFsa2FyZWVt/manifest.mpd?signature=MTA5NzU3MjQ5MTQwMTg4OTcxNGRjY2U5OTg4YzFmN2Q=&time=15261530055&device_id=tfVgsFk8FMOvSzsCqmH7KaDIBzFv5p1L7fycovrNFxju",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "alquranalkareem"
+ },
+ {
+  "name": "Al Quran Al Kareem",
+  "num": "204",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/7f7b868a-ce07-46c1-bd1d-fa1ec36dc8f1.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/V2lvbiBUVg/manifest.mpd?signature=ZDM1YjZmMTBlMTE2NWQwNWNiNDM1MWM3MTgwN2E2NTc=&time=15261530055&device_id=N1TfipmkeVjzfOjkZv8t2ITgZhB91gjI5boKxedvoK4v",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Wion TV"
+ },
+ {
+  "name": "Wion TV",
+  "num": "283",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/56c72279-6125-4b52-8460-9fe65b7905fc.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/SG9wZUNoYW5uZWw/manifest.mpd?signature=OWJjYjFjMWYwMTg3ZmM5NDI2NmRjNDY4MWFhZTQ0MTM=&time=15261530056&device_id=1evzcEZmS0WfXb-NFTVy_JjOmkEh7cs8b1E5bBKZvE9I",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797aX",
+  "channel": "HopeChannel"
+ },
+ {
+  "name": "Hope Channel",
+  "num": "594",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/706612c8-0d26-483e-b2fd-6baf2dec262b.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/REFBSSBUVg/manifest.mpd?signature=NjZlZDNlNTVmYWMyODM1NTk4MTI2NjkxYzk1NzZlNWI=&time=15261530056&device_id=lNRQPe8K_81YC8XlTlFDOHDZP1zIcv45yM5QCwK2CUQR",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "DAAI TV"
+ },
+ {
+  "name": "DAAI TV",
+  "num": "241",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/84b254cf-472f-47ab-9ddb-29d2114f180c.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/RGF5c3RhciBDaG5s/manifest.mpd?signature=OTU0ZDJiMWYxZmM5MjI0MGRlMjVmNTZjOGE5ZTcwMzY=&time=15261530056&device_id=BUJL9pRivWxYPJxWaM2lcjrGwb81Kydv0PSHHOI8nhqN",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Daystar Chnl"
+ },
+ {
+  "name": "DayStar",
+  "num": "244",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/9e6c3b4e-129e-4fcb-963e-957098927079.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/TmFiYXdpIFRW/manifest.mpd?signature=NDVlYjBmMWZkOWI1YTZjMjg4MDU0NDI0ZTBkYmNjM2Q=&time=15261530055&device_id=Pm_opt5_qLvKU_C7w2-eCLsbDZrzQT7JSOpZDCTdPlJs",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Nabawi TV"
+ },
+ {
+  "name": "Nabawi TV",
+  "num": "240",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/df2bdc3d-9bc6-43ca-a4e6-2002d47fdac1.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Rm9vdGJhbGwgVFY/manifest.mpd?signature=MGNiODVhNDc1NTBjMWQ3NmRmMThiMzNkMzEwYWEzNTg=&time=15261530057&device_id=Q05rSfEwGxGz-B2xhThO7SZxJS3J_KPsUbrDNSBGlbEa",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797aP",
+  "channel": "Football TV"
+ },
+ {
+  "name": "Football TV",
+  "num": "252",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/e5009dc7-2cae-4c8a-aa38-36bc224f7b8b.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/R29sZi1DaGFubmVs/manifest.mpd?signature=NzM4MGUzZGFhYzNjYTc5ZGE4NjA5ZWIzMjk0NTFlZDc=&time=15261530057&device_id=35_6_ZYa_Az2dcDJcoAI7NieJvYVRbZTUtipJ0argVj1",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Golf-Channel"
+ },
+ {
+  "name": "Golf Plus ID",
+  "num": "203",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/a445911e-df40-413d-b4d5-59cff4b342cc.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/S2hhemFuYWg/manifest.mpd?signature=M2YxYmVjNTQxOTEwMTYwYjVlYjhmYWE2OWQwZmIzYWI=&time=15261530057&device_id=3vTPhSKyRsSviOkTBNVJK4s8sueiFJnYRzeBprEtui27",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Khazanah"
+ },
+ {
+  "name": "Khazanah",
+  "num": "200",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/48b43602-802f-4e02-996f-25683da4d173.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/UGlqYXIgVFY/manifest.mpd?signature=NmZmYzkxZDNlZDg4ZGZlYzViOTRkZmZiOWJkNDM2YjY=&time=15261530057&device_id=8xjrSgLMuLfGV7qQrx9e4RnhAjGjdnoiZchTUcmfdhMg",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Pijar TV"
+ },
+ {
+  "name": "Pijar TV",
+  "num": "242",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/8e4b7fc8-624a-4d99-ae7c-a75ed13ede9a.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/U3BlZWQgVFY/manifest.mpd?signature=ZDU1ODBlYzE3ZGVjYTRjMjdkNzU0MTcxMTZkM2M3MjA=&time=15261530060&device_id=0QB5F_rjlStpzZyS7nCMmo7Bh0THYTt6IcveQWfx9Pec",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a40H",
+  "channel": "Speed TV"
+ },
+ {
+  "name": "Speed TV",
+  "num": "255",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/9e14b89e-d803-454f-a35a-752163f30803.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/VFZSSSBTcG9ydA/manifest.mpd?signature=ZmJjNzI4YmE3N2IwZWYyZDM3MTBkZmQ3N2VjOTgyMWE=&time=15261530060&device_id=gD8jB1hjHtbJHXP1HbOvEBK6snl6CssYQjjZYKCATDlH",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "TVRI Sport"
+ },
+ {
+  "name": "TVRI Sport",
+  "num": "224",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/17f217c6-7009-45de-a54e-e7b15fa5f061.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/WHRyZW0gU3BvcnRz/manifest.mpd?signature=NTI2YjczOTAzNjgxOWFlNTE2NzVmNjE0NmVlMDZlYjc=&time=15261530060&device_id=Rm0zZeX3z4-r4Ylrfnc3OAOAo7HQNJnIFVN8hKraTVgw",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Xtrem Sports"
+ },
+ {
+  "name": "Xtrem Sports",
+  "num": "254",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/f974ea07-54bf-4463-854a-fbbe51a70cc3.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/U3BvcnRzIFRW/manifest.mpd?signature=Yzg1ZmMyMTdlNTMzZGRjYmU4NTk5OGRmMTc2NDM4NDE=&time=15261530060&device_id=7v0Jx9hgvYJOhLCtDi-C9mX8yjhOiaJ-_h5xAYgiCJh0",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Sports TV"
+ },
+ {
+  "name": "MALAYSIA",
+  "num": "",
+  "logo": "https://blogger.googleusercontent.com/img/a/AVvXsEi_rli8aZAZNJGsCYv8gvuhXOhgxjrsOnZNDdHALexXCcHhQhlDuhEOxaBzqpA21MCNoYMTs0v624p6r3vF0jW1K0_9euFPxYdepu1A8fKaoK6Z62CL2ixOp-W5O2KTep1WhW7DhXqHETSoZJpSrT-vlkCpYW8wc3bXiqXPH66rxCBl2eyeUguY4C_JUw=w1200-h630-p-k-no-nu",
+  "stream": "https://hgmtv.com:19360/garudatvlivestreaming/1080p.m3u8",
+  "manifest": "hls",
+  "drm": "",
+  "headers": "{\"User-Agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0\",\"Referer\":\"https://www.md.now/\",\"Origin\":\"https://www.md.now\",\"sign_url\":\"Policy\\u003deyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9kM2RseGgycWdmYm1lai5jbG91ZGZyb250Lm5ldC9saXZlLW1hc3Rlci8xNDI2OGQ0ZDdhM",
+  "channel": "MALAYSIA"
+ },
+ {
+  "name": "GARUDA TV",
+  "num": "",
+  "logo": "https://www.visionplus.id/images/repository/593/593-LOGO-l.png",
+  "stream": "https://ott-balancer.tvri.go.id/live/eds/TVRIWorld/hls/TVRIWorld.m3u8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "GARUDA TV"
+ },
+ {
+  "name": "TVRI World",
+  "num": "",
+  "logo": "https://www.visionplus.id/images/repository/593/593-LOGO-l.png",
+  "stream": "https://ott-balancer.tvri.go.id/live/eds/Nasional/hls/Nasional.m3u8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "TVRI World"
+ },
+ {
+  "name": "sid",
+  "num": "",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/c12d1647-7568-4b77-9c40-3dd7fbb68357.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q2FydG9vbiBOZXR3b3Jr/vx9-mdrmprt02/manifest.mpd?signature=MDIwY2Q4OWM4ZjJiODkwYzNkYjdiNzI2ZWI4MDI5YjE=&time=15261530062&device_id=Upr42CSBq2P2lDhb7vmhEv9K8SqfNM1GIh6511GCxGV6",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a40h",
+  "channel": "sid"
+ },
+ {
+  "name": "Cartoon Network",
+  "num": "192",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/17a04a3c-fa34-4751-a2e0-400a61a0f81c.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/WmVlIEJpb3Nrb3A/manifest.mpd?signature=NTIyNDc5MGMzMDE5Nzg5ZWRjYzRiNmVkMDk4NDE5MjY=&time=15261530062&device_id=VHfhC8xkvZj5q1sWXrynOIT3ZjavoUhWzKJ0hBBXSm3f",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Zee Bioskop"
+ },
+ {
+  "name": "Zee Bioskop",
+  "num": "231",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/310a7a17-0149-4623-b375-5fa1a47f2484.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/UFNKIFRW/manifest.mpd?signature=Yjk3OGViOGQ4MzQ0ZjBkZDRkM2E5YmE3M2EwZWFkYWY=&time=15261530061&device_id=UnuqovxfVIxrvtoKxwLS7ifWnpiWK2GDGElhly1UqrXF",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "PSJ TV"
+ },
+ {
+  "name": "PSJ TV",
+  "num": "257",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/65030d16-c4fc-4c89-9b03-1b809797964f.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/RmlnaHQgVFYgUHJlbWl1bQ/manifest.mpd?signature=Y2UyNzQ4YTQ2ODU0NzcxM2NkZWE1ODdjZWJhNmY2MTk=&time=15261530061&device_id=24jQguWm2Uu-8OFkhamIJ6rImxqyQyiV8qEnuWCaff9z",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Fight TV Premium"
+ },
+ {
+  "name": "Fight TV Premium",
+  "num": "256",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/63ddbac9-e51d-4c8f-b2b8-63490569836e.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q05OIEludGVybmF0aW9uYWw/manifest.mpd?signature=OTQ3MTI0OTJjMmJlNDQ5NjRjMWEyYmU2NWRmZDdkNWM=&time=15261530063&device_id=Usx1BY7kLjkm31mz317bnMle89jBIjaEAam0C524vEAS",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797ah",
+  "channel": "CNN International"
+ },
+ {
+  "name": "CNN International",
+  "num": "202",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/92340072-4f33-44dd-ad47-64ad8b2de4e5.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/V2FybmVyIFRW/manifest.mpd?signature=YmRkOTJjY2M0YTZlODRlYmIzNWRkZDhkZDEyZTYwODI=&time=15261530063&device_id=r86GuZD0fdAVQIGurv0291mTQUT31oeNTADuH5arMbee",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Warner TV"
+ },
+ {
+  "name": "Warner TV",
+  "num": "235",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/359e33d9-344c-48fb-a354-217eb0be8f15.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/S0JTIFdvcmxk/manifest.mpd?signature=ZmFiMmZmZDlmYTZkYmQxN2ZlMGMzN2YyODVkNzE3OWQ=&time=15261530063&device_id=RHXnRxv8n4qD9PTNsGfLgvfTo5oSWl92ZQIZWe47EeQH",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "KBS World"
+ },
+ {
+  "name": "KBS World",
+  "num": "206",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/c1bf1e66-ba24-4325-afdf-ba4371dcb787.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q2FydG9vbml0bw/manifest.mpd?signature=Zjc5NTg2MDU5Y2NkYzBjZGU3YjUzYTM1MGI0MzNmZmM=&time=15261530062&device_id=hdMKxF7TpAclWkoR74wXNItX17LZmUVqsOtYOBb35HHW",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Cartoonito"
+ },
+ {
+  "name": "Cartoonito",
+  "num": "233",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='6318764'&EntityType='Item'&EntityId='97129'&Width=396&Height=250",
+  "stream": "https://tglmp04.akamaized.net/out/v1/0ba219dbd030477784e4a8104bd9e827/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Cartoonito"
+ },
+ {
+  "name": "Channel U",
+  "num": "97129",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='6318750'&EntityType='Item'&EntityId='97104'&Width=369&Height=250",
+  "stream": "https://tglmp01.akamaized.net/out/v1/6043d36e1ffb4b52a959fb71b4bbcd31/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Channel U"
+ },
+ {
+  "name": "Channel 8",
+  "num": "97104",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='6318760'&EntityType='Item'&EntityId='97098'&Width=356&Height=250",
+  "stream": "https://tglmp02.akamaized.net/out/v1/a32e566460eb41ce9295b9c45fe25825/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Channel 8"
+ },
+ {
+  "name": "Channel 5",
+  "num": "97098",
+  "logo": "https://aqfadtv.xyz/logos/Travel&Taste.png",
+  "stream": "http://moo7-restream2025.ddns.net:9091/Sport_tv_ts5/index.m3u8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "{\"Cookie\":\"cshx\\u003d3bcdb206\",\"Referer\":\"https://www.cnbcindonesia.com\",\"Origin\":\"https://www.cnbcindonesia.com\",\"User-Agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0\"}",
+  "channel": "Channel 5"
+ },
+ {
+  "name": "truesports5.th",
+  "num": "",
+  "logo": "https://pbs.twimg.com/profile_images/1203405967032893440/V3W6rpf7_400x400.jpg",
+  "stream": "http://moo7-restream2025.ddns.net:9091/Sport_tv_ts3/index.m3u8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "truesports5.th"
+ },
+ {
+  "name": "truesports3.th",
+  "num": "",
+  "logo": "https://pbs.twimg.com/profile_images/1203405967032893440/V3W6rpf7_400x400.jpg",
+  "stream": "http://moo7-restream2025.ddns.net:9091/Sport_tv_ts2/index.m3u8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "truesports3.th"
+ },
+ {
+  "name": "trueSports Arena.th",
+  "num": "",
+  "logo": "https://pbs.twimg.com/profile_images/1203405967032893440/V3W6rpf7_400x400.jpg",
+  "stream": "http://moo7-restream2025.ddns.net:9091/Sport_tv_ts1/index.m3u8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "trueSports Arena.th"
+ },
+ {
+  "name": "truesports1.th",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='13200785'&EntityType='Item'&EntityId='558279'&Width=157&Height=250",
+  "stream": "https://tglmp01.akamaized.net/out/v1/c1071012b73f4f189b202e1529e8f802/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "truesports1.th"
+ },
+ {
+  "name": "Vijay Takkar",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='11316574'&EntityType='Item'&EntityId='558254'&Width=350&Height=250",
+  "stream": "https://tglmp01.akamaized.net/out/v1/35baec6f2f1f47f89dde431d388d91ee/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Vijay Takkar"
+ },
+ {
+  "name": "Filem Mantap",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='14326803'&EntityType='Item'&EntityId='558271'&Width=350&Height=250",
+  "stream": "https://tglmp02.akamaized.net/out/v1/f8119e31a0804f178a7d1f566d16600a/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Filem Mantap"
+ },
+ {
+  "name": "Drama Hebat",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='13362968'&EntityType='Item'&EntityId='773722'&Width=304&Height=250",
+  "stream": "https://tglmp01.akamaized.net/out/v1/6dd50c19c7fc4875a9e76739750112a3/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Drama Hebat"
+ },
+ {
+  "name": "That's Rock",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='6318291'&EntityType='Item'&EntityId='98201'&Width=150&Height=58",
+  "stream": "https://tglmp02.akamaized.net/out/v1/a82dde0e87844b98b1b65d7919b3fc50/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "That's Rock"
+ },
+ {
+  "name": "SPL CH02",
+  "num": "98201",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='6318285'&EntityType='Item'&EntityId='98200'&Width=150&Height=58",
+  "stream": "https://tglmp04.akamaized.net/out/v1/c9b06266ed5e49039d2d15c98df2fdcd/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "SPL CH02"
+ },
+ {
+  "name": "SPL CH01",
+  "num": "98200",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='6318766'&EntityType='Item'&EntityId='97072'&Width=193&Height=249",
+  "stream": "https://tglmp03.akamaized.net/out/v1/f97b5eedb5ec4b4ea770859bd4e9d28e/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "SPL CH01"
+ },
+ {
+  "name": "CNA",
+  "num": "97072",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='6318746'&EntityType='Item'&EntityId='97096'&Width=885&Height=250",
+  "stream": "https://tglmp01.akamaized.net/out/v1/8605c1013e3148aa809c296dd76c3fa5/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "CNA"
+ },
+ {
+  "name": "Vasantham",
+  "num": "97096",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='6318748'&EntityType='Item'&EntityId='97084'&Width=636&Height=250",
+  "stream": "https://tglmp02.akamaized.net/out/v1/0fa7dd7d7b6447478f26db79ea7c5779/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Vasantham"
+ },
+ {
+  "name": "Suria",
+  "num": "97084",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='6318764'&EntityType='Item'&EntityId='97129'&Width=396&Height=250",
+  "stream": "https://tglmp04.akamaized.net/out/v1/0ba219dbd030477784e4a8104bd9e827/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Suria"
+ },
+ {
+  "name": "Channel U",
+  "num": "97129",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='6318750'&EntityType='Item'&EntityId='97104'&Width=369&Height=250",
+  "stream": "https://tglmp01.akamaized.net/out/v1/6043d36e1ffb4b52a959fb71b4bbcd31/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Channel U"
+ },
+ {
+  "name": "Channel 8",
+  "num": "97104",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/a25b4dd8-bc08-4bfc-921d-8342b0fddfb3.png",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/VFZPTkU/manifest.mpd?signature=YWQ4YjJhNTEyMGU3OTRhNTk1MWVhM2Y1N2FjNmJhNmQ=&time=15261530065&device_id=P-uAqbHZHRTImiWzASESNMLw1kGFLi3ZTCMrLsy-IIGZ",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a40@",
+  "channel": "TVONE"
+ },
+ {
+  "name": "TVOne",
+  "num": "374",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/70ae6693-bf73-458b-a926-f02a2b0ec506.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q2luZW1hIFdvcmxk/manifest.mpd?signature=NzgyZGYwNWUzMGEyODRiZTE1YmMwOTMwMjVhZDdhYjc=&time=15261530064&device_id=f83klf_91jMVkMbH7i-wXlGtRcP-nMBhv7CwKtsqrp3n",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Cinema World"
+ },
+ {
+  "name": "Cinema World",
+  "num": "191",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/2d43fbb8-deac-4ccf-86a8-7ed5c9fb5df1.jpg",
+  "stream": "https://cdnjktcyber05.transvision.co.id/riutx01-89d98118fe5f6f842147a8e472cd2d11/dash/Q2luZW1heA/vx9-mdrmprt02/manifest.mpd?signature=YzE3NjRkNjYzZWMwMTU0Y2Q1MzM1YmEwNDI5NTYwYWQ=&time=15261530064&device_id=TOkqTdQ6l5xuuTQUUMGY2Hi18aHEr6EvXfBMIDTMTZ-V",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Cinema World"
+ },
+ {
+  "name": "Cinemax",
+  "num": "190",
+  "logo": "https://servicebuss.transvision.co.id/hospitality/v1/files/channel_image/f2f06211-8a74-4f8f-80c4-dd194852e6d3.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/23/23.mpd",
+  "manifest": "dash",
+  "drm": "clearkey",
+  "headers": "{\"User-Agent\":\"https://cdnjktbpid37.cubmu.com/riutx01-85797a0a4020a58b17eeaf086136bc0e/dash/SEJPIEhpdHM/manifest.mpd\",\"Referer\":\"https://www.cubmu.com/\",\"Origin\":\"https://www.cubmu.com\"}",
+  "channel": "Cinemax"
+ },
+ {
+  "name": "WorkpointTV",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/22.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/22/22.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "WorkpointTV"
+ },
+ {
+  "name": "NationTV",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/16.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/16/16.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "NationTV"
+ },
+ {
+  "name": "TNN16",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/10.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/10/10.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "TNN16"
+ },
+ {
+  "name": "TPTV",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/7.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/7/7.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "TPTV"
+ },
+ {
+  "name": "T Sports 7",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/5.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/5/5.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "T Sports 7"
+ },
+ {
+  "name": "CH5 HD",
+  "num": "",
+  "logo": "https://pbs.twimg.com/profile_images/1203405967032893440/V3W6rpf7_400x400.jpg",
+  "stream": "http://moo7-restream2025.ddns.net:9091/Sport_tv_ts7/index.m3u8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CH5 HD"
+ },
+ {
+  "name": "TrueSport7.th",
+  "num": "",
+  "logo": "https://pbs.twimg.com/profile_images/1203405967032893440/V3W6rpf7_400x400.jpg",
+  "stream": "http://moo7-restream2025.ddns.net:9091/Sport_tv_ts5/index.m3u8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "TrueSport7.th"
+ },
+ {
+  "name": "truesports5.th",
+  "num": "",
+  "logo": "https://pbs.twimg.com/profile_images/1203405967032893440/V3W6rpf7_400x400.jpg",
+  "stream": "http://moo7-restream2025.ddns.net:9091/Sport_tv_ts3/index.m3u8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "truesports5.th"
+ },
+ {
+  "name": "truesports3.th",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/otd/logo-7fe5-051-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tv_asahi/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "truesports3.th"
+ },
+ {
+  "name": "joexdtv.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/otd/logo-7fe4-081-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/fuji_tv/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "joexdtv.jp"
+ },
+ {
+  "name": "jocxdtv.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/otd/logo-7fe3-061-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tbs/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "jocxdtv.jp"
+ },
+ {
+  "name": "jorxdtv.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/otd/logo-7fe ",
+  "stream": "https://haru.charandom.blog/stream/jp/ntv/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "jorxdtv.jp"
+ },
+ {
+  "name": "joaxdtv.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/otd/logo-7fe1-021-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/nhk_e/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "joaxdtv.jp"
+ },
+ {
+  "name": "joabdtv.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/otd/logo-7fe0-011-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/nhk_g/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "joabdtv.jp"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/304.png",
+  "stream": "https://udn-streamer1.cdn.3bbtv.com:8443/3bb/live/304/304.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/303.png",
+  "stream": "https://udn-streamer1.cdn.3bbtv.com:8443/3bb/live/303/303.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/302.png",
+  "stream": "https://udn-streamer1.cdn.3bbtv.com:8443/3bb/live/302/302.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/301.png",
+  "stream": "https://udn-streamer1.cdn.3bbtv.com:8443/3bb/live/301/301.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "CARTOON NETWORK #1",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='16311396'&EntityType='Item'&EntityId='840096'&Width=150&Height=59",
+  "stream": "https://tglmp03.akamaized.net/out/v1/0484a3feb7684efb9fc80ec56d66d005/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "CARTOON NETWORK #1"
+ },
+ {
+  "name": "Asian Games CH01",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/Res",
+  "stream": "https://ls-mp01stg.eo-edgefunctions7.com/out/v1/0d0353783cea43e68540829a2f8f70ef/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Asian Games CH01"
+ },
+ {
+  "name": "LIVE+ 1 (4K)",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='6318758'&EntityType='Item'&EntityId='204746'&Width=519&Height=250",
+  "stream": "https://ls-mp02stg.eo-edgefunctions7.com/out/v1/cc0fc82e76cb4e0093e81695284af443/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "LIVE+ 1 (4K)"
+ },
+ {
+  "name": "LIVE 6",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='6318756'&EntityType='Item'&EntityId='98202'&Width=516&Height=250",
+  "stream": "https://ls-mp04stg.eo-edgefunctions7.com/out/v1/400fc0702dee453bb33ebcc29466e58a/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "LIVE 6"
+ },
+ {
+  "name": "LIVE 5",
+  "num": "98202",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='6318744'&EntityType='Item'&EntityId='97078'&Width=515&Height=250",
+  "stream": "https://tglmp02.akamaized.net/out/v1/a655d44ba90444a38a4c2bd74aa998e0/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "LIVE 5"
+ },
+ {
+  "name": "LIVE 2",
+  "num": "97078",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='6318742'&EntityType='Item'&EntityId='97073'&Width=488&Height=249",
+  "stream": "https://tglmp04.akamaized.net/out/v1/b38b8a6306714a8e91ae7674291a4a94/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "LIVE 2"
+ },
+ {
+  "name": "LIVE 1",
+  "num": "97073",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='6318291'&EntityType='Item'&EntityId='98201'&Width=150&Height=58",
+  "stream": "https://tglmp02.akamaized.net/out/v1/a82dde0e87844b98b1b65d7919b3fc50/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "LIVE 1"
+ },
+ {
+  "name": "SPL CH02",
+  "num": "98201",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='16322358'&EntityType='Item'&EntityId='840098'&Width=150&Height=59",
+  "stream": "https://tglmp02.akamaized.net/out/v1/ce69826a52c84c64ade5487a1e38f82d/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "SPL CH02"
+ },
+ {
+  "name": "Asian Games CH07",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='16322300'&EntityType='Item'&EntityId='840093'&Width=150&Height=59",
+  "stream": "https://tglmp01.akamaized.net/out/v1/c5980cddad3f4321b9032f2442f2552b/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Asian Games CH07"
+ },
+ {
+  "name": "Asian Games CH06",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='16322290'&EntityType='Item'&EntityId='840095'&Width=150&Height=59",
+  "stream": "https://tglmp03.akamaized.net/out/v1/c2dd987e84784d478cb0e9eb797fda5d/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Asian Games CH06"
+ },
+ {
+  "name": "Asian Games CH05",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='16322252'&EntityType='Item'&EntityId='840097'&Width=150&Height=59",
+  "stream": "https://tglmp04.akamaized.net/out/v1/eda167bbca3d4037a9951ecad56393c8/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Asian Games CH05"
+ },
+ {
+  "name": "Asian Games CH04",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='16322173'&EntityType='Item'&EntityId='840099'&Width=150&Height=59",
+  "stream": "https://tglmp02.akamaized.net/out/v1/1b659d51081c4149bd679abbe0ef02b0/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Asian Games CH04"
+ },
+ {
+  "name": "Asian Games CH03",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='16321694'&EntityType='Item'&EntityId='840094'&Width=150&Height=59",
+  "stream": "https://tglmp01.akamaized.net/out/v1/c9f101b58cec446096bcedbe379bbf2e/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Asian Games CH03"
+ },
+ {
+  "name": "Asian Games CH02",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='16311396'&EntityType='Item'&EntityId='840096'&Width=150&Height=59",
+  "stream": "https://tglmp03.akamaized.net/out/v1/0484a3feb7684efb9fc80ec56d66d005/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Asian Games CH02"
+ },
+ {
+  "name": "Asian Games CH01",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='9358846'&EntityType='Item'&EntityId='556888'&Width=350&Height=250",
+  "stream": "https://tglmp01.akamaized.net/out/v1/7b64773a43184fbc9c4c1f83193db178/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Asian Games CH01"
+ },
+ {
+  "name": "TRACE Sport Stars",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='9358826'&EntityType='Item'&EntityId='558112'&Width=409&Height=250",
+  "stream": "https://tglmp02.akamaized.net/out/v1/1063ebb215c14312ba9d4e415ac706d2/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "TRACE Sport Stars"
+ },
+ {
+  "name": "W-Sport",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice",
+  "stream": "https://tglmp03.akamaized.net/out/v1/c8e964618dbd41b38ae487760387af24/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "W-Sport"
+ },
+ {
+  "name": "FIFA+",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='10089297'&EntityType='Item'&EntityId='558241'&Width=150&Height=59",
+  "stream": "https://tglmp02.akamaized.net/out/v1/bfc935c481794151afce58d9f764627e/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "FIFA+"
+ },
+ {
+  "name": "River Monsters",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='10089317'&EntityType='Item'&EntityId='570813'&Width=127&Height=59",
+  "stream": "https://tglmp01.akamaized.net/out/v1/25c1054ebfb94befbad706ae57b3e5fd/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "River Monsters"
+ },
+ {
+  "name": "Deal or No Deal",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='10089337'&EntityType='Item'&EntityId='558258'&Width=150&Height=59",
+  "stream": "https://tglmp04.akamaized.net/out/v1/692b0d40df6549be8158350dc8a8a120/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Deal or No Deal"
+ },
+ {
+  "name": "Fear Factor",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='10089891'&EntityType='Item'&EntityId='558278'&Width=62&Height=59",
+  "stream": "https://tglmp03.akamaized.net/out/v1/5623928a97774b698b3404a843a827d6/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Fear Factor"
+ },
+ {
+  "name": "MasterChef",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='16322358'&EntityType='Item'&EntityId='840098'&Width=150&Height=59",
+  "stream": "https://tglmp02.akamaized.net/out/v1/ce69826a52c84c64ade5487a1e38f82d/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "MasterChef"
+ },
+ {
+  "name": "Asian Games CH07",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='14326803'&EntityType='Item'&EntityId='558271'&Width=350&Height=250",
+  "stream": "https://tglmp02.akamaized.net/out/v1/f8119e31a0804f178a7d1f566d16600a/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Asian Games CH07"
+ },
+ {
+  "name": "Drama Hebat",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='13362968'&EntityType='Item'&EntityId='773722'&Width=304&Height=250",
+  "stream": "https://tglmp01.akamaized.net/out/v1/6dd50c19c7fc4875a9e76739750112a3/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Drama Hebat"
+ },
+ {
+  "name": "That's Rock",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/Res",
+  "stream": "https://tglmp02.akamaized.net/out/v1/d2156f18b3c34252b14c044ec9ca8f38/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "That's Rock"
+ },
+ {
+  "name": "That's 70s",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='13362956'&EntityType='Item'&EntityId='773721'&Width=264&Height=250",
+  "stream": "https://tglmp02.akamaized.net/out/v1/14873c294e324266884858b6ed436380/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "That's 70s"
+ },
+ {
+  "name": "That's 80s",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='9358842'&EntityType='Item'&EntityId='556894'&Width=304&Height=250",
+  "stream": "https://tglmp04.akamaized.net/out/v1/6757703a338e4a11812c1dc3cdd43546/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "That's 80s"
+ },
+ {
+  "name": "Action Hollywood Movies",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='9358838'&EntityType='Item'&EntityId='556877'&Width=264&Height=250",
+  "stream": "https://tglmp03.akamaized.net/out/v1/a3992c3d704443c991a8586e01a4cc1c/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Action Hollywood Movies"
+ },
+ {
+  "name": "TG Junior",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='9358834'&EntityType='Item'&EntityId='556893'&Width=350&Height=250",
+  "stream": "https://tglmp01.akamaized.net/out/v1/b8676da58b8d4a7a9a961358906e43bb/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "TG Junior"
+ },
+ {
+  "name": "Kartoon Channel!",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='9358846'&EntityType='Item'&EntityId='556888'&Width=350&Height=250",
+  "stream": "https://tglmp01.akamaized.net/out/v1/7b64773a43184fbc9c4c1f83193db178/manifest.mpd",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Kartoon Channel!"
+ },
+ {
+  "name": "TRACE Sport Stars",
+  "num": "",
+  "logo": "https://prod98.togglestatic.com/shain/v1/dataservice/ResizeImage/$value?Format='png'&Quality=85&ImageId='9358826'&EntityType='Item'&EntityId='558112'&Width=409&Height=250",
+  "stream": "https://tglmp02.akamaized.net/out/v1/1063ebb215c14312ba9d4e415ac706d2/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "TRACE Sport Stars"
+ },
+ {
+  "name": "W-Sport",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-181-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/bs_fuji/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "W-Sport"
+ },
+ {
+  "name": "bsfuji.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-171-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/bs_tv_tokyo/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bsfuji.jp"
+ },
+ {
+  "name": "bstvtokyo.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-161-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/bs_tbs/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bstvtokyo.jp"
+ },
+ {
+  "name": "bstbs.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-151-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/bs_asahi/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bstbs.jp"
+ },
+ {
+  "name": "bsasahi.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo0",
+  "stream": "https://haru.charandom.blog/stream/jp/bs_ntv/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bsasahi.jp"
+ },
+ {
+  "name": "bsnippontv.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-101-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/nhk_bs/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bsnippontv.jp"
+ },
+ {
+  "name": "nhkbs.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/otd/logo-7e87-091-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tokyo_mx2/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "nhkbs.jp"
+ },
+ {
+  "name": "tokyomx2.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/otd/logo-7e87-091-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tokyo_mx1/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "tokyomx2.jp"
+ },
+ {
+  "name": "tokyomx1.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/otd/logo-7fe6-071-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tv_tokyo/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "tokyomx1.jp"
+ },
+ {
+  "name": "jotxdtv.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/otd/logo-7fe5-051-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tv_asahi/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "jotxdtv.jp"
+ },
+ {
+  "name": "joexdtv.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/otd/logo-7fe4-081-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/fuji_tv/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "joexdtv.jp"
+ },
+ {
+  "name": "jocxdtv.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/otd/logo-7fe3-061-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tbs/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "jocxdtv.jp"
+ },
+ {
+  "name": "MALAYSIA",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/32.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/32/32.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "{\"User-Agent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0\",\"Referer\":\"http",
+  "channel": "MALAYSIA"
+ },
+ {
+  "name": "ThairathTV HD",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/31.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/31/31.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "ThairathTV HD"
+ },
+ {
+  "name": "ONE31 HD",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/30.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/29/29.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "ONE31 HD"
+ },
+ {
+  "name": "MONO29 HD",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/27.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/27/27.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "MONO29 HD"
+ },
+ {
+  "name": "CH8",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/25.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/25/25.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "CH8"
+ },
+ {
+  "name": "GMM25",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/24.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/24/24.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "GMM25"
+ },
+ {
+  "name": "True4U",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/23.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/23/23.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "True4U"
+ },
+ {
+  "name": "WorkpointTV",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/22.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/22/22.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "WorkpointTV"
+ },
+ {
+  "name": "NationTV",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/109.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/109/109.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "NationTV"
+ },
+ {
+  "name": "MONO29 PLUS+",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/107.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/107/107.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "MONO29 PLUS+"
+ },
+ {
+  "name": "Cinemax",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/106.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/106/106.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Cinemax"
+ },
+ {
+  "name": "HBO Family",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/101.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/101/101.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "HBO Family"
+ },
+ {
+  "name": "Asian-Hits",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/35.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/35/35.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Asian-Hits"
+ },
+ {
+  "name": "CH7 HD",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/34.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/34/34.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "CH7 HD"
+ },
+ {
+  "name": "AmarinTV HD",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/33.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/33/33.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "AmarinTV HD"
+ },
+ {
+  "name": "CH3 HD",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/32.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/32/32.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "CH3 HD"
+ },
+ {
+  "name": "ThairathTV HD",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/31.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/31/31.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "ThairathTV HD"
+ },
+ {
+  "name": "ONE31 HD",
+  "num": "1122",
+  "logo": "https://www.skyperfectv.co.jp/library/common/img/channel/icon/premium/m_663.gif",
+  "stream": "https://haru.charandom.blog/stream/jp/pigoo_nsfw/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "ONE31 HD"
+ },
+ {
+  "name": "pigoo.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-143-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tabi_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "pigoo.jp"
+ },
+ {
+  "name": "tabichannel.jp",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV5.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv5hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "tabichannel.jp"
+ },
+ {
+  "name": "CCTV 5",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV4.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv4k.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 5"
+ },
+ {
+  "name": "CCTV 4K",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV4.png",
+  "stream": "https://atemecdnbalancer-voe.sysln.id/live/eds/CCTV4/mediampd/CCTV4.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 4K"
+ },
+ {
+  "name": "CCTV4",
+  "num": "",
+  "logo": "https://raw.githubuserconten(",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv3hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV4"
+ },
+ {
+  "name": "CCTV 3",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV2.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv2hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 3"
+ },
+ {
+  "name": "CCTV 2",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV1.png",
+  "stream": "https://cd-live-stream.news.cctvplus.com/live/smil:CHANNEL1.smil/playlist.m3u8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 2"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://i.imgur.com/uVe56sB.jpeg",
+  "stream": "https://streaml01cf.nxtv.jp/p-menecoch01-amni5j72tc/index1/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "MEN'S NEC",
+  "num": "1122",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-195-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/v_paradise_nsfw/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "MEN'S NEC"
+ },
+ {
+  "name": "vparadise.jp",
+  "num": "1122",
+  "logo": "https://www.skyperfectv.co.jp/library/common/img/channel/icon/premium/m_663.gif",
+  "stream": "https://haru.charandom.blog/stream/jp/pigoo_nsfw/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "vparadise.jp"
+ },
+ {
+  "name": "pigoo.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-143-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tabi_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "pigoo.jp"
+ },
+ {
+  "name": "tabichannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65534-135-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/channel_ginga/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "tabichannel.jp"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/7.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/7/7.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/5.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/5/5.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "CH5 HD #1",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/304.png",
+  "stream": "https://udn-streamer1.cdn.3bbtv.com:8443/3bb/live/304/304.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "CH5 HD #1"
+ },
+ {
+  "name": "NICK JUNIOR",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/303.png",
+  "stream": "https://udn-streamer1.cdn.3bbtv.com:8443/3bb/live/303/303.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "NICK JUNIOR"
+ },
+ {
+  "name": "NICKELODEON",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/302.png",
+  "stream": "https://udn-streamer1.cdn.3bbtv.com:8443/3bb/live/302/302.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "NICKELODEON"
+ },
+ {
+  "name": "CARTOONITO",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/301.png",
+  "stream": "https://udn-streamer1.cdn.3bbtv.com:8443/3bb/live/301/301.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "CARTOONITO"
+ },
+ {
+  "name": "CARTOON NETWORK",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/205.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/205/205.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "CARTOON NETWORK"
+ },
+ {
+  "name": "Food Network",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/109.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/109/109.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Food Network"
+ },
+ {
+  "name": "MONO29 PLUS+",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/107.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/107/107.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "MONO29 PLUS+"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/27.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/27/27.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/25.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/25/25.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/24.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/24/24.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/23.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/23/23.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/22.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/22/22.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/16.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/16/16.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/10.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/10/10.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/7.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/7/7.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/5.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/5/5.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/35.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/35/35.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/34.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/34/34.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/33.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/33/33.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/32.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/32/32.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/31.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/31/31.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/30.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/30/30.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/29.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/29/29.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/27.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/27/27.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/25.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/25/25.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/302.png",
+  "stream": "https://udn-streamer1.cdn.3bbtv.com:8443/3bb/live/302/302.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/301.png",
+  "stream": "https://udn-streamer1.cdn.3bbtv.com:8443/3bb/live/301/301.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/205.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/205/205.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/109.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/109/109.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/107.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/107/107.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/106.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/106/106.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/101.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/101/101.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/35.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/35/35.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://gigatv.3bbtv.co.th/wp-content/themes/changwattana/assets/channel/34.png",
+  "stream": "https://cri-streamer3.cdn.3bbtv.com:8443/3bb/live/34/34.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "AmarinTV HD #1",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV11.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv11hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "AmarinTV HD #1"
+ },
+ {
+  "name": "CCTV 11",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV10.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv10hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 11"
+ },
+ {
+  "name": "CCTV 10",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV9.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv9hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 10"
+ },
+ {
+  "name": "CCTV 9",
+  "num": "",
+  "logo": "https://raw.githubuserconten(",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv8k.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 9"
+ },
+ {
+  "name": "CCTV 8K",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV8.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv8hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 8K"
+ },
+ {
+  "name": "CCTV 8",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV7.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv7hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 8"
+ },
+ {
+  "name": "CCTV 7",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV6.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv6hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 7"
+ },
+ {
+  "name": "CCTV 6",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV5+.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv5p.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 6"
+ },
+ {
+  "name": "CCTV 5+",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV5.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv5hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 5+"
+ },
+ {
+  "name": "CCTV 5",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV4.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv4k.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 5"
+ },
+ {
+  "name": "CCTV 4K",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV4.png",
+  "stream": "https://atemecdnbalancer-voe.sysln.id/live/eds/CCTV4/mediampd/CCTV4.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 4K"
+ },
+ {
+  "name": "CCTV4",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/S47PnPdhNBI/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/S47PnPdhNBI",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV4"
+ },
+ {
+  "name": "S47PnPdhNBI",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/bSe6XXeO7uY/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/bSe6XXeO7uY",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "S47PnPdhNBI"
+ },
+ {
+  "name": "bSe6XXeO7uY",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/Pk_17JdAybg/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/HCEqojdt4sw",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bSe6XXeO7uY"
+ },
+ {
+  "name": "HCEqojdt4sw",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/7XJVV45fwc8/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/7XJVV45fwc8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "HCEqojdt4sw"
+ },
+ {
+  "name": " Top Hits Indonesia 2026",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/HWj1FwivQW8/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/HWj1FwivQW8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": " Top Hits Indonesia 2026"
+ },
+ {
+  "name": "HWj1FwivQW8",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/5W6eaMsurJ0/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/5W6eaMsurJ0",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "HWj1FwivQW8"
+ },
+ {
+  "name": " Lagu Top Indo",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/N-AgvPtcgL4/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/N-AgvPtcgL4",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": " Lagu Top Indo"
+ },
+ {
+  "name": "N-AgvPtcgL4",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/9IhllOSqTVk/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/9IhllOSqTVk",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "N-AgvPtcgL4"
+ },
+ {
+  "name": "Pop Indonesia Terbaru 2026 ",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/OXnuDX4zzfo/hqdefault.jpg",
+  "stream": "https://haru.charandom.blog/stream/jp/wowow_live/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Pop Indonesia Terbaru 2026 "
+ },
+ {
+  "name": "wowowlive.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-193-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/wowow_cinema/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "wowowlive.jp"
+ },
+ {
+  "name": "wowowcinema.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-191-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/wowow_prime/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "wowowcinema.jp"
+ },
+ {
+  "name": "wowowprime.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-000b-101-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/nhk_bs4k/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "wowowprime.jp"
+ },
+ {
+  "name": "nhkbsp4k.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo@",
+  "stream": "https://haru.charandom.blog/stream/jp/bs_yoshimoto/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "nhkbsp4k.jp"
+ },
+ {
+  "name": "BS Yoshimoto",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-222-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/bs_12/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "BS Yoshimoto"
+ },
+ {
+  "name": "bs12",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-211-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/bs11/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bs12"
+ },
+ {
+  "name": "bs11.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-200-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/bs10/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bs11.jp"
+ },
+ {
+  "name": "BS 10",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-181-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/bs_fuji/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "BS 10"
+ },
+ {
+  "name": "bsfuji.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-171-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/bs_tv_tokyo/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bsfuji.jp"
+ },
+ {
+  "name": "bstvtokyo.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-161-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/bs_tbs/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bstvtokyo.jp"
+ },
+ {
+  "name": "bstbs.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-151-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/bs_asahi/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bstbs.jp"
+ },
+ {
+  "name": "bsasahi.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-149-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/animax/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bsasahi.jp"
+ },
+ {
+  "name": "animax.in",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-164-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/green_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "animax.in"
+ },
+ {
+  "name": "greenchannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65534-132-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/jsport_4/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "greenchannel.jp"
+ },
+ {
+  "name": "jsports4.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/log0",
+  "stream": "https://haru.charandom.blog/stream/jp/jsport_3/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "jsports4.jp"
+ },
+ {
+  "name": "jsports3.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-169-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/jsport_2/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "jsports3.jp"
+ },
+ {
+  "name": "jsports2.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-168-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/jsport_1/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "jsports2.jp"
+ },
+ {
+  "name": "jsports1.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-201-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/bs_10_premium/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "jsports1.jp"
+ },
+ {
+  "name": "bs10",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-192-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/wowow_live/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bs10"
+ },
+ {
+  "name": "wowowlive.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-193-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/wowow_cinema/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "wowowlive.jp"
+ },
+ {
+  "name": "wowowcinema.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-191-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/wowow_prime/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "wowowcinema.jp"
+ },
+ {
+  "name": "wowowprime.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-000b-101-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/nhk_bs4k/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "wowowprime.jp"
+ },
+ {
+  "name": "nhkbsp4k.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-153-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/mystery_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "nhkbsp4k.jp"
+ },
+ {
+  "name": "mysterychannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-148-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/action_channel_(axn)/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "mysterychannel.jp"
+ },
+ {
+  "name": "axn.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-182-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/at-x/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "axn.jp"
+ },
+ {
+  "name": "atx.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-650",
+  "stream": "https://haru.charandom.blog/stream/jp/gaora_sports/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "atx.jp"
+ },
+ {
+  "name": "gaorasports.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-147-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/sky_a/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "gaorasports.jp"
+ },
+ {
+  "name": "skya.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-183-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/disney_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "skya.jp"
+ },
+ {
+  "name": "disneychannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-155-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/wowow_plus/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "disneychannel.jp"
+ },
+ {
+  "name": "wowowplus.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65534-125-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/nihon_eiga_senmon/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "wowowplus.jp"
+ },
+ {
+  "name": "nihoneigasenmonchannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-149-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/animax/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "nihoneigasenmonchannel.jp"
+ },
+ {
+  "name": "animax.in",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-164-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/green_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "animax.in"
+ },
+ {
+  "name": "greenchannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65534-132-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/jsport_4/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "greenchannel.jp"
+ },
+ {
+  "name": "jsports4.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-102-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/ntv_news24/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "jsports4.jp"
+ },
+ {
+  "name": "ntvnews24.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-190-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/nittele_plus/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "ntvnews24.jp"
+ },
+ {
+  "name": "nitteleplus.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-166-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/nittele_g+/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "nitteleplus.jp"
+ },
+ {
+  "name": "nittelegplus.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logH",
+  "stream": "https://haru.charandom.blog/stream/jp/cartoon_network_japan/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "nittelegplus.jp"
+ },
+ {
+  "name": "cartoonnetwork.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-163-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/kids_station/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "cartoonnetwork.jp"
+ },
+ {
+  "name": "kidsstation.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-175-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/kayo_pops/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "kidsstation.jp"
+ },
+ {
+  "name": "kayopops.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-150-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/mtv/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "kayopops.jp"
+ },
+ {
+  "name": "mtv.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-156-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/space_shower_tv/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "mtv.jp"
+ },
+ {
+  "name": "spaceshowertv.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-153-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/mystery_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "spaceshowertv.jp"
+ },
+ {
+  "name": "mysterychannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-148-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/action_channel_(axn)/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "mysterychannel.jp"
+ },
+ {
+  "name": "axn.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-182-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/at-x/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "axn.jp"
+ },
+ {
+  "name": "atx.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-144-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tbs_channel_1/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "atx.jp"
+ },
+ {
+  "name": "tbschannel1.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65534-133-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/the_cinema/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "tbschannel1.jp"
+ },
+ {
+  "name": "thecinema.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-167-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/golf_network/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "thecinema.jp"
+ },
+ {
+  "name": "golfnetwork.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65 ",
+  "stream": "https://haru.charandom.blog/stream/jp/mnet/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "golfnetwork.jp"
+ },
+ {
+  "name": "mnet.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-161-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/music_air/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "mnet.jp"
+ },
+ {
+  "name": "musicair.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-162-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/music_on_tv/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "musicair.jp"
+ },
+ {
+  "name": "musicontv.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-160-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/mondo_tv/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "musicontv.jp"
+ },
+ {
+  "name": "mondotv.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-157-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/family_gekijyo/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "mondotv.jp"
+ },
+ {
+  "name": "familygekijyo.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-102-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/ntv_news24/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "familygekijyo.jp"
+ },
+ {
+  "name": "ntvnews24.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-190-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/nittele_plus/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "ntvnews24.jp"
+ },
+ {
+  "name": "nitteleplus.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-166-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/nittele_g+/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "nitteleplus.jp"
+ },
+ {
+  "name": "nittelegplus.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65534-131-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/dlife/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "nittelegplus.jp"
+ },
+ {
+  "name": "dlife.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-151-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/neco_ch/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "dlife.jp"
+ },
+ {
+  "name": "channelneco.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-137-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/fuji_tv_next/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "channelneco.jp"
+ },
+ {
+  "name": "fujitvnext.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/log8",
+  "stream": "https://haru.charandom.blog/stream/jp/fuji_tv_two/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "fujitvnext.jp"
+ },
+ {
+  "name": "fujitvtwo.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-138-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/fuji_tv_one/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "fujitvtwo.jp"
+ },
+ {
+  "name": "fujitvone.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-188-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tv_asahi_channel_2/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "fujitvone.jp"
+ },
+ {
+  "name": "tvasahichannel2.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-136-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tv_asahi_channel_1/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "tvasahichannel2.jp"
+ },
+ {
+  "name": "tvasahichannel1.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-176-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tbs_channel_2/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "tvasahichannel1.jp"
+ },
+ {
+  "name": "tbschannel2.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-144-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tbs_channel_1/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "tbschannel2.jp"
+ },
+ {
+  "name": "tbschannel1.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65534-133-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/the_cinema/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "tbschannel1.jp"
+ },
+ {
+  "name": "thecinema.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-167-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/golf_network/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "thecinema.jp"
+ },
+ {
+  "name": "golfnetwork.jp",
+  "num": "1122",
+  "logo": "https://www.skyperfectv.co.jp/library/common/img/channel/icon/premium/m_663.gif",
+  "stream": "https://haru.charandom.blog/stream/jp/pigoo_nsfw/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "golfnetwork.jp"
+ },
+ {
+  "name": "pigoo.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-143-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tabi_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "pigoo.jp"
+ },
+ {
+  "name": "tabichannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65534-135-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/channel_ginga/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "tabichannel.jp"
+ },
+ {
+  "name": "channelginga.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65H",
+  "stream": "https://haru.charandom.blog/stream/jp/home_drama_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "channelginga.jp"
+ },
+ {
+  "name": "homedramachannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-106-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/sport_live_plus/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "homedramachannel.jp"
+ },
+ {
+  "name": "sportsliveplus.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-187-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/me-tele_next/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "sportsliveplus.jp"
+ },
+ {
+  "name": "entermeitele.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-128-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/fighting_tv_samurai/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "entermeitele.jp"
+ },
+ {
+  "name": "fightingtvsamurai.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-173-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/toei_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "fightingtvsamurai.jp"
+ },
+ {
+  "name": "toeichannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65534-131-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/dlife/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "toeichannel.jp"
+ },
+ {
+  "name": "dlife.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-151-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/neco_ch/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "dlife.jp"
+ },
+ {
+  "name": "channelneco.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-137-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/fuji_tv_next/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "channelneco.jp"
+ },
+ {
+  "name": "fujitvnext.jp",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/LO9vaU2ixcI/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/LO9vaU2ixcI",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "fujitvnext.jp"
+ },
+ {
+  "name": "LO9vaU2ixcI",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/xUplu_cfGdw/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/xUplu_cfGdw",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "LO9vaU2ixcI"
+ },
+ {
+  "name": " LIVE MUSIK DJ BREAKBEAT 2026 NONSTOP B11",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/58tvRl9DP0k/hqdefault.jpg",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv17hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": " LIVE MUSIK DJ BREAKBEAT 2026 NONSTOP B11"
+ },
+ {
+  "name": "CCTV 17",
+  "num": "",
+  "logo": "https://raw.githubusercontent.co(",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv16hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 17"
+ },
+ {
+  "name": "CCTV 16",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV15.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv15hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 16"
+ },
+ {
+  "name": "CCTV 15",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV14.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv14hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 15"
+ },
+ {
+  "name": "CCTV 14",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV13.png",
+  "stream": "http://cdn3.veryfast.filegear-sg.me/live/cctv13/stream.m3u8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 14"
+ },
+ {
+  "name": "CCTV 13",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV12.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv12hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 13"
+ },
+ {
+  "name": "CCTV 12",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV11.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv11hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 12"
+ },
+ {
+  "name": "CCTV 11",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV10.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv10hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 11"
+ },
+ {
+  "name": "CCTV 10",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV9.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv9hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 10"
+ },
+ {
+  "name": "CCTV 9",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV5.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv5hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 9"
+ },
+ {
+  "name": "CCTV 5",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV4.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv4k.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 5"
+ },
+ {
+  "name": "CCTV 4K",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV4.png",
+  "stream": "https://atemecdnbalancer-voe.sysln.id/live/eds/CCTV4/mediampd/CCTV4.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 4K"
+ },
+ {
+  "name": "CCTV4",
+  "num": "",
+  "logo": "https://raw.githubuserconten(",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv3hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV4"
+ },
+ {
+  "name": "CCTV 3",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV2.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv2hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 3"
+ },
+ {
+  "name": "CCTV 2",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV1.png",
+  "stream": "https://cd-live-stream.news.cctvplus.com/live/smil:CHANNEL1.smil/playlist.m3u8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 2"
+ },
+ {
+  "name": "Mozilla/5.0",
+  "num": "",
+  "logo": "https://i.imgur.com/uVe56sB.jpeg",
+  "stream": "https://streaml01cf.nxtv.jp/p-menecoch01-amni5j72tc/index1/manifest.mpd",
+  "manifest": "dash",
+  "drm": "",
+  "headers": "",
+  "channel": "Mozilla/5.0"
+ },
+ {
+  "name": "MEN'S NEC",
+  "num": "1122",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-195-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/v_paradise_nsfw/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "MEN'S NEC"
+ },
+ {
+  "name": "vparadise.jp",
+  "num": "1122",
+  "logo": "https://www.skyperfectv.co.jp/library/common/img/channel/icon/premium/m_663.gif",
+  "stream": "https://haru.charandom.blog/stream/jp/pigoo_nsfw/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "vparadise.jp"
+ },
+ {
+  "name": "pigoo.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-143-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/tabi_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "pigoo.jp"
+ },
+ {
+  "name": "tabichannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65534-135-400x400.png",
+  "stream": "https://www.youtube.com/live/NaP16mbcZ7c",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "tabichannel.jp"
+ },
+ {
+  "name": "NaP16mbcZ7c",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/--X1H-ZJ9cI/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/--X1H-ZJ9cI",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "NaP16mbcZ7c"
+ },
+ {
+  "name": "--X1H-ZJ9cI",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/xk5sToA6ZGQ/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/xk5sToA6ZGQ",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "--X1H-ZJ9cI"
+ },
+ {
+  "name": "xk5sToA6ZGQ",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/WxMoXQVPbzk/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/WxMoXQVPbzk",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "xk5sToA6ZGQ"
+ },
+ {
+  "name": "WxMoXQVPbzk",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/xdl4yPA6YXA/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/xdl4yPA6YXA",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "WxMoXQVPbzk"
+ },
+ {
+  "name": "xdl4yPA6YXA",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/EjnjqUgs8w4/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/EjnjqUgs8w4",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "xdl4yPA6YXA"
+ },
+ {
+  "name": "EjnjqUgs8w4",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/COtjDu4mJx8/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/COtjDu4mJx8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "EjnjqUgs8w4"
+ },
+ {
+  "name": "COtjDu4mJx8",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/LO9vaU2ixcI/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/LO9vaU2ixcI",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "COtjDu4mJx8"
+ },
+ {
+  "name": "LO9vaU2ixcI",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/xUplu_cfGdw/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/xUplu_cfGdw",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "LO9vaU2ixcI"
+ },
+ {
+  "name": " LIVE MUSIK DJ BREAKBEAT 2026 NONSTOP B11",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/58tvRl9DP0k/hqdefault.jpg",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv17hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": " LIVE MUSIK DJ BREAKBEAT 2026 NONSTOP B11"
+ },
+ {
+  "name": "CCTV 17",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-102-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/ntv_news24/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 17"
+ },
+ {
+  "name": "ntvnews24.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-190-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/nittele_plus/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "ntvnews24.jp"
+ },
+ {
+  "name": "nitteleplus.jp",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV17.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv17hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "nitteleplus.jp"
+ },
+ {
+  "name": "CCTV 17",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV16.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv16hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 17"
+ },
+ {
+  "name": "CCTV 16",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV15.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv15hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 16"
+ },
+ {
+  "name": "CCTV 15",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV14.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv14hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 15"
+ },
+ {
+  "name": "CCTV 14",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV13.png",
+  "stream": "http://cdn3.veryfast.filegear-sg.me/live/cctv13/stream.m3u8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 14"
+ },
+ {
+  "name": "Wakhaji: Server A",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV12.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv12hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Wakhaji: Server A"
+ },
+ {
+  "name": "CCTV 12",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV11.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv11hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 12"
+ },
+ {
+  "name": "CCTV 11",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV10.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv10hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 11"
+ },
+ {
+  "name": "CCTV 10",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV9.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv9hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 10"
+ },
+ {
+  "name": "CCTV 9",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-153-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/mystery_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 9"
+ },
+ {
+  "name": "mysterychannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-148-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/action_channel_(axn)/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "mysterychannel.jp"
+ },
+ {
+  "name": "axn.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-182-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/at-x/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "axn.jp"
+ },
+ {
+  "name": "atx.jp",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV8.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv8k.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "atx.jp"
+ },
+ {
+  "name": "CCTV 8K",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV8.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv8hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 8K"
+ },
+ {
+  "name": "CCTV 8",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV7.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv7hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 8"
+ },
+ {
+  "name": "CCTV 7",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV6.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv6hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 7"
+ },
+ {
+  "name": "CCTV 6",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV5+.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv5p.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 6"
+ },
+ {
+  "name": "CCTV 5+",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV5.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv5hd.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 5+"
+ },
+ {
+  "name": "CCTV 5",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/heads/main/CCTV4.png",
+  "stream": "http://38.75.136.137:98/gslb/dsdqpub/cctv4k.m3u8?auth=testpub",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 5"
+ },
+ {
+  "name": "CCTV 4K",
+  "num": "",
+  "logo": "https://raw.githubusercontent.com/jrpahe-del/Logo/refs/h0",
+  "stream": "https://www.youtube.com/live/N-AgvPtcgL4",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "CCTV 4K"
+ },
+ {
+  "name": "N-AgvPtcgL4",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/9IhllOSqTVk/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/9IhllOSqTVk",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "N-AgvPtcgL4"
+ },
+ {
+  "name": "Pop Indonesia Terbaru 2026 ",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/OXnuDX4zzfo/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/OXnuDX4zzfo",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Pop Indonesia Terbaru 2026 "
+ },
+ {
+  "name": "OXnuDX4zzfo",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/-on2-pqAm2Y/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/-on2-pqAm2Y",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "OXnuDX4zzfo"
+ },
+ {
+  "name": "-on2-pqAm2Y",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/FnwxhUZhSpE/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/FnwxhUZhSpE",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "-on2-pqAm2Y"
+ },
+ {
+  "name": "FnwxhUZhSpE",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/8gv3HJKA_Cw/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/wwakNC_c_zY",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "FnwxhUZhSpE"
+ },
+ {
+  "name": " Spotify Top Indonesia 2026",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/38fo4a3jKZk/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/NaP16mbcZ7c",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": " Spotify Top Indonesia 2026"
+ },
+ {
+  "name": "NaP16mbcZ7c",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/--X1H-ZJ9cI/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/--X1H-ZJ9cI",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "NaP16mbcZ7c"
+ },
+ {
+  "name": "--X1H-ZJ9cI",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/xk5sToA6ZGQ/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/xk5sToA6ZGQ",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "--X1H-ZJ9cI"
+ },
+ {
+  "name": "xk5sToA6ZGQ",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/S47PnPdhNBI/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/S47PnPdhNBI",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "xk5sToA6ZGQ"
+ },
+ {
+  "name": "S47PnPdhNBI",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/bSe6XXeO7uY/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/bSe6XXeO7uY",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "S47PnPdhNBI"
+ },
+ {
+  "name": "bSe6XXeO7uY",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/Pk_17JdAybg/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/HCEqojdt4sw",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bSe6XXeO7uY"
+ },
+ {
+  "name": "HCEqojdt4sw",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/7XJVV45fwc8/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/7XJVV45fwc8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "HCEqojdt4sw"
+ },
+ {
+  "name": " Top Hits Indonesia 2026",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/HWj1FwivQW8/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/HWj1FwivQW8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": " Top Hits Indonesia 2026"
+ },
+ {
+  "name": "HWj1FwivQW8",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/5W6eaMsurJ0/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/5W6eaMsurJ0",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "HWj1FwivQW8"
+ },
+ {
+  "name": " Lagu Top Indo",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/N-AgvPtcgL4/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/N-AgvPtcgL4",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": " Lagu Top Indo"
+ },
+ {
+  "name": "N-AgvPtcgL4",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/9IhllOSqTVk/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/9IhllOSqTVk",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "N-AgvPtcgL4"
+ },
+ {
+  "name": "Pop Indonesia Terbaru 2026 ",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/OXnuDX4zzfo/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/OXnuDX4zzfo",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Pop Indonesia Terbaru 2026 "
+ },
+ {
+  "name": "OXnuDX4zzfo",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-149-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/animax/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "OXnuDX4zzfo"
+ },
+ {
+  "name": "animax.in",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65406-164-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/green_channel/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "animax.in"
+ },
+ {
+  "name": "greenchannel.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/jcom/logo-65534-132-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/jsport_4/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "greenchannel.jp"
+ },
+ {
+  "name": "jsports4.jp",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/-on2-pqAm2Y/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/-on2-pqAm2Y",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "jsports4.jp"
+ },
+ {
+  "name": "-on2-pqAm2Y",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/FnwxhUZhSpE/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/FnwxhUZhSpE",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "-on2-pqAm2Y"
+ },
+ {
+  "name": "FnwxhUZhSpE",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/uCHe6W2uDjM/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/uCHe6W2uDjM",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "FnwxhUZhSpE"
+ },
+ {
+  "name": "Wakhaji: Server A",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/57FLXug6QBE/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/57FLXug6QBE",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Wakhaji: Server A"
+ },
+ {
+  "name": " Billboard u0026 Spotify Hits Today!",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/S47PnPdhNBI/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/S47PnPdhNBI",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": " Billboard u0026 Spotify Hits Today!"
+ },
+ {
+  "name": "S47PnPdhNBI",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/bSe6XXeO7uY/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/bSe6XXeO7uY",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "S47PnPdhNBI"
+ },
+ {
+  "name": "bSe6XXeO7uY",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/Pk_17JdAybg/hqdefault.jpg",
+  "stream": "https://haru.charandom.blog/stream/jp/wowow_live/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "bSe6XXeO7uY"
+ },
+ {
+  "name": "wowowlive.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-193-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/wowow_cinema/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "wowowlive.jp"
+ },
+ {
+  "name": "wowowcinema.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-0004-191-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/wowow_prime/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "wowowcinema.jp"
+ },
+ {
+  "name": "wowowprime.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo-000b-101-400x400.png",
+  "stream": "https://haru.charandom.blog/stream/jp/nhk_bs4k/stream-output.m3u8?mode=hls",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "wowowprime.jp"
+ },
+ {
+  "name": "nhkbsp4k.jp",
+  "num": "",
+  "logo": "https://tvguide.myjcom.jp/monomedia/ch_logo/bsd/logo@",
+  "stream": "https://www.youtube.com/live/HCEqojdt4sw",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "nhkbsp4k.jp"
+ },
+ {
+  "name": "HCEqojdt4sw",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/7XJVV45fwc8/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/7XJVV45fwc8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "HCEqojdt4sw"
+ },
+ {
+  "name": " Top Hits Indonesia 2026",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/HWj1FwivQW8/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/HWj1FwivQW8",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": " Top Hits Indonesia 2026"
+ },
+ {
+  "name": "HWj1FwivQW8",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/5W6eaMsurJ0/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/5W6eaMsurJ0",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "HWj1FwivQW8"
+ },
+ {
+  "name": " Lagu Top Indo",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/N-AgvPtcgL4/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/N-AgvPtcgL4",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": " Lagu Top Indo"
+ },
+ {
+  "name": "N-AgvPtcgL4",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/9IhllOSqTVk/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/9IhllOSqTVk",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "N-AgvPtcgL4"
+ },
+ {
+  "name": "Pop Indonesia Terbaru 2026 ",
+  "num": "",
+  "logo": "https://i.ytimg.com/vi/OXnuDX4zzfo/hqdefault.jpg",
+  "stream": "https://www.youtube.com/live/OXnuDX4zzfo",
+  "manifest": "auto",
+  "drm": "",
+  "headers": "",
+  "channel": "Pop Indonesia Terbaru 2026 "
+ }
+]
