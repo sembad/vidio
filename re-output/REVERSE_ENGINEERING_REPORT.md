@@ -48,3 +48,15 @@ App Android "WAKHAJI LITE" (package `lite.wakhaji.id`, activity utama `net.harim
 - `re-output/channels.json` — 465 channel (name, num, logo, stream, manifest, drm, headers).
 - Smali lengkap: `/opt/re/work/dapp/smali` (di VM, tidak di-commit).
 - Frida scripts: `/tmp/fsc/trace12c.js`, `trace_min.js`, `dns_sniff.js`, `dns_override.js`, `trace_url.js`.
+
+## v5 (2026-10-10) — perbaikan 3 bug laporan user
+
+Base: `WAKHAJI-LITE-1.0-FIXED-v4.apk` (direcovery dari git `cb22485`, branch `v0/vf1715f3-5880-93602930`). Toolchain dibangun ulang di `/tmp/re`: JRE 17 (Temurin), smali/baksmali 2.5.2 (+deps maven), uber-apk-signer 1.3.0, androguard 3.3.5.
+
+1. **Player blank hitam** — `PlayerActivity.onCreate` hilang dari dump Jiagu (hanya inflate binding tersisa). Rekonstruksi: baca `getLongExtra("PLAY_CHANNEL", 0)` → `G.query().equal(entities.b.h, id).build().findFirst()` → `I = ch` → `G(ch.b().getTarget(), false)` → `D()`; jika channel null → `finish()`. Pola dikonfirmasi dari tail `K()` (`this.Q = 0; this.D();`).
+2. **Settings kosong** — `SettingsActivity.onCreate` hilang dari dump. Rekonstruksi: `setContentView(0x7f0d001f activity_settings)` + tambahkan `SettingsActivity$a` (PreferenceFragmentCompat, `W(String)` = onCreatePreferences, load `xml/root_preferences` 0x7f150001) ke container `id/settings` 0x7f0a0260 via `BackStackRecord` (`new a(fm)`, `e(container, frag, null, OP_ADD=1)`, `d(false)` = commitInternal) karena `beginTransaction/replace/commit` hilang dari dump.
+3. **List channel besar** — bukan bug: `d9.j.i()` = `prefs("show_logo", default) ^ 1`; default resource `pref_show_logo` = true → item_channel_logo (grid 3 kolom besar). Patch: default diganti ke bool `false` (0x7f050002) → fresh install pakai `item_channel_text` (kompak). Toggle "Show logo" di Settings tetap berfungsi.
+
+Diketahui hilang dari dump (tidak kritikal): register receiver `PlayerActivity$b` (action `PLAYER_CALLBACK` → RETRY_PLAYBACK/CLOSE_PLAYER — string action-nya terenkripsi & hanya ada di onCreate yang hilang); `f9.b.h` (unregister) aman no-op jika tidak register.
+
+Output: `apk-output/WAKHAJI-LITE-1.0-FIXED-v5.apk` (signed, cert sama dengan v4 → bisa di-install langsung di atas v4 tanpa hapus data).
